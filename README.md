@@ -25,6 +25,7 @@ LunaKit is a development tool / modification of Super Mario Odyssey designed to 
 - Remove any previous mods that would cause conflicts
 - Download newest build from [releases](https://github.com/Amethyst-szs/smo-lunakit/releases/)
 - Drag and drop the included `atmosphere` and `LunaKit` folders onto the root of your SD card
+- Boot up game in docked mode *(not handhled!)*
 
 ### Installation on [Ryujinx](https://ryujinx.org/)
 - Enable mouse input in Ryujinx settings
@@ -34,7 +35,8 @@ LunaKit is a development tool / modification of Super Mario Odyssey designed to 
 ### Installation on Yuzu is NOT actively supported.
 
 ## Controls:
-- Open the interface by holding ZR + R and tapping L  
+- Open the interface by holding ZR + R and tapping L
+  - Dock the Nintendo Switch first, it must have been docked at least once in the current session to function. This bug will hopefully be fixed!
 - Hide windows by pressing L-Stick  
 - Mouse controls (RECOMMENDED)
   - Navigate interface with a mouse
