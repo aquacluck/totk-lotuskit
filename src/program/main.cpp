@@ -57,8 +57,8 @@ HOOK_DEFINE_INLINE(nnMainHook) {
         // we let nnMain handle that, then steal execution right before it jumps into the game.
 
         // figure out where to connect to
-        char ip[16] = ""; // put just an ip address in romfs/lotus420/lotus420_server_ip.txt
-        read_file(ip, "content:/lotus420/lotus420_server_ip.txt", sizeof(ip), "127.0.0.1");
+        char ip[16] = ""; // put just an ip address in romfs/totk-lotuskit/server_ip.txt
+        read_file(ip, "content:/totk-lotuskit/server_ip.txt", sizeof(ip), "127.0.0.1");
         char buf[200];
         nn::util::SNPrintf(buf, sizeof(buf), "using ip4 addr %s ", ip);
         svcOutputDebugString(buf, strlen(buf));
