@@ -63,6 +63,7 @@
     "service_host":[
         
     ],
+    "system_resource_size":"0x1800000",
     "kernel_capabilities":[
         {
             "type":"kernel_flags",
