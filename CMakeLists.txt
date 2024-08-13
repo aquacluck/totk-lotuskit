@@ -20,7 +20,7 @@ execute_process(
   OUTPUT_STRIP_TRAILING_WHITESPACE
   )
 
-add_compile_definitions(EXL_PROGRAM_ID=${CONFIG_TITLE_ID} NNSDK=1 GIT_VER="${GIT_VER}")
+add_compile_definitions(TOTK_121=1 EXL_PROGRAM_ID=${CONFIG_TITLE_ID} NNSDK=1 GIT_VER="${GIT_VER}")
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/module/subsdk9.json.template ${CMAKE_CURRENT_BINARY_DIR}/subsdk9.json)
 
 ## Project sources
@@ -44,7 +44,7 @@ set(CMAKE_EXECUTABLE_SUFFIX ".elf")
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 #set_source_files_properties(${SOURCES_CXX} PROPERTIES LANGUAGE CXX)
 add_executable(subsdk9 ${SOURCES_ASM} ${SOURCES_C} ${SOURCES_H} ${SOURCES_CXX})
-add_compile_definitions(EXL_LOAD_KIND=Module EXL_LOAD_KIND_ENUM=EXL_LOAD_KIND_MODULE)
+add_compile_definitions(EXL_LOAD_KIND=Module EXL_LOAD_KIND_ENUM=2)
 target_link_libraries(subsdk9 ${LOCAL_LIBRARIES})
 
 ## Prepare subsdk ld
@@ -54,7 +54,7 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/module/subsdk9.specs.template ${CMAKE
 add_nso_target_subsdk(subsdk9)
 set_target_properties(subsdk9 PROPERTIES CONFIG_JSON "${CMAKE_CURRENT_BINARY_DIR}/subsdk9.json")
 __generate_npdm(subsdk9)
-set_target_properties(subsdk9 PROPERTIES LINK_FLAGS "-specs ${CMAKE_BINARY_DIR}/subsdk9.specs -g3 ${ARCH} -nostartfiles -nostdlib")
+set_target_properties(subsdk9 PROPERTIES LINK_FLAGS "-specs ${CMAKE_BINARY_DIR}/subsdk9.specs -g ${ARCH} -nostartfiles")
 
 add_custom_target(subsdk9_meta DEPENDS create_npdm subsdk9_nso)
 if (FTP_IP)
