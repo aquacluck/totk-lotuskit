@@ -1,0 +1,163 @@
+@font-face {
+    font-family: "Source Code Pro";
+    src: url(fonts/SourceCodePro-ExtraLight.otf.woff2) format("woff2");
+    font-weight: 200;
+    font-style: normal;
+    font-display: swap;
+}
+@font-face {
+    font-family: "Source Code Pro";
+    src: url(fonts/SourceCodePro-Medium.otf.woff2) format("woff2");
+    font-weight: 500;
+    font-style: normal;
+    font-display: swap;
+}
+@font-face {
+    font-family: "Source Code Pro";
+    src: url(fonts/SourceCodePro-Black.otf.woff2) format("woff2");
+    font-weight: 900;
+    font-style: normal;
+    font-display: swap;
+}
+
+
+body { margin: 0; }
+
+body, input, button {
+    background-color: #000;
+    color: #eee;
+    font-family: "Source Code Pro", monospace;
+    font-weight: 500;
+}
+
+input, button {
+             border: 2px solid;
+             border-color: #666 #222 #222 #666;
+  &:hover  { border-color: #666 #333 #333 #666; }
+  &:active { border-color: #222 #666 #666 #222; }
+}
+
+button.pushbutton {
+    /* square-ish button suited for dense clusters */
+    font-family: inherit;
+    height: 38px;
+    min-width: 32px;
+    max-width: 72px;
+    padding: 0px 1px;
+
+    &.pushbutton_null {
+        /* invisible spacer, used with `inert` to remove all interaction */
+        opacity: 0;
+        pointer-events: none;
+    }
+}
+
+:root {
+    --vec-red:   hsl(  0 40% 80%);
+    --vec-green: hsl(120 40% 80%);
+    --vec-blue:  hsl(240 40% 80%);
+}
+.readout_vec2, .readout_vec3, .readout_quat {
+    font-size: 0.85rem;
+    &::before { content: attr(label) ": "; }
+
+    /* let vec_components_* classes arbitrarily configure colors from palette */
+    :nth-child(1) { color: var(--vec-tint-0); }
+    :nth-child(2) { color: var(--vec-tint-1); }
+    :nth-child(3) { color: var(--vec-tint-2); }
+}
+.vec_components_XYZ {
+    --vec-tint-0: var(--vec-red);
+    --vec-tint-1: var(--vec-green);
+    --vec-tint-2: var(--vec-blue);
+}
+.vec_components_XZY {
+    --vec-tint-0: var(--vec-red);
+    --vec-tint-1: var(--vec-blue);
+    --vec-tint-2: var(--vec-green);
+}
+.vec_components_ZX {
+    --vec-tint-0: var(--vec-blue);
+    --vec-tint-1: var(--vec-red);
+}
+.vec_components_ZXY {
+    --vec-tint-0: var(--vec-blue);
+    --vec-tint-1: var(--vec-red);
+    --vec-tint-2: var(--vec-green);
+}
+
+.compass_spinny {
+    display: inline-block;
+    direction: ltr; /* supposedly rtl causes rotations to mirror? */
+    width: 24px;
+    transform-origin: 30px 15px;
+    text-decoration: underline;
+    font-size: 0.85rem;
+    margin-left: 8px;
+    :nth-child(1) { color: var(--vec-tint-0); }
+    :nth-child(2) { color: var(--vec-tint-1); }
+}
+
+
+
+
+/* toolsets use css grid to render clusters of ui into standalone layers which are absolutely positioned as needed. */
+/* TODO basic draggable window, settings/toggles bar */
+
+.toolbox_main { position: relative; }
+.toolbox_main > .toolset_connection { right:0px; top:0px; }
+.toolbox_main > .toolset_actor_inspector { left: 0px; top: 400px; }
+
+
+.toolset_connection {
+    position: absolute;
+    height: 56px;
+    padding: 8px;
+    border: 1px solid #444;
+
+    display: inline-grid;
+    grid-template-rows: 1fr 1fr;
+    grid-template-columns: 1fr;
+    grid-template-areas:
+    'ws'
+    'backend';
+}
+.toolset_connection > .ws { grid-area: ws; }
+.toolset_connection > .backend { grid-area: backend; }
+
+
+.toolset_actor_inspector {
+    position: absolute;
+    width: 60%;
+    height: 330px;
+    padding: 8px;
+    border: 1px solid #444;
+
+    display: inline-grid;
+    /*grid-temp late: subgrid repeat(10,1fr) / subgrid repeat(3,1fr);*/
+    grid-template-rows: 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr;
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-areas:
+    'actor_selector         actor_selector           .'
+    'actor_pos32_ui         actor_pos32_ui           .'
+    'actor_pos32            actor_pos32              .'
+    'actor_pos64_ui         actor_pos64_ui           .'
+    'actor_pos64            actor_pos64              .'
+    'actor_vel_frame        actor_vel_frame          .'
+    'actor_compass          actor_compass            .'
+    'bumper_pushbuttons     savestate_slot_actions   .'
+    '.                      .                        .'
+    '.                      .                        .'; /* empty rows get thrown out */
+
+}
+.toolset_actor_inspector > .actor_selector { grid-area: actor_selector; }
+.toolset_actor_inspector > .actor_pos32 { grid-area: actor_pos32; }
+.toolset_actor_inspector > .actor_pos32_ui { grid-area: actor_pos32_ui; }
+.toolset_actor_inspector > .actor_pos64 { grid-area: actor_pos64; }
+.toolset_actor_inspector > .actor_pos64_ui { grid-area: actor_pos64_ui; }
+.toolset_actor_inspector > .actor_vel_frame { grid-area: actor_vel_frame; }
+.toolset_actor_inspector > .actor_compass { grid-area: actor_compass; margin-bottom: 12px; }
+.toolset_actor_inspector > .savestate_slot_actions { grid-area: savestate_slot_actions; }
+.toolset_actor_inspector > .bumper_pushbuttons { grid-area: bumper_pushbuttons; }
+
+
