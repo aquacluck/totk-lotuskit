@@ -56,8 +56,8 @@ class BackendProxy:
             await server.serve_forever()
 
     async def handle_new_mod_connection(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
-        # FIXME better reconnection, backend re-init, game restarting. current block-on-emu-pause behavior is good though
         ipc_inflight_commands = {} # uniq_id -> BackendCommandRecord
+        self.command_send_queue = asyncio.Queue() # direct commands to this mod connection now, prevent any lingering connections from consuming/forwarding the active queue
         await asyncio.gather( # run concurrent
             BackendProxy.run_command_sender(self.command_send_queue, writer, ipc_inflight_commands), # forward commands to the mod
             BackendProxy.run_dgram_consumer(reader, ipc_inflight_commands, self.mod_log_queue), # receives+routes logs, data, command responses from the mod

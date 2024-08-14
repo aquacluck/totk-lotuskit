@@ -2,8 +2,9 @@
 - edit `CMakeLists.txt` to select your game version, for now only `TOTK_100` or `TOTK_121` (yes you need cmake)
 - edit `frontend/run.py` and update `BackendSocketConfig` -- this should be your PC's LAN address which the switch will connect to. Use localhost for emulators
 - run `make` in a suitable build environment (such as [devkitPro](https://devkitpro.org/wiki/Getting_Started) [(docker)](https://hub.docker.com/u/devkitpro/) )
-- copy the output files `deploy/main.npdm` and `deploy/subsdk9` into your target's `/atmosphere/contents/0100f2c0115b6000/exefs/` folder
-- run the python, load the web ui, launch the game. the mod currently tries to connect only at startup
+- copy the output files `build/main.npdm` and `build/subsdk9` into your target's `/atmosphere/contents/0100f2c0115b6000/exefs/` folder
+- copy the `romfs` folder to your target's `/atmosphere/contents/0100f2c0115b6000/romfs/` folder and edit the config
+- run the python, load the web ui, launch the game. whistle to retry the mod<-\>python connection
 
 ## Credits & Thanks
 - build + hooking + much more thanks to [exlaunch](https://github.com/shadowninja108/exlaunch) by shadow, licensed under GPL2

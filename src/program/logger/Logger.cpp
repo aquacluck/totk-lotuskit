@@ -76,19 +76,12 @@ class LoggerTransport {
 };
 
 
-void Logger::init(const char* ip) {
+void Logger::init() {
     if (!mDoOpenSocket) {
         return;
     }
-    if (mState != LoggerState::UNINITIALIZED) {
-        return;
-    }
 
-    // TODO its unclear whether nifm calls are necessary (maybe this can init radios or detect airplane mode? idk), but regardless we need to extract this into:
-    // - trySocketListen, called on a throttle somewhere in mod main loop
-    // - keybind/command to enable/disable/trigger trySocketListen (offline mode)
-    // - keybind/command to toggle blocking/nonblocking behaviors (closer syncing vs playable performance)
-    s32 sock_errno = 0;
+    // this stuff seems to crash during most gameplay hooks, so it's setup early even if we don't immediately connect
     nn::nifm::Initialize();
     nn::socket::Initialize(s_socketPool, SOCKET_POOL_SIZE, ALLOCATOR_POOL_SIZE, 14);
     nn::nifm::SubmitNetworkRequest();
@@ -98,8 +91,11 @@ void Logger::init(const char* ip) {
         this->log(NS_DEFAULT_TEXT, R"("logger: nifm::IsNetworkAvailable() falsy")");
         return;
     }
+}
 
-    // Open socket
+void Logger::connect() {
+    mState = LoggerState::UNINITIALIZED;
+
     if ((mSocketFd = nn::socket::Socket(AF_INET, (s32)(SocketType::SOCK_STREAM), (s32)(SocketProtocol::IPPROTO_TCP))) < 0) {
         mState = LoggerState::UNAVAILABLE;
         this->logf(NS_DEFAULT_TEXT, R"("logger: socket::Socket() errno %i")", mSocketFd);
@@ -107,71 +103,71 @@ void Logger::init(const char* ip) {
     }
 
     const u16 bind_port = 7072;
+    in_addr hostAddress = {0};
+    nn::socket::InetAton(this->ip, &hostAddress);
+    sockaddr serverAddress = {0};
+    serverAddress.address = hostAddress;
+    serverAddress.port = nn::socket::InetHtons(bind_port);
+    serverAddress.family = AF_INET;
 
-    if (DO_SOCKET_LISTEN) {
-        // Set keepalive
-        int flags = 1; // XXX what is this
-        nn::socket::SetSockOpt(mSocketFd, (s32)(SocketLevel::Sol_Socket), (u32)(SocketOption::So_KeepAlive), &flags, sizeof(flags));
-
-        // TODO maybe keybind, or detect emulators -> localhost only?
-        // Unless we add a config file or listen on lan subnet or etc, toggling InAddr_Any is the simplest option.
-        // But dont do this inside emulators, some possibility of emu escape / host rce / idk
-        //const u32 bind_ip = ip4_localhost;
-
-        //sockaddr_in serverAddress;
-        //serverAddress.sin_family = AF_INET;
-        //serverAddress.sin_addr.s_addr = bind_ip;
-        //serverAddress.sin_port = nn::socket::InetHtons(bind_port);
-
-        const char* ip = "0.0.0.0";
-        //const char* ip = "127.0.0.1";
-        in_addr hostAddress = {0};
-        nn::socket::InetAton(ip, &hostAddress);
-
-        sockaddr serverAddress = {0};
-        serverAddress.family = AF_INET;
-        //serverAddress.address.s_addr = bind_ip;
-        serverAddress.address = hostAddress;
-        serverAddress.port = nn::socket::InetHtons(bind_port);
-
-        if ((sock_errno = nn::socket::Bind(mSocketFd, &serverAddress, sizeof(serverAddress))) != 0) {
-            mState = LoggerState::UNAVAILABLE;
-            this->logf(NS_DEFAULT_TEXT, R"("logger: socket::Bind() errno %i")", sock_errno);
-            return;
-        }
-        if ((sock_errno = nn::socket::Listen(mSocketFd, 1)) != 0) {
-            mState = LoggerState::UNAVAILABLE;
-            this->logf(NS_DEFAULT_TEXT, R"("logger: socket::Listen() errno %i")", sock_errno);
-            return;
-        }
-
-        u32 addressLen;
-        this->logf(NS_DEFAULT_TEXT, R"(logger: socket::Accept() waiting on %i")", mSocketFd);
-        if ((sock_errno = nn::socket::Accept(mSocketFd, &serverAddress, &addressLen)) != 0) { // blocking
-            mState = LoggerState::DISCONNECTED;
-            // FIXME errno 1 EPERM on windows ryujinx? if i ignore this unless < 0, Send() later fails...
-            this->logf(NS_DEFAULT_TEXT, R"(logger: socket::Accept() errno %i")", sock_errno);
-            return;
-        }
-    } else {
-
-        // Do socket::connect
-        in_addr hostAddress = {0};
-        nn::socket::InetAton(ip, &hostAddress);
-        sockaddr serverAddress = {0};
-        serverAddress.address = hostAddress;
-        serverAddress.port = nn::socket::InetHtons(bind_port);
-        serverAddress.family = AF_INET;
-
-        if ((sock_errno = nn::socket::Connect(mSocketFd, &serverAddress, sizeof(serverAddress))) != 0) {
-            this->logf(NS_DEFAULT_TEXT, R"("logger: socket::Connect() errno %i")", sock_errno);
-            return;
-        }
+    s32 sock_errno = 0;
+    if ((sock_errno = nn::socket::Connect(mSocketFd, &serverAddress, sizeof(serverAddress))) != 0) {
+        this->logf(NS_DEFAULT_TEXT, R"("logger: socket::Connect() errno %i")", sock_errno);
+        return;
     }
 
     mState = LoggerState::CONNECTED;
     this->log(NS_BACKEND_CONFIG, R"({"backend_is_connected": true, "msg": "logger socket connected"})");
+}
 
+/*
+void Logger::listen() {
+    // Set keepalive
+    int flags = 1; // XXX what is this
+    nn::socket::SetSockOpt(mSocketFd, (s32)(SocketLevel::Sol_Socket), (u32)(SocketOption::So_KeepAlive), &flags, sizeof(flags));
+
+    // TODO maybe keybind, or detect emulators -> localhost only?
+    // Unless we add a config file or listen on lan subnet or etc, toggling InAddr_Any is the simplest option.
+    // But dont do this inside emulators, some possibility of emu escape / host rce / idk
+    //const u32 bind_ip = ip4_localhost;
+
+    //sockaddr_in serverAddress;
+    //serverAddress.sin_family = AF_INET;
+    //serverAddress.sin_addr.s_addr = bind_ip;
+    //serverAddress.sin_port = nn::socket::InetHtons(bind_port);
+
+    //const char* ip = "0.0.0.0";
+    //const char* ip = "127.0.0.1";
+    in_addr hostAddress = {0};
+    nn::socket::InetAton(this->ip, &hostAddress);
+
+    sockaddr serverAddress = {0};
+    serverAddress.family = AF_INET;
+    //serverAddress.address.s_addr = bind_ip;
+    serverAddress.address = hostAddress;
+    serverAddress.port = nn::socket::InetHtons(bind_port);
+
+    if ((sock_errno = nn::socket::Bind(mSocketFd, &serverAddress, sizeof(serverAddress))) != 0) {
+        mState = LoggerState::UNAVAILABLE;
+        this->logf(NS_DEFAULT_TEXT, R"("logger: socket::Bind() errno %i")", sock_errno);
+        return;
+    }
+    if ((sock_errno = nn::socket::Listen(mSocketFd, 1)) != 0) {
+        mState = LoggerState::UNAVAILABLE;
+        this->logf(NS_DEFAULT_TEXT, R"("logger: socket::Listen() errno %i")", sock_errno);
+        return;
+    }
+
+    u32 addressLen;
+    this->logf(NS_DEFAULT_TEXT, R"(logger: socket::Accept() waiting on %i")", mSocketFd);
+    if ((sock_errno = nn::socket::Accept(mSocketFd, &serverAddress, &addressLen)) != 0) { // blocking
+        mState = LoggerState::DISCONNECTED;
+        // FIXME errno 1 EPERM on windows ryujinx? if i ignore this unless < 0, Send() later fails...
+        this->logf(NS_DEFAULT_TEXT, R"(logger: socket::Accept() errno %i")", sock_errno);
+        return;
+    }
+}
+*/
     /*
     // TODO extract to json_array_printf or etc
     constexpr auto bufsize = 3200;
@@ -195,7 +191,6 @@ void Logger::init(const char* ip) {
     // report readonly ns filter
     this->logf(NS_BACKEND_CONFIG, R"({"svcOutputDebugString_log_ns_passlist": %s})", buf);
     */
-}
 
 
 void Logger::log(LoggerNS ns, const char *payload) {

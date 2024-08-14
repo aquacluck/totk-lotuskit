@@ -26,19 +26,17 @@ Logger* main_logger; // set in exl_main
 extern ModCommand_Savestate_ActorPos g_ModCommand_Savestate_ActorPos[5]; // XXX hooks.hpp logger.cpp trash glue
 
 const float PLAYER_PHYSICS_HEIGHT_OFFSET = 0.9; // constant offset between pos32/pos64
-
-
-ActorMgr* ActorMgr_instance = nullptr; // there seems to be just one, maybe not spooky?
 ActorBase* Player = nullptr;
+hknpMotion* Player_physics = nullptr;
+
+ActorMgr* ActorMgr_instance = nullptr;
 ActorBase* PlayerCamera = nullptr;
 ActorBase* EventCamera = nullptr;
-
 ActorBase* Parasail;
 ActorBase* Dm_Npc_RevivalFairy;
 ActorBase* CarryBox;
 ActorBase* ThrowBox;
 
-hknpMotion* Player_physics = nullptr;
 
 
 // this function actually exists in 1.0.0 but is inlined in later versions so I just recreated it for simplicity
@@ -56,6 +54,17 @@ ActorBase * GetChild(ActorMgr& mgr, u32 index, ActorBase &parent) {
     return nullptr;
 }
 */
+
+HOOK_DEFINE_TRAMPOLINE(LoggerConnectOnWhistleHook) {
+    static const ptrdiff_t s_offset = s_ExecutePlayerWhistle_Enter;
+    static void Callback(void* param) {
+        main_logger->log(NS_DEFAULT_TEXT, R"("trying frontend connect() ")");
+        main_logger->connect();
+        main_logger->logf(NS_DEFAULT_TEXT, R"("main_offset %p")", main_offset);
+
+        Orig(param);
+    }
+};
 
 HOOK_DEFINE_TRAMPOLINE(ActorRelationAddHook) {
     static const ptrdiff_t s_offset = s_ActorMgr_addActorRelation;

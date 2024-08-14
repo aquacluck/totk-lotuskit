@@ -56,11 +56,21 @@ HOOK_DEFINE_INLINE(nnMainHook) {
         // socket init fails without some sdk stuff initialized first?
         // we let nnMain handle that, then steal execution right before it jumps into the game.
 
-        // figure out where to connect to
-        char ip[16] = ""; // put just an ip address in romfs/totk-lotuskit/server_ip.txt
-        read_file(ip, "content:/totk-lotuskit/server_ip.txt", sizeof(ip), "127.0.0.1");
+        // figure out where+when to connect
+        char ip[16] = "";
+        read_file(ip, "content:/totk_lotuskit/server_ip.txt", sizeof(ip), "127.0.0.1");
+
+        char do_connect_on_bootup[2] = "1";
+        read_file(do_connect_on_bootup, "content:/totk_lotuskit/do_connect_on_bootup.txt", sizeof(do_connect_on_bootup), "1");
+
+        char do_connect_on_whistle[2] = "1";
+        read_file(do_connect_on_whistle, "content:/totk_lotuskit/do_connect_on_whistle.txt", sizeof(do_connect_on_whistle), "1");
+        if (do_connect_on_whistle[0] == '1') {
+            LoggerConnectOnWhistleHook::Install();
+        }
+
         char buf[200];
-        nn::util::SNPrintf(buf, sizeof(buf), "using ip4 addr %s ", ip);
+        nn::util::SNPrintf(buf, sizeof(buf), "lotuskit using ip4 addr %s, do_connect_on_bootup: %c, do_connect_on_whistle: %c", ip, do_connect_on_bootup[0], do_connect_on_whistle[0]);
         svcOutputDebugString(buf, strlen(buf));
 
         // init logger socket
@@ -69,7 +79,13 @@ HOOK_DEFINE_INLINE(nnMainHook) {
         main_logger->mDoOpenSocket = true; // prepare socket
         main_logger->mDoLogSocket = true; // actually send to socket
         main_logger->mDoHackCommandSocket = true; // also abuse logging socket to recv commands
-        main_logger->init(ip);
+        strcpy(main_logger->ip, ip);
+        main_logger->init();
+        if (do_connect_on_bootup[0] == '1') {
+            main_logger->connect();
+        }
+
+        // TODO centralize on-connect info dump, or allow frontend to request it
         main_logger->logf(NS_DEFAULT_TEXT, R"("main_offset %p")", main_offset);
 
         InputHelper::initKBM();
@@ -94,7 +110,6 @@ extern "C" void exl_main(void* x0, void* x1) {
     TestCreateActorHook4::Install();
     TestCreateActorHook5::Install();
 #endif
-
 }
 
 extern "C" NORETURN void exl_exception_entry() {

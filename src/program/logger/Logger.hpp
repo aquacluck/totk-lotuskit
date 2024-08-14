@@ -54,7 +54,9 @@ enum class LoggerState {
 class Logger {
 public:
     //Logger() = default;
-    void init(const char* ip);
+    char ip[16];
+    void init();
+    void connect();
 
     bool mDoOpenSocket;
     bool mDoLogSocket;

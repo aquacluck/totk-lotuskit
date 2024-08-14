@@ -1,38 +1,53 @@
-name: CMake Compile Test
+name: Build mod binaries
+
 on:
   push:
     branches:
-    - stable
-    - dev
-  pull_request:
-    branches:
-    - stable
-    - dev
+    - main
   workflow_dispatch:
-  
+
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
   BUILD_TYPE: Release
 
 jobs:
   Compile:
-    # The CMake configure and build commands are platform agnostic and should work equally well on Windows or Mac.
-    # You can convert this to a matrix build if you need cross-platform coverage.
-    # See: https://docs.github.com/en/free-pro-team@latest/actions/learn-github-actions/managing-complex-workflows#using-a-build-matrix
-    runs-on: ubuntu-latest
-    
-    # Use a container with Devkitpro already setup
+    runs-on: ubuntu-22.04
     container: pixelkiri/devkitpro-alpine-switch:latest
+
     steps:
-    - name: Setup Checkout and Submodules
-      uses: actions/checkout@v3
+    - name: Checkout repo
+      uses: actions/checkout@v4
       with:
         submodules: recursive
-    
+        fetch-depth: '0'
+
+    - name: Install tooling
+      run: |
+        sudo apk add zip wget
+        wget -q https://github.com/cli/cli/releases/download/v2.54.0/gh_2.54.0_linux_amd64.tar.gz
+        tar xf gh_2.54.0_linux_amd64.tar.gz
+        mv ./gh_2.54.0_linux_amd64/bin/gh ./gh
+        rm -r ./gh_2.54.0_linux_amd64 gh_2.54.0_linux_amd64.tar.gz
+ 
     - name: Setup CMake
       uses: jwlawson/actions-setup-cmake@v1.13
       with:
         cmake-version: '3.26.x'
-    
-    - name: Build LotusKit
+
+    - name: Build 121
       run: cmake -DCMAKE_TOOLCHAIN_FILE=cmake/toolchain.cmake -S . -B build && make -C build subsdk9_meta -j4
+
+    - name: Zip 121
+      run: |
+        mkdir -p totk121_lotuskit/exefs
+        cp build/main.npdm build/subsdk9 totk121_lotuskit/exefs
+        cp -r frontend romfs totk121_lotuskit
+        zip -r totk121_lotuskit totk121_lotuskit
+
+    - name: Create Release
+      run: |
+        git config --global --add safe.directory /__w/totk-lotuskit/totk-lotuskit
+        ./gh release create latest totk121_lotuskit.zip
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
