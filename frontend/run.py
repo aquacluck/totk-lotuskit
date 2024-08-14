@@ -25,7 +25,7 @@ class SocketAddrPresets:
 
 @dataclass
 class BackendSocketConfig:
-    bind_addr: str = SocketAddrPresets.SWITCHNET_LOCALHOST
+    bind_addr: str = SocketAddrPresets.ANYHOST
     bind_port: int = 7072
     #msg_size: int = 0x500
 

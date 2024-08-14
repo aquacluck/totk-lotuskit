@@ -58,6 +58,7 @@ jobs:
     - name: Create Release
       run: |
         git config --global --add safe.directory /__w/totk-lotuskit/totk-lotuskit
+        ./gh release delete latest -y --cleanup-tag
         ./gh release create latest totk100_lotuskit.zip totk121_lotuskit.zip
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,10 +1,12 @@
-## Building
-- edit `CMakeLists.txt` to select your game version, for now only `TOTK_100` or `TOTK_121` (yes you need cmake)
-- edit `frontend/run.py` and update `BackendSocketConfig` -- this should be your PC's LAN address which the switch will connect to. Use localhost for emulators
-- run `make` in a suitable build environment (such as [devkitPro](https://devkitpro.org/wiki/Getting_Started) [(docker)](https://hub.docker.com/u/devkitpro/) )
-- copy the output files `build/main.npdm` and `build/subsdk9` into your target's `/atmosphere/contents/0100f2c0115b6000/exefs/` folder
-- copy the `romfs` folder to your target's `/atmosphere/contents/0100f2c0115b6000/romfs/` folder and edit the config
-- run the python, load the web ui, launch the game. whistle to retry the mod<-\>python connection
+## Getting Started
+- Download the [latest build](https://github.com/aquacluck/totk-lotuskit/releases) for your game version. This is replaced with every commit, so you might want to hang on to the zip in case I break it in the future!
+- Extract the zip and edit the configs in the `romfs` folder. Copy the `romfs` and `exefs` folders into your switch sd's `/atmosphere/contents/0100f2c0115b6000/` folder.
+- Run `frontend/run.py` (you'll need a python installation) and open the web frontend at [http://127.0.0.1:7073](http://127.0.0.1:7073)
+- Run the game. By default the mod will immediately connect to the frontend, but depending on the configs in the mod `romfs` folder it can also connect when you whistle, or it can remain offline (still logging to the debug console in Ryujinx).
+
+## Building from source
+- Run `make` in a suitable build environment (such as [devkitPro](https://devkitpro.org/wiki/Getting_Started) [(docker)](https://hub.docker.com/u/devkitpro/) ) with cmake installed
+- Mod `exefs` files are at `build/main.npdm` and `build/subsdk9`, copy `romfs` configs from the repo
 
 ## Credits & Thanks
 - build + hooking + much more thanks to [exlaunch](https://github.com/shadowninja108/exlaunch) by shadow, licensed under GPL2
