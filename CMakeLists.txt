@@ -12,6 +12,9 @@ set(CMAKE_CXX_STANDARD 23)
 ## Title Id
 set(TITLE_ID 0100F2C0115B6000)
 set(CONFIG_TITLE_ID 0x${TITLE_ID})
+# Be sure to pass TOTK_VERSION
+add_compile_definitions(TOTK_VERSION=${TOTK_VERSION})
+add_compile_definitions(TOTK_${TOTK_VERSION}=1)
 
 execute_process(
   COMMAND git describe --tags --abbrev=0
@@ -20,7 +23,7 @@ execute_process(
   OUTPUT_STRIP_TRAILING_WHITESPACE
   )
 
-add_compile_definitions(TOTK_121=1 EXL_PROGRAM_ID=${CONFIG_TITLE_ID} NNSDK=1 GIT_VER="${GIT_VER}")
+add_compile_definitions(EXL_PROGRAM_ID=${CONFIG_TITLE_ID} NNSDK=1 GIT_VER="${GIT_VER}")
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/module/subsdk9.json.template ${CMAKE_CURRENT_BINARY_DIR}/subsdk9.json)
 
 ## Project sources
