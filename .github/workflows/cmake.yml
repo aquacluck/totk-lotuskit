@@ -28,8 +28,8 @@ jobs:
         wget -q https://github.com/cli/cli/releases/download/v2.54.0/gh_2.54.0_linux_amd64.tar.gz
         tar xf gh_2.54.0_linux_amd64.tar.gz
         mv ./gh_2.54.0_linux_amd64/bin/gh ./gh
-        rm -r ./gh_2.54.0_linux_amd64 gh_2.54.0_linux_amd64.tar.gz
- 
+        rm -rf ./gh_2.54.0_linux_amd64 gh_2.54.0_linux_amd64.tar.gz
+
     - name: Setup CMake
       uses: jwlawson/actions-setup-cmake@v1.13
       with:

@@ -69,6 +69,13 @@ HOOK_DEFINE_INLINE(nnMainHook) {
             LoggerConnectOnWhistleHook::Install();
         }
 
+        char do_stub_rng[2] = "0";
+        read_file(do_stub_rng, "content:/totk_lotuskit/do_stub_rng.txt", sizeof(do_stub_rng), "0");
+        if (do_stub_rng[0] == '1') {
+            StubRNG_sead::stub_value = 420; // TODO expose a setter for fun times?
+            StubRNG_sead::Install();
+        }
+
         char buf[200];
         nn::util::SNPrintf(buf, sizeof(buf), "lotuskit using ip4 addr %s, do_connect_on_bootup: %c, do_connect_on_whistle: %c", ip, do_connect_on_bootup[0], do_connect_on_whistle[0]);
         svcOutputDebugString(buf, strlen(buf));

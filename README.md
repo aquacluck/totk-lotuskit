@@ -5,7 +5,7 @@
 - Run the game. By default the mod will immediately connect to the frontend, but depending on the configs in the mod `romfs` folder it can also connect when you whistle, or it can remain offline (still logging to the debug console in Ryujinx).
 
 ## Building from source
-- Run `make` in a suitable build environment (such as [devkitPro](https://devkitpro.org/wiki/Getting_Started) [(docker)](https://hub.docker.com/u/devkitpro/) ) with cmake installed
+- Run `make` in a suitable build environment (such as [devkitPro](https://devkitpro.org/wiki/Getting_Started) or a [docker container](https://hub.docker.com/r/pixelkiri/devkitpro-alpine-switch/)) with cmake installed
 - Mod `exefs` files are at `build/main.npdm` and `build/subsdk9`, copy `romfs` configs from the repo
 
 ## Credits & Thanks

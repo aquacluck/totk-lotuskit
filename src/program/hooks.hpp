@@ -321,6 +321,15 @@ HOOK_DEFINE_TRAMPOLINE(TryGetPlayerPhysicsPosPtrHook) {
     }
 };
 
+HOOK_DEFINE_TRAMPOLINE(StubRNG_sead) {
+    static const ptrdiff_t s_offset = s_seadRandom_getU32;
+    static u32 stub_value;
+    static u32 Callback(void* param) { // sead::Random*
+        return stub_value;
+        //return Orig(param);
+    }
+};
+u32 StubRNG_sead::stub_value = 420;
 
 #if DO_XXX_ACTOR_CREATION_LOG
 HOOK_DEFINE_TRAMPOLINE(TestCreateActorHook1) {
