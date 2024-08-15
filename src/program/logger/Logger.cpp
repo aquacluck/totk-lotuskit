@@ -1,8 +1,7 @@
 #include "Logger.hpp"
 #include "nn/socket.h"
-#include "nn/socket.hpp"
-#include "nn/nifm.hpp"
-#include "nn/util.hpp"
+#include "nn/nifm.h"
+#include "nn/util.h"
 #include "lib.hpp"
 
 constexpr inline auto AF_INET = 2; // XXX domain ams::socket::Family::Af_Inet (ipv4)
@@ -103,16 +102,15 @@ void Logger::connect() {
     }
 
     const u16 bind_port = 7072;
-    in_addr hostAddress = {0};
+    nn::socket::InAddr hostAddress = {0};
     nn::socket::InetAton(this->ip, &hostAddress);
     sockaddr serverAddress = {0};
-    serverAddress.address = hostAddress;
+    serverAddress.address.s_addr = hostAddress.addr;
     serverAddress.port = nn::socket::InetHtons(bind_port);
     serverAddress.family = AF_INET;
 
-    s32 sock_errno = 0;
-    if ((sock_errno = nn::socket::Connect(mSocketFd, &serverAddress, sizeof(serverAddress))) != 0) {
-        this->logf(NS_DEFAULT_TEXT, R"("logger: socket::Connect() errno %i")", sock_errno);
+    if (nn::socket::Connect(mSocketFd, &serverAddress, sizeof(serverAddress)).IsFailure()) {
+        this->log(NS_DEFAULT_TEXT, R"("logger: socket::Connect() fail")");
         return;
     }
 

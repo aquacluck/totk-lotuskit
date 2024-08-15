@@ -1,9 +1,9 @@
 #pragma once
 #include "const_addrs.hpp"
 #include "lib.hpp"
-#include "nn.hpp"
-#include "nn/hid.hpp"
-#include "nn/util.hpp"
+#include "nn/nn.h"
+#include "nn/hid.h"
+#include "nn/util.h"
 #include "helpers/InputHelper.hpp"
 #include "helpers/ConfigHelper.hpp"
 #include "lib/util/sys/mem_layout.hpp"

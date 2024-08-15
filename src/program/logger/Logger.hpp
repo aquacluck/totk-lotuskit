@@ -2,7 +2,6 @@
 
 #include <cstdarg>
 #include <cstring>
-#include "nn/result.hpp"
 #include "structs.hpp"
 
 

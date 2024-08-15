@@ -4,8 +4,8 @@
 
 #include "base.hpp"
 
-#include <nn/ro.hpp>
-#include <nn/result.hpp>
+#include <nn/ro.h>
+#include <vapours/results.hpp>
 
 #define HOOK_DEFINE_INLINE(name)                        \
 struct name : public ::exl::hook::impl::InlineHook<name>
@@ -34,7 +34,7 @@ namespace exl::hook::impl {
             _HOOK_STATIC_CALLBACK_ASSERT();
 
             uintptr_t address = 0;
-            EXL_ASSERT(nn::ro::LookupSymbol(&address, sym).isSuccess(), "Unable to Find Address for Symbol! %s", sym);
+            EXL_ASSERT(nn::ro::LookupSymbol(&address, sym).IsSuccess(), "Unable to Find Address for Symbol! %s", sym);
 
             hook::HookInline(address, Derived::Callback);
         }

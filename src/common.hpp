@@ -2,6 +2,7 @@
 
 #include "types.h"
 
+#include <vapours/results.hpp>
 #include "lib/alloc.hpp"
 #include "lib/nx/nx.h"
 #include "lib/result.hpp"

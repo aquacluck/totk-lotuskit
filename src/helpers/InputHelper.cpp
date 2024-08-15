@@ -20,6 +20,25 @@ static const char *styleNames[] = {
         "generic controller",
 };
 
+
+inline bool isBitSet(nn::hid::NpadStyleSet style, nn::hid::NpadStyleTag index) {
+    return (style._storage[static_cast<u64>(index) / style.StorageBitCount] &
+           (static_cast<uint32_t>(1) << static_cast<u64>(index) % style.StorageBitCount)) != 0;
+}
+inline bool isBitSet(nn::hid::NpadButtonSet style, nn::hid::NpadButton index) {
+    return (style._storage[static_cast<u64>(index) / style.StorageBitCount] &
+           (static_cast<uint64_t>(1) << static_cast<u64>(index) % style.StorageBitCount)) != 0;
+}
+inline bool isBitSet(nn::util::BitFlagSet<256, nn::hid::KeyboardKey> style, nn::hid::KeyboardKey index) {
+    return (style._storage[static_cast<u64>(index) / style.StorageBitCount] &
+           (static_cast<uint64_t>(1) << static_cast<u64>(index) % style.StorageBitCount)) != 0;
+}
+inline bool isBitSet(nn::hid::MouseButtonSet style, nn::hid::MouseButton index) {
+    return (style._storage[static_cast<u64>(index) / style.StorageBitCount] &
+           (static_cast<uint32_t>(1) << static_cast<u64>(index) % style.StorageBitCount)) != 0;
+}
+
+
 nn::hid::NpadBaseState InputHelper::prevControllerState{};
 nn::hid::NpadBaseState InputHelper::curControllerState{};
 
@@ -38,20 +57,20 @@ const char *getStyleName(nn::hid::NpadStyleSet style) {
 
     s32 index = -1;
 
-    if (style.isBitSet(nn::hid::NpadStyleTag::NpadStyleFullKey)) { index = 0; }
-    if (style.isBitSet(nn::hid::NpadStyleTag::NpadStyleHandheld)) { index = 1; }
-    if (style.isBitSet(nn::hid::NpadStyleTag::NpadStyleJoyDual)) { index = 2; }
-    if (style.isBitSet(nn::hid::NpadStyleTag::NpadStyleJoyLeft)) { index = 3; }
-    if (style.isBitSet(nn::hid::NpadStyleTag::NpadStyleJoyRight)) { index = 4; }
-    if (style.isBitSet(nn::hid::NpadStyleTag::NpadStyleGc)) { index = 5; }
-    if (style.isBitSet(nn::hid::NpadStyleTag::NpadStylePalma)) { index = 6; }
-    if (style.isBitSet(nn::hid::NpadStyleTag::NpadStyleLark)) { index = 7; }
-    if (style.isBitSet(nn::hid::NpadStyleTag::NpadStyleHandheldLark)) { index = 8; }
-    if (style.isBitSet(nn::hid::NpadStyleTag::NpadStyleLucia)) { index = 9; }
-    if (style.isBitSet(nn::hid::NpadStyleTag::NpadStyleLagon)) { index = 10; }
-    if (style.isBitSet(nn::hid::NpadStyleTag::NpadStyleLager)) { index = 11; }
-    if (style.isBitSet(nn::hid::NpadStyleTag::NpadStyleSystemExt)) { index = 12; }
-    if (style.isBitSet(nn::hid::NpadStyleTag::NpadStyleSystem)) { index = 13; }
+    if (isBitSet(style, nn::hid::NpadStyleTag::NpadStyleFullKey)) { index = 0; }
+    if (isBitSet(style, nn::hid::NpadStyleTag::NpadStyleHandheld)) { index = 1; }
+    if (isBitSet(style, nn::hid::NpadStyleTag::NpadStyleJoyDual)) { index = 2; }
+    if (isBitSet(style, nn::hid::NpadStyleTag::NpadStyleJoyLeft)) { index = 3; }
+    if (isBitSet(style, nn::hid::NpadStyleTag::NpadStyleJoyRight)) { index = 4; }
+    if (isBitSet(style, nn::hid::NpadStyleTag::NpadStyleGc)) { index = 5; }
+    if (isBitSet(style, nn::hid::NpadStyleTag::NpadStylePalma)) { index = 6; }
+    if (isBitSet(style, nn::hid::NpadStyleTag::NpadStyleLark)) { index = 7; }
+    if (isBitSet(style, nn::hid::NpadStyleTag::NpadStyleHandheldLark)) { index = 8; }
+    if (isBitSet(style, nn::hid::NpadStyleTag::NpadStyleLucia)) { index = 9; }
+    if (isBitSet(style, nn::hid::NpadStyleTag::NpadStyleLagon)) { index = 10; }
+    if (isBitSet(style, nn::hid::NpadStyleTag::NpadStyleLager)) { index = 11; }
+    if (isBitSet(style, nn::hid::NpadStyleTag::NpadStyleSystemExt)) { index = 12; }
+    if (isBitSet(style, nn::hid::NpadStyleTag::NpadStyleSystem)) { index = 13; }
 
     if (index != -1) {
         return styleNames[index];
@@ -91,15 +110,15 @@ bool InputHelper::tryGetContState(nn::hid::NpadBaseState *state, ulong port) {
     isReadInput = true;
     bool result = true;
 
-    if (styleSet.isBitSet(nn::hid::NpadStyleTag::NpadStyleFullKey)) {
+    if (isBitSet(styleSet, nn::hid::NpadStyleTag::NpadStyleFullKey)) {
         nn::hid::GetNpadState((nn::hid::NpadFullKeyState *) state, port);
-    } else if (styleSet.isBitSet(nn::hid::NpadStyleTag::NpadStyleHandheld)) {
+    } else if (isBitSet(styleSet, nn::hid::NpadStyleTag::NpadStyleHandheld)) {
         nn::hid::GetNpadState((nn::hid::NpadHandheldState *) state, port);
-    } else if (styleSet.isBitSet(nn::hid::NpadStyleTag::NpadStyleJoyDual)) {
+    } else if (isBitSet(styleSet, nn::hid::NpadStyleTag::NpadStyleJoyDual)) {
         nn::hid::GetNpadState((nn::hid::NpadJoyDualState *) state, port);
-    } else if (styleSet.isBitSet(nn::hid::NpadStyleTag::NpadStyleJoyLeft)) {
+    } else if (isBitSet(styleSet, nn::hid::NpadStyleTag::NpadStyleJoyLeft)) {
         nn::hid::GetNpadState((nn::hid::NpadJoyLeftState *) state, port);
-    } else if (styleSet.isBitSet(nn::hid::NpadStyleTag::NpadStyleJoyRight)) {
+    } else if (isBitSet(styleSet, nn::hid::NpadStyleTag::NpadStyleJoyRight)) {
         nn::hid::GetNpadState((nn::hid::NpadJoyRightState *) state, port);
     } else {
         result = false;
@@ -118,48 +137,48 @@ void InputHelper::setIsHandheldMode()
     nn::hid::NpadStyleSet style = nn::hid::GetNpadStyleSet(0); // Gets player 1's controller style
     // If no controller is connected in port 0, migrate selected port to handheld 0x20
 
-    if(style.isBitSet(nn::hid::NpadStyleTag::NpadStyleFullKey)) return;
-    if(style.isBitSet(nn::hid::NpadStyleTag::NpadStyleJoyDual)) return;
-    if(style.isBitSet(nn::hid::NpadStyleTag::NpadStyleJoyLeft)) return;
-    if(style.isBitSet(nn::hid::NpadStyleTag::NpadStyleJoyRight)) return;
+    if(isBitSet(style, nn::hid::NpadStyleTag::NpadStyleFullKey)) return;
+    if(isBitSet(style, nn::hid::NpadStyleTag::NpadStyleJoyDual)) return;
+    if(isBitSet(style, nn::hid::NpadStyleTag::NpadStyleJoyLeft)) return;
+    if(isBitSet(style, nn::hid::NpadStyleTag::NpadStyleJoyRight)) return;
 
     setPort(0x20);
 }
 
 bool InputHelper::isButtonHold(nn::hid::NpadButton button) {
-    return curControllerState.mButtons.isBitSet(button);
+    return isBitSet(curControllerState.mButtons, button);
 }
 
 bool InputHelper::isButtonPress(nn::hid::NpadButton button) {
-    return curControllerState.mButtons.isBitSet(button) && !prevControllerState.mButtons.isBitSet(button);
+    return isBitSet(curControllerState.mButtons, button) && !isBitSet(prevControllerState.mButtons, button);
 }
 
 bool InputHelper::isButtonRelease(nn::hid::NpadButton button) {
-    return !curControllerState.mButtons.isBitSet(button) && prevControllerState.mButtons.isBitSet(button);
+    return !isBitSet(curControllerState.mButtons, button) && isBitSet(prevControllerState.mButtons, button);
 }
 
 bool InputHelper::isKeyHold(nn::hid::KeyboardKey key) {
-    return curKeyboardState.keys.isBitSet(key);
+    return isBitSet(curKeyboardState.mKeys, key);
 }
 
 bool InputHelper::isKeyPress(nn::hid::KeyboardKey key) {
-    return curKeyboardState.keys.isBitSet(key) && !prevKeyboardState.keys.isBitSet(key);
+    return isBitSet(curKeyboardState.mKeys, key) && !isBitSet(prevKeyboardState.mKeys, key);
 }
 
 bool InputHelper::isKeyRelease(nn::hid::KeyboardKey key) {
-    return !curKeyboardState.keys.isBitSet(key) && prevKeyboardState.keys.isBitSet(key);
+    return !isBitSet(curKeyboardState.mKeys, key) && isBitSet(prevKeyboardState.mKeys, key);
 }
 
 bool InputHelper::isMouseHold(nn::hid::MouseButton button) {
-    return curMouseState.buttons.isBitSet(button);
+    return isBitSet(curMouseState.buttons, button);
 }
 
 bool InputHelper::isMousePress(nn::hid::MouseButton button) {
-    return curMouseState.buttons.isBitSet(button) && !prevMouseState.buttons.isBitSet(button);
+    return isBitSet(curMouseState.buttons, button) && !isBitSet(prevMouseState.buttons, button);
 }
 
 bool InputHelper::isMouseRelease(nn::hid::MouseButton button) {
-    return !curMouseState.buttons.isBitSet(button) && prevMouseState.buttons.isBitSet(button);
+    return !isBitSet(curMouseState.buttons, button) && isBitSet(prevMouseState.buttons, button);
 }
 
 void InputHelper::getMouseCoords(float *x, float *y) {
