@@ -1,0 +1,3 @@
+[submodule "dt_totk"]
+	path = dt_totk
+	url = https://github.com/dt-12345/totk.git
