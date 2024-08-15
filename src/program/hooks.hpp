@@ -1,10 +1,11 @@
 #pragma once
-
 #include "const_addrs.hpp"
 #include "lib.hpp"
+#include "nn.hpp"
 #include "nn/hid.hpp"
 #include "nn/util.hpp"
 #include "helpers/InputHelper.hpp"
+#include "helpers/ConfigHelper.hpp"
 #include "lib/util/sys/mem_layout.hpp"
 #include "structs.hpp"
 #include "types.h"
@@ -21,8 +22,13 @@
 #define DO_VFR_MULTIPLIERS_LOG 0
 #define DO_XXX_ACTOR_CREATION_LOG 1
 
-uintptr_t main_offset = 0; // set in exl_main
-Logger* main_logger; // set in exl_main
+// global state owned by nnMainHook (at the bottom!)
+struct nnMainHookState_t {
+    uintptr_t main_offset;
+    Logger* main_logger;
+};
+nnMainHookState_t* nnMainHookState = nullptr;
+
 extern ModCommand_Savestate_ActorPos g_ModCommand_Savestate_ActorPos[5]; // XXX hooks.hpp logger.cpp trash glue
 
 const float PLAYER_PHYSICS_HEIGHT_OFFSET = 0.9; // constant offset between pos32/pos64
@@ -38,29 +44,13 @@ ActorBase* CarryBox;
 ActorBase* ThrowBox;
 
 
-
-// this function actually exists in 1.0.0 but is inlined in later versions so I just recreated it for simplicity
-// 0x71006fdc84 on 1.0.0
-/*
-ActorBase * GetChild(ActorMgr& mgr, u32 index, ActorBase &parent) {
-    u32 idx = index & 0xFFFF;
-    if (mgr.count <= idx) {
-        return mgr.array[0].child;
-    }
-    if (mgr.array[idx].parent == &parent) {
-        return mgr.array[idx].child;
-    }
-
-    return nullptr;
-}
-*/
-
 HOOK_DEFINE_TRAMPOLINE(LoggerConnectOnWhistleHook) {
     static const ptrdiff_t s_offset = s_ExecutePlayerWhistle_Enter;
     static void Callback(void* param) {
+        auto main_logger = nnMainHookState->main_logger;
         main_logger->log(NS_DEFAULT_TEXT, R"("trying frontend connect() ")");
         main_logger->connect();
-        main_logger->logf(NS_DEFAULT_TEXT, R"("main_offset %p")", main_offset);
+        main_logger->logf(NS_DEFAULT_TEXT, R"("main_offset %p")", nnMainHookState->main_offset);
 
         Orig(param);
     }
@@ -69,6 +59,7 @@ HOOK_DEFINE_TRAMPOLINE(LoggerConnectOnWhistleHook) {
 HOOK_DEFINE_TRAMPOLINE(ActorRelationAddHook) {
     static const ptrdiff_t s_offset = s_ActorMgr_addActorRelation;
     static u32 Callback(ActorMgr &actor_mgr, ActorBase &parentBase, ActorBase &childBase) {
+        auto main_logger = nnMainHookState->main_logger;
         IActor *parent = &(parentBase.mIActor);
         IActor *child = &(childBase.mIActor);
 
@@ -151,6 +142,7 @@ HOOK_DEFINE_TRAMPOLINE(ActorRelationAddHook) {
 HOOK_DEFINE_TRAMPOLINE(ActorRelationRemoveHook) {
     static const ptrdiff_t s_offset = s_ActorMgr_resolveActorRelation;
     static u32 Callback(ActorMgr &actor_mgr, ActorBase &parentBase, ActorBase &childBase) {
+        auto main_logger = nnMainHookState->main_logger;
         IActor *parent = &(parentBase.mIActor);
         IActor *child = &(childBase.mIActor);
 
@@ -184,6 +176,7 @@ HOOK_DEFINE_TRAMPOLINE(ActorRelationRemoveHook) {
 HOOK_DEFINE_TRAMPOLINE(WorldManagerModuleBaseProcHook) {
     static const ptrdiff_t s_offset = s_WorldManagerModule_BaseProc;
     static void Callback(double self, double param_2, double param_3, double param_4, void *wmmodule, void *param_6) {
+        auto main_logger = nnMainHookState->main_logger;
         InputHelper::updatePadState();
 
         if (Player == nullptr) {
@@ -250,7 +243,7 @@ HOOK_DEFINE_TRAMPOLINE(WorldManagerModuleBaseProcHook) {
         // Both raw and cooked are affected by performance:
         // On 1.2.1 it will switch to 1.5 0.05 during heavy load. That's 1.5x the normal duration, or 0.05 = 1/20 seconds.
         // 1.0 all seems the same. I thought only 1.0 was locked between 20fps and 30fps?
-        VFRMgr** vfr_mgr = (VFRMgr**)(main_offset + s_VFRMgr_sInstance);
+        VFRMgr** vfr_mgr = (VFRMgr**)(nnMainHookState->main_offset + s_VFRMgr_sInstance);
         //main_logger->log("vfr_mgr %p -> %p", vfr_mgr, *vfr_mgr)
         if (DO_VFR_FRAME_LOG) {
             main_logger->logf(NS_VFRMGR, R"({"vfr_frame": [%f, %f, %f, %f, %f] })", (*vfr_mgr)->mRawDeltaFrame, (*vfr_mgr)->mRawDeltaTime, (*vfr_mgr)->mDeltaFrame, (*vfr_mgr)->mDeltaTime, (*vfr_mgr)->mIntervalValue);
@@ -278,6 +271,7 @@ HOOK_DEFINE_TRAMPOLINE(WorldManagerModuleBaseProcHook) {
 HOOK_DEFINE_TRAMPOLINE(TryGetPlayerPhysicsPosPtrHook) {
     static const ptrdiff_t s_offset = s_tryGetPlayerPhysicsPosPtrHook;
     static void Callback(void* self, void* param_2, hknpMotion* hkmotion, hknpMotion* motion_pool) {
+        auto main_logger = nnMainHookState->main_logger;
 
         if (DO_PHYSICS_SPAM_LOG) {
             // frontend proxy(?) can't keep up with this
@@ -340,6 +334,7 @@ HOOK_DEFINE_TRAMPOLINE(TestCreateActorHook1) {
         undefined8 param_10,void *param_11,u8 param_12,undefined4 param_13_00,int *param_13,
         undefined8 *param_14,undefined4 param_16,undefined4 param_17,undefined8 param_15, undefined param_19) {
 
+        auto main_logger = nnMainHookState->main_logger;
         main_logger->logf(NS_ACTOR, R"({"name": "%s", "actor_op": "create_sync1"})", *param_4); // only Obj_OneTouch_Connection, no overlap
 
         return Orig(param_1, param_2, param_3, param_4, param_5, param_6, param_7, param_8, param_9, param_10, param_11, param_12, param_13_00, param_13, param_14, param_16, param_17, param_15, param_19);
@@ -355,6 +350,7 @@ HOOK_DEFINE_TRAMPOLINE(TestCreateActorHook2) {
         undefined8 param_10,void *param_11,u8 param_12,undefined4 param_13_00,int *param_13,
         undefined8 *param_14,undefined4 param_16,undefined4 param_17,undefined8 param_15, undefined param_19) {
 
+        auto main_logger = nnMainHookState->main_logger;
         main_logger->logf(NS_ACTOR, R"({"name": "%s", "actor_op": "create_idk2"})", *param_4); // XXX never hit?
 
         return Orig(param_1, param_2, param_3, param_4, param_5, param_6, param_7, param_8, param_9, param_10, param_11, param_12, param_13_00, param_13, param_14, param_16, param_17, param_15, param_19);
@@ -370,6 +366,7 @@ HOOK_DEFINE_TRAMPOLINE(TestCreateActorHook3) {
         undefined4 param_16,undefined4 param_17,undefined8 param_15,undefined param_19) {
 
         // only relation names (eg fused rocks, fused wings, but weird stuff too like quickmenu-icon-screenshotting and pause-actor instantiations). no overlap with other hooks
+        auto main_logger = nnMainHookState->main_logger;
         main_logger->logf(NS_ACTOR, R"({"name": "%s", "actor_op": "create_relation"})", *param_4);
 
         return Orig(param_1, param_2, param_3, param_4, param_5, param_6, param_7, param_8, param_9, param_10, param_11, param_12, param_13_00, param_13, param_14, param_16, param_17, param_15, param_19);
@@ -381,6 +378,8 @@ HOOK_DEFINE_TRAMPOLINE(TestCreateActorHook4) {
     static long Callback
         (void* actorInstanceMgr, char** actorName, Vector3f* pos, void* param_4, undefined4 param_5, PreActor* preActor,
         void* actorObserver, void* param_8, u8 param_9, undefined4* param_10, PreActor** destPreActor) {
+
+        auto main_logger = nnMainHookState->main_logger;
 
         // inject our own dest pointer if needed
         PreActor* pa = nullptr;
@@ -418,8 +417,92 @@ HOOK_DEFINE_TRAMPOLINE(TestCreateActorHook5) {
 
     static long Callback(long **param_1,char **param_2,long param_3,long param_4,long param_5,undefined8 param_6, int *param_7) {
         // few actors at bootup: ReactionHit ReactionField Chemical EffectUI SpecialPower WakeBoardRope
+        auto main_logger = nnMainHookState->main_logger;
         main_logger->logf(NS_ACTOR, R"({"name": "%s", "actor_op": "create_sync"})", *param_2);
         return Orig(param_1, param_2, param_3, param_4, param_5, param_6, param_7);
     }
 };
 #endif
+
+
+// this function actually exists in 1.0.0 but is inlined in later versions so I just recreated it for simplicity
+// 0x71006fdc84 on 1.0.0
+/*
+ActorBase * GetChild(ActorMgr& mgr, u32 index, ActorBase &parent) {
+    u32 idx = index & 0xFFFF;
+    if (mgr.count <= idx) {
+        return mgr.array[0].child;
+    }
+    if (mgr.array[idx].parent == &parent) {
+        return mgr.array[idx].child;
+    }
+
+    return nullptr;
+}
+*/
+
+
+HOOK_DEFINE_INLINE(nnMainHook) {
+    static const ptrdiff_t s_offset = s_nnMain_preMainLoop; // Steal execution from nnMain right before it jumps into the game
+    static nnMainHookState_t main_state;
+    static void Callback(exl::hook::InlineCtx* ctx) {
+        // Effective entry point after sdk init
+
+        nnMainHookState = &main_state;
+        main_state.main_offset = exl::util::GetMainModuleInfo().m_Total.m_Start;
+
+        ActorRelationAddHook::Install();
+        ActorRelationRemoveHook::Install();
+        WorldManagerModuleBaseProcHook::Install();
+        TryGetPlayerPhysicsPosPtrHook::Install();
+
+#if DO_XXX_ACTOR_CREATION_LOG
+        TestCreateActorHook1::Install();
+        TestCreateActorHook2::Install();
+        TestCreateActorHook3::Install();
+        TestCreateActorHook4::Install();
+        TestCreateActorHook5::Install();
+#endif
+
+        // figure out where+when to connect
+        char ip[16] = "";
+        ConfigHelper::ReadFile(ip, "content:/totk_lotuskit/server_ip.txt", sizeof(ip), "127.0.0.1");
+        bool do_connect_on_whistle = ConfigHelper::ReadFileFlag("content:/totk_lotuskit/do_connect_on_whistle.txt", true);
+        bool do_connect_on_bootup = ConfigHelper::ReadFileFlag("content:/totk_lotuskit/do_connect_on_bootup.txt", true);
+        bool do_stub_rng = ConfigHelper::ReadFileFlag("content:/totk_lotuskit/do_stub_rng.txt", false);
+
+        if (do_connect_on_whistle) {
+            LoggerConnectOnWhistleHook::Install();
+        }
+
+        if (do_stub_rng) {
+            StubRNG_sead::stub_value = 420; // TODO expose frontend setter instead of file flag
+            StubRNG_sead::Install();
+        }
+
+        char buf[200];
+        nn::util::SNPrintf(buf, sizeof(buf), "lotuskit using ip4 addr %s, do_connect_on_bootup: %d, do_connect_on_whistle: %d", ip, do_connect_on_bootup, do_connect_on_whistle);
+        svcOutputDebugString(buf, strlen(buf));
+
+        // init logger socket
+        auto main_logger = new Logger();
+        main_state.main_logger = main_logger;
+        main_logger->mState = LoggerState::UNINITIALIZED;
+        main_logger->mDoOpenSocket = true; // prepare socket
+        main_logger->mDoLogSocket = true; // actually send to socket
+        main_logger->mDoHackCommandSocket = true; // also abuse logging socket to recv commands
+        strcpy(main_logger->ip, ip);
+        main_logger->init();
+        if (do_connect_on_bootup) {
+            main_logger->connect();
+        }
+
+        // TODO centralize on-connect info dump, or allow frontend to request it
+        main_logger->logf(NS_DEFAULT_TEXT, R"("main_offset %p")", main_state.main_offset);
+
+        InputHelper::initKBM();
+        InputHelper::setPort(0); // default controller port
+    }
+};
+struct nnMainHookState_t nnMainHook::main_state = {0};
+
