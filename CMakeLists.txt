@@ -49,6 +49,16 @@ add_compile_definitions(
 )
 include_directories(${PROJECT_SOURCE_DIR}/dt_totk/lib/NintendoSDK/include)
 
+# zstd
+include_directories(${PROJECT_SOURCE_DIR}/dt_totk/lib/zstd/lib)
+#include_directories(${PROJECT_SOURCE_DIR}/dt_totk/lib/zstd/lib/common)
+#include_directories(${PROJECT_SOURCE_DIR}/dt_totk/lib/zstd/lib/compress)
+#include_directories(${PROJECT_SOURCE_DIR}/dt_totk/lib/zstd/lib/decompress)
+
+# sead
+add_compile_definitions(SEAD_ZSTD=1)
+include_directories(${PROJECT_SOURCE_DIR}/dt_totk/lib/sead/include)
+
 ## subsdk9
 set(CMAKE_EXECUTABLE_SUFFIX ".elf")
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
