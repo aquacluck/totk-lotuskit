@@ -13,6 +13,8 @@
 #include <string.h>
 #define _USE_MATH_DEFINES
 #include <math.h>
+#include "random/seadRandom.h"
+#include "random/seadGlobalRandom.h"
 
 // feature flags to minimize log noise and similar clutter/risk/etc
 #define DO_RELATION_LOG 0
@@ -24,7 +26,6 @@
 
 // global state owned by nnMainHook (at the bottom!)
 struct nnMainHookState_t {
-    uintptr_t main_offset;
     Logger* main_logger;
 };
 nnMainHookState_t* nnMainHookState = nullptr;
@@ -44,13 +45,45 @@ ActorBase* CarryBox;
 ActorBase* ThrowBox;
 
 
+namespace BSSHelper {
+    static uintptr_t main_offset = 0; // set in nnMainHook
+
+    /*
+    template <typename T>
+    class BSSPtr {
+        int static_offset;
+        public:
+        T* operator*() {
+            T** location = (T**)(main_offset + static_offset);
+            return *location;
+        }
+        void operator=(int v) { static_offset = v; }
+        BSSPtr(void) {}
+        BSSPtr(int v) { static_offset = v; }
+    };
+    */
+}
+
+
 HOOK_DEFINE_TRAMPOLINE(LoggerConnectOnWhistleHook) {
     static const ptrdiff_t s_offset = s_ExecutePlayerWhistle_Enter;
     static void Callback(void* param) {
         auto main_logger = nnMainHookState->main_logger;
         main_logger->log(NS_DEFAULT_TEXT, R"("trying frontend connect() ")");
         main_logger->connect();
-        main_logger->logf(NS_DEFAULT_TEXT, R"("main_offset %p")", nnMainHookState->main_offset);
+        main_logger->logf(NS_DEFAULT_TEXT, R"("main_offset %p")", BSSHelper::main_offset);
+
+        //sead::GlobalRandom* grand = *BSSHelper::BSSPtr<sead::GlobalRandom>(s_seadGlobalRandom_sInstance);
+        //sead::GlobalRandom* grand = sead::GlobalRandom::instance();
+        //main_logger->logf(NS_DEFAULT_TEXT, R"("great %p %d")", grand, grand->getU32());
+
+        //VFRMgr** vfr_mgr = (VFRMgr**)(BSSHelper::main_offset + s_VFRMgr_sInstance);
+        //BSSHelper::BSSPtr<VFRMgr> vfr_mgr2 = s_VFRMgr_sInstance;
+        //VFRMgr* vfr_mgr3 = *BSSHelper::BSSPtr<VFRMgr>(s_VFRMgr_sInstance);
+
+        //main_logger->logf(NS_DEFAULT_TEXT, R"("vfr_mgr  %p -> %p")", vfr_mgr, *vfr_mgr);
+        //main_logger->logf(NS_DEFAULT_TEXT, R"("vfr_mgr2 %p")", *vfr_mgr2);
+        //main_logger->logf(NS_DEFAULT_TEXT, R"("vfr_mgr3 %p")", vfr_mgr3);
 
         Orig(param);
     }
@@ -243,7 +276,7 @@ HOOK_DEFINE_TRAMPOLINE(WorldManagerModuleBaseProcHook) {
         // Both raw and cooked are affected by performance:
         // On 1.2.1 it will switch to 1.5 0.05 during heavy load. That's 1.5x the normal duration, or 0.05 = 1/20 seconds.
         // 1.0 all seems the same. I thought only 1.0 was locked between 20fps and 30fps?
-        VFRMgr** vfr_mgr = (VFRMgr**)(nnMainHookState->main_offset + s_VFRMgr_sInstance);
+        VFRMgr** vfr_mgr = (VFRMgr**)(BSSHelper::main_offset + s_VFRMgr_sInstance);
         //main_logger->log("vfr_mgr %p -> %p", vfr_mgr, *vfr_mgr)
         if (DO_VFR_FRAME_LOG) {
             main_logger->logf(NS_VFRMGR, R"({"vfr_frame": [%f, %f, %f, %f, %f] })", (*vfr_mgr)->mRawDeltaFrame, (*vfr_mgr)->mRawDeltaTime, (*vfr_mgr)->mDeltaFrame, (*vfr_mgr)->mDeltaTime, (*vfr_mgr)->mIntervalValue);
@@ -315,15 +348,32 @@ HOOK_DEFINE_TRAMPOLINE(TryGetPlayerPhysicsPosPtrHook) {
     }
 };
 
-HOOK_DEFINE_TRAMPOLINE(StubRNG_sead) {
-    static const ptrdiff_t s_offset = s_seadRandom_getU32;
+HOOK_DEFINE_TRAMPOLINE(HookRNG_sead_u32) {
+    static bool do_log;
+    static bool do_stub;
     static u32 stub_value;
+
+    static const ptrdiff_t s_offset = s_seadRandom_getU32;
     static u32 Callback(void* param) { // sead::Random*
-        return stub_value;
-        //return Orig(param);
+        u32 ret;
+        if (do_stub) {
+            ret = stub_value;
+            if (do_log) {
+                nnMainHookState->main_logger->logf(NS_DEFAULT_TEXT, R"("sead::Random::u32(%p) ~~ %d")", param, ret);
+            }
+        } else {
+            ret = Orig(param);
+            if (do_log) {
+                nnMainHookState->main_logger->logf(NS_DEFAULT_TEXT, R"("sead::Random::u32(%p) => %d")", param, ret);
+            }
+        }
+        return ret;
     }
 };
-u32 StubRNG_sead::stub_value = 420;
+bool HookRNG_sead_u32::do_log = false;
+bool HookRNG_sead_u32::do_stub = false;
+u32 HookRNG_sead_u32::stub_value = 420;
+
 
 #if DO_XXX_ACTOR_CREATION_LOG
 HOOK_DEFINE_TRAMPOLINE(TestCreateActorHook1) {
@@ -449,7 +499,7 @@ HOOK_DEFINE_INLINE(nnMainHook) {
         // Effective entry point after sdk init
 
         nnMainHookState = &main_state;
-        main_state.main_offset = exl::util::GetMainModuleInfo().m_Total.m_Start;
+        BSSHelper::main_offset = exl::util::GetMainModuleInfo().m_Total.m_Start;
 
         ActorRelationAddHook::Install();
         ActorRelationRemoveHook::Install();
@@ -469,15 +519,22 @@ HOOK_DEFINE_INLINE(nnMainHook) {
         ConfigHelper::ReadFile(ip, "content:/totk_lotuskit/server_ip.txt", sizeof(ip), "127.0.0.1");
         bool do_connect_on_whistle = ConfigHelper::ReadFileFlag("content:/totk_lotuskit/do_connect_on_whistle.txt", true);
         bool do_connect_on_bootup = ConfigHelper::ReadFileFlag("content:/totk_lotuskit/do_connect_on_bootup.txt", true);
-        bool do_stub_rng = ConfigHelper::ReadFileFlag("content:/totk_lotuskit/do_stub_rng.txt", false);
 
         if (do_connect_on_whistle) {
             LoggerConnectOnWhistleHook::Install();
         }
 
-        if (do_stub_rng) {
-            StubRNG_sead::stub_value = 420; // TODO expose frontend setter instead of file flag
-            StubRNG_sead::Install();
+        // Setup RNG hooks
+        // TODO hook more methods
+        // TODO expose frontend setters for manip?
+        HookRNG_sead_u32::do_log = ConfigHelper::ReadFileFlag("content:/totk_lotuskit/do_log_rng.txt", false);
+        HookRNG_sead_u32::do_stub = ConfigHelper::ReadFileFlag("content:/totk_lotuskit/do_stub_rng.txt", false);
+        HookRNG_sead_u32::stub_value = 420;
+        if (HookRNG_sead_u32::do_log || HookRNG_sead_u32::do_stub) {
+            // TODO move hooking decisions+actions into hook definition?
+            // introspected un/re hook toggles in the frontend would be nice as a general debug thing, can leave a ton of hooks just idling for free that way...
+            // also worth considering if fancy hook classes make a good backend config model
+            HookRNG_sead_u32::Install();
         }
 
         char buf[200];
@@ -498,7 +555,7 @@ HOOK_DEFINE_INLINE(nnMainHook) {
         }
 
         // TODO centralize on-connect info dump, or allow frontend to request it
-        main_logger->logf(NS_DEFAULT_TEXT, R"("main_offset %p")", main_state.main_offset);
+        main_logger->logf(NS_DEFAULT_TEXT, R"("main_offset %p")", BSSHelper::main_offset);
 
         InputHelper::initKBM();
         InputHelper::setPort(0); // default controller port

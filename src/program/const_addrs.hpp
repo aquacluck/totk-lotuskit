@@ -8,6 +8,8 @@ static const int s_ActorMgr_resolveActorRelation = 0x00ab8610;
 static const int s_VFRMgr_sInstance = 0x04661598;
 static const int s_nnMain_preMainLoop = 0x00e998b8; // strb w8 ,[x21 , #0x8 ]
 static const int s_ExecutePlayerWhistle_Enter = 0x01d2e1c4;
+
+//static const int s_seadGlobalRandom_sInstance = nullptr; // FIXME
 static const int s_seadRandom_getU32 = 0x010df518;
 
 //static const int s_xxx_Drown = 0x01c05420;
@@ -37,6 +39,8 @@ static const int s_ActorMgr_resolveActorRelation = 0x008eee60;
 static const int s_VFRMgr_sInstance = 0x04725bb8;
 static const int s_nnMain_preMainLoop = 0x00e7ac48; // strb w8 ,[x21 , #0x8 ]. blr at 7100e7ac60 is point of no return? not sure what that call is
 static const int s_ExecutePlayerWhistle_Enter = 0x01d8feb4;
+
+static const int s_seadGlobalRandom_sInstance = 0x04716f08;
 static const int s_seadRandom_getU32 = 0x010f1c6c;
 
 //static const int s_xxx_Drown = 0x01c59f60;
