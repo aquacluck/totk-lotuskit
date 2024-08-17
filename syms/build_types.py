@@ -2,14 +2,27 @@ from __future__ import annotations
 from typing import *
 from dataclasses import dataclass
 from collections import defaultdict
+import os.path
 
-from build_helper_itanium_demangler import Node as SymAST
+from build_helper_itanium_demangler import Node, QualNode, CastNode, FuncNode, ArrayNode, MemberNode
 from build_helper_itanium_demangler import parse as sym_demangle
+
+current_sym_file = None
+def begin_sym_file(dsl__file__):
+    # record current file to annotate RuntimeSymbol
+    abs_dir_prefix = os.path.abspath(os.path.dirname(__file__)) # XXX don't move this into a folder
+    dsl_relative = os.path.abspath(os.path.dirname(dsl__file__)).removeprefix(abs_dir_prefix).strip("/\\")
+    dsl_relative_parts = os.path.split(dsl_relative)
+    output_basename = os.path.basename(dsl__file__).removesuffix(".py")
+    output = dsl_relative_parts + (output_basename,) # eg ('sead', 'heap', 'seadHeapMgr')
+
+    global current_sym_file
+    current_sym_file = output
 
 
 class MagicWords:
-    ALL = "all"
-    SKIP = "skip"
+    ALL = "ALL"
+    SKIP = "SKIP"
 
 class NSOModule:
     # separate sym_map per module
@@ -20,9 +33,14 @@ class NSOModule:
 
     def __new__(cls, *args, **kwargs) -> RuntimeSymbol:
         # sugar to accumulate symbols in cls.sym_map
-        sym = RuntimeSymbol(*args, **kwargs, module=cls)
+        global current_sym_file
+        sym = RuntimeSymbol(*args, **kwargs, module=cls, source_path=current_sym_file)
         cls.sym_map[sym.name] = sym
         return sym
+
+    @classmethod
+    def unique_source_paths(cls) -> Tuple[Tuple[str]]:
+        return tuple(sorted({ s.source_path for s in cls.sym_map.values() }))
 
 class RTLD(NSOModule):
     nso_filename = "rtld"
@@ -92,12 +110,46 @@ class RuntimeSymbol:
     mangled: str
     address: VersionedAddress
     module: NSOModule
+    source_path: Tuple[str]
 
     def __post_init__(self):
         # set derived
-        self.ast: SymAST = sym_demangle(self.mangled)
+        self.ast: Node = sym_demangle(self.mangled)
         self.name = str(self.ast)
         self.address = VersionedAddress.from_pydsl(self.address)
+        self._derive_ns()
+
+    def __hash__(self):
+        return hash(self.mangled)
+
+    def _derive_ns(self):
+        self.ns = () # default: no namespace
+        self.subject_identifier = None # the "basename" identifier, eg the function name
+
+        if not isinstance(self.ast, FuncNode):
+            # handle more when it comes up
+            e = NotImplementedError(f"unsupported root type {type(self.ast)}: {self.name}")
+            breakpoint(); raise e
+
+        namenode = self.ast.name
+        if namenode.kind == "name":
+            self.subject_identifier = namenode.value
+            return # unqualified: no namespace
+
+        if namenode.kind != "qual_name":
+            e = NotImplementedError(f"unsupported name kind {namenode.kind} in {type(self.ast)}: {self.name}")
+            breakpoint(); raise e
+
+        ns = []
+        for ns_identifier in namenode.value[:-1]:
+            if ns_identifier.kind != "name":
+                e = NotImplementedError(f"unsupported ns_identifier kind {ns_identifier.kind} in {type(self.ast)}: {self.name}")
+                breakpoint(); raise e
+            ns.append(ns_identifier.value)
+
+        self.subject_identifier = namenode.value[-1].value
+        self.ns = tuple(ns)
+        #breakpoint(); "happy path debug"
 
 
 class VersionedAddress:
@@ -110,7 +162,7 @@ class VersionedAddress:
         for k, v in raw.items():
             if k == MagicWords.ALL:
                 # dict keys can be specified in any order.
-                # ALL_TOKEN assigns to all nullptr'd versions at that time.
+                # ALL assigns to all nullptr'd versions at that time.
                 for ka in GameVersion.ALL_STR:
                     if ret[ka] == 0:
                         ret[ka] = v
@@ -123,13 +175,13 @@ class VersionedAddress:
         self.version_map: defaultdict[GameVersion, int] = defaultdict(int)
 
     def __getitem__(self, key) -> int:
-        if type(key) == str:
+        if isinstance(key, str):
             key: int = GameVersion.to_i(key)
         GameVersion.to_str(key) # assert
         return self.version_map[key]
 
     def __setitem__(self, key, value):
-        if type(key) == str:
+        if isinstance(key, str):
             key: int = GameVersion.to_i(key)
         GameVersion.to_str(key) # assert
         self.version_map[key] = value
