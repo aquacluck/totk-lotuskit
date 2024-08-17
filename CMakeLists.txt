@@ -27,20 +27,27 @@ add_compile_definitions(EXL_PROGRAM_ID=${CONFIG_TITLE_ID} NNSDK=1 GIT_VER="${GIT
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/module/subsdk9.json.template ${CMAKE_CURRENT_BINARY_DIR}/subsdk9.json)
 
 ## Project sources
-include_directories(${PROJECT_SOURCE_DIR}/src/lib/zip)
-include_directories(${PROJECT_SOURCE_DIR}/src/lib)
-include_directories(${PROJECT_SOURCE_DIR}/src/nvn)
-include_directories(${PROJECT_SOURCE_DIR}/src/nn)
-include_directories(${PROJECT_SOURCE_DIR}/src/program)
-include_directories(${PROJECT_SOURCE_DIR}/src/sead)
 include_directories(${PROJECT_SOURCE_DIR}/src)
+include_directories(${PROJECT_SOURCE_DIR}/src/lib)
+include_directories(${PROJECT_SOURCE_DIR}/src/program)
 file(GLOB_RECURSE SOURCES_ASM ${PROJECT_SOURCE_DIR}/src/*.s)
 file(GLOB_RECURSE SOURCES_H ${PROJECT_SOURCE_DIR}/src/*.h ${PROJECT_SOURCE_DIR}/src/*.hpp)
 file(GLOB_RECURSE SOURCES_CXX ${PROJECT_SOURCE_DIR}/src/*.cpp ${PROJECT_SOURCE_DIR}/src/*.c)
-file(GLOB_RECURSE LOCAL_LIBRARIES ${PROJECT_SOURCE_DIR}/libs/*.a)
 
 ## Include nx tools
 include(${CMAKE_SOURCE_DIR}/cmake/SwitchTools.cmake)
+
+# nn
+add_compile_definitions(
+  NN_SDK_MAJOR=15
+  NN_SDK_MINOR=3
+  NN_SDK_PATCH=1
+  NN_SDK_TYPE="Release"
+  NN_WARE_MAJOR=1
+  NN_WARE_MINOR=6
+  NN_WARE_PATCH=1
+)
+include_directories(${PROJECT_SOURCE_DIR}/dt_totk/lib/NintendoSDK/include)
 
 ## subsdk9
 set(CMAKE_EXECUTABLE_SUFFIX ".elf")
@@ -48,7 +55,6 @@ set(CMAKE_EXECUTABLE_SUFFIX ".elf")
 #set_source_files_properties(${SOURCES_CXX} PROPERTIES LANGUAGE CXX)
 add_executable(subsdk9 ${SOURCES_ASM} ${SOURCES_C} ${SOURCES_H} ${SOURCES_CXX})
 add_compile_definitions(EXL_LOAD_KIND=Module EXL_LOAD_KIND_ENUM=2)
-target_link_libraries(subsdk9 ${LOCAL_LIBRARIES})
 
 ## Prepare subsdk ld
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/module/subsdk9.specs.template ${CMAKE_CURRENT_BINARY_DIR}/subsdk9.specs)
