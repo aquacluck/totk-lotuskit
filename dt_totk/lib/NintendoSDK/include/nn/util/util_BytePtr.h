@@ -32,8 +32,8 @@ public:
     bool IsAligned(size_t alignment) const;
 
     BytePtr& AlignUp(size_t alignment) {
-        uintptr_t& ptr = reinterpret_cast<uintptr_t&>(m_Ptr);
-        ptr = align_up(ptr, alignment);
+        //uintptr_t& ptr = reinterpret_cast<uintptr_t&>(m_Ptr); error: dereferencing type-punned pointer will break strict-aliasing rules
+        align_up((void*)m_Ptr, alignment);
         return *this;
     }
 

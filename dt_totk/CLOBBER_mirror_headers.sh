@@ -53,9 +53,10 @@ cp tmpgit/lib/zstd/lib/*.h lib/zstd/lib
 
 
 ### Apply patches
+# gen: git diff --binary lib > patches/0001-nn-init.patch
 echo
 echo "patching..."
 for patchfile in patches/*.patch; do
-    # TODO
-    echo "$patchfile"
+    echo "git apply $patchfile"
+    git apply $patchfile
 done

@@ -15,7 +15,7 @@ struct ResourceStatistics;
 #if NN_SDK_VER >= NN_MAKE_VER(7, 0, 0)
 struct InAddr {
     u32 addr;
-}
+};
 #else
 using InAddr = ::in_addr;
 #endif
@@ -142,8 +142,8 @@ void nnsocketPoll(pollfd*, ulong, int);
 void nnsocketFcntl(int, int, ...);
 void nnsocketInetPton(int, const char*, void*);
 const char* nnsocketInetNtop(int af, const void* src, char* dst, u32 size);
-s32 nnsocketInetAton(const char* addressStr, InAddr* addressOut);
-char* nnsocketInetNtoa(InAddr);
+s32 nnsocketInetAton(const char* addressStr, nn::socket::InAddr* addressOut);
+char* nnsocketInetNtoa(nn::socket::InAddr);
 u16 nnsocketInetHtons(u16 val);
 u32 nnsocketInetHtonl(u32);
 u16 nnsocketInetNtohs(u16);
