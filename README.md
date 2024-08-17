@@ -18,6 +18,8 @@
 - socket+logging bits+pieces from the [Skyline project](https://github.com/skyline-dev/skyline) licensed under MIT
 - [frontend font](https://github.com/adobe-fonts/source-code-pro) licensed under OFL
 - [preact](https://github.com/preactjs/preact) licensed under MIT and [htm](https://github.com/developit/htm) licensed under Apache2.0, sourced from [esm builds](https://esm.sh)
+- https://github.com/whitequark/python-itanium_demangler
+- https://github.com/fruityloops1/zeldar
 
 ## LunaKit Credits
 - [Amethyst-szs](https://github.com/Amethyst-szs): LunaKit Creator

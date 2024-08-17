@@ -1,5 +1,7 @@
 build/*
 dt_totk/tmpgit
 
+__pycache__
+
 note/*
 note.txt
