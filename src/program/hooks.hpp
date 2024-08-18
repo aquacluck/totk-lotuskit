@@ -13,9 +13,12 @@
 #include <string.h>
 #define _USE_MATH_DEFINES
 #include <math.h>
-#include "sym/random/seadRandom.h"
-#include "random/seadRandom.h"
-#include "random/seadGlobalRandom.h"
+
+//#include "random/seadGlobalRandom.h"
+//#include "random/seadRandom.h"
+
+#include "sym/game/wm/WorldManagerModule.h"
+
 
 // feature flags to minimize log noise and similar clutter/risk/etc
 #define DO_RELATION_LOG 0
@@ -73,7 +76,6 @@ HOOK_DEFINE_TRAMPOLINE(LoggerConnectOnWhistleHook) {
         main_logger->log(NS_DEFAULT_TEXT, R"("trying frontend connect() ")");
         main_logger->connect();
         main_logger->logf(NS_DEFAULT_TEXT, R"("main_offset %p")", BSSHelper::main_offset);
-        main_logger->logf(NS_DEFAULT_TEXT, R"("test %p")", sym::sead::Random::TEST);
 
         //sead::GlobalRandom* grand = *BSSHelper::BSSPtr<sead::GlobalRandom>(s_seadGlobalRandom_sInstance);
         //sead::GlobalRandom* grand = sead::GlobalRandom::instance();
@@ -209,7 +211,8 @@ HOOK_DEFINE_TRAMPOLINE(ActorRelationRemoveHook) {
 
 
 HOOK_DEFINE_TRAMPOLINE(WorldManagerModuleBaseProcHook) {
-    static const ptrdiff_t s_offset = s_WorldManagerModule_BaseProc;
+    // FIXME out of sync with symbol args, prob missing a struct to compact the args but it still runs
+    static const auto s_offset = sym::game::wm::WorldManagerModule::baseProcExe;
     static void Callback(double self, double param_2, double param_3, double param_4, void *wmmodule, void *param_6) {
         auto main_logger = nnMainHookState->main_logger;
         InputHelper::updatePadState();

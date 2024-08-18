@@ -2,8 +2,7 @@ __game_version = 110; /* TOTK_110 */
 
 /* ======== BEGIN EX-King (nso main, symbol __main_start) =========== */
 
-_ZN4sead6Random4FAKEEv           = __main_start +         0x010f1c6c; /* sead::Random::FAKE() */
-_ZN4sead6Random4TESTEv           = __main_start +         0x00000000; /* sead::Random::TEST() */
+_ZN4game2wm18WorldManagerModule11baseProcExeEPvS2_ = __main_start +         0x00af225c; /* game::wm::WorldManagerModule::baseProcExe(void*, void*) */
 
 /* ======== END   EX-King (nso main) ================================ */
 

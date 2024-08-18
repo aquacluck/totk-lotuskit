@@ -5,6 +5,9 @@
 - Run the game. By default the mod will immediately connect to the frontend, but depending on the configs in the mod `romfs` folder it can also connect when you whistle, or it can remain offline (still logging to the debug console in Ryujinx).
 
 ## Building from source
+- (Advanced) Manual preprocessing for certain changes:
+    - Many headers are mirrored+patched from https://github.com/dt-12345/totk , see `dt_totk/CLOBBER_mirror_headers.sh` to update or further patch them. tldr it rewrites the folder with upstream + local patches, which we commit into this repo.
+    - `syms/build.py` is a symbol map+metadata build pipeline, keep this in sync! The output files will get clobbered when you run this, but they're still easy to navigate, so feel free to just hack at the output in dev if you know you can get away with it. This system exposes a `sym` header include prefix holding `sym::` cpp namespaces organizing all your symbol access.
 - Run `make` in a suitable build environment (such as [devkitPro](https://devkitpro.org/wiki/Getting_Started) or a [docker container](https://hub.docker.com/r/pixelkiri/devkitpro-alpine-switch/)) with cmake installed
 - Mod `exefs` files are at `build/main.npdm` and `build/subsdk9`, copy `romfs` configs from the repo
 

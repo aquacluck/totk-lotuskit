@@ -3,6 +3,7 @@ from typing import *
 from dataclasses import dataclass
 from collections import defaultdict
 import os.path
+import pathlib
 
 from build_helper_itanium_demangler import Node, QualNode, CastNode, FuncNode, ArrayNode, MemberNode
 from build_helper_itanium_demangler import parse as sym_demangle
@@ -12,7 +13,7 @@ def begin_sym_file(dsl__file__):
     # record current file to annotate RuntimeSymbol
     abs_dir_prefix = os.path.abspath(os.path.dirname(__file__)) # XXX don't move this into a folder
     dsl_relative = os.path.abspath(os.path.dirname(dsl__file__)).removeprefix(abs_dir_prefix).strip("/\\")
-    dsl_relative_parts = os.path.split(dsl_relative)
+    dsl_relative_parts = pathlib.Path(dsl_relative).parts
     output_basename = os.path.basename(dsl__file__).removesuffix(".py")
     output = dsl_relative_parts + (output_basename,) # eg ('sead', 'heap', 'seadHeapMgr')
 

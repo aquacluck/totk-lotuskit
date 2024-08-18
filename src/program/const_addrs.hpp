@@ -2,7 +2,6 @@
 // XXX ptrdiff_t?
 
 #ifdef TOTK_100
-static const int s_WorldManagerModule_BaseProc = 0x00b22a34;
 static const int s_ActorMgr_addActorRelation = 0x023c72a0;
 static const int s_ActorMgr_resolveActorRelation = 0x00ab8610;
 static const int s_VFRMgr_sInstance = 0x04661598;
@@ -23,7 +22,6 @@ static const int s_xxx_PlayerComponent_setShapeToPlayerCct = 0x011e8cf0;
 //static const int s_xxx_BaseProcMgr_CreateAndDeleteThread_delete = nullptr; // FIXME
 
 #elif TOTK_110
-static const int s_WorldManagerModule_BaseProc = 0x00af225c;
 static const int s_ActorMgr_addActorRelation = 0x00dc9360;
 static const int s_ActorMgr_resolveActorRelation = 0x008a6c80;
 static const int s_VFRMgr_sInstance = nullptr; // FIXME
@@ -33,7 +31,6 @@ static const int s_seadRandom_getU32 = nullptr; // FIXME
 //static const int s_xxx_Drown =
 
 #elif TOTK_121
-static const int s_WorldManagerModule_BaseProc = 0x00b36920;
 static const int s_ActorMgr_addActorRelation = 0x00d8b0ec;
 static const int s_ActorMgr_resolveActorRelation = 0x008eee60;
 static const int s_VFRMgr_sInstance = 0x04725bb8;
@@ -67,17 +64,6 @@ static const int s_tryGetPlayerPhysicsPosPtrHook = 0x0020d98c;
 //#elif TOTK_111
 //#elif TOTK_112
 //#elif TOTK_120
-
-// these first three are from another thing I was trying and aren't used in this specific mod
-// this first one hooks the WorldManagerModule's baseproc to print Link's current WorldMgr position
-static constexpr int s_WorldManagerModule_BaseProc[] = {
-    0x00b22a34,
-    0x00af225c,
-    0x00b56d34,
-    0x00ae0848,
-    0x00aef4b4,
-    0x00b36920
-};
 
 // this one hooks AutoSaveMgr's calc function to print Link's current save position
 static constexpr int s_calc[] = {

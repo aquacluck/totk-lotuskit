@@ -1,0 +1,4 @@
+- everything `build_*` does da build
+- everything `output_*` is da output
+- HELLO NICE TO MEET YOU MY NAME IS README
+- everything else is a 1:1 map to our available C include directories. symbol sources are organized in here.

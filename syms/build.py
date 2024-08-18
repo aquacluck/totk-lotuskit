@@ -13,13 +13,21 @@ def run_symbol_def_imports():
     # the folder structure is solely to make folders match up + make the output nicer to navigate
     # vs namespaces are defined solely by mangled symbols (independent of folder structure)
 
-    import sead.random.seadGlobalRandom # nop
-    import sead.random.seadRandom # nop
-    import sead.heap.seadHeapMgr # nop
+    # TODO eventflow
 
-    import NintendoSDK.nn.socket # nop
+    #import NintendoSDK.nn.socket # nop
 
-    import zstd.lib.zstd # nop
+    # TODO agl
+
+    #import sead.random.seadGlobalRandom # nop
+    #import sead.random.seadRandom # nop
+    #import sead.heap.seadHeapMgr # nop
+
+    #import zstd.lib.zstd # nop
+
+    # TODO exking.engine
+
+    import exking.game.wm.WorldManagerModule
 
 
 class TrashCommands:
@@ -69,12 +77,10 @@ class TrashCommands:
                     version = GameVersion.to_i(version_str)
                     pathlib.Path(os.path.join("output_hpp_sym_ns", version_str, cmake_include_folder, "sym", *mkdirp_args)).mkdir(parents=True, exist_ok=True)
                     with open(os.path.join("output_hpp_sym_ns", version_str, cmake_include_folder, "sym", *mkdirp_args, basename_output), "w") as hppfile:
-                        hppfile.write("#pragma once\n\n")
-                        hppfile.write("namespace sym {\n")
+                        hppfile.write("#pragma once\n")
 
                         for ns in unique_namespaces_in_source:
-                            hppfile.write("\n")
-                            hppfile.write(''.join(f"namespace {ns_seg} {{ " for ns_seg in ns))
+                            hppfile.write(f"\nnamespace sym::{'::'.join(ns)} {{")
 
                             for sym in source_syms:
                                 if sym.ns != ns:
@@ -90,17 +96,14 @@ class TrashCommands:
                                     address = f"{address:#018x}"
 
                                 identifier = sym.subject_identifier or sym.mangled
-                                hppfile.write(f"\n    static const u64 {identifier} = {address}; // {sym.mangled}")
+                                hppfile.write(f"\n    // {sym.mangled}\n    // {sym.name}\n    static constexpr uintptr_t {identifier} = {address};\n")
 
-                            hppfile.write("\n")
-                            hppfile.write(' '.join("}" for ns_seg in ns))
-                            hppfile.write("\n")
-                        hppfile.write("\n} // sym\n")
+                            hppfile.write("}\n")
 
 
 if __name__ == "__main__":
     # TODO cleanup empty/stale files
-    # git rm -rf output_ld_script/TOTK* output_hpp_sym_ns/TOTK* && ./build.py && git add output_*
+    # git rm -rf output_ld_script/TOTK* output_hpp_sym_ns/TOTK*; ./build.py && git add output_*
 
     run_symbol_def_imports()
     for v in GameVersion.ALL_STR:
