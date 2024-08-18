@@ -24,6 +24,10 @@ class MagicWords:
     ALL = "ALL"
     SKIP = "SKIP"
 
+ALL = MagicWords.ALL
+SKIP = MagicWords.SKIP
+
+
 class NSOModule:
     # separate sym_map per module
     sym_map: Dict[RuntimeSymbol.name, RuntimeSymbol] = NotImplementedError
@@ -74,6 +78,7 @@ class LOTUSKIT(NSOModule):
     sym_map = {}
 
 NSOModule.ALL_MODULES.extend([RTLD, EXKING, MULTIMEDIA, NNSDK, LOTUSKIT])
+
 
 class GameVersion:
     ALL_STR = ("TOTK_100", "TOTK_110", "TOTK_111", "TOTK_112", "TOTK_120", "TOTK_121")
@@ -149,7 +154,6 @@ class RuntimeSymbol:
 
         self.subject_identifier = namenode.value[-1].value
         self.ns = tuple(ns)
-        #breakpoint(); "happy path debug"
 
 
 class VersionedAddress:

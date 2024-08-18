@@ -13,6 +13,7 @@
 #include <string.h>
 #define _USE_MATH_DEFINES
 #include <math.h>
+#include "sym/random/seadRandom.h"
 #include "random/seadRandom.h"
 #include "random/seadGlobalRandom.h"
 
@@ -72,6 +73,7 @@ HOOK_DEFINE_TRAMPOLINE(LoggerConnectOnWhistleHook) {
         main_logger->log(NS_DEFAULT_TEXT, R"("trying frontend connect() ")");
         main_logger->connect();
         main_logger->logf(NS_DEFAULT_TEXT, R"("main_offset %p")", BSSHelper::main_offset);
+        main_logger->logf(NS_DEFAULT_TEXT, R"("test %p")", sym::sead::Random::TEST);
 
         //sead::GlobalRandom* grand = *BSSHelper::BSSPtr<sead::GlobalRandom>(s_seadGlobalRandom_sInstance);
         //sead::GlobalRandom* grand = sead::GlobalRandom::instance();
