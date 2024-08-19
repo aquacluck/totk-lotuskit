@@ -1,11 +1,11 @@
 #pragma once
-#include "const_addrs.hpp"
 #include "lib.hpp"
 #include "nn/nn.h"
 #include "nn/hid.h"
 #include "nn/util.h"
 #include "helpers/InputHelper.hpp"
 #include "helpers/ConfigHelper.hpp"
+#include "lib/util/ptr_path.hpp"
 #include "lib/util/sys/mem_layout.hpp"
 #include "structs.hpp"
 #include "types.h"
@@ -14,18 +14,24 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 
-//#include "random/seadGlobalRandom.h"
-//#include "random/seadRandom.h"
+#include "random/seadGlobalRandom.h"
 
+#include "sym/engine/actor/ActorInstanceMgr.h"
+#include "sym/engine/actor/ActorMgr.h"
+#include "sym/engine/hacks.h"
+#include "sym/engine/module/VFRMgr.h"
+#include "sym/game/ai/execute/ExecutePlayerWhistle.h"
 #include "sym/game/wm/WorldManagerModule.h"
+#include "sym/hk/hacks.h"
+#include "sym/random/seadGlobalRandom.h"
+#include "sym/random/seadRandom.h"
 
 
 // feature flags to minimize log noise and similar clutter/risk/etc
-#define DO_RELATION_LOG 0
-#define DO_PLAYER_LOG 1
-#define DO_PHYSICS_SPAM_LOG 0
-#define DO_VFR_FRAME_LOG 0
-#define DO_VFR_MULTIPLIERS_LOG 0
+constexpr bool DO_RELATION_LOG = 1;
+constexpr bool DO_PLAYER_LOG = 1;
+constexpr bool DO_PHYSICS_SPAM_LOG = 0;
+constexpr bool DO_VFR_LOG = 0;
 #define DO_XXX_ACTOR_CREATION_LOG 1
 
 // global state owned by nnMainHook (at the bottom!)
@@ -49,52 +55,25 @@ ActorBase* CarryBox;
 ActorBase* ThrowBox;
 
 
-namespace BSSHelper {
-    static uintptr_t main_offset = 0; // set in nnMainHook
-
-    /*
-    template <typename T>
-    class BSSPtr {
-        int static_offset;
-        public:
-        T* operator*() {
-            T** location = (T**)(main_offset + static_offset);
-            return *location;
-        }
-        void operator=(int v) { static_offset = v; }
-        BSSPtr(void) {}
-        BSSPtr(int v) { static_offset = v; }
-    };
-    */
-}
-
-
 HOOK_DEFINE_TRAMPOLINE(LoggerConnectOnWhistleHook) {
-    static const ptrdiff_t s_offset = s_ExecutePlayerWhistle_Enter;
+    static const ptrdiff_t s_offset = sym::game::ai::execute::ExecutePlayerWhistle::enterImpl_;
+
     static void Callback(void* param) {
         auto main_logger = nnMainHookState->main_logger;
         main_logger->log(NS_DEFAULT_TEXT, R"("trying frontend connect() ")");
         main_logger->connect();
-        main_logger->logf(NS_DEFAULT_TEXT, R"("main_offset %p")", BSSHelper::main_offset);
+        main_logger->logf(NS_DEFAULT_TEXT, R"("main_offset %p")", exl::util::GetMainModuleInfo().m_Total.m_Start);
 
-        //sead::GlobalRandom* grand = *BSSHelper::BSSPtr<sead::GlobalRandom>(s_seadGlobalRandom_sInstance);
-        //sead::GlobalRandom* grand = sead::GlobalRandom::instance();
-        //main_logger->logf(NS_DEFAULT_TEXT, R"("great %p %d")", grand, grand->getU32());
-
-        //VFRMgr** vfr_mgr = (VFRMgr**)(BSSHelper::main_offset + s_VFRMgr_sInstance);
-        //BSSHelper::BSSPtr<VFRMgr> vfr_mgr2 = s_VFRMgr_sInstance;
-        //VFRMgr* vfr_mgr3 = *BSSHelper::BSSPtr<VFRMgr>(s_VFRMgr_sInstance);
-
-        //main_logger->logf(NS_DEFAULT_TEXT, R"("vfr_mgr  %p -> %p")", vfr_mgr, *vfr_mgr);
-        //main_logger->logf(NS_DEFAULT_TEXT, R"("vfr_mgr2 %p")", *vfr_mgr2);
-        //main_logger->logf(NS_DEFAULT_TEXT, R"("vfr_mgr3 %p")", vfr_mgr3);
+        //sead::GlobalRandom* grand = *exl::util::pointer_path::FollowSafe<sead::GlobalRandom*, sym::sead::GlobalRandom::sInstance>();
+        //main_logger->logf(NS_DEFAULT_TEXT, R"("great %p ")", grand, grand->getU32());
 
         Orig(param);
     }
 };
 
 HOOK_DEFINE_TRAMPOLINE(ActorRelationAddHook) {
-    static const ptrdiff_t s_offset = s_ActorMgr_addActorRelation;
+    static const ptrdiff_t s_offset = sym::engine::actor::ActorMgr::registerActorRelation;
+
     static u32 Callback(ActorMgr &actor_mgr, ActorBase &parentBase, ActorBase &childBase) {
         auto main_logger = nnMainHookState->main_logger;
         IActor *parent = &(parentBase.mIActor);
@@ -177,7 +156,8 @@ HOOK_DEFINE_TRAMPOLINE(ActorRelationAddHook) {
 
 // I think the parent and child can sometimes be flipped in this function?
 HOOK_DEFINE_TRAMPOLINE(ActorRelationRemoveHook) {
-    static const ptrdiff_t s_offset = s_ActorMgr_resolveActorRelation;
+    static const ptrdiff_t s_offset = sym::engine::actor::ActorMgr::removeActorRelation;
+
     static u32 Callback(ActorMgr &actor_mgr, ActorBase &parentBase, ActorBase &childBase) {
         auto main_logger = nnMainHookState->main_logger;
         IActor *parent = &(parentBase.mIActor);
@@ -211,8 +191,8 @@ HOOK_DEFINE_TRAMPOLINE(ActorRelationRemoveHook) {
 
 
 HOOK_DEFINE_TRAMPOLINE(WorldManagerModuleBaseProcHook) {
-    // FIXME out of sync with symbol args, prob missing a struct to compact the args but it still runs
     static const auto s_offset = sym::game::wm::WorldManagerModule::baseProcExe;
+
     static void Callback(double self, double param_2, double param_3, double param_4, void *wmmodule, void *param_6) {
         auto main_logger = nnMainHookState->main_logger;
         InputHelper::updatePadState();
@@ -276,21 +256,18 @@ HOOK_DEFINE_TRAMPOLINE(WorldManagerModuleBaseProcHook) {
             }
         }
 
-        // "raw" time is affected by bullet time and not much else (not ascend, recall, textboxes, textbox logs, pausing, memories)
-        // bt drops to 0.05 0.001667, then 4 interpolated frames back up to normal 1.0 0.033333 when it ends. This can stack/multiply with perf hits:
-        // Both raw and cooked are affected by performance:
-        // On 1.2.1 it will switch to 1.5 0.05 during heavy load. That's 1.5x the normal duration, or 0.05 = 1/20 seconds.
-        // 1.0 all seems the same. I thought only 1.0 was locked between 20fps and 30fps?
-        VFRMgr** vfr_mgr = (VFRMgr**)(BSSHelper::main_offset + s_VFRMgr_sInstance);
-        //main_logger->log("vfr_mgr %p -> %p", vfr_mgr, *vfr_mgr)
-        if (DO_VFR_FRAME_LOG) {
-            main_logger->logf(NS_VFRMGR, R"({"vfr_frame": [%f, %f, %f, %f, %f] })", (*vfr_mgr)->mRawDeltaFrame, (*vfr_mgr)->mRawDeltaTime, (*vfr_mgr)->mDeltaFrame, (*vfr_mgr)->mDeltaTime, (*vfr_mgr)->mIntervalValue);
-        }
-        if (DO_VFR_MULTIPLIERS_LOG) {
+        if (DO_VFR_LOG) {
+            // "raw" time is affected by bullet time and not much else (not ascend, recall, textboxes, textbox logs, pausing, memories)
+            // bt drops to 0.05 0.001667, then 4 interpolated frames back up to normal 1.0 0.033333 when it ends. This can stack/multiply with perf hits:
+            // Both raw and cooked are affected by performance:
+            // On 1.2.1 it will switch to 1.5 0.05 during heavy load. That's 1.5x the normal duration, or 0.05 = 1/20 seconds.
+            // 1.0 all seems the same. I thought only 1.0 was locked between 20fps and 30fps?
+            VFRMgr* vfr_mgr = *exl::util::pointer_path::FollowSafe<VFRMgr*, sym::engine::module::VFRMgr::sInstance>();
+            main_logger->logf(NS_VFRMGR, R"({"vfr_frame": [%f, %f, %f, %f, %f] })", vfr_mgr->mRawDeltaFrame, vfr_mgr->mRawDeltaTime, vfr_mgr->mDeltaFrame, vfr_mgr->mDeltaTime, vfr_mgr->mIntervalValue);
             for(int i = 0; i < 16; i++) {
                 // default all slots: 1.0 nan
                 // during bt: 0 -> 0.05 0.05, 3 -> 0.35 0.35
-                main_logger->logf(NS_VFRMGR, R"({"vfr_timespeedmultiplier_i": %d, "pair": [%f, %f] })", i, (*vfr_mgr)->mTimeSpeedMultipliers[i].mValue, (*vfr_mgr)->mTimeSpeedMultipliers[i].mTarget);
+                main_logger->logf(NS_VFRMGR, R"({"vfr_timespeedmultiplier_i": %d, "pair": [%f, %f] })", i, vfr_mgr->mTimeSpeedMultipliers[i].mValue, vfr_mgr->mTimeSpeedMultipliers[i].mTarget);
             }
         }
 
@@ -307,7 +284,8 @@ HOOK_DEFINE_TRAMPOLINE(WorldManagerModuleBaseProcHook) {
 
 // Thanks to MaxLastBreath for figuring this out in Ultracam -- similar approach here
 HOOK_DEFINE_TRAMPOLINE(TryGetPlayerPhysicsPosPtrHook) {
-    static const ptrdiff_t s_offset = s_tryGetPlayerPhysicsPosPtrHook;
+    static const ptrdiff_t s_offset = sym::hkUNKNOWN::UNKNOWN_applyMotion;
+
     static void Callback(void* self, void* param_2, hknpMotion* hkmotion, hknpMotion* motion_pool) {
         auto main_logger = nnMainHookState->main_logger;
 
@@ -354,11 +332,12 @@ HOOK_DEFINE_TRAMPOLINE(TryGetPlayerPhysicsPosPtrHook) {
 };
 
 HOOK_DEFINE_TRAMPOLINE(HookRNG_sead_u32) {
+    static const ptrdiff_t s_offset = sym::sead::Random::getU32;
+
     static bool do_log;
     static bool do_stub;
     static u32 stub_value;
 
-    static const ptrdiff_t s_offset = s_seadRandom_getU32;
     static u32 Callback(void* param) { // sead::Random*
         u32 ret;
         if (do_stub) {
@@ -382,7 +361,8 @@ u32 HookRNG_sead_u32::stub_value = 420;
 
 #if DO_XXX_ACTOR_CREATION_LOG
 HOOK_DEFINE_TRAMPOLINE(TestCreateActorHook1) {
-    static const ptrdiff_t s_offset = s_xxx_createActor1;
+    static const ptrdiff_t s_offset = sym::engine::actor::ActorInstanceMgr::createActorAndConnectSync;
+
     static long Callback
         (long **param_1,void *param_2,ulong param_3,char **param_4,long param_5,
         undefined8 param_6,undefined4 param_7,undefined **param_8,undefined *param_9,
@@ -397,7 +377,7 @@ HOOK_DEFINE_TRAMPOLINE(TestCreateActorHook1) {
 };
 
 HOOK_DEFINE_TRAMPOLINE(TestCreateActorHook2) {
-    static const ptrdiff_t s_offset = s_xxx_createActor2;
+    static const ptrdiff_t s_offset = sym::engine::actor::ActorInstanceMgr::createActorAndConnectSync__2;
 
     static long Callback
         (long **param_1,void *param_2,ulong param_3,char **param_4,long param_5,
@@ -413,7 +393,8 @@ HOOK_DEFINE_TRAMPOLINE(TestCreateActorHook2) {
 };
 
 HOOK_DEFINE_TRAMPOLINE(TestCreateActorHook3) {
-    static const ptrdiff_t s_offset = s_xxx_createActor3;
+    static const ptrdiff_t s_offset = sym::engine::actor::ActorInstanceMgr::createActorAndConnectSyncImpl;
+
     static long Callback
         (long **param_1,void *param_2,ulong param_3,char **param_4,long param_5,
         undefined8 param_6,undefined4 param_7,long param_8,long param_9,undefined8 param_10,
@@ -429,7 +410,8 @@ HOOK_DEFINE_TRAMPOLINE(TestCreateActorHook3) {
 };
 
 HOOK_DEFINE_TRAMPOLINE(TestCreateActorHook4) {
-    static const ptrdiff_t s_offset = s_xxx_createActor4;
+    static const ptrdiff_t s_offset = sym::engine::actor::ActorInstanceMgr::requestCreateActorAsync;
+
     static long Callback
         (void* actorInstanceMgr, char** actorName, Vector3f* pos, void* param_4, undefined4 param_5, PreActor* preActor,
         void* actorObserver, void* param_8, u8 param_9, undefined4* param_10, PreActor** destPreActor) {
@@ -468,7 +450,7 @@ HOOK_DEFINE_TRAMPOLINE(TestCreateActorHook4) {
 };
 
 HOOK_DEFINE_TRAMPOLINE(TestCreateActorHook5) {
-    static const ptrdiff_t s_offset = s_xxx_createActor5;
+    static const ptrdiff_t s_offset = sym::engine::actor::ActorInstanceMgr::requestCreateActorSync;
 
     static long Callback(long **param_1,char **param_2,long param_3,long param_4,long param_5,undefined8 param_6, int *param_7) {
         // few actors at bootup: ReactionHit ReactionField Chemical EffectUI SpecialPower WakeBoardRope
@@ -498,13 +480,13 @@ ActorBase * GetChild(ActorMgr& mgr, u32 index, ActorBase &parent) {
 
 
 HOOK_DEFINE_INLINE(nnMainHook) {
-    static const ptrdiff_t s_offset = s_nnMain_preMainLoop; // Steal execution from nnMain right before it jumps into the game
+    // Steal execution from nnMain right before it jumps into the game
+    static const ptrdiff_t s_offset = sym::engine::nnMain_post_setup;
     static nnMainHookState_t main_state;
     static void Callback(exl::hook::InlineCtx* ctx) {
         // Effective entry point after sdk init
 
         nnMainHookState = &main_state;
-        BSSHelper::main_offset = exl::util::GetMainModuleInfo().m_Total.m_Start;
 
         ActorRelationAddHook::Install();
         ActorRelationRemoveHook::Install();
@@ -560,7 +542,7 @@ HOOK_DEFINE_INLINE(nnMainHook) {
         }
 
         // TODO centralize on-connect info dump, or allow frontend to request it
-        main_logger->logf(NS_DEFAULT_TEXT, R"("main_offset %p")", BSSHelper::main_offset);
+        main_logger->logf(NS_DEFAULT_TEXT, R"("main_offset %p")", exl::util::GetMainModuleInfo().m_Total.m_Start);
 
         InputHelper::initKBM();
         InputHelper::setPort(0); // default controller port

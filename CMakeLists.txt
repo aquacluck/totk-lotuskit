@@ -62,6 +62,9 @@ include_directories(${PROJECT_SOURCE_DIR}/dt_totk/lib/zstd/lib) # headers
 #include_directories(${PROJECT_SOURCE_DIR}/dt_totk/lib/zstd/lib/decompress)
 include_directories(${PROJECT_SOURCE_DIR}/syms/output_hpp_sym_ns/TOTK_${TOTK_VERSION}/zstd) # symbols
 
+# havok
+include_directories(${PROJECT_SOURCE_DIR}/syms/output_hpp_sym_ns/TOTK_${TOTK_VERSION}/havok) # symbols
+
 # game, engine, ... -- symbols from the game where I don't have a well-defined header structure (ie not (yet) from dt_totk) are treated as an "exking" lib
 # TODO structured exking header folder (game, engine, ...)
 include_directories(${PROJECT_SOURCE_DIR}/syms/output_hpp_sym_ns/TOTK_${TOTK_VERSION}/exking) # symbols

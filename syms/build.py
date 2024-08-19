@@ -13,21 +13,30 @@ def run_symbol_def_imports():
     # the folder structure is solely to make folders match up + make the output nicer to navigate
     # vs namespaces are defined solely by mangled symbols (independent of folder structure)
 
+    # TODO just crawl some top level folders, this is getting stupid already
+
     # TODO eventflow
 
     #import NintendoSDK.nn.socket # nop
 
     # TODO agl
 
-    #import sead.random.seadGlobalRandom # nop
-    #import sead.random.seadRandom # nop
+    import sead.random.seadGlobalRandom
+    import sead.random.seadRandom
     #import sead.heap.seadHeapMgr # nop
 
     #import zstd.lib.zstd # nop
 
-    # TODO exking.engine
 
+    import exking.engine.actor.ActorInstanceMgr
+    import exking.engine.actor.ActorMgr
+    import exking.engine.hacks
+    import exking.engine.module.VFRMgr
+
+    import exking.game.ai.execute.ExecutePlayerWhistle
     import exking.game.wm.WorldManagerModule
+
+    import havok.hk.hacks
 
 
 class TrashCommands:
@@ -42,7 +51,10 @@ class TrashCommands:
                     continue
 
                 symfile.write(f"\n\n/* ======== BEGIN {mod.module_name} (nso {mod.nso_filename}, symbol {mod.module_start_sym}) =========== */\n\n")
-                for name, sym in mod.sym_map.items():
+                for sym in mod.sym_map.values():
+                    if sym.symbol_type in (SymbolType.DATA, SymbolType.INSTRUCTION):
+                        # useless for me? why store stuff in symbols if you're not gonna invoke it, pointers exist... maybe if i did a lot of inline asm
+                        continue
                     addr = sym.address[version]
                     if addr == MagicWords.SKIP:
                         continue
@@ -70,7 +82,7 @@ class TrashCommands:
                     raise ImportError(f"source_path {source_path} requires at least 2 parts: a leading library name and a trailing python filename")
                 basename_output = source_path[-1] + ".h"
                 cmake_include_folder = source_path[0]
-                mkdirp_args = source_path[1:-1] # empty when len(source_path) == 3
+                mkdirp_args = source_path[1:-1] # empty when len(source_path) == 2
 
                 unique_namespaces_in_source: Tuple[Tuple[str]] = tuple(sorted({ sym.ns for sym in source_syms }))
                 for version_str in GameVersion.ALL_STR:
@@ -96,7 +108,7 @@ class TrashCommands:
                                     address = f"{address:#018x}"
 
                                 identifier = sym.subject_identifier or sym.mangled
-                                hppfile.write(f"\n    // {sym.mangled}\n    // {sym.name}\n    static constexpr uintptr_t {identifier} = {address};\n")
+                                hppfile.write(f"\n    // {sym.mangled}\n    // {sym.name}\n    static constexpr ptrdiff_t {identifier} = {address};\n")
 
                             hppfile.write("}\n")
 
@@ -106,6 +118,7 @@ if __name__ == "__main__":
     # git rm -rf output_ld_script/TOTK* output_hpp_sym_ns/TOTK*; ./build.py && git add output_*
 
     run_symbol_def_imports()
+    [module.postprocess() for module in NSOModule.ALL_MODULES]
     for v in GameVersion.ALL_STR:
         TrashCommands.build_gameversion_linkerscript_syms(GameVersion.to_i(v))
     TrashCommands.build_all_hpp_syms()

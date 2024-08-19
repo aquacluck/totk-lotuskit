@@ -1,6 +1,5 @@
 from __future__ import annotations
 from typing import *
-from dataclasses import dataclass
 from collections import defaultdict
 import os.path
 import pathlib
@@ -8,7 +7,8 @@ import pathlib
 from build_helper_itanium_demangler import Node, QualNode, CastNode, FuncNode, ArrayNode, MemberNode
 from build_helper_itanium_demangler import parse as sym_demangle
 
-current_sym_file = None
+
+current_sym_file: Optional[Tuple[str]] = None
 def begin_sym_file(dsl__file__):
     # record current file to annotate RuntimeSymbol
     abs_dir_prefix = os.path.abspath(os.path.dirname(__file__)) # XXX don't move this into a folder
@@ -20,6 +20,11 @@ def begin_sym_file(dsl__file__):
     global current_sym_file
     current_sym_file = output
 
+
+class SymbolType:
+    FUNCTION = "FUNCTION" # default
+    INSTRUCTION = "INSTRUCTION" # usually for inline hooking
+    DATA = "DATA" # non executable
 
 class MagicWords:
     ALL = "ALL"
@@ -36,16 +41,22 @@ class NSOModule:
     # hold all nso modules, just do this by hand
     ALL_MODULES = []
 
-    def __new__(cls, *args, **kwargs) -> RuntimeSymbol:
+    def __new__(cls, mangled, address, symbol_type=SymbolType.FUNCTION) -> RuntimeSymbol:
         # sugar to accumulate symbols in cls.sym_map
         global current_sym_file
-        sym = RuntimeSymbol(*args, **kwargs, module=cls, source_path=current_sym_file)
+        sym = RuntimeSymbol(mangled, address, symbol_type, module=cls, source_path=current_sym_file)
         cls.sym_map[sym.name] = sym
         return sym
 
     @classmethod
     def unique_source_paths(cls) -> Tuple[Tuple[str]]:
         return tuple(sorted({ s.source_path for s in cls.sym_map.values() }))
+
+    @classmethod
+    def postprocess(cls):
+        tmp: dict = cls.sym_map # ensure stable output order
+        cls.sym_map: dict = {k: tmp[k] for k in sorted(tmp)}
+        del tmp
 
 class RTLD(NSOModule):
     nso_filename = "rtld"
@@ -111,14 +122,23 @@ TOTK_120 = GameVersion.TOTK_120
 TOTK_121 = GameVersion.TOTK_121
 
 
-@dataclass
 class RuntimeSymbol:
+    # supplied from source_path (symbol file)
     mangled: str
     address: VersionedAddress
+    symbol_type: SymbolType
+
+    # supplied by build system
     module: NSOModule
     source_path: Tuple[str]
 
-    def __post_init__(self):
+    def __init__(self, mangled, address, symbol_type, module, source_path):
+        self.mangled = mangled
+        self.address = address
+        self.symbol_type = symbol_type
+        self.module = module
+        self.source_path = source_path
+
         # set derived
         self.ast: Node = sym_demangle(self.mangled)
         self.name = str(self.ast)
@@ -132,29 +152,42 @@ class RuntimeSymbol:
         self.ns = () # default: no namespace
         self.subject_identifier = None # the "basename" identifier, eg the function name
 
-        if not isinstance(self.ast, FuncNode):
-            # handle more when it comes up
-            e = NotImplementedError(f"unsupported root type {type(self.ast)}: {self.name}")
-            breakpoint(); raise e
+        if self.ast.kind == "qual_name":
+            ns = []
+            for ns_identifier in self.ast.value[:-1]:
+                if ns_identifier.kind != "name":
+                    e = NotImplementedError(f"unsupported ns_identifier kind {ns_identifier.kind} in {type(self.ast)}: {self.name}")
+                    breakpoint(); raise e
+                ns.append(ns_identifier.value)
 
-        namenode = self.ast.name
-        if namenode.kind == "name":
-            self.subject_identifier = namenode.value
-            return # unqualified: no namespace
+            self.subject_identifier = self.ast.value[-1].value
+            self.ns = tuple(ns)
+            return
 
-        if namenode.kind != "qual_name":
-            e = NotImplementedError(f"unsupported name kind {namenode.kind} in {type(self.ast)}: {self.name}")
-            breakpoint(); raise e
+        elif isinstance(self.ast, FuncNode):
+            namenode = self.ast.name
+            if namenode.kind == "name":
+                self.subject_identifier = namenode.value
+                return # unqualified: no namespace
 
-        ns = []
-        for ns_identifier in namenode.value[:-1]:
-            if ns_identifier.kind != "name":
-                e = NotImplementedError(f"unsupported ns_identifier kind {ns_identifier.kind} in {type(self.ast)}: {self.name}")
+            if namenode.kind != "qual_name":
+                e = NotImplementedError(f"unsupported name kind {namenode.kind} in {type(self.ast)}: {self.name}")
                 breakpoint(); raise e
-            ns.append(ns_identifier.value)
 
-        self.subject_identifier = namenode.value[-1].value
-        self.ns = tuple(ns)
+            ns = []
+            for ns_identifier in namenode.value[:-1]:
+                if ns_identifier.kind != "name":
+                    e = NotImplementedError(f"unsupported ns_identifier kind {ns_identifier.kind} in {type(self.ast)}: {self.name}")
+                    breakpoint(); raise e
+                ns.append(ns_identifier.value)
+
+            self.subject_identifier = namenode.value[-1].value
+            self.ns = tuple(ns)
+            return
+
+        # handle more when it comes up
+        e = NotImplementedError(f"unsupported root type {type(self.ast)}: {self.name}")
+        breakpoint(); raise e
 
 
 class VersionedAddress:

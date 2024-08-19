@@ -1,0 +1,36 @@
+from build_types import *
+begin_sym_file(__file__)
+
+# FIXME versions
+# FIXME placeholder type sigs, hook only
+'''
+namespace engine::actor::ActorInstanceMgr {
+    void* createActorAndConnectSync(void*) {}
+    void* createActorAndConnectSync__2(void*) {}
+    void* createActorAndConnectSyncImpl(void*) {}
+    void* requestCreateActorAsync(void*) {}
+    void* requestCreateActorSync(void*) {}
+}
+'''
+
+EXKING("_ZN6engine5actor16ActorInstanceMgr25createActorAndConnectSyncEPv", {
+    TOTK_100: 0x010c6838,
+    TOTK_121: 0x0117f4a4,
+})
+EXKING("_ZN6engine5actor16ActorInstanceMgr28createActorAndConnectSync__2EPv", {
+    TOTK_100: 0x013e2d68,
+    TOTK_121: 0x0140cb58,
+})
+EXKING("_ZN6engine5actor16ActorInstanceMgr29createActorAndConnectSyncImplEPv", {
+    TOTK_100: 0x01293710,
+    TOTK_121: 0x012b13dc,
+})
+EXKING("_ZN6engine5actor16ActorInstanceMgr23requestCreateActorAsyncEPv", {
+    TOTK_100: 0x00a5fdf8,
+    TOTK_121: 0x00ab92cc,
+})
+EXKING("_ZN6engine5actor16ActorInstanceMgr22requestCreateActorSyncEPv", {
+    TOTK_100: 0x01278724,
+    TOTK_121: 0x012a8b44,
+})
+
