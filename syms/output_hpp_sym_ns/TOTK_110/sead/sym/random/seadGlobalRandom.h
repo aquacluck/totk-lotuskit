@@ -3,5 +3,5 @@
 namespace sym::sead::GlobalRandom {
     // _ZN4sead12GlobalRandom9sInstanceE
     // sead::GlobalRandom::sInstance
-    static constexpr ptrdiff_t sInstance = 0x00000000;
+    static constexpr ptrdiff_t sInstance = 0x04719628;
 }

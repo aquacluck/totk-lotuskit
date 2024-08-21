@@ -3,5 +3,5 @@
 namespace sym::engine::module::VFRMgr {
     // _ZN6engine6module6VFRMgrL9sInstanceE
     // engine::module::VFRMgr::sInstance
-    static constexpr ptrdiff_t sInstance = 0x00000000;
+    static constexpr ptrdiff_t sInstance = 0x047282d8;
 }

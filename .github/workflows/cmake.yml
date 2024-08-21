@@ -45,6 +45,16 @@ jobs:
         cp -r frontend romfs totk100_lotuskit
         zip -r totk100_lotuskit totk100_lotuskit
 
+    - name: Build 110
+      run: cmake -DTOTK_VERSION=110 --toolchain=cmake/toolchain.cmake -S . -B build && make -C build subsdk9_meta -j4
+
+    - name: Zip 110
+      run: |
+        mkdir -p totk110_lotuskit/exefs
+        cp build/main.npdm build/subsdk9 totk110_lotuskit/exefs
+        cp -r frontend romfs totk110_lotuskit
+        zip -r totk110_lotuskit totk110_lotuskit
+
     - name: Build 121
       run: cmake -DTOTK_VERSION=121 --toolchain=cmake/toolchain.cmake -S . -B build && make -C build subsdk9_meta -j4
 
@@ -59,6 +69,6 @@ jobs:
       run: |
         git config --global --add safe.directory /__w/totk-lotuskit/totk-lotuskit
         ./gh release delete latest -y --cleanup-tag
-        ./gh release create latest totk100_lotuskit.zip totk121_lotuskit.zip
+        ./gh release create latest totk100_lotuskit.zip totk110_lotuskit.zip totk121_lotuskit.zip
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
