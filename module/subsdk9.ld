@@ -16,6 +16,10 @@ SECTIONS
   . = __start__;
   __code_start__ = .;
 
+  /* Get exking module offset for symbol math */
+  __main_start = . - __main_start_offset;
+  __rtld_start = __main_start - 0x4000;
+
   /* App code */
   .text : {
     HIDDEN(__text_start__ = .);
@@ -163,6 +167,10 @@ SECTIONS
   } :data
 
   __end__ = ABSOLUTE(.);
+
+  /* Get SDK module offset for symbol math */
+  . = ALIGN(0x1000);
+  __sdk_start = ABSOLUTE(.);
 
   HIDDEN(__argdata__ = .);
 

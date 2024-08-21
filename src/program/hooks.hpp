@@ -64,8 +64,8 @@ HOOK_DEFINE_TRAMPOLINE(LoggerConnectOnWhistleHook) {
         main_logger->connect();
         main_logger->logf(NS_DEFAULT_TEXT, R"("main_offset %p")", exl::util::GetMainModuleInfo().m_Total.m_Start);
 
-        //sead::GlobalRandom* grand = *exl::util::pointer_path::FollowSafe<sead::GlobalRandom*, sym::sead::GlobalRandom::sInstance>();
-        //main_logger->logf(NS_DEFAULT_TEXT, R"("great %p ")", grand, grand->getU32());
+        sead::GlobalRandom* grand = *exl::util::pointer_path::FollowSafe<sead::GlobalRandom*, sym::sead::GlobalRandom::sInstance>();
+        main_logger->logf(NS_DEFAULT_TEXT, R"("great %p %d")", grand, grand->getU32());
 
         Orig(param);
     }

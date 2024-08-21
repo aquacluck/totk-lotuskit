@@ -8,6 +8,71 @@ from build_helper_itanium_demangler import Node, QualNode, CastNode, FuncNode, A
 from build_helper_itanium_demangler import parse as sym_demangle
 
 
+class GameVersion:
+    ALL_STR = ("TOTK_100", "TOTK_110", "TOTK_111", "TOTK_112", "TOTK_120", "TOTK_121")
+    TOTK_100 = 100
+    TOTK_110 = 110
+    TOTK_111 = 111
+    TOTK_112 = 112
+    TOTK_120 = 120
+    TOTK_121 = 121
+
+    @classmethod
+    def to_str(cls, version: int) -> str:
+        for version_str in cls.ALL_STR:
+            if version == getattr(cls, version_str):
+                return version_str
+        raise ValueError(f"GameVersion {version} invalid")
+
+    @classmethod
+    def to_i(cls, version: str) -> int:
+        if version not in GameVersion.ALL_STR:
+            raise ValueError(f"GameVersion {version} invalid")
+        return getattr(GameVersion, version)
+
+TOTK_100 = GameVersion.TOTK_100
+TOTK_110 = GameVersion.TOTK_110
+TOTK_111 = GameVersion.TOTK_111
+TOTK_112 = GameVersion.TOTK_112
+TOTK_120 = GameVersion.TOTK_120
+TOTK_121 = GameVersion.TOTK_121
+
+
+class VersionedAddress:
+    @classmethod
+    def from_pydsl(cls, raw: dict) -> VersionedAddress:
+        ret = VersionedAddress()
+        if not raw:
+            return ret
+
+        for k, v in raw.items():
+            if k == MagicWords.ALL:
+                # dict keys can be specified in any order.
+                # ALL assigns to all nullptr'd versions at that time.
+                for ka in GameVersion.ALL_STR:
+                    if ret[ka] == 0:
+                        ret[ka] = v
+            else:
+                ret[k] = v
+
+        return ret
+
+    def __init__(self):
+        self.version_map: defaultdict[GameVersion, int] = defaultdict(int)
+
+    def __getitem__(self, key) -> int:
+        if isinstance(key, str):
+            key: int = GameVersion.to_i(key)
+        GameVersion.to_str(key) # assert
+        return self.version_map[key]
+
+    def __setitem__(self, key, value):
+        if isinstance(key, str):
+            key: int = GameVersion.to_i(key)
+        GameVersion.to_str(key) # assert
+        self.version_map[key] = value
+
+
 current_sym_file: Optional[Tuple[str]] = None
 def begin_sym_file(dsl__file__):
     # record current file to annotate RuntimeSymbol
@@ -54,72 +119,58 @@ class NSOModule:
 
     @classmethod
     def postprocess(cls):
-        tmp: dict = cls.sym_map # ensure stable output order
-        cls.sym_map: dict = {k: tmp[k] for k in sorted(tmp)}
+        # ensure stable output order
+        keys = list(cls.sym_map.keys())
+        keys.sort(key=lambda k: cls.sym_map[k].mangled)
+        tmp: dict = cls.sym_map
+        cls.sym_map: dict = {k: tmp[k] for k in keys}
         del tmp
 
 class RTLD(NSOModule):
     nso_filename = "rtld"
     module_name = "nnrtld"
-    module_start_sym = MagicWords.SKIP
+    module_start_sym = "__rtld_start"
+    module_start_offset = MagicWords.SKIP # constant 0x4000 before main
     sym_map = {}
 
 class EXKING(NSOModule):
     nso_filename = "main"
     module_name = "EX-King"
     module_start_sym = "__main_start"
+    module_start_offset = VersionedAddress.from_pydsl({
+        # applied in subsdk9.ld to find main module
+        TOTK_100: 0x04d0f000,
+        TOTK_110: 0x04dd6000,
+        TOTK_111: 0x04dde000,
+        TOTK_112: 0x04dd0000,
+        TOTK_120: 0x04dc5000,
+        TOTK_121: 0x04dd4000,
+    })
     sym_map = {}
     #module_filename = r"D:\home\Project\EX-King\App\Rom\NX64\Product_Optimize\code\EX-King.nss"
 
 class MULTIMEDIA(NSOModule):
     nso_filename = "subsdk0"
     module_name = "multimedia"
-    module_start_sym = MagicWords.SKIP
-    sym_map = {}
-
-class NNSDK(NSOModule):
-    nso_filename = "sdk"
-    module_name = "nnSdk"
-    module_start_sym = "__sdk_start"
+    module_start_sym = "__subsdk0_start"
+    module_start_offset = MagicWords.SKIP # TODO if we want
     sym_map = {}
 
 class LOTUSKIT(NSOModule):
     nso_filename = "subsdk9"
     module_name = "subsdk9" # FIXME can i set name?
     module_start_sym = MagicWords.SKIP
+    module_start_offset = MagicWords.SKIP
     sym_map = {}
 
-NSOModule.ALL_MODULES.extend([RTLD, EXKING, MULTIMEDIA, NNSDK, LOTUSKIT])
+class NNSDK(NSOModule):
+    nso_filename = "sdk"
+    module_name = "nnSdk"
+    module_start_sym = "__sdk_start"
+    module_start_offset = MagicWords.SKIP # location inferred from end of subsdk9
+    sym_map = {}
 
-
-class GameVersion:
-    ALL_STR = ("TOTK_100", "TOTK_110", "TOTK_111", "TOTK_112", "TOTK_120", "TOTK_121")
-    TOTK_100 = 100
-    TOTK_110 = 110
-    TOTK_111 = 111
-    TOTK_112 = 112
-    TOTK_120 = 120
-    TOTK_121 = 121
-
-    @classmethod
-    def to_str(cls, version: int) -> str:
-        for version_str in cls.ALL_STR:
-            if version == getattr(cls, version_str):
-                return version_str
-        raise ValueError(f"GameVersion {version} invalid")
-
-    @classmethod
-    def to_i(cls, version: str) -> int:
-        if version not in GameVersion.ALL_STR:
-            raise ValueError(f"GameVersion {version} invalid")
-        return getattr(GameVersion, version)
-
-TOTK_100 = GameVersion.TOTK_100
-TOTK_110 = GameVersion.TOTK_110
-TOTK_111 = GameVersion.TOTK_111
-TOTK_112 = GameVersion.TOTK_112
-TOTK_120 = GameVersion.TOTK_120
-TOTK_121 = GameVersion.TOTK_121
+NSOModule.ALL_MODULES.extend([RTLD, EXKING, MULTIMEDIA, LOTUSKIT, NNSDK])
 
 
 class RuntimeSymbol:
@@ -188,39 +239,3 @@ class RuntimeSymbol:
         # handle more when it comes up
         e = NotImplementedError(f"unsupported root type {type(self.ast)}: {self.name}")
         breakpoint(); raise e
-
-
-class VersionedAddress:
-    @classmethod
-    def from_pydsl(cls, raw: dict) -> VersionedAddress:
-        ret = VersionedAddress()
-        if not raw:
-            return ret
-
-        for k, v in raw.items():
-            if k == MagicWords.ALL:
-                # dict keys can be specified in any order.
-                # ALL assigns to all nullptr'd versions at that time.
-                for ka in GameVersion.ALL_STR:
-                    if ret[ka] == 0:
-                        ret[ka] = v
-            else:
-                ret[k] = v
-
-        return ret
-
-    def __init__(self):
-        self.version_map: defaultdict[GameVersion, int] = defaultdict(int)
-
-    def __getitem__(self, key) -> int:
-        if isinstance(key, str):
-            key: int = GameVersion.to_i(key)
-        GameVersion.to_str(key) # assert
-        return self.version_map[key]
-
-    def __setitem__(self, key, value):
-        if isinstance(key, str):
-            key: int = GameVersion.to_i(key)
-        GameVersion.to_str(key) # assert
-        self.version_map[key] = value
-

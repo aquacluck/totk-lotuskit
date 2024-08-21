@@ -51,6 +51,9 @@ class TrashCommands:
                     continue
 
                 symfile.write(f"\n\n/* ======== BEGIN {mod.module_name} (nso {mod.nso_filename}, symbol {mod.module_start_sym}) =========== */\n\n")
+                if mod.module_start_offset and mod.module_start_offset != MagicWords.SKIP:
+                    symfile.write(f"{mod.module_start_sym}_offset = {mod.module_start_offset[version]:#x};\n\n")
+
                 for sym in mod.sym_map.values():
                     if sym.symbol_type in (SymbolType.DATA, SymbolType.INSTRUCTION):
                         # useless for me? why store stuff in symbols if you're not gonna invoke it, pointers exist... maybe if i did a lot of inline asm
