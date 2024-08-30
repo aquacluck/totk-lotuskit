@@ -22,3 +22,7 @@ EXKING("_ZN4game2wm18WorldManagerModule11baseProcExeEPvS2_", {
     TOTK_121: 0x00b36920,
 })
 
+# sInstance
+#TOTK_100: 71045f4ba8
+#TOTK_110: 71046d06f8
+#TOTK_121: 71046cdf78

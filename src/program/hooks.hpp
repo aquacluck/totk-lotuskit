@@ -18,6 +18,7 @@
 
 #include "sym/engine/actor/ActorInstanceMgr.h"
 #include "sym/engine/actor/ActorMgr.h"
+#include "sym/engine/actor/BaseProcCreateAndDeleteThread.h"
 #include "sym/engine/hacks.h"
 #include "sym/engine/module/VFRMgr.h"
 #include "sym/game/ai/execute/ExecutePlayerWhistle.h"
@@ -44,6 +45,7 @@ extern ModCommand_Savestate_ActorPos g_ModCommand_Savestate_ActorPos[5]; // XXX 
 
 const float PLAYER_PHYSICS_HEIGHT_OFFSET = 0.9; // constant offset between pos32/pos64
 ActorBase* Player = nullptr;
+PreActor* Player_PreActor = nullptr;
 hknpMotion* Player_physics = nullptr;
 
 ActorMgr* ActorMgr_instance = nullptr;
@@ -229,6 +231,8 @@ HOOK_DEFINE_TRAMPOLINE(WorldManagerModuleBaseProcHook) {
         // Logging+instrumentation in this thread comes after ^ command proc
 
         if (DO_PLAYER_LOG) {
+            //main_logger->logf(NS_DEFAULT_TEXT, R"({"player preactor": "%p -> %p", "s": "%s"})", Player_PreActor, Player_PreActor->mpActor);
+
             const auto& rot = Player->mRotationMatrix;
             if (Player_physics != nullptr) {
                 auto pos64 = Player_physics->m_centerOfMass;
@@ -445,6 +449,11 @@ HOOK_DEFINE_TRAMPOLINE(TestCreateActorHook4) {
             );
         }
 
+        if (!strcmp(*actorName, "Player")) {
+            Player_PreActor = pa;
+            main_logger->logf(NS_DEFAULT_TEXT, R"("Reassigning Player preactor %p")", Player_PreActor);
+        }
+
         return ret;
     }
 };
@@ -457,6 +466,42 @@ HOOK_DEFINE_TRAMPOLINE(TestCreateActorHook5) {
         auto main_logger = nnMainHookState->main_logger;
         main_logger->logf(NS_ACTOR, R"({"name": "%s", "actor_op": "create_sync"})", *param_2);
         return Orig(param_1, param_2, param_3, param_4, param_5, param_6, param_7);
+    }
+};
+
+HOOK_DEFINE_INLINE(TestCreateActorHookImplEnter) {
+    static const ptrdiff_t s_offset = 0x0244a638; //121
+    static void Callback(exl::hook::InlineCtx* ctx) {
+        auto main_logger = nnMainHookState->main_logger;
+        main_logger->logf(NS_ACTOR, R"({"name": "top ", "actor_op": "calc_create", "_": "%p %p %p"})", ctx->X[0], ctx->X[1], ctx->X[2]);
+    }
+};
+HOOK_DEFINE_INLINE(TestCreateActorHookImpl) {
+    static const ptrdiff_t s_offset = sym::engine::actor::BaseProcCreateAndDeleteThread::calc_create; // 0x0244a80c 121
+    static void Callback(exl::hook::InlineCtx* ctx) {
+        auto main_logger = nnMainHookState->main_logger;
+        //XXX how stable are inline register accesses like this across versions? (eg originally x0 param but moved to x19 before our hook)
+        //    annotate SymbolType.INSTRUCTION with named registers if this becomes a problem.
+        //void* self = ctx->X[19]; // param_1
+        //lVar16 = (BaseProcCreateAndDeleter *)param_1[0x1b];
+
+        // (param_1[0x1b] + 0x10)   ( (param_1[0x1b] + 0x10),  lVar9 )
+        // BaseProcCreaterAndDeleter* thing; // idk type? but this holds a mCreateProcFunction. TODO also idk how to traverse IFunction, is it really just IFunction.invoke at +0? print %p at runtime or find the vtable or name or something idk how to follow this
+        // thing->mCreateProcFunction(thing->mCreateProcFunction, BaseProcCreateRequest *)
+
+        char* neatlog =*(char**)(ctx->X[19]+(0x21*8)); // vanilla snprintf: f"{BaseProcCreateRequest->mName}({BaseProcCreateRequest*})"
+        main_logger->logf(NS_ACTOR, R"({"name": "nope", "actor_op": "calc_create", "_": "%p %s"})", ctx->X[19], neatlog);
+    }
+};
+HOOK_DEFINE_INLINE(TestDeleteActorHookImpl) {
+    static const ptrdiff_t s_offset = sym::engine::actor::BaseProcCreateAndDeleteThread::calc_delete;
+
+    static void Callback(exl::hook::InlineCtx* ctx) {
+        //void* self = (void*)(ctx->X[0]);
+        //void* idk = (void*)(ctx->X[1]);
+        //char* name = (char*)(self + 0x21);
+        //auto main_logger = nnMainHookState->main_logger;
+        //main_logger->logf(NS_ACTOR, R"({"name": "%s", "actor_op": "calc_delete"})", name);
     }
 };
 #endif
@@ -499,6 +544,11 @@ HOOK_DEFINE_INLINE(nnMainHook) {
         TestCreateActorHook3::Install();
         TestCreateActorHook4::Install();
         TestCreateActorHook5::Install();
+
+        // WIP
+        //TestCreateActorHookImplEnter::Install();
+        //TestCreateActorHookImpl::Install();
+        //TestDeleteActorHookImpl::Install();
 #endif
 
         // figure out where+when to connect

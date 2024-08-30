@@ -30,6 +30,7 @@ def run_symbol_def_imports():
 
     import exking.engine.actor.ActorInstanceMgr
     import exking.engine.actor.ActorMgr
+    import exking.engine.actor.BaseProcCreateAndDeleteThread
     import exking.engine.hacks
     import exking.engine.module.VFRMgr
 
