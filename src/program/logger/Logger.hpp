@@ -14,9 +14,13 @@
 // Lets the frontend do a routing/subscription thingy for unsolicited structured data. Max 32 length for now
 typedef const char* LoggerNS;
 constexpr LoggerNS NS_DEFAULT_TEXT = "DEFAULT_TEXT";
-constexpr LoggerNS NS_ACTOR_PLAYER = "ACTOR_PLAYER";
+constexpr LoggerNS NS_ACTOR_PLAYER = "ACTOR_PLAYER"; // actor slot 0
 constexpr LoggerNS NS_ACTOR_PLAYER_RELATIONS = "ACTOR_PLAYER_RELATIONS";
 constexpr LoggerNS NS_ACTOR = "ACTOR";
+constexpr LoggerNS NS_ACTOR_SLOT_0 = NS_ACTOR_PLAYER;
+constexpr LoggerNS NS_ACTOR_SLOT_1 = "ACTOR_SLOT_1";
+constexpr LoggerNS NS_ACTOR_SLOT_2 = "ACTOR_SLOT_2";
+constexpr LoggerNS NS_ACTOR_SLOT_3 = "ACTOR_SLOT_3";
 constexpr LoggerNS NS_SAVESTATE = "SAVESTATE";
 constexpr LoggerNS NS_COMMAND = "COMMAND";
 constexpr LoggerNS NS_VFRMGR = "VFRMGR";
@@ -71,6 +75,27 @@ public:
 };
 
 
+
+class ModCommand_ActorWatcher {
+public:
+    bool is_pending_selection;
+    bool is_publishing_selection;
+    int selection_type; // 0 = unused, 1 = next spawn, 2 = next relation to parent_i
+    ActorBase* actor_selector_parent_relation;
+    ActorBase* actor;
+    PreActor* preactor;
+    hknpMotion* tracked_motion;
+
+    void clear(void) {
+        this->is_pending_selection = false;
+        this->is_publishing_selection = false;
+        this->selection_type = 0;
+        this->actor_selector_parent_relation = nullptr;
+        this->actor = nullptr;
+        this->preactor = nullptr;
+        this->tracked_motion = nullptr;
+    }
+};
 
 class ModCommand_Savestate_ActorPos {
 public:

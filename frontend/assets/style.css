@@ -106,7 +106,10 @@ button.pushbutton {
 
 .toolbox_main { position: relative; }
 .toolbox_main > .toolset_connection { right:0px; top:0px; }
-.toolbox_main > .toolset_actor_inspector { left: 0px; top: 400px; }
+.toolbox_main > .toolset_actor_inspector:nth-of-type(1) { left: 0px; top:   0px; }
+.toolbox_main > .toolset_actor_inspector:nth-of-type(2) { left: 0px; top: 400px; }
+.toolbox_main > .toolset_actor_inspector:nth-of-type(3) { left: 0px; top: 800px; }
+.toolbox_main > .toolset_actor_inspector:nth-of-type(4) { left: 0px; top:1200px; }
 
 
 .toolset_connection {
@@ -138,7 +141,7 @@ button.pushbutton {
     grid-template-rows: 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr;
     grid-template-columns: 1fr 1fr 1fr;
     grid-template-areas:
-    'actor_selector         actor_selector           .'
+    'actor_selector_current actor_selector_options   actor_selector_options'
     'actor_pos32_ui         actor_pos32_ui           .'
     'actor_pos32            actor_pos32              .'
     'actor_pos64_ui         actor_pos64_ui           .'
@@ -150,7 +153,8 @@ button.pushbutton {
     '.                      .                        .'; /* empty rows get thrown out */
 
 }
-.toolset_actor_inspector > .actor_selector { grid-area: actor_selector; }
+.toolset_actor_inspector > .actor_selector_current { grid-area: actor_selector_current; }
+.toolset_actor_inspector > .actor_selector_options { grid-area: actor_selector_options; }
 .toolset_actor_inspector > .actor_pos32 { grid-area: actor_pos32; }
 .toolset_actor_inspector > .actor_pos32_ui { grid-area: actor_pos32_ui; }
 .toolset_actor_inspector > .actor_pos64 { grid-area: actor_pos64; }

@@ -30,7 +30,6 @@
 
 // feature flags to minimize log noise and similar clutter/risk/etc
 constexpr bool DO_RELATION_LOG = 1;
-constexpr bool DO_PLAYER_LOG = 1;
 constexpr bool DO_PHYSICS_SPAM_LOG = 0;
 constexpr bool DO_VFR_LOG = 0;
 #define DO_XXX_ACTOR_CREATION_LOG 1
@@ -41,7 +40,8 @@ struct nnMainHookState_t {
 };
 nnMainHookState_t* nnMainHookState = nullptr;
 
-extern ModCommand_Savestate_ActorPos g_ModCommand_Savestate_ActorPos[5]; // XXX hooks.hpp logger.cpp trash glue
+extern ModCommand_Savestate_ActorPos g_ModCommand_Savestate_ActorPos[4]; // XXX hooks.hpp logger.cpp trash glue
+extern ModCommand_ActorWatcher g_ModCommand_ActorWatcher[4]; // XXX hooks.hpp logger.cpp trash glue
 
 const float PLAYER_PHYSICS_HEIGHT_OFFSET = 0.9; // constant offset between pos32/pos64
 ActorBase* Player = nullptr;
@@ -80,9 +80,24 @@ HOOK_DEFINE_TRAMPOLINE(ActorRelationAddHook) {
         auto main_logger = nnMainHookState->main_logger;
         IActor *parent = &(parentBase.mIActor);
         IActor *child = &(childBase.mIActor);
-
         ActorMgr_instance = &actor_mgr;
         u8 is_skip = 0;
+
+        // resolve "via next relation" actor selection
+        for (u8 i=1; i < sizeof(g_ModCommand_ActorWatcher); i++) {
+            auto &cmd = g_ModCommand_ActorWatcher[i];
+            if (!cmd.is_pending_selection || cmd.selection_type != 2) { continue; }
+            if (cmd.actor_selector_parent_relation == &parentBase) {
+                cmd.actor = &childBase;
+                cmd.is_pending_selection = false;
+                cmd.is_publishing_selection = true;
+            } else if (cmd.actor_selector_parent_relation == &childBase) {
+                // not sure we really care about parent/child here? use either
+                cmd.actor = &parentBase;
+                cmd.is_pending_selection = false;
+                cmd.is_publishing_selection = true;
+            }
+        }
 
         if(!strcmp(parent->name, "PlayerCamera")) { PlayerCamera = &parentBase; }
         if(!strcmp(parent->name, "EventCamera")) { EventCamera = &parentBase; }
@@ -91,6 +106,9 @@ HOOK_DEFINE_TRAMPOLINE(ActorRelationAddHook) {
             if(Player != &parentBase) {
                 main_logger->logf(NS_DEFAULT_TEXT, R"("Reassigning Player %p -> %p")", Player, &parentBase);
                 Player = &parentBase;
+                g_ModCommand_ActorWatcher[0].actor = Player;
+                g_ModCommand_ActorWatcher[0].is_pending_selection = false;
+                g_ModCommand_ActorWatcher[0].is_publishing_selection = true;
             }
 
             // Required relations (will retry loop at boot)
@@ -216,7 +234,7 @@ HOOK_DEFINE_TRAMPOLINE(WorldManagerModuleBaseProcHook) {
 
             Player->mPosition = cmd.pos32;
             Player->mRotationMatrix = cmd.rot;
-            Player_physics->m_centerOfMass = cmd.pos64;
+            Player_physics->m_centerOfMass = cmd.pos64; // FIXME spooky assignments, just copy members
             cmd.is_active_request = false;
 
             main_logger->logf(NS_SAVESTATE, R"({"actor_paste": ["%s"], "actor_props": [{"pos64": [%f, %f, %f], "pos32": [%f, %f, %f], "rot": [%f, %f, %f, %f, %f, %f, %f, %f, %f] }] })",
@@ -227,24 +245,46 @@ HOOK_DEFINE_TRAMPOLINE(WorldManagerModuleBaseProcHook) {
             );
         }
 
+        // Resolve pending actor selection via preactors
+        // TODO efficiently pick slots needing resolve work
+        // TODO check for entries that take too long to resolve -> hack to avoid checking this every frame for those cases (or just finish the create actor hooking and stop polling)
+        for (u8 i=1; i < sizeof(g_ModCommand_ActorWatcher); i++) {
+            auto &cmd = g_ModCommand_ActorWatcher[i];
+            if (!cmd.is_pending_selection || cmd.selection_type == 0 || cmd.preactor == nullptr) { continue; }
+            if (cmd.preactor->mpActor != nullptr) {
+                // FIXME this traversal is broken on 1.0.0? bad actor pointer
+                // eg main_logger->logf(NS_DEFAULT_TEXT, R"({"player preactor": "%p -> %p"})", Player_PreActor, Player_PreActor->mpActor);
+                cmd.actor = cmd.preactor->mpActor;
+                cmd.is_pending_selection = false;
+                cmd.is_publishing_selection = true;
+            }
+        }
 
         // Logging+instrumentation in this thread comes after ^ command proc
 
-        if (DO_PLAYER_LOG) {
-            //main_logger->logf(NS_DEFAULT_TEXT, R"({"player preactor": "%p -> %p", "s": "%s"})", Player_PreActor, Player_PreActor->mpActor);
+        for (u8 i=0; i < sizeof(g_ModCommand_ActorWatcher); i++) {
+            auto &cmd = g_ModCommand_ActorWatcher[i];
+            if (!cmd.is_publishing_selection || cmd.actor == nullptr) { continue; }
+            const auto actor = cmd.actor;
+            const auto rot = actor->mRotationMatrix;
+            hknpMotion* motion = cmd.tracked_motion;
 
-            const auto& rot = Player->mRotationMatrix;
-            if (Player_physics != nullptr) {
-                auto pos64 = Player_physics->m_centerOfMass;
-                main_logger->logf(NS_ACTOR_PLAYER, R"({"pos64": [%f, %f, %f], "rot_physics": [%f, %f, %f, %f], "physics_ang_vel": [%f, %f, %f], "physics_vel": [%f, %f, %f], "inertia": [%f, %f, %f, %f], "pos32": [%f, %f, %f], "rot": [%f, %f, %f, %f, %f, %f, %f, %f, %f] })",
+            const char* ns = i == 0 ? NS_ACTOR_PLAYER :
+                             i == 1 ? NS_ACTOR_SLOT_1 :
+                             i == 2 ? NS_ACTOR_SLOT_2 :
+                             i == 3 ? NS_ACTOR_SLOT_3 : NS_DEFAULT_TEXT;
+
+            if (motion != nullptr) {
+                const auto pos64 = motion->m_centerOfMass;
+                main_logger->logf(ns, R"({"pos64": [%f, %f, %f], "rot_physics": [%f, %f, %f, %f], "physics_ang_vel": [%f, %f, %f], "physics_vel": [%f, %f, %f], "inertia": [%f, %f, %f, %f], "pos32": [%f, %f, %f], "rot": [%f, %f, %f, %f, %f, %f, %f, %f, %f] })",
                     // hknpMotion
                     pos64.X, pos64.Y, pos64.Z,
-                    Player_physics->m_orientation.A, Player_physics->m_orientation.B, Player_physics->m_orientation.C, Player_physics->m_orientation.D,
-                    Player_physics->m_angularVelocityLocalAndSpeedLimit.X, Player_physics->m_angularVelocityLocalAndSpeedLimit.Y, Player_physics->m_angularVelocityLocalAndSpeedLimit.Z,
-                    Player_physics->m_linearVelocityAndSpeedLimit.X, Player_physics->m_linearVelocityAndSpeedLimit.Y, Player_physics->m_linearVelocityAndSpeedLimit.Z,
-                    Player_physics->m_inverseInertia[0], Player_physics->m_inverseInertia[1], Player_physics->m_inverseInertia[2], Player_physics->m_inverseInertia[3],
+                    motion->m_orientation.A, motion->m_orientation.B, motion->m_orientation.C, motion->m_orientation.D,
+                    motion->m_angularVelocityLocalAndSpeedLimit.X, motion->m_angularVelocityLocalAndSpeedLimit.Y, motion->m_angularVelocityLocalAndSpeedLimit.Z,
+                    motion->m_linearVelocityAndSpeedLimit.X, motion->m_linearVelocityAndSpeedLimit.Y, motion->m_linearVelocityAndSpeedLimit.Z,
+                    motion->m_inverseInertia[0], motion->m_inverseInertia[1], motion->m_inverseInertia[2], motion->m_inverseInertia[3],
                     // Actor
-                    Player->mPosition.X, Player->mPosition.Y, Player->mPosition.Z,
+                    actor->mPosition.X, actor->mPosition.Y, actor->mPosition.Z,
                     rot.m11, rot.m12, rot.m13, rot.m21, rot.m22, rot.m23, rot.m31, rot.m32, rot.m33
                 );
 
@@ -253,8 +293,8 @@ HOOK_DEFINE_TRAMPOLINE(WorldManagerModuleBaseProcHook) {
             } else {
 
                 // Actor only
-                main_logger->logf(NS_ACTOR_PLAYER, R"({"pos32": [%f, %f, %f], "rot": [%f, %f, %f, %f, %f, %f, %f, %f, %f] })",
-                    Player->mPosition.X, Player->mPosition.Y, Player->mPosition.Z,
+                main_logger->logf(ns, R"({"pos32": [%f, %f, %f], "rot": [%f, %f, %f, %f, %f, %f, %f, %f, %f] })",
+                    actor->mPosition.X, actor->mPosition.Y, actor->mPosition.Z,
                     rot.m11, rot.m12, rot.m13, rot.m21, rot.m22, rot.m23, rot.m31, rot.m32, rot.m33
                 );
             }
@@ -329,6 +369,7 @@ HOOK_DEFINE_TRAMPOLINE(TryGetPlayerPhysicsPosPtrHook) {
             // FIXME reallocated/??? sometimes... after several trapped-in-water voids at (0 0 0) I got this
             main_logger->logf(NS_DEFAULT_TEXT, R"("Reassigning Player_physics %p -> %p")", Player_physics, hkmotion);
             Player_physics = hkmotion;
+            g_ModCommand_ActorWatcher[0].tracked_motion = Player_physics;
         }
 
         Orig(self, param_2, hkmotion, motion_pool);
@@ -452,6 +493,15 @@ HOOK_DEFINE_TRAMPOLINE(TestCreateActorHook4) {
         if (!strcmp(*actorName, "Player")) {
             Player_PreActor = pa;
             main_logger->logf(NS_DEFAULT_TEXT, R"("Reassigning Player preactor %p")", Player_PreActor);
+            g_ModCommand_ActorWatcher[0].preactor = Player_PreActor;
+        }
+
+        // resolve "next spawn" actor selection
+        for (u8 i=1; i < sizeof(g_ModCommand_ActorWatcher); i++) {
+            auto &cmd = g_ModCommand_ActorWatcher[i];
+            if (!cmd.is_pending_selection || cmd.selection_type != 1 || cmd.preactor != nullptr || pa == nullptr) { continue; }
+            cmd.preactor = pa;
+            // cmd.is_pending_selection = true; // still pending selection: now we check every frame for mpActor to be set
         }
 
         return ret;
@@ -593,6 +643,9 @@ HOOK_DEFINE_INLINE(nnMainHook) {
 
         // TODO centralize on-connect info dump, or allow frontend to request it
         main_logger->logf(NS_DEFAULT_TEXT, R"("main_offset %p")", exl::util::GetMainModuleInfo().m_Total.m_Start);
+
+        // idk spooky
+        for (u8 i=0; i < sizeof(g_ModCommand_ActorWatcher); i++) { g_ModCommand_ActorWatcher[i].clear(); }
 
         InputHelper::initKBM();
         InputHelper::setPort(0); // default controller port

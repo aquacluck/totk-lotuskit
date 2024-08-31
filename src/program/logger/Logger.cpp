@@ -16,7 +16,8 @@ static u32 s_dgram_uniq_id_ctr = 0x00000000; // counter for all unsolicited mess
 // instead of connect
 #define DO_SOCKET_LISTEN 0
 
-ModCommand_Savestate_ActorPos g_ModCommand_Savestate_ActorPos[5];
+ModCommand_Savestate_ActorPos g_ModCommand_Savestate_ActorPos[4];
+ModCommand_ActorWatcher g_ModCommand_ActorWatcher[4];
 
 
 class LoggerTransport {
@@ -242,10 +243,72 @@ void Logger::tryRecvCommandMainLoop() {
 
 
     // Route query to any command, maybe yield a reponse
-    // TODO defer dgram responses when needed, so we can return async results another frame. Not everything will be observable the same frame we poke it. keep track of outstanding uniq_id+command, return async results with it
-    // XXX this sscanf business might be insecure?
-
     u32 uniq_id = 0;
+
+    // TODO route/etc sugar, once things settle down here:
+    //      - eg raw ws comes first, dont build too far up on this jank http shit.
+    //      - uniq_id shouldn't be buried in route resolution either, since when route sscanf fails we don't really know what uniq_id to scream at, which is a problem for async. this should be better exposed once we drop http (using a header would be the correct approach in http but thats not how we roll)
+    // TODO defer dgram responses when needed, so we can return async results another frame. Not everything will be observable the same frame we poke it. keep track of outstanding uniq_id+command, return async results with it
+    // XXX this sscanf business is probably insecure, but that probably doesnt matter when we'll be inhaling pointers from javascript anyways
+
+    constexpr auto actor_select_slot = "POST /backend/actor/select_slot?";
+    if (strncmp(actor_select_slot, query_buffer, strlen(actor_select_slot)) == 0) {
+        int target_slot;
+        char action[33];
+        void* action_arg;
+        constexpr auto fmt = "POST /backend/actor/select_slot?uniq_id=0x%08X %d %s %p";
+
+        if (sscanf(query_buffer, fmt, &uniq_id, &target_slot, action, &action_arg) == 4) {
+            u8 utarget_slot = (u8)target_slot;
+            if (utarget_slot == 0) {
+                LoggerTransport::send_dgram(mSocketFd, false, uniq_id, NS_COMMAND, R"({"err": "actor select_slot target is reserved"})");
+                return; // fail
+            } else if (utarget_slot < 1 || utarget_slot >= sizeof(g_ModCommand_ActorWatcher)) {
+                LoggerTransport::send_dgram(mSocketFd, false, uniq_id, NS_COMMAND, R"({"err": "actor select_slot target out of bounds"})");
+                return; // fail
+            }
+            auto &cmd = g_ModCommand_ActorWatcher[utarget_slot];
+
+            if (strcmp(action, "null") == 0) {
+                // FIXME we don't detect actor destruction -- you gotta clear this ahead of time, so its very easy to crash
+                cmd.clear();
+            } else if (strcmp(action, "spawn") == 0) {
+                cmd.clear();
+                cmd.is_pending_selection = true;
+                cmd.selection_type = 1; // FIXME enum NEXT_SPAWN?
+            } else if (strcmp(action, "next_relation_of_i") == 0) {
+
+                // TODO assert "source" action_arg slot contains a valid actor. eventually presenting custom names instead of slot indices would make slot dependencies like this copypastable by the user
+                u8 usource_slot = (u64)action_arg & 0xff;
+                if (usource_slot >= sizeof(g_ModCommand_ActorWatcher)) {
+                    LoggerTransport::send_dgram(mSocketFd, false, uniq_id, NS_COMMAND, R"({"err": "actor select_slot source out of bounds"})");
+                    return; // fail
+                }
+                auto &source_cmd = g_ModCommand_ActorWatcher[usource_slot];
+                if (!source_cmd.is_publishing_selection || source_cmd.actor == nullptr) {
+                    // TODO better+separate terms: we dont really care about "publishing" here, a slot might be attached/concrete/contain a
+                    //      selected actor without necessarily "publishing" anything? leave room for cheap indirection/traversal like this.
+                    LoggerTransport::send_dgram(mSocketFd, false, uniq_id, NS_COMMAND, R"({"err": "actor select_slot source dead"})");
+                    return; // fail
+                }
+
+                cmd.clear();
+                cmd.is_pending_selection = true;
+                cmd.selection_type = 2; // FIXME enum NEXT_RELATION_OF_SELECTED?
+                cmd.actor_selector_parent_relation = source_cmd.actor;
+
+            } else {
+                LoggerTransport::send_dgram(mSocketFd, false, uniq_id, NS_COMMAND, R"({"err": "actor select_slot action invalid"})");
+                return; // fail
+            }
+
+            LoggerTransport::send_dgram(mSocketFd, false, uniq_id, NS_COMMAND, R"({"msg": "queued actor selection"})");
+            return; // ok
+        }
+
+        LoggerTransport::send_dgram(mSocketFd, false, uniq_id, NS_COMMAND, R"({"err": "malformed params for route"})");
+        return; // fail
+    }
 
     constexpr auto savestate_paste_simple = "POST /backend/savestate/paste_simple?";
     if (strncmp(savestate_paste_simple, query_buffer, strlen(savestate_paste_simple)) == 0) {
@@ -277,16 +340,19 @@ void Logger::tryRecvCommandMainLoop() {
             auto &cmd = g_ModCommand_Savestate_ActorPos[0];
             cmd.is_active_request = true;
             strncpy(cmd.actor_selector_named, target, 33);
-            cmd.pos32 = pos32;
-            cmd.pos64 = pos64;
+            //FIXME memberwise assign/copy operator? or maybe use some real sead stuff. idk why red-diff assignment suddenly got crashy though, it was wrong(?) but somehow worked in those conditions
+            cmd.pos32.X = pos32.X; cmd.pos32.Y = pos32.Y; cmd.pos32.Z = pos32.Z;
+            cmd.pos64.X = pos64.X; cmd.pos64.Y = pos64.Y; cmd.pos64.Z = pos64.Z;
             cmd.rot.m11 = 0; cmd.rot.m12 = 1; cmd.rot.m13 = 0; cmd.rot.m21 = 0; cmd.rot.m22 = 0; cmd.rot.m23 = 0; cmd.rot.m31 = 0; cmd.rot.m32 = 0; cmd.rot.m33 = 0; // XXX get from query, or allow partial? convert to physics?
 
             LoggerTransport::send_dgram(mSocketFd, false, uniq_id, NS_COMMAND, R"({"msg": "queued warp"})");
-            return;
+            return; // ok
         }
+
+        LoggerTransport::send_dgram(mSocketFd, false, uniq_id, NS_COMMAND, R"({"err": "malformed params for route"})");
+        return; // fail
     }
 
-    constexpr bool do_http = false; // TODO just speak websocket and drop the http thing? its not that hard
-    LoggerTransport::send_dgram(mSocketFd, do_http, uniq_id, NS_COMMAND, R"({"fail": true})");
+    LoggerTransport::send_dgram(mSocketFd, false, uniq_id, NS_COMMAND, R"({"err": "no matching route"})"); // fail
 }
 
