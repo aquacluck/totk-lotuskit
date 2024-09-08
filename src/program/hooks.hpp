@@ -15,7 +15,9 @@
 #include <math.h>
 
 // agl include
+#include "common/aglDrawContext.h"
 #include "lyr/aglLayer.h"
+#include "lyr/aglRenderInfo.h"
 
 // sead include
 #include "gfx/seadDrawContext.h"
@@ -591,8 +593,8 @@ struct CreateArg {
 };
 
 //void (*TextWriterCtor)(void*, sead::DrawContext*, sead::Viewport*);
-//void (*TextWriterPrintf)(sead::TextWriter*, const char*, ...);
-//void (*TextWriterSetupGraphics)(sead::DrawContext*);
+void (*TextWriterPrintf)(sead::TextWriter*, const char*, ...);
+void (*TextWriterSetupGraphics)(sead::DrawContext*);
 //void (*TextWriterBeginDraw)(sead::TextWriter*);
 //void (*TextWriterEndDraw)(sead::TextWriter*);
 
@@ -653,11 +655,32 @@ HOOK_DEFINE_INLINE(DebugDrawEnsureFont) {
 
         // allow layer to draw
         ctx->W[8] = 0x28; // satisfy check to call agl::lyr::Layer::drawDebugInfo_
-        layer->mRenderFlags |= 1 << 13; // satisfy check inside drawDebugInfo_
+        layer->mRenderFlags |= 1 << 13; // satisfy check inside vanilla drawDebugInfo_
     }
 };
 
 
+HOOK_DEFINE_TRAMPOLINE(DebugDrawImpl) {
+    static const ptrdiff_t s_offset = 0x0081911c; // agl::lyr::Layer::drawDebugInfo_
+    static void Callback(agl::lyr::Layer* layer, const agl::lyr::RenderInfo& info) {
+        // draw onto the given layer, always tool2d super -- we would be given many layers if they weren't ignored above
+
+        auto* sead_draw_ctx = dynamic_cast<sead::DrawContext*>(info.draw_ctx);
+        TextWriterSetupGraphics(sead_draw_ctx);
+        sead::TextWriter writer(sead_draw_ctx, info.viewport);
+        //TextWriterCtor(&writer, sead_draw_ctx, info.viewport);
+
+        Vector2f pos;
+        pos.X = 420.69;
+        pos.Y = 420.69;
+        TextWriterSetCursor(&writer, &pos);
+
+        //writer.setCursor(0.f, 0.f);
+        TextWriterPrintf(&writer, "Hello World");
+    }
+};
+
+/*
 HOOK_DEFINE_TRAMPOLINE(DebugDrawImpl) {
     static const ptrdiff_t s_offset = 0x021fdc60; // responsible for calling shadow+foreground printImpl_ pair
     static void Callback(float param_1, sead::TextWriter* text_writer, sead::FixedSafeString<1024>* message, Vector2f *param_4) {
@@ -672,6 +695,7 @@ HOOK_DEFINE_TRAMPOLINE(DebugDrawImpl) {
         Orig(param_1, text_writer, message, param_4);
     }
 };
+*/
 
 /*
 HOOK_DEFINE_TRAMPOLINE(agl_Layer_drawDebugInfo) {
@@ -728,9 +752,6 @@ HOOK_DEFINE_INLINE(nnMainHook) {
 
         // XXX textwriter hack
         auto main = exl::util::GetMainModuleInfo().m_Total.m_Start;
-        //*reinterpret_cast<uintptr_t*>(&TextWriterCtor) = reinterpret_cast<uintptr_t>(main + 0x010ad510);
-        //*reinterpret_cast<uintptr_t*>(&TextWriterPrintf) = reinterpret_cast<uintptr_t>(main + 0x018890d4);
-        //*reinterpret_cast<uintptr_t*>(&TextWriterSetupGraphics) = reinterpret_cast<uintptr_t>(main + 0x01888e6c);
         //*reinterpret_cast<uintptr_t*>(&TextWriterBeginDraw) = reinterpret_cast<uintptr_t>(main + 0x010ad498);
         //*reinterpret_cast<uintptr_t*>(&TextWriterEndDraw) = reinterpret_cast<uintptr_t>(main + 0x010ad478);
 
@@ -740,16 +761,21 @@ HOOK_DEFINE_INLINE(nnMainHook) {
         tmp = (void**)(&TextWriterSetCursor);
         *tmp = (void*)(main + 0x010ad4cc);
 
-        // Draw::InstallAtOffset(0x00bc87bc);
+        //tmp = (void**)(&TextWriterCtor);
+        //*tmp = (void*)(main + 0x010ad510);
+
+        tmp = (void**)(&TextWriterPrintf);
+        *tmp = (void*)(main + 0x018890d4);
+
+        tmp = (void**)(&TextWriterSetupGraphics);
+        *tmp = (void*)(main + 0x01888e6c);
+
         StealHeap::InstallAtOffset(0x007f61d0);
         GetCreateArg::Setup();
         GetCreateArg::InstallAtOffset(0x00a9123c);
         DebugDrawEnsureFont::Setup();
         DebugDrawEnsureFont::Install();
         DebugDrawImpl::Install();
-        //agl_Layer_drawDebugInfo::Install();
-        //FixFlag::InstallAtOffset(0x00819140);
-        //Confirm::InstallAtOffset(0x008193ec);
 
         // figure out where+when to connect
         char ip[16] = "";

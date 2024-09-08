@@ -13,6 +13,8 @@ __main_start_offset = 0x4dde000;
 
 _ZN4game2ai7execute20ExecutePlayerWhistle10enterImpl_EPv = __main_start +         0x00000000; /* game::ai::execute::ExecutePlayerWhistle::enterImpl_(void*) */
 _ZN4game2wm18WorldManagerModule11baseProcExeEPvS2_ = __main_start +         0x00b56d34; /* game::wm::WorldManagerModule::baseProcExe(void*, void*) */
+_ZN4sead10TextWriterC1EPNS_11DrawContextEPKNS_8ViewportE = __main_start +         0x010c85b8; /* sead::TextWriter::{ctor}(sead::DrawContext*, sead::Viewport const*) */
+_ZN4sead10TextWriterD1Ev         = __main_start +         0x00000000; /* sead::TextWriter::{dtor}() */
 _ZN4sead12GlobalRandom9sInstanceE = __main_start +         0x00000000; /* sead::GlobalRandom::sInstance */
 _ZN4sead6Random6getU32Ev         = __main_start +         0x00000000; /* sead::Random::getU32() */
 _ZN6engine5actor16ActorInstanceMgr22requestCreateActorSyncEPv = __main_start +         0x00000000; /* engine::actor::ActorInstanceMgr::requestCreateActorSync(void*) */

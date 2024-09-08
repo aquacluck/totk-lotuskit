@@ -21,6 +21,7 @@ def run_symbol_def_imports():
 
     #import agl.lyr.aglLayer
 
+    import sead.gfx.seadTextWriter
     import sead.random.seadGlobalRandom
     import sead.random.seadRandom
     #import sead.heap.seadHeapMgr # nop
