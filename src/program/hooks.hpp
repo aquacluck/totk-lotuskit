@@ -14,8 +14,13 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 
+// sead include
+#include "gfx/seadDrawContext.h"
+#include "gfx/seadTextWriter.h"
+#include "gfx/seadViewport.h"
 #include "random/seadGlobalRandom.h"
 
+// sead sym
 #include "sym/engine/actor/ActorInstanceMgr.h"
 #include "sym/engine/actor/ActorMgr.h"
 #include "sym/engine/actor/BaseProcCreateAndDeleteThread.h"
@@ -574,6 +579,123 @@ ActorBase * GetChild(ActorMgr& mgr, u32 index, ActorBase &parent) {
 */
 
 
+
+
+
+
+
+
+// GraphicsModule CreateArg
+struct CreateArg {
+    char _whatever[0xb4c];
+    int value0;
+    char _whatever2[0x10];
+    int value1;
+};
+
+#define TECHNICALLY_NECESSARY 0
+#if TECHNICALLY_NECESSARY
+// these are technically unnecessary
+void (*TextWriterCtor)(void*, sead::DrawContext*, sead::Viewport*);
+void (*TextWriterPrintf)(sead::TextWriter*, const char*, ...);
+void (*TextWriterSetupGraphics)(sead::DrawContext*);
+void (*TextWriterBeginDraw)(sead::TextWriter*);
+void (*TextWriterEndDraw)(sead::TextWriter*);
+#endif
+
+void (*TextWriterSetCursor)(sead::TextWriter*, Vector2f*);
+void (*InitDebugDrawers)(sead::Heap*, CreateArg&);
+sead::Heap* gStolenHeap;
+CreateArg gCreateArg{};
+
+HOOK_DEFINE_INLINE(StealHeap) {
+    static void Callback(exl::hook::InlineCtx* ctx) {
+        gStolenHeap = reinterpret_cast<sead::Heap*>(ctx->X[22]);
+    }
+};
+
+HOOK_DEFINE_INLINE(GetCreateArg) {
+    static void Callback(exl::hook::InlineCtx* ctx) {
+        gCreateArg.value0 = reinterpret_cast<CreateArg*>(ctx->X[1])->value0;
+        gCreateArg.value1 = reinterpret_cast<CreateArg*>(ctx->X[1])->value1; // nvnBufferBuilderSetStorage?
+    }
+};
+
+HOOK_DEFINE_INLINE(DebugDraw) { // doesn't actually do the drawing lol
+    static const ptrdiff_t s_offset = 0x00818340; // agl::lyr::RenderDisplay::drawLayer_ (before checking the 0x28)
+
+    static void Callback(exl::hook::InlineCtx* ctx) {
+        auto main_logger = nnMainHookState->main_logger;
+        void** sDefaultFont = exl::util::pointer_path::FollowSafe<void*, 0x04716af8>();
+
+        if (*sDefaultFont == nullptr) {
+            main_logger->log(NS_DEFAULT_TEXT, R"("init default font")"); // we get this twice?
+            InitDebugDrawers(gStolenHeap, gCreateArg);
+        }
+
+        if (*sDefaultFont == nullptr) {
+            main_logger->log(NS_DEFAULT_TEXT, R"("init default font fail")");
+            return;
+        }
+
+        static void* target_thingy = nullptr;
+        if (target_thingy == nullptr) {
+            // just use the first one we see, always visible
+            target_thingy = (void*)(ctx->X[21]);
+        }
+
+        if ((void*)(ctx->X[21]) == target_thingy) {
+
+            ctx->W[8] = 0x28; // satisfy check to call agl::lyr::Layer::drawDebugInfo_
+            u8* flags = (u8*)(ctx->X[21]) + 0x89;
+            *flags = *flags | 32; // satisfy check inside drawDebugInfo_
+        }
+    }
+};
+
+HOOK_DEFINE_TRAMPOLINE(DebugDrawImpl) {
+    static const ptrdiff_t s_offset = 0x021fdc60; // responsible for calling shadow+foreground printImpl_ pair
+    static void Callback(float param_1, sead::TextWriter* text_writer, sead::FixedSafeString<1024>* message, Vector2f *param_4) {
+        Vector2f pos;
+        pos.X = 0.5;
+        pos.Y = 0.5;
+        TextWriterSetCursor(text_writer, &pos);
+
+        auto main_logger = nnMainHookState->main_logger;
+        main_logger->logf(NS_DEFAULT_TEXT, R"("DebugDrawImpl %s ")", message->cstr());
+        //main_logger->logf(NS_DEFAULT_TEXT, R"("DebugDrawImpl %s ")", (char*)message + 0xc);
+        //main_logger->logf(NS_DEFAULT_TEXT, R"("DebugDrawImpl %s ")", message->mStringTop);
+
+        Orig(param_1, text_writer, message, param_4);
+    }
+};
+
+/*
+HOOK_DEFINE_TRAMPOLINE(agl_Layer_drawDebugInfo) {
+    static const ptrdiff_t s_offset = 0x0081911c; // agl::lyr::Layer::drawDebugInfo_
+    static void Callback(void* param_1, void* param_2) {
+        Orig(param_1, param_2);
+    }
+};
+*/
+
+// just a sanity check to make sure it's actually reaching the function
+/*
+HOOK_DEFINE_INLINE(Confirm) {
+    static void Callback(exl::hook::InlineCtx* ctx) {
+        auto main_logger = nnMainHookState->main_logger;
+        main_logger->log(NS_DEFAULT_TEXT, R"("HERE")");
+    }
+};
+*/
+
+
+
+
+
+
+
+
 HOOK_DEFINE_INLINE(nnMainHook) {
     // Steal execution from nnMain right before it jumps into the game
     static const ptrdiff_t s_offset = sym::engine::nnMain_post_setup;
@@ -600,6 +722,30 @@ HOOK_DEFINE_INLINE(nnMainHook) {
         //TestCreateActorHookImpl::Install();
         //TestDeleteActorHookImpl::Install();
 #endif
+
+        // XXX textwriter hack
+        auto main = exl::util::GetMainModuleInfo().m_Total.m_Start;
+#if TECHNICALLY_NECESSARY
+        *reinterpret_cast<uintptr_t*>(&TextWriterCtor) = reinterpret_cast<uintptr_t>(main + 0x010ad510);
+        *reinterpret_cast<uintptr_t*>(&TextWriterPrintf) = reinterpret_cast<uintptr_t>(main + 0x018890d4);
+        *reinterpret_cast<uintptr_t*>(&TextWriterSetupGraphics) = reinterpret_cast<uintptr_t>(main + 0x01888e6c);
+        *reinterpret_cast<uintptr_t*>(&TextWriterBeginDraw) = reinterpret_cast<uintptr_t>(main + 0x010ad498);
+        *reinterpret_cast<uintptr_t*>(&TextWriterEndDraw) = reinterpret_cast<uintptr_t>(main + 0x010ad478);
+#endif
+        void** tmp = (void**)(&InitDebugDrawers);
+        *tmp = (void*)(main + 0x00a92964);
+
+        tmp = (void**)(&TextWriterSetCursor);
+        *tmp = (void*)(main + 0x010ad4cc);
+
+        // Draw::InstallAtOffset(0x00bc87bc);
+        StealHeap::InstallAtOffset(0x007f61d0);
+        GetCreateArg::InstallAtOffset(0x00a9123c);
+        DebugDraw::Install();
+        DebugDrawImpl::Install();
+        //agl_Layer_drawDebugInfo::Install();
+        //FixFlag::InstallAtOffset(0x00819140);
+        //Confirm::InstallAtOffset(0x008193ec);
 
         // figure out where+when to connect
         char ip[16] = "";
