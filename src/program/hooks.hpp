@@ -19,23 +19,35 @@
 #include "lyr/aglLayer.h"
 #include "lyr/aglRenderInfo.h"
 
+// agl sym
+#include "sym/agl_hacks.h"
+#include "sym/lyr/aglLayer.h"
+
 // sead include
 #include "gfx/seadDrawContext.h"
 #include "gfx/seadTextWriter.h"
 #include "gfx/seadViewport.h"
+#include "math/seadVector.hpp"
 #include "random/seadGlobalRandom.h"
 
 // sead sym
+#include "sym/gfx/seadTextWriter.h"
+#include "sym/random/seadGlobalRandom.h"
+#include "sym/random/seadRandom.h"
+
+// engine sym
 #include "sym/engine/actor/ActorInstanceMgr.h"
 #include "sym/engine/actor/ActorMgr.h"
 #include "sym/engine/actor/BaseProcCreateAndDeleteThread.h"
 #include "sym/engine/hacks.h"
 #include "sym/engine/module/VFRMgr.h"
+
+// game sym
 #include "sym/game/ai/execute/ExecutePlayerWhistle.h"
 #include "sym/game/wm/WorldManagerModule.h"
+
+// havok sym
 #include "sym/hk/hacks.h"
-#include "sym/random/seadGlobalRandom.h"
-#include "sym/random/seadRandom.h"
 
 
 // feature flags to minimize log noise and similar clutter/risk/etc
@@ -584,43 +596,42 @@ ActorBase * GetChild(ActorMgr& mgr, u32 index, ActorBase &parent) {
 */
 
 
-// GraphicsModule CreateArg
-struct CreateArg {
+struct GraphicsModuleCreateArg {
     char _whatever[0xb4c];
     int value0;
     char _whatever2[0x10];
     int value1;
 };
 
-//void (*TextWriterCtor)(void*, sead::DrawContext*, sead::Viewport*);
-void (*TextWriterPrintf)(sead::TextWriter*, const char*, ...);
-void (*TextWriterSetupGraphics)(sead::DrawContext*);
-//void (*TextWriterBeginDraw)(sead::TextWriter*);
-//void (*TextWriterEndDraw)(sead::TextWriter*);
-
-void (*TextWriterSetCursor)(sead::TextWriter*, Vector2f*);
-void (*InitDebugDrawers)(sead::Heap*, CreateArg&);
-
+// used for DebugDrawEnsureFont
 HOOK_DEFINE_INLINE(StealHeap) {
+    static const ptrdiff_t s_offset = sym::engine::steal_heap; // hacks
     inline static sead::Heap* stolen_heap = nullptr;
     static void Callback(exl::hook::InlineCtx* ctx) {
+#ifdef TOTK_100
+        // TODO register annotation/aliasing instead
+        stolen_heap = reinterpret_cast<sead::Heap*>(ctx->X[19]);
+#else
         stolen_heap = reinterpret_cast<sead::Heap*>(ctx->X[22]);
+#endif
     }
 };
 
+// used for DebugDrawEnsureFont
 HOOK_DEFINE_INLINE(GetCreateArg) {
-    inline static CreateArg* create_arg = nullptr;
+    static const ptrdiff_t s_offset = sym::agl::create_arg; // hacks
+    inline static GraphicsModuleCreateArg* create_arg = nullptr;
     static void Setup(void) {
-        create_arg = new CreateArg();
+        create_arg = new GraphicsModuleCreateArg();
     }
     static void Callback(exl::hook::InlineCtx* ctx) {
-        create_arg->value0 = reinterpret_cast<CreateArg*>(ctx->X[1])->value0;
-        create_arg->value1 = reinterpret_cast<CreateArg*>(ctx->X[1])->value1; // nvnBufferBuilderSetStorage?
+        create_arg->value0 = reinterpret_cast<GraphicsModuleCreateArg*>(ctx->X[1])->value0;
+        create_arg->value1 = reinterpret_cast<GraphicsModuleCreateArg*>(ctx->X[1])->value1; // nvnBufferBuilderSetStorage?
     }
 };
 
 HOOK_DEFINE_INLINE(DebugDrawEnsureFont) {
-    static const ptrdiff_t s_offset = 0x00818340; // agl::lyr::RenderDisplay::drawLayer_ (before checking the 0x28)
+    static const ptrdiff_t s_offset = sym::agl::lyr::RenderDisplay::drawLayer_::ensure_font; // hacks
 
     inline static nn::os::MutexType* fontMutex = nullptr;
     inline static void** sDefaultFont = nullptr;
@@ -628,7 +639,8 @@ HOOK_DEFINE_INLINE(DebugDrawEnsureFont) {
     static void Setup(void) {
         fontMutex = new nn::os::MutexType();
         nn::os::InitializeMutex(fontMutex, true, 0);
-        sDefaultFont = exl::util::pointer_path::FollowSafe<void*, 0x04716af8>();
+
+        sDefaultFont = exl::util::pointer_path::FollowSafe<void*, sym::agl::default_font>(); // hacks
     }
 
     static void Callback(exl::hook::InlineCtx* ctx) {
@@ -644,7 +656,12 @@ HOOK_DEFINE_INLINE(DebugDrawEnsureFont) {
             if (*sDefaultFont == nullptr) {
                 auto main_logger = nnMainHookState->main_logger;
                 main_logger->log(NS_DEFAULT_TEXT, R"("init default font ")");
+
+                void(*InitDebugDrawers)(sead::Heap*, GraphicsModuleCreateArg&) = nullptr;
+                void** tmp = (void**)(&InitDebugDrawers);
+                *tmp = exl::util::pointer_path::FollowSafe<void*, sym::agl::init_debug_drawers>(); // hacks
                 InitDebugDrawers(StealHeap::stolen_heap, *GetCreateArg::create_arg);
+
                 if (*sDefaultFont == nullptr) {
                     main_logger->log(NS_DEFAULT_TEXT, R"("init default font fail")");
                     return;
@@ -661,66 +678,22 @@ HOOK_DEFINE_INLINE(DebugDrawEnsureFont) {
 
 
 HOOK_DEFINE_TRAMPOLINE(DebugDrawImpl) {
-    static const ptrdiff_t s_offset = 0x0081911c; // agl::lyr::Layer::drawDebugInfo_
+    static const ptrdiff_t s_offset = sym::agl::lyr::Layer::drawDebugInfo_;
     static void Callback(agl::lyr::Layer* layer, const agl::lyr::RenderInfo& info) {
         // draw onto the given layer, always tool2d super -- we would be given many layers if they weren't ignored above
 
         auto* sead_draw_ctx = dynamic_cast<sead::DrawContext*>(info.draw_ctx);
-        TextWriterSetupGraphics(sead_draw_ctx);
+        // XXX do we really need to do this every time? weird its a static. maybe we can hold onto one instead
+        sead::TextWriter::setupGraphics(sead_draw_ctx);
         sead::TextWriter writer(sead_draw_ctx, info.viewport);
-        //TextWriterCtor(&writer, sead_draw_ctx, info.viewport);
 
-        Vector2f pos;
-        pos.X = 420.69;
-        pos.Y = 420.69;
-        TextWriterSetCursor(&writer, &pos);
-
-        //writer.setCursor(0.f, 0.f);
-        TextWriterPrintf(&writer, "Hello World");
+        sead::Vector2f pos;
+        pos.x = 0.0;
+        pos.y = 0.0;
+        writer.setCursorFromTopLeft(pos);
+        writer.printf("owo uwu");
     }
 };
-
-/*
-HOOK_DEFINE_TRAMPOLINE(DebugDrawImpl) {
-    static const ptrdiff_t s_offset = 0x021fdc60; // responsible for calling shadow+foreground printImpl_ pair
-    static void Callback(float param_1, sead::TextWriter* text_writer, sead::FixedSafeString<1024>* message, Vector2f *param_4) {
-        Vector2f pos;
-        pos.X = 0.5;
-        pos.Y = 0.5;
-        TextWriterSetCursor(text_writer, &pos);
-
-        auto main_logger = nnMainHookState->main_logger;
-        main_logger->logf(NS_DEFAULT_TEXT, R"("DebugDrawImpl %s ")", message->cstr());
-
-        Orig(param_1, text_writer, message, param_4);
-    }
-};
-*/
-
-/*
-HOOK_DEFINE_TRAMPOLINE(agl_Layer_drawDebugInfo) {
-    static const ptrdiff_t s_offset = 0x0081911c; // agl::lyr::Layer::drawDebugInfo_
-    static void Callback(void* param_1, void* param_2) {
-        Orig(param_1, param_2);
-    }
-};
-*/
-
-// just a sanity check to make sure it's actually reaching the function
-/*
-HOOK_DEFINE_INLINE(Confirm) {
-    static void Callback(exl::hook::InlineCtx* ctx) {
-        auto main_logger = nnMainHookState->main_logger;
-        main_logger->log(NS_DEFAULT_TEXT, R"("HERE")");
-    }
-};
-*/
-
-
-
-
-
-
 
 
 HOOK_DEFINE_INLINE(nnMainHook) {
@@ -750,29 +723,10 @@ HOOK_DEFINE_INLINE(nnMainHook) {
         //TestDeleteActorHookImpl::Install();
 #endif
 
-        // XXX textwriter hack
-        auto main = exl::util::GetMainModuleInfo().m_Total.m_Start;
-        //*reinterpret_cast<uintptr_t*>(&TextWriterBeginDraw) = reinterpret_cast<uintptr_t>(main + 0x010ad498);
-        //*reinterpret_cast<uintptr_t*>(&TextWriterEndDraw) = reinterpret_cast<uintptr_t>(main + 0x010ad478);
-
-        void** tmp = (void**)(&InitDebugDrawers);
-        *tmp = (void*)(main + 0x00a92964);
-
-        tmp = (void**)(&TextWriterSetCursor);
-        *tmp = (void*)(main + 0x010ad4cc);
-
-        //tmp = (void**)(&TextWriterCtor);
-        //*tmp = (void*)(main + 0x010ad510);
-
-        tmp = (void**)(&TextWriterPrintf);
-        *tmp = (void*)(main + 0x018890d4);
-
-        tmp = (void**)(&TextWriterSetupGraphics);
-        *tmp = (void*)(main + 0x01888e6c);
-
-        StealHeap::InstallAtOffset(0x007f61d0);
+        // hooks for textwriter overlay
+        StealHeap::Install();
         GetCreateArg::Setup();
-        GetCreateArg::InstallAtOffset(0x00a9123c);
+        GetCreateArg::Install();
         DebugDrawEnsureFont::Setup();
         DebugDrawEnsureFont::Install();
         DebugDrawImpl::Install();

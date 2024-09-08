@@ -11,10 +11,15 @@ __game_version = 100; /* TOTK_100 */
 
 __main_start_offset = 0x4d0f000;
 
+_ZN3agl3lyr5Layer14drawDebugInfo_EPS1_RKNS0_10RenderInfoE = __main_start +         0x00858998; /* agl::lyr::Layer::drawDebugInfo_(agl::lyr::Layer*, agl::lyr::RenderInfo const&) */
+_ZN3aglL18init_debug_drawersE    = __main_start +         0x00ea6834; /* agl::init_debug_drawers */
 _ZN4game2ai7execute20ExecutePlayerWhistle10enterImpl_EPv = __main_start +         0x01d2e1c4; /* game::ai::execute::ExecutePlayerWhistle::enterImpl_(void*) */
 _ZN4game2wm18WorldManagerModule11baseProcExeEPvS2_ = __main_start +         0x00b22a34; /* game::wm::WorldManagerModule::baseProcExe(void*, void*) */
+_ZN4sead10TextWriter13setupGraphicsEPNS_11DrawContextE = __main_start +         0x0184c778; /* sead::TextWriter::setupGraphics(sead::DrawContext*) */
+_ZN4sead10TextWriter20setCursorFromTopLeftERKNS_7Vector2IfEE = __main_start +         0x0108ecd8; /* sead::TextWriter::setCursorFromTopLeft(sead::Vector2<float> const&) */
+_ZN4sead10TextWriter6printfEPKcz = __main_start +         0x0184c9e0; /* sead::TextWriter::printf(char const*, ...) */
 _ZN4sead10TextWriterC1EPNS_11DrawContextEPKNS_8ViewportE = __main_start +         0x0108ed1c; /* sead::TextWriter::{ctor}(sead::DrawContext*, sead::Viewport const*) */
-_ZN4sead10TextWriterD1Ev         = __main_start +         0x00000000; /* sead::TextWriter::{dtor}() */
+_ZN4sead10TextWriterD1Ev         = __main_start +         0x029bc880; /* sead::TextWriter::{dtor}() */
 _ZN4sead12GlobalRandom9sInstanceE = __main_start +         0x0463c108; /* sead::GlobalRandom::sInstance */
 _ZN4sead6Random6getU32Ev         = __main_start +         0x010df518; /* sead::Random::getU32() */
 _ZN6engine5actor16ActorInstanceMgr22requestCreateActorSyncEPv = __main_start +         0x01278724; /* engine::actor::ActorInstanceMgr::requestCreateActorSync(void*) */

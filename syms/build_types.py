@@ -232,7 +232,15 @@ class RuntimeSymbol:
                     breakpoint(); raise e
                 ns.append(ns_identifier.value)
 
-            self.subject_identifier = namenode.value[-1].value
+            # lib ctor+dtor values are further classifications "complete" etc.
+            # We usually don't care about exposing accurate hpp names, as these are for the linker instead.
+            if namenode.value[-1].kind == "ctor":
+                self.subject_identifier = "ctor"
+            elif namenode.value[-1].kind == "dtor":
+                self.subject_identifier = "dtor"
+            else:
+                self.subject_identifier = namenode.value[-1].value
+
             self.ns = tuple(ns)
             return
 
