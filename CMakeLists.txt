@@ -32,6 +32,11 @@ include(${CMAKE_SOURCE_DIR}/cmake/SwitchTools.cmake)
 
 
 # Begin game headers + symbols
+
+# Used by header patches to override visibility in specific cases.
+# Turn this off and re-clobber the headers for eg private method mangling compatibility (no need for this yet)
+add_compile_definitions(LOTUSKIT_HACK_SKIP_PRIVATE=1)
+
 # TODO EventFlow
 
 # NintendoSDK
@@ -48,7 +53,9 @@ add_compile_definitions(
 include_directories(${PROJECT_SOURCE_DIR}/dt_totk/lib/NintendoSDK/include) # headers
 include_directories(${PROJECT_SOURCE_DIR}/syms/output_hpp_sym_ns/TOTK_${TOTK_VERSION}/NintendoSDK) # symbols
 
-# TODO agl
+# agl
+include_directories(${PROJECT_SOURCE_DIR}/dt_totk/lib/agl/include) # headers
+include_directories(${PROJECT_SOURCE_DIR}/syms/output_hpp_sym_ns/TOTK_${TOTK_VERSION}/agl) # symbols
 
 # sead
 add_compile_definitions(SEAD_ZSTD=1)

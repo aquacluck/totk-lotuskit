@@ -19,7 +19,7 @@ def run_symbol_def_imports():
 
     #import NintendoSDK.nn.socket # nop
 
-    # TODO agl
+    #import agl.lyr.aglLayer
 
     import sead.random.seadGlobalRandom
     import sead.random.seadRandom

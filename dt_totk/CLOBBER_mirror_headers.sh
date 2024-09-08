@@ -37,7 +37,9 @@ echo "cp lib/NintendoSDK"
 mkdir -p lib/NintendoSDK
 cp -r tmpgit/lib/NintendoSDK/include lib/NintendoSDK
 
-# XXX lib/agl
+echo "cp lib/agl"
+mkdir -p lib/agl
+cp -r tmpgit/lib/agl/include lib/agl
 
 echo "cp lib/sead"
 mkdir -p lib/sead
