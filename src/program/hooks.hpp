@@ -1,4 +1,6 @@
 #pragma once
+#include <utility>
+
 #include "lib.hpp"
 #include "nn/nn.h"
 #include "nn/hid.h"
@@ -24,6 +26,7 @@
 #include "sym/lyr/aglLayer.h"
 
 // sead include
+#include "gfx/seadColor.h"
 #include "gfx/seadDrawContext.h"
 #include "gfx/seadTextWriter.h"
 #include "gfx/seadViewport.h"
@@ -401,9 +404,9 @@ HOOK_DEFINE_TRAMPOLINE(TryGetPlayerPhysicsPosPtrHook) {
 HOOK_DEFINE_TRAMPOLINE(HookRNG_sead_u32) {
     static const ptrdiff_t s_offset = sym::sead::Random::getU32;
 
-    static bool do_log;
-    static bool do_stub;
-    static u32 stub_value;
+    inline static bool do_log = false;
+    inline static bool do_stub = false;
+    inline static u32 stub_value = 420;
 
     static u32 Callback(void* param) { // sead::Random*
         u32 ret;
@@ -421,9 +424,9 @@ HOOK_DEFINE_TRAMPOLINE(HookRNG_sead_u32) {
         return ret;
     }
 };
-bool HookRNG_sead_u32::do_log = false;
-bool HookRNG_sead_u32::do_stub = false;
-u32 HookRNG_sead_u32::stub_value = 420;
+//bool HookRNG_sead_u32::do_log = false;
+//bool HookRNG_sead_u32::do_stub = false;
+//u32 HookRNG_sead_u32::stub_value = 420;
 
 
 #if DO_XXX_ACTOR_CREATION_LOG
@@ -646,7 +649,7 @@ HOOK_DEFINE_INLINE(DebugDrawEnsureFont) {
     static void Callback(exl::hook::InlineCtx* ctx) {
         // ignore other layers
         auto* layer = (agl::lyr::Layer*)(ctx->X[21]);
-        if (strncmp("Tool 2D Super", layer->mLayerName.cstr(), 0x100) != 0) {
+        if (strncmp("Tool 2D", layer->mLayerName.cstr(), 0x20) != 0) {
             return;
         }
 
@@ -677,20 +680,53 @@ HOOK_DEFINE_INLINE(DebugDrawEnsureFont) {
 };
 
 
+class TextWriterExt: public sead::TextWriter {
+    public:
+    void getCursorFromTopLeftImpl(sead::Vector2f* pos) const {
+        // always 720p sooooo just make it work
+        pos->x = mCursor.x + 640.0;
+        pos->y = 360.0 - mCursor.y;
+    }
+    void pprintf(sead::Vector2f &pos, const char* fmt, auto&&... args) {
+        // pretty print: text shadow drawn first
+        this->mColor.r = 0.0; this->mColor.g = 0.0; this->mColor.b = 0.0; this->mColor.a = 1.0; // black
+        this->setCursorFromTopLeft(pos);
+        this->printf(fmt, std::forward<decltype(args)>(args)...); // javascript lookin ass bullshit
+
+        // main draw
+        this->mColor.r = 0.85; this->mColor.g = 0.85; this->mColor.b = 0.85; this->mColor.a = 1.0; // white ish
+        pos.x -= 1.0;
+        pos.y -= 1.0;
+        this->setCursorFromTopLeft(pos);
+        this->printf(fmt, std::forward<decltype(args)>(args)...);
+
+        // remember position for future calls
+        this->getCursorFromTopLeftImpl(&pos);
+        pos.x += 1.0;
+        pos.y += 1.0;
+    }
+};
+
+
 HOOK_DEFINE_TRAMPOLINE(DebugDrawImpl) {
     static const ptrdiff_t s_offset = sym::agl::lyr::Layer::drawDebugInfo_;
     static void Callback(agl::lyr::Layer* layer, const agl::lyr::RenderInfo& info) {
-        // draw onto the given layer, always tool2d super -- we would be given many layers if they weren't ignored above
+        // draw onto the given layer, always Tool 2D -- we would be given many layers if they weren't ignored above
 
-        auto* sead_draw_ctx = dynamic_cast<sead::DrawContext*>(info.draw_ctx);
         // XXX do we really need to do this every time? weird its a static. maybe we can hold onto one instead
+        auto* sead_draw_ctx = dynamic_cast<sead::DrawContext*>(info.draw_ctx);
         sead::TextWriter::setupGraphics(sead_draw_ctx);
-        sead::TextWriter writer(sead_draw_ctx, info.viewport);
+        sead::TextWriter _writer(sead_draw_ctx, info.viewport);
+        TextWriterExt* writer = (TextWriterExt*)(&_writer);
 
-        sead::Vector2f pos;
-        pos.x = 0.0;
-        pos.y = 0.0;
-        writer.setCursorFromTopLeft(pos);
+        // screen is always represented as 1280x720, upscaled for 1080p
+        sead::Vector2f text_pos;
+        text_pos.x = 2.0;
+        text_pos.y = 2.0;
+
+        // 0.665 @ 1080p = 1.0 at 720p. The re-up-scaling means reducing size here looks bad fast
+        writer->mScale.x = 0.8;
+        writer->mScale.y = 0.8;
 
         for (u8 i=0; i < sizeof(g_ModCommand_ActorWatcher); i++) {
             auto &cmd = g_ModCommand_ActorWatcher[i];
@@ -701,7 +737,7 @@ HOOK_DEFINE_TRAMPOLINE(DebugDrawImpl) {
 
             if (motion != nullptr) {
                 const auto pos64 = motion->m_centerOfMass;
-                writer.printf("%s\npos64: [%f, %f, %f] \nrot_physics: [%f, %f, %f, %f] \nphysics_ang_vel: [%f, %f, %f] \nphysics_vel: [%f, %f, %f] \ninertia: [%f, %f, %f, %f] \npos32: [%f, %f, %f] \nrot: [%f, %f, %f, %f, %f, %f, %f, %f, %f] \n\n",
+                writer->pprintf(text_pos, "%s\npos64: %f, %f, %f \nrot_physics: %f, %f, %f, %f \nphysics_ang_vel: %f, %f, %f \nphysics_vel: %f, %f, %f \ninertia: %f, %f, %f, %f \npos32: %f, %f, %f \nrot: [%f, %f, %f, %f, %f, %f, %f, %f, %f] \n\n",
                     actor->mIActor.name,
                     // hknpMotion
                     pos64.X, pos64.Y, pos64.Z,
@@ -716,7 +752,7 @@ HOOK_DEFINE_TRAMPOLINE(DebugDrawImpl) {
 
             } else {
                 // Actor only
-                writer.printf("%s\npos32: [%f, %f, %f] \nrot: [%f, %f, %f, %f, %f, %f, %f, %f, %f]\n\n",
+                writer->pprintf(text_pos, "%s\npos32: %f, %f, %f \nrot: [%f, %f, %f, %f, %f, %f, %f, %f, %f]\n\n",
                     actor->mIActor.name,
                     actor->mPosition.X, actor->mPosition.Y, actor->mPosition.Z,
                     rot.m11, rot.m12, rot.m13, rot.m21, rot.m22, rot.m23, rot.m31, rot.m32, rot.m33
