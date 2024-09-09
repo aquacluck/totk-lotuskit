@@ -59,12 +59,6 @@ constexpr bool DO_PHYSICS_SPAM_LOG = 0;
 constexpr bool DO_VFR_LOG = 0;
 #define DO_XXX_ACTOR_CREATION_LOG 1
 
-// global state owned by nnMainHook (at the bottom!)
-struct nnMainHookState_t {
-    Logger* main_logger;
-};
-nnMainHookState_t* nnMainHookState = nullptr;
-
 extern ModCommand_Savestate_ActorPos g_ModCommand_Savestate_ActorPos[4]; // XXX hooks.hpp logger.cpp trash glue
 extern ModCommand_ActorWatcher g_ModCommand_ActorWatcher[4]; // XXX hooks.hpp logger.cpp trash glue
 
@@ -86,13 +80,12 @@ HOOK_DEFINE_TRAMPOLINE(LoggerConnectOnWhistleHook) {
     static const ptrdiff_t s_offset = sym::game::ai::execute::ExecutePlayerWhistle::enterImpl_;
 
     static void Callback(void* param) {
-        auto main_logger = nnMainHookState->main_logger;
-        main_logger->log(NS_DEFAULT_TEXT, R"("trying frontend connect() ")");
-        main_logger->connect();
-        main_logger->logf(NS_DEFAULT_TEXT, R"("main_offset %p")", exl::util::GetMainModuleInfo().m_Total.m_Start);
+        Logger::main->log(NS_DEFAULT_TEXT, R"("trying frontend connect() ")");
+        Logger::main->connect();
+        Logger::main->logf(NS_DEFAULT_TEXT, R"("main_offset %p")", exl::util::GetMainModuleInfo().m_Total.m_Start);
 
         sead::GlobalRandom* grand = *exl::util::pointer_path::FollowSafe<sead::GlobalRandom*, sym::sead::GlobalRandom::sInstance>();
-        main_logger->logf(NS_DEFAULT_TEXT, R"("great %p %d")", grand, grand->getU32());
+        Logger::main->logf(NS_DEFAULT_TEXT, R"("great %p %d")", grand, grand->getU32());
 
         Orig(param);
     }
@@ -102,7 +95,6 @@ HOOK_DEFINE_TRAMPOLINE(ActorRelationAddHook) {
     static const ptrdiff_t s_offset = sym::engine::actor::ActorMgr::registerActorRelation;
 
     static u32 Callback(ActorMgr &actor_mgr, ActorBase &parentBase, ActorBase &childBase) {
-        auto main_logger = nnMainHookState->main_logger;
         IActor *parent = &(parentBase.mIActor);
         IActor *child = &(childBase.mIActor);
         ActorMgr_instance = &actor_mgr;
@@ -129,7 +121,7 @@ HOOK_DEFINE_TRAMPOLINE(ActorRelationAddHook) {
 
         if(!strcmp(parent->name, "Player")) {
             if(Player != &parentBase) {
-                main_logger->logf(NS_DEFAULT_TEXT, R"("Reassigning Player %p -> %p")", Player, &parentBase);
+                Logger::main->logf(NS_DEFAULT_TEXT, R"("Reassigning Player %p -> %p")", Player, &parentBase);
                 Player = &parentBase;
                 g_ModCommand_ActorWatcher[0].actor = Player;
                 g_ModCommand_ActorWatcher[0].is_pending_selection = false;
@@ -164,7 +156,7 @@ HOOK_DEFINE_TRAMPOLINE(ActorRelationAddHook) {
         }
         if (is_skip) {
             if (DO_RELATION_LOG) {
-                main_logger->logf(NS_ACTOR_PLAYER_RELATIONS, R"({"op_skipped": 1, "op": "RelationAdd", "op_pair": ["%s", "%s"], "len_pair": [%d, %d] })", parent->name, child->name, parent->count, child->count);
+                Logger::main->logf(NS_ACTOR_PLAYER_RELATIONS, R"({"op_skipped": 1, "op": "RelationAdd", "op_pair": ["%s", "%s"], "len_pair": [%d, %d] })", parent->name, child->name, parent->count, child->count);
             }
             // XXX what is 2724636224? what exactly is skipped here -vs- still handled at callsites?
             return 2724636224; // Report success but do not attach (idk where this func is in the process, but bailing seems to do overload things)
@@ -173,10 +165,10 @@ HOOK_DEFINE_TRAMPOLINE(ActorRelationAddHook) {
 
         if (DO_RELATION_LOG) {
             if (result) {
-                main_logger->logf(NS_ACTOR_PLAYER_RELATIONS, R"({"op": "RelationAdd", "op_pair": ["%s", "%s"], "len_pair": [%d, %d] })", parent->name, child->name, parent->count, child->count);
+                Logger::main->logf(NS_ACTOR_PLAYER_RELATIONS, R"({"op": "RelationAdd", "op_pair": ["%s", "%s"], "len_pair": [%d, %d] })", parent->name, child->name, parent->count, child->count);
             } else {
                 // XXX can this really fail?
-                main_logger->logf(NS_ACTOR_PLAYER_RELATIONS, R"({"op_failed": 1, "op": "RelationAdd", "op_pair": ["%s", "%s"], "len_pair": [%d, %d] })", parent->name, child->name, parent->count, child->count);
+                Logger::main->logf(NS_ACTOR_PLAYER_RELATIONS, R"({"op_failed": 1, "op": "RelationAdd", "op_pair": ["%s", "%s"], "len_pair": [%d, %d] })", parent->name, child->name, parent->count, child->count);
             }
         }
 
@@ -204,7 +196,6 @@ HOOK_DEFINE_TRAMPOLINE(ActorRelationRemoveHook) {
     static const ptrdiff_t s_offset = sym::engine::actor::ActorMgr::removeActorRelation;
 
     static u32 Callback(ActorMgr &actor_mgr, ActorBase &parentBase, ActorBase &childBase) {
-        auto main_logger = nnMainHookState->main_logger;
         IActor *parent = &(parentBase.mIActor);
         IActor *child = &(childBase.mIActor);
 
@@ -224,9 +215,9 @@ HOOK_DEFINE_TRAMPOLINE(ActorRelationRemoveHook) {
 
         if (DO_RELATION_LOG) {
             if (result) {
-                main_logger->logf(NS_ACTOR_PLAYER_RELATIONS, R"({"op": "RelationRemove", "op_pair": ["%s", "%s"], "len_pair": [%d, %d] })", parent->name, child->name, parent->count, child->count);
+                Logger::main->logf(NS_ACTOR_PLAYER_RELATIONS, R"({"op": "RelationRemove", "op_pair": ["%s", "%s"], "len_pair": [%d, %d] })", parent->name, child->name, parent->count, child->count);
             } else {
-                main_logger->logf(NS_ACTOR_PLAYER_RELATIONS, R"({"op_failed": 1, "op": "RelationRemove", "op_pair": ["%s", "%s"], "len_pair": [%d, %d] })", parent->name, child->name, parent->count, child->count);
+                Logger::main->logf(NS_ACTOR_PLAYER_RELATIONS, R"({"op_failed": 1, "op": "RelationRemove", "op_pair": ["%s", "%s"], "len_pair": [%d, %d] })", parent->name, child->name, parent->count, child->count);
             }
         }
 
@@ -239,7 +230,6 @@ HOOK_DEFINE_TRAMPOLINE(WorldManagerModuleBaseProcHook) {
     static const auto s_offset = sym::game::wm::WorldManagerModule::baseProcExe;
 
     static void Callback(double self, double param_2, double param_3, double param_4, void *wmmodule, void *param_6) {
-        auto main_logger = nnMainHookState->main_logger;
         InputHelper::updatePadState();
 
         if (Player == nullptr) {
@@ -248,7 +238,7 @@ HOOK_DEFINE_TRAMPOLINE(WorldManagerModuleBaseProcHook) {
         }
 
         // Parse any pending commands on the wire
-        main_logger->tryRecvCommandMainLoop(); // XXX filthy hack, nonblocking recv
+        Logger::main->tryRecvCommandMainLoop(); // XXX filthy hack, nonblocking recv
 
         // Command: actor paste
         // TODO efficiently know when+where work items are pending in this arr
@@ -262,7 +252,7 @@ HOOK_DEFINE_TRAMPOLINE(WorldManagerModuleBaseProcHook) {
             Player_physics->m_centerOfMass = cmd.pos64; // FIXME spooky assignments, just copy members
             cmd.is_active_request = false;
 
-            main_logger->logf(NS_SAVESTATE, R"({"actor_paste": ["%s"], "actor_props": [{"pos64": [%f, %f, %f], "pos32": [%f, %f, %f], "rot": [%f, %f, %f, %f, %f, %f, %f, %f, %f] }] })",
+            Logger::main->logf(NS_SAVESTATE, R"({"actor_paste": ["%s"], "actor_props": [{"pos64": [%f, %f, %f], "pos32": [%f, %f, %f], "rot": [%f, %f, %f, %f, %f, %f, %f, %f, %f] }] })",
                 cmd.actor_selector_named,
                 cmd.pos64.X, cmd.pos64.Y, cmd.pos64.Z,
                 cmd.pos32.X, cmd.pos32.Y, cmd.pos32.Z,
@@ -278,7 +268,7 @@ HOOK_DEFINE_TRAMPOLINE(WorldManagerModuleBaseProcHook) {
             if (!cmd.is_pending_selection || cmd.selection_type == 0 || cmd.preactor == nullptr) { continue; }
             if (cmd.preactor->mpActor != nullptr) {
                 // FIXME this traversal is broken on 1.0.0? bad actor pointer
-                // eg main_logger->logf(NS_DEFAULT_TEXT, R"({"player preactor": "%p -> %p"})", Player_PreActor, Player_PreActor->mpActor);
+                // eg Logger::main->logf(NS_DEFAULT_TEXT, R"({"player preactor": "%p -> %p"})", Player_PreActor, Player_PreActor->mpActor);
                 cmd.actor = cmd.preactor->mpActor;
                 cmd.is_pending_selection = false;
                 cmd.is_publishing_selection = true;
@@ -301,7 +291,7 @@ HOOK_DEFINE_TRAMPOLINE(WorldManagerModuleBaseProcHook) {
 
             if (motion != nullptr) {
                 const auto pos64 = motion->m_centerOfMass;
-                main_logger->logf(ns, R"({"pos64": [%f, %f, %f], "rot_physics": [%f, %f, %f, %f], "physics_ang_vel": [%f, %f, %f], "physics_vel": [%f, %f, %f], "inertia": [%f, %f, %f, %f], "pos32": [%f, %f, %f], "rot": [%f, %f, %f, %f, %f, %f, %f, %f, %f] })",
+                Logger::main->logf(ns, R"({"pos64": [%f, %f, %f], "rot_physics": [%f, %f, %f, %f], "physics_ang_vel": [%f, %f, %f], "physics_vel": [%f, %f, %f], "inertia": [%f, %f, %f, %f], "pos32": [%f, %f, %f], "rot": [%f, %f, %f, %f, %f, %f, %f, %f, %f] })",
                     // hknpMotion
                     pos64.X, pos64.Y, pos64.Z,
                     motion->m_orientation.A, motion->m_orientation.B, motion->m_orientation.C, motion->m_orientation.D,
@@ -318,7 +308,7 @@ HOOK_DEFINE_TRAMPOLINE(WorldManagerModuleBaseProcHook) {
             } else {
 
                 // Actor only
-                main_logger->logf(ns, R"({"pos32": [%f, %f, %f], "rot": [%f, %f, %f, %f, %f, %f, %f, %f, %f] })",
+                Logger::main->logf(ns, R"({"pos32": [%f, %f, %f], "rot": [%f, %f, %f, %f, %f, %f, %f, %f, %f] })",
                     actor->mPosition.X, actor->mPosition.Y, actor->mPosition.Z,
                     rot.m11, rot.m12, rot.m13, rot.m21, rot.m22, rot.m23, rot.m31, rot.m32, rot.m33
                 );
@@ -332,17 +322,17 @@ HOOK_DEFINE_TRAMPOLINE(WorldManagerModuleBaseProcHook) {
             // On 1.2.1 it will switch to 1.5 0.05 during heavy load. That's 1.5x the normal duration, or 0.05 = 1/20 seconds.
             // 1.0 all seems the same. I thought only 1.0 was locked between 20fps and 30fps?
             VFRMgr* vfr_mgr = *exl::util::pointer_path::FollowSafe<VFRMgr*, sym::engine::module::VFRMgr::sInstance>();
-            main_logger->logf(NS_VFRMGR, R"({"vfr_frame": [%f, %f, %f, %f, %f] })", vfr_mgr->mRawDeltaFrame, vfr_mgr->mRawDeltaTime, vfr_mgr->mDeltaFrame, vfr_mgr->mDeltaTime, vfr_mgr->mIntervalValue);
+            Logger::main->logf(NS_VFRMGR, R"({"vfr_frame": [%f, %f, %f, %f, %f] })", vfr_mgr->mRawDeltaFrame, vfr_mgr->mRawDeltaTime, vfr_mgr->mDeltaFrame, vfr_mgr->mDeltaTime, vfr_mgr->mIntervalValue);
             for(int i = 0; i < 16; i++) {
                 // default all slots: 1.0 nan
                 // during bt: 0 -> 0.05 0.05, 3 -> 0.35 0.35
-                main_logger->logf(NS_VFRMGR, R"({"vfr_timespeedmultiplier_i": %d, "pair": [%f, %f] })", i, vfr_mgr->mTimeSpeedMultipliers[i].mValue, vfr_mgr->mTimeSpeedMultipliers[i].mTarget);
+                Logger::main->logf(NS_VFRMGR, R"({"vfr_timespeedmultiplier_i": %d, "pair": [%f, %f] })", i, vfr_mgr->mTimeSpeedMultipliers[i].mValue, vfr_mgr->mTimeSpeedMultipliers[i].mTarget);
             }
         }
 
 
         if (InputHelper::isKeyPress(nn::hid::KeyboardKey::Backquote)) {
-            main_logger->log(NS_DEFAULT_TEXT, "\"oink\"");
+            Logger::main->log(NS_DEFAULT_TEXT, "\"oink\"");
         }
 
 
@@ -356,14 +346,12 @@ HOOK_DEFINE_TRAMPOLINE(TryGetPlayerPhysicsPosPtrHook) {
     static const ptrdiff_t s_offset = sym::hkUNKNOWN::UNKNOWN_applyMotion;
 
     static void Callback(void* self, void* param_2, hknpMotion* hkmotion, hknpMotion* motion_pool) {
-        auto main_logger = nnMainHookState->main_logger;
-
         if (DO_PHYSICS_SPAM_LOG) {
             // frontend proxy(?) can't keep up with this
             //     - TODO ez runtime work+log toggles/subscriptions instead of defines
             //     - TODO e2e blocking: optionally stop the world until the frontend ui reports render, slow+accurate mode aside from concurrency+timing+etc issues
             // motion_pool[0] is something else probably? then usually a few which rarely/never update, then Player/etc usually starts from there
-            main_logger->logf(NS_PHYSICS_SPAM, R"("param_2: %p, hkmotion: %p, motion_pool: %p")", param_2, hkmotion, motion_pool);
+            Logger::main->logf(NS_PHYSICS_SPAM, R"("param_2: %p, hkmotion: %p, motion_pool: %p")", param_2, hkmotion, motion_pool);
         }
 
         // This seems related to object movement while touching terrain? Is this for collision or movement or ?
@@ -371,7 +359,7 @@ HOOK_DEFINE_TRAMPOLINE(TryGetPlayerPhysicsPosPtrHook) {
         // Eg air movement, standing on wings, even inside shrines has free movement. Safe ground handler?
         //return Orig(self, param_2, hkmotion, motion_pool);
 
-        //main_logger->log("TryGetPlayerPhysicsPosPtrHook: %p %p %p %p", self, param_2, hkmotion, motion_pool);
+        //Logger::main->log("TryGetPlayerPhysicsPosPtrHook: %p %p %p %p", self, param_2, hkmotion, motion_pool);
         Vector3d* pos64 = &(hkmotion->m_centerOfMass);
 
         // Player + default relations are initialized before this
@@ -387,12 +375,12 @@ HOOK_DEFINE_TRAMPOLINE(TryGetPlayerPhysicsPosPtrHook) {
             }
         }
 
-        //main_logger->log("Player pos32: %f %f %f", pos32.X, pos32.Y, pos32.Z);
-        //main_logger->log("candid pos64: %f %f %f", pos64->X, pos64->Y, pos64->Z);
+        //Logger::main->log("Player pos32: %f %f %f", pos32.X, pos32.Y, pos32.Z);
+        //Logger::main->log("candid pos64: %f %f %f", pos64->X, pos64->Y, pos64->Z);
         if(abs(pos32.X - pos64->X) < 0.01 && abs(pos32.Y + PLAYER_PHYSICS_HEIGHT_OFFSET - pos64->Y) < 0.01 && abs(pos32.Z - pos64->Z) < 0.01) {
             // This is the first and only very-close physics object (if that's what this is) during bootup. It's always 0.9m off.
             // FIXME reallocated/??? sometimes... after several trapped-in-water voids at (0 0 0) I got this
-            main_logger->logf(NS_DEFAULT_TEXT, R"("Reassigning Player_physics %p -> %p")", Player_physics, hkmotion);
+            Logger::main->logf(NS_DEFAULT_TEXT, R"("Reassigning Player_physics %p -> %p")", Player_physics, hkmotion);
             Player_physics = hkmotion;
             g_ModCommand_ActorWatcher[0].tracked_motion = Player_physics;
         }
@@ -413,20 +401,17 @@ HOOK_DEFINE_TRAMPOLINE(HookRNG_sead_u32) {
         if (do_stub) {
             ret = stub_value;
             if (do_log) {
-                nnMainHookState->main_logger->logf(NS_DEFAULT_TEXT, R"("sead::Random::u32(%p) ~~ %d")", param, ret);
+                Logger::main->logf(NS_DEFAULT_TEXT, R"("sead::Random::u32(%p) ~~ %d")", param, ret);
             }
         } else {
             ret = Orig(param);
             if (do_log) {
-                nnMainHookState->main_logger->logf(NS_DEFAULT_TEXT, R"("sead::Random::u32(%p) => %d")", param, ret);
+                Logger::main->logf(NS_DEFAULT_TEXT, R"("sead::Random::u32(%p) => %d")", param, ret);
             }
         }
         return ret;
     }
 };
-//bool HookRNG_sead_u32::do_log = false;
-//bool HookRNG_sead_u32::do_stub = false;
-//u32 HookRNG_sead_u32::stub_value = 420;
 
 
 #if DO_XXX_ACTOR_CREATION_LOG
@@ -439,8 +424,7 @@ HOOK_DEFINE_TRAMPOLINE(TestCreateActorHook1) {
         undefined8 param_10,void *param_11,u8 param_12,undefined4 param_13_00,int *param_13,
         undefined8 *param_14,undefined4 param_16,undefined4 param_17,undefined8 param_15, undefined param_19) {
 
-        auto main_logger = nnMainHookState->main_logger;
-        main_logger->logf(NS_ACTOR, R"({"name": "%s", "actor_op": "create_sync1"})", *param_4); // only Obj_OneTouch_Connection, no overlap
+        Logger::main->logf(NS_ACTOR, R"({"name": "%s", "actor_op": "create_sync1"})", *param_4); // only Obj_OneTouch_Connection, no overlap
 
         return Orig(param_1, param_2, param_3, param_4, param_5, param_6, param_7, param_8, param_9, param_10, param_11, param_12, param_13_00, param_13, param_14, param_16, param_17, param_15, param_19);
     }
@@ -455,8 +439,7 @@ HOOK_DEFINE_TRAMPOLINE(TestCreateActorHook2) {
         undefined8 param_10,void *param_11,u8 param_12,undefined4 param_13_00,int *param_13,
         undefined8 *param_14,undefined4 param_16,undefined4 param_17,undefined8 param_15, undefined param_19) {
 
-        auto main_logger = nnMainHookState->main_logger;
-        main_logger->logf(NS_ACTOR, R"({"name": "%s", "actor_op": "create_idk2"})", *param_4); // XXX never hit?
+        Logger::main->logf(NS_ACTOR, R"({"name": "%s", "actor_op": "create_idk2"})", *param_4); // XXX never hit?
 
         return Orig(param_1, param_2, param_3, param_4, param_5, param_6, param_7, param_8, param_9, param_10, param_11, param_12, param_13_00, param_13, param_14, param_16, param_17, param_15, param_19);
     }
@@ -472,8 +455,7 @@ HOOK_DEFINE_TRAMPOLINE(TestCreateActorHook3) {
         undefined4 param_16,undefined4 param_17,undefined8 param_15,undefined param_19) {
 
         // only relation names (eg fused rocks, fused wings, but weird stuff too like quickmenu-icon-screenshotting and pause-actor instantiations). no overlap with other hooks
-        auto main_logger = nnMainHookState->main_logger;
-        main_logger->logf(NS_ACTOR, R"({"name": "%s", "actor_op": "create_relation"})", *param_4);
+        Logger::main->logf(NS_ACTOR, R"({"name": "%s", "actor_op": "create_relation"})", *param_4);
 
         return Orig(param_1, param_2, param_3, param_4, param_5, param_6, param_7, param_8, param_9, param_10, param_11, param_12, param_13_00, param_13, param_14, param_16, param_17, param_15, param_19);
     }
@@ -485,8 +467,6 @@ HOOK_DEFINE_TRAMPOLINE(TestCreateActorHook4) {
     static long Callback
         (void* actorInstanceMgr, char** actorName, Vector3f* pos, void* param_4, undefined4 param_5, PreActor* preActor,
         void* actorObserver, void* param_8, u8 param_9, undefined4* param_10, PreActor** destPreActor) {
-
-        auto main_logger = nnMainHookState->main_logger;
 
         // inject our own dest pointer if needed
         PreActor* pa = nullptr;
@@ -500,13 +480,13 @@ HOOK_DEFINE_TRAMPOLINE(TestCreateActorHook4) {
         pa = *destPreActor;
         if (pa == nullptr) {
             // eg TerrainEditCamera returns without assigning a preactor (disabled? check ret value?)
-            main_logger->logf(NS_ACTOR, R"({"name": "%s", "actor_op": "create", "pos": [%f, %f, %f], "preactor": "%p" })",
+            Logger::main->logf(NS_ACTOR, R"({"name": "%s", "actor_op": "create", "pos": [%f, %f, %f], "preactor": "%p" })",
                 *actorName,
                 pos->X, pos->Y, pos->Z,
                 pa
             );
         } else {
-            main_logger->logf(NS_ACTOR, R"({"name": "%s", "actor_op": "create", "pos": [%f, %f, %f], "preactor": "%p", "preactor_pos": [%f, %f, %f], "actor": "%p" })",
+            Logger::main->logf(NS_ACTOR, R"({"name": "%s", "actor_op": "create", "pos": [%f, %f, %f], "preactor": "%p", "preactor_pos": [%f, %f, %f], "actor": "%p" })",
                 *actorName,
                 pos->X, pos->Y, pos->Z, // rarely has placement
                 pa,
@@ -517,7 +497,7 @@ HOOK_DEFINE_TRAMPOLINE(TestCreateActorHook4) {
 
         if (!strcmp(*actorName, "Player")) {
             Player_PreActor = pa;
-            main_logger->logf(NS_DEFAULT_TEXT, R"("Reassigning Player preactor %p")", Player_PreActor);
+            Logger::main->logf(NS_DEFAULT_TEXT, R"("Reassigning Player preactor %p")", Player_PreActor);
             g_ModCommand_ActorWatcher[0].preactor = Player_PreActor;
         }
 
@@ -538,8 +518,7 @@ HOOK_DEFINE_TRAMPOLINE(TestCreateActorHook5) {
 
     static long Callback(long **param_1,char **param_2,long param_3,long param_4,long param_5,undefined8 param_6, int *param_7) {
         // few actors at bootup: ReactionHit ReactionField Chemical EffectUI SpecialPower WakeBoardRope
-        auto main_logger = nnMainHookState->main_logger;
-        main_logger->logf(NS_ACTOR, R"({"name": "%s", "actor_op": "create_sync"})", *param_2);
+        Logger::main->logf(NS_ACTOR, R"({"name": "%s", "actor_op": "create_sync"})", *param_2);
         return Orig(param_1, param_2, param_3, param_4, param_5, param_6, param_7);
     }
 };
@@ -547,14 +526,12 @@ HOOK_DEFINE_TRAMPOLINE(TestCreateActorHook5) {
 HOOK_DEFINE_INLINE(TestCreateActorHookImplEnter) {
     static const ptrdiff_t s_offset = 0x0244a638; //121
     static void Callback(exl::hook::InlineCtx* ctx) {
-        auto main_logger = nnMainHookState->main_logger;
-        main_logger->logf(NS_ACTOR, R"({"name": "top ", "actor_op": "calc_create", "_": "%p %p %p"})", ctx->X[0], ctx->X[1], ctx->X[2]);
+        Logger::main->logf(NS_ACTOR, R"({"name": "top ", "actor_op": "calc_create", "_": "%p %p %p"})", ctx->X[0], ctx->X[1], ctx->X[2]);
     }
 };
 HOOK_DEFINE_INLINE(TestCreateActorHookImpl) {
     static const ptrdiff_t s_offset = sym::engine::actor::BaseProcCreateAndDeleteThread::calc_create; // 0x0244a80c 121
     static void Callback(exl::hook::InlineCtx* ctx) {
-        auto main_logger = nnMainHookState->main_logger;
         //XXX how stable are inline register accesses like this across versions? (eg originally x0 param but moved to x19 before our hook)
         //    annotate SymbolType.INSTRUCTION with named registers if this becomes a problem.
         //void* self = ctx->X[19]; // param_1
@@ -565,7 +542,7 @@ HOOK_DEFINE_INLINE(TestCreateActorHookImpl) {
         // thing->mCreateProcFunction(thing->mCreateProcFunction, BaseProcCreateRequest *)
 
         char* neatlog =*(char**)(ctx->X[19]+(0x21*8)); // vanilla snprintf: f"{BaseProcCreateRequest->mName}({BaseProcCreateRequest*})"
-        main_logger->logf(NS_ACTOR, R"({"name": "nope", "actor_op": "calc_create", "_": "%p %s"})", ctx->X[19], neatlog);
+        Logger::main->logf(NS_ACTOR, R"({"name": "nope", "actor_op": "calc_create", "_": "%p %s"})", ctx->X[19], neatlog);
     }
 };
 HOOK_DEFINE_INLINE(TestDeleteActorHookImpl) {
@@ -575,8 +552,7 @@ HOOK_DEFINE_INLINE(TestDeleteActorHookImpl) {
         //void* self = (void*)(ctx->X[0]);
         //void* idk = (void*)(ctx->X[1]);
         //char* name = (char*)(self + 0x21);
-        //auto main_logger = nnMainHookState->main_logger;
-        //main_logger->logf(NS_ACTOR, R"({"name": "%s", "actor_op": "calc_delete"})", name);
+        //Logger::main->logf(NS_ACTOR, R"({"name": "%s", "actor_op": "calc_delete"})", name);
     }
 };
 #endif
@@ -657,8 +633,7 @@ HOOK_DEFINE_INLINE(DebugDrawEnsureFont) {
         if (*sDefaultFont == nullptr) {
             nn::os::LockMutex(fontMutex);
             if (*sDefaultFont == nullptr) {
-                auto main_logger = nnMainHookState->main_logger;
-                main_logger->log(NS_DEFAULT_TEXT, R"("init default font ")");
+                Logger::main->log(NS_DEFAULT_TEXT, R"("init default font ")");
 
                 void(*InitDebugDrawers)(sead::Heap*, GraphicsModuleCreateArg&) = nullptr;
                 void** tmp = (void**)(&InitDebugDrawers);
@@ -666,7 +641,7 @@ HOOK_DEFINE_INLINE(DebugDrawEnsureFont) {
                 InitDebugDrawers(StealHeap::stolen_heap, *GetCreateArg::create_arg);
 
                 if (*sDefaultFont == nullptr) {
-                    main_logger->log(NS_DEFAULT_TEXT, R"("init default font fail")");
+                    Logger::main->log(NS_DEFAULT_TEXT, R"("init default font fail")");
                     return;
                 }
             }
@@ -820,104 +795,4 @@ HOOK_DEFINE_TRAMPOLINE(DebugDrawImpl) {
         }
     }
 };
-
-
-HOOK_DEFINE_INLINE(nnMainHook) {
-    // Steal execution from nnMain right before it jumps into the game
-    static const ptrdiff_t s_offset = sym::engine::nnMain_post_setup;
-    static nnMainHookState_t main_state;
-    static void Callback(exl::hook::InlineCtx* ctx) {
-        // Effective entry point after sdk init
-
-        nnMainHookState = &main_state;
-
-        ActorRelationAddHook::Install();
-        ActorRelationRemoveHook::Install();
-        WorldManagerModuleBaseProcHook::Install();
-        TryGetPlayerPhysicsPosPtrHook::Install();
-
-#if DO_XXX_ACTOR_CREATION_LOG
-        TestCreateActorHook1::Install();
-        TestCreateActorHook2::Install();
-        TestCreateActorHook3::Install();
-        TestCreateActorHook4::Install();
-        TestCreateActorHook5::Install();
-
-        // WIP
-        //TestCreateActorHookImplEnter::Install();
-        //TestCreateActorHookImpl::Install();
-        //TestDeleteActorHookImpl::Install();
-#endif
-
-        // hooks for textwriter overlay
-        bool do_textwriter = (
-            ConfigHelper::FileExists("content:/Lib/sead/nvn_font/nvn_font.ntx") &&
-            ConfigHelper::FileExists("content:/Lib/sead/nvn_font/nvn_font_jis1.ntx") &&
-            ConfigHelper::FileExists("content:/Lib/sead/nvn_font/nvn_font_jis1_mipmap.xtx") &&
-            ConfigHelper::FileExists("content:/Lib/sead/nvn_font/nvn_font_jis1_tbl.bin") &&
-            ConfigHelper::FileExists("content:/Lib/sead/nvn_font/nvn_font_shader.bin") &&
-            ConfigHelper::FileExists("content:/Lib/sead/nvn_font/nvn_font_shader_jis1.bin") &&
-            ConfigHelper::FileExists("content:/Lib/sead/nvn_font/nvn_font_shader_jis1_mipmap.bin") &&
-            ConfigHelper::FileExists("content:/Lib/sead/primitive_renderer/primitive_drawer_nvn_shader.bin")
-        );
-        if (do_textwriter) {
-            StealHeap::Install();
-            GetCreateArg::Setup();
-            GetCreateArg::Install();
-            DebugDrawEnsureFont::Setup();
-            DebugDrawEnsureFont::Install();
-            DebugDrawImpl::Install();
-        }
-
-        // figure out where+when to connect
-        char ip[16] = "";
-        ConfigHelper::ReadFile(ip, "content:/totk_lotuskit/server_ip.txt", sizeof(ip), "127.0.0.1");
-        bool do_connect_on_whistle = ConfigHelper::ReadFileFlag("content:/totk_lotuskit/do_connect_on_whistle.txt", true);
-        bool do_connect_on_bootup = ConfigHelper::ReadFileFlag("content:/totk_lotuskit/do_connect_on_bootup.txt", true);
-
-        if (do_connect_on_whistle) {
-            LoggerConnectOnWhistleHook::Install();
-        }
-
-        // Setup RNG hooks
-        // TODO hook more methods
-        // TODO expose frontend setters for manip?
-        HookRNG_sead_u32::do_log = ConfigHelper::ReadFileFlag("content:/totk_lotuskit/do_log_rng.txt", false);
-        HookRNG_sead_u32::do_stub = ConfigHelper::ReadFileFlag("content:/totk_lotuskit/do_stub_rng.txt", false);
-        HookRNG_sead_u32::stub_value = 420;
-        if (HookRNG_sead_u32::do_log || HookRNG_sead_u32::do_stub) {
-            // TODO move hooking decisions+actions into hook definition?
-            // introspected un/re hook toggles in the frontend would be nice as a general debug thing, can leave a ton of hooks just idling for free that way...
-            // also worth considering if fancy hook classes make a good backend config model
-            HookRNG_sead_u32::Install();
-        }
-
-        char buf[200];
-        nn::util::SNPrintf(buf, sizeof(buf), "lotuskit using ip4 addr %s, do_connect_on_bootup: %d, do_connect_on_whistle: %d, do_textwriter: %d", ip, do_connect_on_bootup, do_connect_on_whistle, do_textwriter);
-        svcOutputDebugString(buf, strlen(buf));
-
-        // init logger socket
-        auto main_logger = new Logger();
-        main_state.main_logger = main_logger;
-        main_logger->mState = LoggerState::UNINITIALIZED;
-        main_logger->mDoOpenSocket = true; // prepare socket
-        main_logger->mDoLogSocket = true; // actually send to socket
-        main_logger->mDoHackCommandSocket = true; // also abuse logging socket to recv commands
-        strcpy(main_logger->ip, ip);
-        main_logger->init();
-        if (do_connect_on_bootup) {
-            main_logger->connect();
-        }
-
-        // TODO centralize on-connect info dump, or allow frontend to request it
-        main_logger->logf(NS_DEFAULT_TEXT, R"("main_offset %p")", exl::util::GetMainModuleInfo().m_Total.m_Start);
-
-        // idk spooky
-        for (u8 i=0; i < sizeof(g_ModCommand_ActorWatcher); i++) { g_ModCommand_ActorWatcher[i].clear(); }
-
-        InputHelper::initKBM();
-        InputHelper::setPort(0); // default controller port
-    }
-};
-struct nnMainHookState_t nnMainHook::main_state = {0};
 

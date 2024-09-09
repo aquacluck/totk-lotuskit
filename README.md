@@ -12,16 +12,21 @@
 - Mod `exefs` files are at `build/main.npdm` and `build/subsdk9`, copy `romfs` configs from the repo
 
 ## In-game Overlay
-- While most commands are issued through the web frontend, drawing within the game is useful for frame-perfect accuracy and similar bandwidth+latency constrained tasks. However this currently requires compatible font and shader files to be copied from another game, as TOTK supports but does not ship with these files. If any of these files are missing, the hooks supporting these features will not be installed and everything else should proceed as normal.
-- To enable these features, please copy these 8 romfs files from a compatible game such as Splatoon 3:
-    - romfs/Lib/sead/nvn_font/nvn_font.ntx
-    - romfs/Lib/sead/nvn_font/nvn_font_jis1.ntx
-    - romfs/Lib/sead/nvn_font/nvn_font_jis1_mipmap.xtx
-    - romfs/Lib/sead/nvn_font/nvn_font_jis1_tbl.bin
-    - romfs/Lib/sead/nvn_font/nvn_font_shader.bin
-    - romfs/Lib/sead/nvn_font/nvn_font_shader_jis1.bin
-    - romfs/Lib/sead/nvn_font/nvn_font_shader_jis1_mipmap.bin
-    - romfs/Lib/sead/primitive_renderer/primitive_drawer_nvn_shader.bin
+While most commands are issued through the web frontend, drawing within the game is useful for frame-perfect accuracy and similar bandwidth+latency constrained tasks. However this currently requires compatible font and shader files to be copied from another game, as TOTK supports but does not ship with these files. If any of these files are missing, the hooks supporting these features will not be installed and everything else should proceed as normal.
+
+To enable these features, copy the below 8 romfs files from a compatible game such as Splatoon 3. Dumping romfs in Ryujinx is the simplest way to get to these for now.
+
+```
+~/appdata/Roaming/Ryujinx/sdcard$ sha256sum atmosphere/contents/0100f2c0115b6000/romfs/Lib/*/*/*
+ba57e6d5368c09e510fb873f298148a1a9fc794a8d818d1578584cc876b9f75e  atmosphere/contents/0100f2c0115b6000/romfs/Lib/sead/nvn_font/nvn_font.ntx
+b47ece0989036efc2c3ebdbce4765851c4d042859cec6e6505a15696d9a1084b  atmosphere/contents/0100f2c0115b6000/romfs/Lib/sead/nvn_font/nvn_font_jis1.ntx
+93dd352bff4c8ee8020000c1c48e127ef801a5418c6c9200001b7e19dd2bf55d  atmosphere/contents/0100f2c0115b6000/romfs/Lib/sead/nvn_font/nvn_font_jis1_mipmap.xtx
+63938de61a0acdaf6548ea97f32047d29edfb22121d2bff0cacbed70f1ab5b3d  atmosphere/contents/0100f2c0115b6000/romfs/Lib/sead/nvn_font/nvn_font_jis1_tbl.bin
+ec580c761319e69a5b40a550b963eeb2450a71adbffaaf7abd0267b7dc174142  atmosphere/contents/0100f2c0115b6000/romfs/Lib/sead/nvn_font/nvn_font_shader.bin
+ec24835b294116f40dabcdf7a167afa5c630f77b257da840fd445349cf598719  atmosphere/contents/0100f2c0115b6000/romfs/Lib/sead/nvn_font/nvn_font_shader_jis1.bin
+2177ac377b82d6e96488ad0fc05f7ab91eb4a22ba480567269de4791b0231985  atmosphere/contents/0100f2c0115b6000/romfs/Lib/sead/nvn_font/nvn_font_shader_jis1_mipmap.bin
+dd9ec52b865c268faa648a459815ea7e30aca350b4be7945942693cc4e94f1d7  atmosphere/contents/0100f2c0115b6000/romfs/Lib/sead/primitive_renderer/primitive_drawer_nvn_shader.bin
+```
 
 ## Credits & Thanks
 - build + hooking + much more thanks to [exlaunch](https://github.com/shadowninja108/exlaunch) by shadow, licensed under GPL2

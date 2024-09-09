@@ -56,6 +56,8 @@ enum class LoggerState {
 
 class Logger {
 public:
+    inline static Logger* main = nullptr;
+
     //Logger() = default;
     char ip[16];
     void init();
