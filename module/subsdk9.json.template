@@ -3,6 +3,7 @@
     "title_id":"@CONFIG_TITLE_ID@",
     "title_id_range_min":"0x0100000000010000",
     "title_id_range_max":"0x01ffffffffffffff",
+    "system_resource_size":"0x1000000",
     "main_thread_stack_size":"0x00100000",
     "main_thread_priority":44,
     "default_cpu_id":0,
@@ -10,6 +11,8 @@
     "is_retail":true,
     "pool_partition":0,
     "is_64_bit":true,
+    "disable_device_address_space_merge":true,
+    "optimize_memory_allocation":true,
     "address_space_type":3,
     "filesystem_access":{
         "permissions":"0xffffffffffffffff"
@@ -29,6 +32,7 @@
         "caps:su",
         "caps:u",
         "csrng",
+        "ectx:aw",
         "friend:u",
         "fsp-srv",
         "hid",
@@ -42,11 +46,14 @@
         "lm",
         "mii:u",
         "mm:u",
+        "mnpp:app",
         "nfc:mf:u",
         "nfc:user",
         "nfp:user",
+        "ngct:u",
         "nifm:u",
         "nim:eca",
+        "notif:a",
         "nsd:u",
         "ntc",
         "nvdrv",
@@ -60,10 +67,7 @@
         "time:u",
         "vi:u"
     ],
-    "service_host":[
-        
-    ],
-    "system_resource_size":"0x1800000",
+    "service_host":[],
     "kernel_capabilities":[
         {
             "type":"kernel_flags",
@@ -131,14 +135,15 @@
                 "svcGetThreadContext3":"0x33",
                 "svcWaitForAddress":"0x34",
                 "svcSignalToAddress":"0x35",
-                "svcUnknown":"0x36",
-                "svcUnknown":"0x37",
-                "svcUnknown":"0x38",
-                "svcUnknown":"0x39",
-                "svcUnknown":"0x3a",
+                "svcSynchronizePreemptionState":    "0x36",
+                "svcGetResourceLimitPeakValue":    "0x37",
+                "svcUnknown":    "0x38",
+                "svcCreateIoPool":    "0x39",
+                "svcCreateIoRegion":    "0x3a",
                 "svcUnknown":"0x3b",
                 "svcDumpInfo":"0x3c",
-                "svcDumpInfoNew":"0x3d",
+                "svcKernelDebug":    "0x3c",
+                "svcChangeKernelTraceState":"0x3d",
                 "svcUnknown":"0x3e",
                 "svcUnknown":"0x3f",
                 "svcCreateSession":"0x40",
@@ -147,8 +152,8 @@
                 "svcReplyAndReceive":"0x43",
                 "svcReplyAndReceiveWithUserBuffer":"0x44",
                 "svcCreateEvent":"0x45",
-                "svcUnknown":"0x46",
-                "svcUnknown":"0x47",
+                "svcMapIoRegion":    "0x46",
+                "svcUnmapIoRegion":    "0x47",
                 "svcMapPhysicalMemoryUnsafe":"0x48",
                 "svcUnmapPhysicalMemoryUnsafe":"0x49",
                 "svcSetUnsafeLimit":"0x4a",
@@ -222,8 +227,8 @@
         {
             "type":"debug_flags",
             "value":{
-                "allow_debug":false,
-                "force_debug":true
+                "allow_debug":true,
+                "force_debug":false
             }
         }
     ]
