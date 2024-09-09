@@ -42,14 +42,15 @@ public:
     void printImpl_(const char16_t*, int, bool, BoundBox2f*);
     void printImpl_(const char*, int, bool, BoundBox2f*);
 
+#if not LOTUSKIT_HACK_SKIP_PRIVATE
 private:
+#endif
     Viewport* mViewport;
     Projection* mProjection;
     Camera* mCamera;
     int _20;
     int _24;
-    int _28;
-    int _2c;
+    Vector2f mCursor;
     Vector2f mScale;
     Color4f mColor;
     int _48;
