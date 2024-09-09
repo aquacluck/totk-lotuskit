@@ -791,12 +791,24 @@ HOOK_DEFINE_INLINE(nnMainHook) {
 #endif
 
         // hooks for textwriter overlay
-        StealHeap::Install();
-        GetCreateArg::Setup();
-        GetCreateArg::Install();
-        DebugDrawEnsureFont::Setup();
-        DebugDrawEnsureFont::Install();
-        DebugDrawImpl::Install();
+        bool do_textwriter = (
+            ConfigHelper::FileExists("content:/Lib/sead/nvn_font/nvn_font.ntx") &&
+            ConfigHelper::FileExists("content:/Lib/sead/nvn_font/nvn_font_jis1.ntx") &&
+            ConfigHelper::FileExists("content:/Lib/sead/nvn_font/nvn_font_jis1_mipmap.xtx") &&
+            ConfigHelper::FileExists("content:/Lib/sead/nvn_font/nvn_font_jis1_tbl.bin") &&
+            ConfigHelper::FileExists("content:/Lib/sead/nvn_font/nvn_font_shader.bin") &&
+            ConfigHelper::FileExists("content:/Lib/sead/nvn_font/nvn_font_shader_jis1.bin") &&
+            ConfigHelper::FileExists("content:/Lib/sead/nvn_font/nvn_font_shader_jis1_mipmap.bin") &&
+            ConfigHelper::FileExists("content:/Lib/sead/primitive_renderer/primitive_drawer_nvn_shader.bin")
+        );
+        if (do_textwriter) {
+            StealHeap::Install();
+            GetCreateArg::Setup();
+            GetCreateArg::Install();
+            DebugDrawEnsureFont::Setup();
+            DebugDrawEnsureFont::Install();
+            DebugDrawImpl::Install();
+        }
 
         // figure out where+when to connect
         char ip[16] = "";
@@ -822,7 +834,7 @@ HOOK_DEFINE_INLINE(nnMainHook) {
         }
 
         char buf[200];
-        nn::util::SNPrintf(buf, sizeof(buf), "lotuskit using ip4 addr %s, do_connect_on_bootup: %d, do_connect_on_whistle: %d", ip, do_connect_on_bootup, do_connect_on_whistle);
+        nn::util::SNPrintf(buf, sizeof(buf), "lotuskit using ip4 addr %s, do_connect_on_bootup: %d, do_connect_on_whistle: %d, do_textwriter: %d", ip, do_connect_on_bootup, do_connect_on_whistle, do_textwriter);
         svcOutputDebugString(buf, strlen(buf));
 
         // init logger socket

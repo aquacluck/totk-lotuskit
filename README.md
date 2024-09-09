@@ -11,11 +11,23 @@
 - Run `make` in a suitable build environment (such as [devkitPro](https://devkitpro.org/wiki/Getting_Started) or a [docker container](https://hub.docker.com/r/pixelkiri/devkitpro-alpine-switch/)) with cmake installed
 - Mod `exefs` files are at `build/main.npdm` and `build/subsdk9`, copy `romfs` configs from the repo
 
+## In-game Overlay
+- While most commands are issued through the web frontend, drawing within the game is useful for frame-perfect accuracy and similar bandwidth+latency constrained tasks. However this currently requires compatible font and shader files to be copied from another game, as TOTK supports but does not ship with these files. If any of these files are missing, the hooks supporting these features will not be installed and everything else should proceed as normal.
+- To enable these features, please copy these 8 romfs files from a compatible game such as Splatoon 3:
+    - romfs/Lib/sead/nvn_font/nvn_font.ntx
+    - romfs/Lib/sead/nvn_font/nvn_font_jis1.ntx
+    - romfs/Lib/sead/nvn_font/nvn_font_jis1_mipmap.xtx
+    - romfs/Lib/sead/nvn_font/nvn_font_jis1_tbl.bin
+    - romfs/Lib/sead/nvn_font/nvn_font_shader.bin
+    - romfs/Lib/sead/nvn_font/nvn_font_shader_jis1.bin
+    - romfs/Lib/sead/nvn_font/nvn_font_shader_jis1_mipmap.bin
+    - romfs/Lib/sead/primitive_renderer/primitive_drawer_nvn_shader.bin
+
 ## Credits & Thanks
 - build + hooking + much more thanks to [exlaunch](https://github.com/shadowninja108/exlaunch) by shadow, licensed under GPL2
 - build + Logger + InputHelper thanks to [LunaKit](https://github.com/Amethyst-szs/smo-lunakit) licensed under GPL2
 - watertoon's type+symbol documentation, and so much more
-- dt12345's type documentation, [actor-relation-tracker](https://github.com/dt-12345/actor-relation-tracker/), and so much more
+- dt12345's type documentation, [actor-relation-tracker](https://github.com/dt-12345/actor-relation-tracker/), [sead::TextWriter examples](https://github.com/dt-12345/writer), and so much more
 - lessons from inspecting MaxLastBreath's [UltraCam](https://github.com/MaxLastBreath/TOTK-mods/) binaries
 - socket bits+pieces+reference from the [Atmosphere project](https://github.com/Atmosphere-NX/Atmosphere) licensed under GPL2
 - socket+logging bits+pieces from the [Skyline project](https://github.com/skyline-dev/skyline) licensed under MIT

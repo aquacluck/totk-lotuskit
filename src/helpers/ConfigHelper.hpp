@@ -4,6 +4,16 @@
 
 class ConfigHelper {
     public:
+    static bool FileExists(const char* path) {
+        nn::fs::FileHandle fd;
+        nn::Result res = nn::fs::OpenFile(&fd, path, nn::fs::OpenMode_Read);
+        if (!res.IsSuccess()) {
+            return false;
+        }
+        nn::fs::CloseFile(fd);
+        return true;
+    }
+
     static void ReadFile(char* out, const char* path, int max_len, const char* default_) {
         char errbuf[200];
         nn::fs::FileHandle fd;
