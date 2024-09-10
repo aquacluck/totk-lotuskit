@@ -185,6 +185,52 @@
 
     // main ui
 
+    class HexdumpSlot extends Component {
+        constructor() {
+            super();
+            //this.slot_i_ref = createRef();
+            this.slot_label_ref = createRef();
+            this.slot_target_ptr_ref = createRef();
+            this.dump_len = createRef();
+            this.draw_len = createRef();
+        }
+
+        do_absolute(i) {
+            const draw_len = parseInt(this.draw_len.current.value) || 0x20;
+            const dump_len = draw_len;
+            const label = this.slot_label_ref.current.value.toString().slice(0, 32) || "_label";
+            const ptr = this.slot_target_ptr_ref.current.value || 0;
+            if (!ptr) { console.log("hexdump user lookin sussy", i); return; }
+            fetch(`/backend/hexdump/assign_slot?uniq_id=${WSTransport.make_uniq_id()} ${i} absolute ${ptr} ${dump_len} ${draw_len} ${label}`, {method: "post"});
+            console.log("hexdump absolute", i, ptr, {dump_len, draw_len, label});
+        }
+        do_pause(i) {
+            fetch(`/backend/hexdump/assign_slot?uniq_id=${WSTransport.make_uniq_id()} ${i} pause 0x0 0 0 _label`, {method: "post"});
+            console.log("hexdump pause", i);
+        }
+        do_clear(i) {
+            fetch(`/backend/hexdump/assign_slot?uniq_id=${WSTransport.make_uniq_id()} ${i} clear 0x0 0 0 _label`, {method: "post"});
+            console.log("hexdump clear", i);
+        }
+
+        render({slot_i}, state) {
+            // TODO symbol picker
+            return html`
+                <div class="hexdump_slot">
+                    ${slot_i}${"\xa0"}
+                    <input placeholder="any label, max 32" ref=${this.slot_label_ref} />
+                    <!-- TODO <select>absolute, main, ...</select> -->
+                    <input placeholder="target ptr (hex)" size="20" ref=${this.slot_target_ptr_ref} />
+                    <!--<input placeholder="0x20" size="6" ref=${this.dump_len} />-->
+                    <input placeholder="0x20" size="6" ref=${this.draw_len} />
+                    <button onClick=${ () => this.do_absolute(slot_i) } class="pushbutton">dump</button>
+                    <button onClick=${ () => this.do_pause(slot_i) } class="pushbutton">pause</button>
+                    <button onClick=${ () => this.do_clear(slot_i) } class="pushbutton">clear</button>
+                </div>
+            `;
+        }
+    };
+
     class ActorInspector extends Component {
         constructor() {
             super();
@@ -366,6 +412,15 @@
         return html`
         <div class="toolbox_main">
             ${WSTransport.signals.actor._XXX_tracked_aselectors.value.map((asel, asel_i) => html`<${ActorInspector} aselector_named=${asel} _XXX_aselector_i=${asel_i} />`)}
+            <section class="toolset_hexdump_controller">
+                <div class="slots">
+                    Hexdump
+                    <${HexdumpSlot} slot_i=0 />
+                    <${HexdumpSlot} slot_i=1 />
+                    <${HexdumpSlot} slot_i=2 />
+                    <${HexdumpSlot} slot_i=3 />
+                </div>
+            </section>
             <${ConnectionToolset} />
         </div>
         `;

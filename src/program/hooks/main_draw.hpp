@@ -123,10 +123,13 @@ HOOK_DEFINE_TRAMPOLINE(DebugDrawImpl) {
                 const char* live = cmd.calc_age == 0 ? "[LIVE]" : ""; // visible when buf has been updated this frame, for slow/intermittent/triggered/discontinued/etc dumps
                 writer->pprintf(text_pos, "%s[%d](dump_len=%d, age=%d) %s\n", cmd.label, i, cmd.dump_len, cmd.calc_age, live);
 
+                u32 cap = reinterpret_cast<u32>((u32)cmd.dump_len > ModCommand_Hexdump::BUF_LEN ? ModCommand_Hexdump::BUF_LEN : cmd.dump_len);
+                u32 draw_len = cmd.draw_len > cap ? cap : cmd.draw_len;
+
                 u8* backing_src = (u8*)cmd.dump_src;
                 u8* src = cmd.buf;
                 u32 row = 0;
-                do { if (row * 0x10 >= cmd.draw_len) { break; }
+                do { if (row * 0x10 >= draw_len) { break; }
                     writer->pprintf(text_pos,
                         "%p | %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x\n",
                         backing_src, src[0], src[1], src[2], src[3], src[4], src[5], src[6], src[7], src[8], src[9], src[10], src[11], src[12], src[13], src[14], src[15]

@@ -356,6 +356,53 @@ void Logger::tryRecvCommandMainLoop() {
         return; // fail
     }
 
+
+    constexpr auto hexdump_assign_slot = "POST /backend/hexdump/assign_slot?";
+    if (strncmp(hexdump_assign_slot, query_buffer, strlen(hexdump_assign_slot)) == 0) {
+        int target_slot;
+        char action[33];
+        void* action_arg;
+        int dump_len;
+        int draw_len;
+        char label[33];
+        constexpr auto fmt = "POST /backend/hexdump/assign_slot?uniq_id=0x%08X %d %s %p %d %d %s";
+
+        if (sscanf(query_buffer, fmt, &uniq_id, &target_slot, action, &action_arg, &dump_len, &draw_len, label) == 7) {
+            u8 utarget_slot = (u8)target_slot;
+            if (utarget_slot < 0 || utarget_slot >= std::size(g_ModCommand_ActorWatcher)) {
+                LoggerTransport::send_dgram(mSocketFd, false, uniq_id, NS_COMMAND, R"({"err": "hexdump assign_slot target out of bounds"})");
+                return; // fail
+            }
+            auto &cmd = g_ModCommand_Hexdump[utarget_slot];
+
+            if (strcmp(action, "clear") == 0) {
+                cmd.clear();
+                LoggerTransport::send_dgram(mSocketFd, false, uniq_id, NS_COMMAND, R"({"msg": "cleared hexdump"})");
+                return; // ok
+
+            } else if (strcmp(action, "pause") == 0) {
+                cmd.is_calc = false;
+                LoggerTransport::send_dgram(mSocketFd, false, uniq_id, NS_COMMAND, R"({"msg": "paused hexdump"})");
+                return; // ok
+
+            } else if (strcmp(action, "absolute") == 0) {
+                cmd.is_calc = false;
+                strncpy(cmd.label, label, 33);
+                cmd.draw_len = draw_len;
+                cmd.dump_len = dump_len;
+                cmd.is_pending_draw = true;
+                cmd.is_calc = true;
+                cmd.dump_src = dump_len >= 0 ? action_arg : action_arg + dump_len; // negative lengths aim behind ptr
+                LoggerTransport::send_dgram(mSocketFd, false, uniq_id, NS_COMMAND, R"({"msg": "assigned hexdump"})");
+                return; // ok
+
+            } // TODO else if module relative(exking, nnSdk, multimedia, ...)
+        }
+
+        LoggerTransport::send_dgram(mSocketFd, false, uniq_id, NS_COMMAND, R"({"err": "malformed params for route"})");
+        return; // fail
+    }
+
     LoggerTransport::send_dgram(mSocketFd, false, uniq_id, NS_COMMAND, R"({"err": "no matching route"})"); // fail
 }
 

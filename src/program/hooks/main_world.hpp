@@ -72,7 +72,7 @@ HOOK_DEFINE_TRAMPOLINE(WorldManagerModuleBaseProcHook) {
             if (!cmd.is_calc || cmd.dump_src == nullptr) { cmd.calc_age++; continue; }
 
             // dump into buffer
-            auto len = abs(cmd.dump_len);
+            u32 len = abs(cmd.dump_len);
             len = len > ModCommand_Hexdump::BUF_LEN ? ModCommand_Hexdump::BUF_LEN : len;
             std::memcpy(cmd.buf, cmd.dump_src, len);
 
@@ -141,16 +141,20 @@ HOOK_DEFINE_TRAMPOLINE(WorldManagerModuleBaseProcHook) {
         if (InputHelper::isKeyPress(nn::hid::KeyboardKey::Backquote)) {
             Logger::main->log(NS_DEFAULT_TEXT, "\"oink\"");
             // XXX HACK bring up mr dumpo, then toggle calc
-            auto &dumpo = g_ModCommand_Hexdump[2];
+            auto &dumpo = g_ModCommand_Hexdump[3];
             if (!dumpo.is_calc) {
                 void* ptr = (void*)(g_ModCommand_ActorWatcher[0].tracked_motion);
                 if (ptr != nullptr) {
-                    dumpo.is_calc = true;
-                    dumpo.is_pending_draw = true;
+                    // should prob use mutex but i'm scared of fucking with the game's timing+accuracy by locking stuff.
+                    // try to assign things in the safest possible order... but no guarantee this is preserved in the binary.
+                    // *Requiring* that the resource is closed (ie request to close it and defer until !is_calc before reopening) might be pretty safe too, we prob don't need to reassign+redump the pointer frame perfectly
+                    dumpo.is_calc = false;
                     strcpy(dumpo.label, "Player main hknpMotion");
-                    dumpo.dump_src = ptr;
-                    dumpo.dump_len = 0x80;
                     dumpo.draw_len = 0x80;
+                    dumpo.dump_len = 0x80;
+                    dumpo.dump_src = ptr; // XXX eg is it possible we write to this while a draw thread is reading it? v spooky be v careful, ensuring this is atomic would be good at least
+                    dumpo.is_pending_draw = true;
+                    dumpo.is_calc = true;
                 }
             } else {
                 dumpo.is_calc = false; // leave the stale dump up to draw

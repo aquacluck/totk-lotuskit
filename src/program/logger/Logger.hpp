@@ -110,7 +110,7 @@ public:
 
 class ModCommand_Hexdump {
 public:
-    static constexpr auto BUF_LEN = 0x1000; // 4KB
+    static constexpr u32 BUF_LEN = 0x1000; // 4KB
     bool is_calc; // observe dump_src, to eg TODO watch/search and report to the frontend without drawing
     bool is_pending_draw; // we want to draw, waiting for calc to give the ok (state transition to is_pending_draw=0 is_draw=1 so we're not drawing a stale+misleading buffer)
     bool is_draw; // textwriter output

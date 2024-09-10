@@ -106,10 +106,26 @@ button.pushbutton {
 
 .toolbox_main { position: relative; }
 .toolbox_main > .toolset_connection { right:0px; top:0px; }
+.toolbox_main > .toolset_hexdump_controller { right:120px; top:0px; }
 .toolbox_main > .toolset_actor_inspector:nth-of-type(1) { left: 0px; top:   0px; }
 .toolbox_main > .toolset_actor_inspector:nth-of-type(2) { left: 0px; top: 400px; }
 .toolbox_main > .toolset_actor_inspector:nth-of-type(3) { left: 0px; top: 800px; }
 .toolbox_main > .toolset_actor_inspector:nth-of-type(4) { left: 0px; top:1200px; }
+
+
+.toolset_hexdump_controller {
+    position: absolute;
+    height: 200px;
+    padding: 8px;
+    border: 1px solid #444;
+
+    display: inline-grid;
+    grid-template-rows: 1fr 1fr;
+    grid-template-columns: 1fr;
+    grid-template-areas:
+    'slots';
+}
+.toolset_hexdump_controller > .slots { grid-area: slots; }
 
 
 .toolset_connection {
