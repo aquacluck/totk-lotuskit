@@ -1,12 +1,8 @@
 #pragma once
-#include <utility>
-
 #include "lib.hpp"
 #include "nn/nn.h"
 #include "nn/hid.h"
 #include "nn/util.h"
-#include "helpers/InputHelper.hpp"
-#include "helpers/ConfigHelper.hpp"
 #include "lib/util/ptr_path.hpp"
 #include "lib/util/sys/mem_layout.hpp"
 #include "structs.hpp"
@@ -43,31 +39,29 @@
 #include "sym/engine/actor/ActorMgr.h"
 #include "sym/engine/actor/BaseProcCreateAndDeleteThread.h"
 #include "sym/engine/hacks.h"
-#include "sym/engine/module/VFRMgr.h"
 
 // game sym
 #include "sym/game/ai/execute/ExecutePlayerWhistle.h"
-#include "sym/game/wm/WorldManagerModule.h"
 
 // havok sym
 #include "sym/hk/hacks.h"
 
 
 // feature flags to minimize log noise and similar clutter/risk/etc
+// TODO runtime toggles for everything, try to only define/constexpr features if its gonna break the build or crash.
+//      Unstable hooks dont need to be installed right away, noisy hooks can be silenced/disabled, etc. try not to let things rot in ifdef purgatory.
+//      Consider omitting default nullptrs from sym:: so missing syms break that version's build, and then that's when you ifdef on version,
+//      which makes version parity gaps obvious *at the source level* keeping syms shit farther out of mind when its not relevant.
 constexpr bool DO_RELATION_LOG = 1;
 constexpr bool DO_PHYSICS_SPAM_LOG = 0;
-constexpr bool DO_VFR_LOG = 0;
 #define DO_XXX_ACTOR_CREATION_LOG 1
 
-extern ModCommand_Savestate_ActorPos g_ModCommand_Savestate_ActorPos[4]; // XXX hooks.hpp logger.cpp trash glue
-extern ModCommand_ActorWatcher g_ModCommand_ActorWatcher[4]; // XXX hooks.hpp logger.cpp trash glue
+extern ModCommand_ActorWatcher g_ModCommand_ActorWatcher[4]; // XXX trash glue
 
 const float PLAYER_PHYSICS_HEIGHT_OFFSET = 0.9; // constant offset between pos32/pos64
-ActorBase* Player = nullptr;
-PreActor* Player_PreActor = nullptr;
-hknpMotion* Player_physics = nullptr;
 
-ActorMgr* ActorMgr_instance = nullptr;
+// exclusively for unimportant actor relation add/remove hacks, dont use, keep local
+// TODO delete these and do relation tracking+mgmt panel
 ActorBase* PlayerCamera = nullptr;
 ActorBase* EventCamera = nullptr;
 ActorBase* Parasail;
@@ -97,8 +91,8 @@ HOOK_DEFINE_TRAMPOLINE(ActorRelationAddHook) {
     static u32 Callback(ActorMgr &actor_mgr, ActorBase &parentBase, ActorBase &childBase) {
         IActor *parent = &(parentBase.mIActor);
         IActor *child = &(childBase.mIActor);
-        ActorMgr_instance = &actor_mgr;
         u8 is_skip = 0;
+        //ActorMgr* ActorMgr_instance = &actor_mgr; // XXX removed global: do sead singleton stuff if we want this
 
         // resolve "via next relation" actor selection
         for (u8 i=1; i < sizeof(g_ModCommand_ActorWatcher); i++) {
@@ -120,10 +114,10 @@ HOOK_DEFINE_TRAMPOLINE(ActorRelationAddHook) {
         if(!strcmp(parent->name, "EventCamera")) { EventCamera = &parentBase; }
 
         if(!strcmp(parent->name, "Player")) {
-            if(Player != &parentBase) {
-                Logger::main->logf(NS_DEFAULT_TEXT, R"("Reassigning Player %p -> %p")", Player, &parentBase);
-                Player = &parentBase;
-                g_ModCommand_ActorWatcher[0].actor = Player;
+            ActorBase* prev_player = g_ModCommand_ActorWatcher[0].actor;
+            if(prev_player != &parentBase) {
+                Logger::main->logf(NS_DEFAULT_TEXT, R"("Reassigning Player %p -> %p")", prev_player, &parentBase);
+                g_ModCommand_ActorWatcher[0].actor = &parentBase;
                 g_ModCommand_ActorWatcher[0].is_pending_selection = false;
                 g_ModCommand_ActorWatcher[0].is_publishing_selection = true;
             }
@@ -226,121 +220,6 @@ HOOK_DEFINE_TRAMPOLINE(ActorRelationRemoveHook) {
 };
 
 
-HOOK_DEFINE_TRAMPOLINE(WorldManagerModuleBaseProcHook) {
-    static const auto s_offset = sym::game::wm::WorldManagerModule::baseProcExe;
-
-    static void Callback(double self, double param_2, double param_3, double param_4, void *wmmodule, void *param_6) {
-        InputHelper::updatePadState();
-
-        if (Player == nullptr) {
-            // early return to wait for the first relation to populate Player. sloppy but it's just bootup, not much going on anyways
-            return Orig(self, param_2, param_3, param_4, wmmodule, param_6);
-        }
-
-        // Parse any pending commands on the wire
-        Logger::main->tryRecvCommandMainLoop(); // XXX filthy hack, nonblocking recv
-
-        // Command: actor paste
-        // TODO efficiently know when+where work items are pending in this arr
-        auto &cmd = g_ModCommand_Savestate_ActorPos[0];
-        if(cmd.is_active_request && strcmp("Player", cmd.actor_selector_named) == 0) {
-            // FIXME rotation doesn't restore, it only affects the map.
-            // FIXME model often doesn't warp until movement, similar to freezing coords
-
-            Player->mPosition = cmd.pos32;
-            Player->mRotationMatrix = cmd.rot;
-            Player_physics->m_centerOfMass = cmd.pos64; // FIXME spooky assignments, just copy members
-            cmd.is_active_request = false;
-
-            Logger::main->logf(NS_SAVESTATE, R"({"actor_paste": ["%s"], "actor_props": [{"pos64": [%f, %f, %f], "pos32": [%f, %f, %f], "rot": [%f, %f, %f, %f, %f, %f, %f, %f, %f] }] })",
-                cmd.actor_selector_named,
-                cmd.pos64.X, cmd.pos64.Y, cmd.pos64.Z,
-                cmd.pos32.X, cmd.pos32.Y, cmd.pos32.Z,
-                cmd.rot.m11, cmd.rot.m12, cmd.rot.m13, cmd.rot.m21, cmd.rot.m22, cmd.rot.m23, cmd.rot.m31, cmd.rot.m32, cmd.rot.m33
-            );
-        }
-
-        // Resolve pending actor selection via preactors
-        // TODO efficiently pick slots needing resolve work
-        // TODO check for entries that take too long to resolve -> hack to avoid checking this every frame for those cases (or just finish the create actor hooking and stop polling)
-        for (u8 i=1; i < sizeof(g_ModCommand_ActorWatcher); i++) {
-            auto &cmd = g_ModCommand_ActorWatcher[i];
-            if (!cmd.is_pending_selection || cmd.selection_type == 0 || cmd.preactor == nullptr) { continue; }
-            if (cmd.preactor->mpActor != nullptr) {
-                // FIXME this traversal is broken on 1.0.0? bad actor pointer
-                // eg Logger::main->logf(NS_DEFAULT_TEXT, R"({"player preactor": "%p -> %p"})", Player_PreActor, Player_PreActor->mpActor);
-                cmd.actor = cmd.preactor->mpActor;
-                cmd.is_pending_selection = false;
-                cmd.is_publishing_selection = true;
-            }
-        }
-
-        // Logging+instrumentation in this thread comes after ^ command proc
-
-        for (u8 i=0; i < sizeof(g_ModCommand_ActorWatcher); i++) {
-            auto &cmd = g_ModCommand_ActorWatcher[i];
-            if (!cmd.is_publishing_selection || cmd.actor == nullptr) { continue; }
-            const auto actor = cmd.actor;
-            const auto rot = actor->mRotationMatrix;
-            hknpMotion* motion = cmd.tracked_motion;
-
-            const char* ns = i == 0 ? NS_ACTOR_PLAYER :
-                             i == 1 ? NS_ACTOR_SLOT_1 :
-                             i == 2 ? NS_ACTOR_SLOT_2 :
-                             i == 3 ? NS_ACTOR_SLOT_3 : NS_DEFAULT_TEXT;
-
-            if (motion != nullptr) {
-                const auto pos64 = motion->m_centerOfMass;
-                Logger::main->logf(ns, R"({"pos64": [%f, %f, %f], "rot_physics": [%f, %f, %f, %f], "physics_ang_vel": [%f, %f, %f], "physics_vel": [%f, %f, %f], "inertia": [%f, %f, %f, %f], "pos32": [%f, %f, %f], "rot": [%f, %f, %f, %f, %f, %f, %f, %f, %f] })",
-                    // hknpMotion
-                    pos64.X, pos64.Y, pos64.Z,
-                    motion->m_orientation.A, motion->m_orientation.B, motion->m_orientation.C, motion->m_orientation.D,
-                    motion->m_angularVelocityLocalAndSpeedLimit.X, motion->m_angularVelocityLocalAndSpeedLimit.Y, motion->m_angularVelocityLocalAndSpeedLimit.Z,
-                    motion->m_linearVelocityAndSpeedLimit.X, motion->m_linearVelocityAndSpeedLimit.Y, motion->m_linearVelocityAndSpeedLimit.Z,
-                    motion->m_inverseInertia[0], motion->m_inverseInertia[1], motion->m_inverseInertia[2], motion->m_inverseInertia[3],
-                    // Actor
-                    actor->mPosition.X, actor->mPosition.Y, actor->mPosition.Z,
-                    rot.m11, rot.m12, rot.m13, rot.m21, rot.m22, rot.m23, rot.m31, rot.m32, rot.m33
-                );
-
-                // TODO try writing angles, velocities, prev+now, inertia, ... just so we know what happens
-                // TODO try blanking out / early returning / etc selectively to see how much we can fix movement... needs actor<->phive<->hknpBody/Shape<->hknpMotion / similar association?
-            } else {
-
-                // Actor only
-                Logger::main->logf(ns, R"({"pos32": [%f, %f, %f], "rot": [%f, %f, %f, %f, %f, %f, %f, %f, %f] })",
-                    actor->mPosition.X, actor->mPosition.Y, actor->mPosition.Z,
-                    rot.m11, rot.m12, rot.m13, rot.m21, rot.m22, rot.m23, rot.m31, rot.m32, rot.m33
-                );
-            }
-        }
-
-        if (DO_VFR_LOG) {
-            // "raw" time is affected by bullet time and not much else (not ascend, recall, textboxes, textbox logs, pausing, memories)
-            // bt drops to 0.05 0.001667, then 4 interpolated frames back up to normal 1.0 0.033333 when it ends. This can stack/multiply with perf hits:
-            // Both raw and cooked are affected by performance:
-            // On 1.2.1 it will switch to 1.5 0.05 during heavy load. That's 1.5x the normal duration, or 0.05 = 1/20 seconds.
-            // 1.0 all seems the same. I thought only 1.0 was locked between 20fps and 30fps?
-            VFRMgr* vfr_mgr = *exl::util::pointer_path::FollowSafe<VFRMgr*, sym::engine::module::VFRMgr::sInstance>();
-            Logger::main->logf(NS_VFRMGR, R"({"vfr_frame": [%f, %f, %f, %f, %f] })", vfr_mgr->mRawDeltaFrame, vfr_mgr->mRawDeltaTime, vfr_mgr->mDeltaFrame, vfr_mgr->mDeltaTime, vfr_mgr->mIntervalValue);
-            for(int i = 0; i < 16; i++) {
-                // default all slots: 1.0 nan
-                // during bt: 0 -> 0.05 0.05, 3 -> 0.35 0.35
-                Logger::main->logf(NS_VFRMGR, R"({"vfr_timespeedmultiplier_i": %d, "pair": [%f, %f] })", i, vfr_mgr->mTimeSpeedMultipliers[i].mValue, vfr_mgr->mTimeSpeedMultipliers[i].mTarget);
-            }
-        }
-
-
-        if (InputHelper::isKeyPress(nn::hid::KeyboardKey::Backquote)) {
-            Logger::main->log(NS_DEFAULT_TEXT, "\"oink\"");
-        }
-
-
-        Orig(self, param_2, param_3, param_4, wmmodule, param_6);
-    }
-};
-
-
 // Thanks to MaxLastBreath for figuring this out in Ultracam -- similar approach here
 HOOK_DEFINE_TRAMPOLINE(TryGetPlayerPhysicsPosPtrHook) {
     static const ptrdiff_t s_offset = sym::hkUNKNOWN::UNKNOWN_applyMotion;
@@ -363,15 +242,17 @@ HOOK_DEFINE_TRAMPOLINE(TryGetPlayerPhysicsPosPtrHook) {
         Vector3d* pos64 = &(hkmotion->m_centerOfMass);
 
         // Player + default relations are initialized before this
+        ActorBase* Player = g_ModCommand_ActorWatcher[0].actor;
         Vector3f pos32 = Player->mPosition;
 
-        if (Player_physics != nullptr) {
+        hknpMotion* prev_motion = g_ModCommand_ActorWatcher[0].tracked_motion;
+        if (prev_motion != nullptr) {
             // Nothing to do, we have it
             return Orig(self, param_2, hkmotion, motion_pool);
 
             // TODO find the new instance if needed, but not like this
-            if(abs(pos32.X - Player_physics->m_centerOfMass.X) > 0.1 && abs(pos32.Y + PLAYER_PHYSICS_HEIGHT_OFFSET - Player_physics->m_centerOfMass.Y) > 0.1 && abs(pos32.Z - Player_physics->m_centerOfMass.Z) > 0.1) {
-                Player_physics = nullptr;
+            if(abs(pos32.X - prev_motion->m_centerOfMass.X) > 0.1 && abs(pos32.Y + PLAYER_PHYSICS_HEIGHT_OFFSET - prev_motion->m_centerOfMass.Y) > 0.1 && abs(pos32.Z - prev_motion->m_centerOfMass.Z) > 0.1) {
+                prev_motion = nullptr;
             }
         }
 
@@ -380,9 +261,8 @@ HOOK_DEFINE_TRAMPOLINE(TryGetPlayerPhysicsPosPtrHook) {
         if(abs(pos32.X - pos64->X) < 0.01 && abs(pos32.Y + PLAYER_PHYSICS_HEIGHT_OFFSET - pos64->Y) < 0.01 && abs(pos32.Z - pos64->Z) < 0.01) {
             // This is the first and only very-close physics object (if that's what this is) during bootup. It's always 0.9m off.
             // FIXME reallocated/??? sometimes... after several trapped-in-water voids at (0 0 0) I got this
-            Logger::main->logf(NS_DEFAULT_TEXT, R"("Reassigning Player_physics %p -> %p")", Player_physics, hkmotion);
-            Player_physics = hkmotion;
-            g_ModCommand_ActorWatcher[0].tracked_motion = Player_physics;
+            Logger::main->logf(NS_DEFAULT_TEXT, R"("Reassigning Player_physics %p -> %p")", prev_motion, hkmotion);
+            g_ModCommand_ActorWatcher[0].tracked_motion = hkmotion;
         }
 
         Orig(self, param_2, hkmotion, motion_pool);
@@ -496,9 +376,8 @@ HOOK_DEFINE_TRAMPOLINE(TestCreateActorHook4) {
         }
 
         if (!strcmp(*actorName, "Player")) {
-            Player_PreActor = pa;
-            Logger::main->logf(NS_DEFAULT_TEXT, R"("Reassigning Player preactor %p")", Player_PreActor);
-            g_ModCommand_ActorWatcher[0].preactor = Player_PreActor;
+            Logger::main->logf(NS_DEFAULT_TEXT, R"("Player preactor %p")", pa);
+            g_ModCommand_ActorWatcher[0].preactor = pa;
         }
 
         // resolve "next spawn" actor selection
@@ -653,146 +532,3 @@ HOOK_DEFINE_INLINE(DebugDrawEnsureFont) {
         layer->mRenderFlags |= 1 << 13; // satisfy check inside vanilla drawDebugInfo_
     }
 };
-
-
-class TextWriterExt: public sead::TextWriter {
-    public:
-    void getCursorFromTopLeftImpl(sead::Vector2f* pos) const {
-        // always 720p sooooo just make it work
-        pos->x = this->mCursor.x + 640.0;
-        pos->y = 360.0 - this->mCursor.y;
-    }
-    void pprintf(sead::Vector2f &pos, const char* fmt, auto&&... args) {
-        // pretty print: text shadow drawn first
-        this->mColor.r = 0.0; this->mColor.g = 0.0; this->mColor.b = 0.0; this->mColor.a = 1.0; // black
-        this->setCursorFromTopLeft(pos);
-        this->printf(fmt, std::forward<decltype(args)>(args)...); // javascript lookin ass bullshit
-
-        // main draw
-        this->mColor.r = 0.85; this->mColor.g = 0.85; this->mColor.b = 0.85; this->mColor.a = 1.0; // white ish
-        pos.x -= 1.0;
-        pos.y -= 1.0;
-        this->setCursorFromTopLeft(pos);
-        this->printf(fmt, std::forward<decltype(args)>(args)...);
-
-        // remember position for future calls
-        this->getCursorFromTopLeftImpl(&pos);
-        pos.x += 1.0;
-        pos.y += 1.0;
-    }
-};
-
-
-HOOK_DEFINE_TRAMPOLINE(DebugDrawImpl) {
-    static const ptrdiff_t s_offset = sym::agl::lyr::Layer::drawDebugInfo_;
-    static void Callback(agl::lyr::Layer* layer, const agl::lyr::RenderInfo& info) {
-        // draw onto the given layer, always Tool 2D -- we would be given many layers if they weren't ignored above
-
-        // XXX do we really need to do this every time? weird its a static. maybe we can hold onto one instead
-        auto* sead_draw_ctx = dynamic_cast<sead::DrawContext*>(info.draw_ctx);
-        sead::TextWriter::setupGraphics(sead_draw_ctx);
-        sead::TextWriter _writer(sead_draw_ctx, info.viewport);
-        TextWriterExt* writer = (TextWriterExt*)(&_writer);
-
-        sead::Vector2f text_pos; // screen is always represented as 1280x720, upscaled for 1080p
-        // scale: 0.665 @ 1080p = 1.0 at 720p. The re-up-scaling means reducing size here looks bad fast, 0.8 is legible
-
-        writer->mScale.x = 0.5; // but we dont need legible here
-        writer->mScale.y = 0.5;
-        text_pos.x = 1280.0 - 75.0;
-        text_pos.y = 2.0;
-        // TODO extract InputDisplay::draw(sead::Vector2f pos, TextWriterExt* writer)
-        if (true) {
-            const char* a       = InputHelper::isButtonHold(nn::hid::NpadButton::A)     ? "A" : " ";
-            const char* b       = InputHelper::isButtonHold(nn::hid::NpadButton::B)     ? "B" : " ";
-            const char* x       = InputHelper::isButtonHold(nn::hid::NpadButton::X)     ? "X" : " ";
-            const char* y       = InputHelper::isButtonHold(nn::hid::NpadButton::Y)     ? "Y" : " ";
-            const char* l       = InputHelper::isButtonHold(nn::hid::NpadButton::L)     ? "L" : " ";
-            const char* r       = InputHelper::isButtonHold(nn::hid::NpadButton::R)     ? "R" : " ";
-            const char* zl      = InputHelper::isButtonHold(nn::hid::NpadButton::ZL)    ? "ZL": "  ";
-            const char* zr      = InputHelper::isButtonHold(nn::hid::NpadButton::ZR)    ? "ZR": "  ";
-            const char* plus    = InputHelper::isButtonHold(nn::hid::NpadButton::Plus)  ? "+" : " ";
-            const char* minus   = InputHelper::isButtonHold(nn::hid::NpadButton::Minus) ? "-" : " ";
-            const char* d_left  = InputHelper::isButtonHold(nn::hid::NpadButton::Left)  ? "<" : " ";
-            const char* d_up    = InputHelper::isButtonHold(nn::hid::NpadButton::Up)    ? "^" : " ";
-            const char* d_right = InputHelper::isButtonHold(nn::hid::NpadButton::Right) ? ">" : " ";
-            const char* d_down  = InputHelper::isButtonHold(nn::hid::NpadButton::Down)  ? "v" : " ";
-            // TODO analog display
-            const char* stick_l = InputHelper::isButtonHold(nn::hid::NpadButton::StickL)      ? "L" : " ";
-            const char* l_left  = InputHelper::isButtonHold(nn::hid::NpadButton::StickLLeft)  ? "<" : " ";
-            const char* l_up    = InputHelper::isButtonHold(nn::hid::NpadButton::StickLUp)    ? "^" : " ";
-            const char* l_right = InputHelper::isButtonHold(nn::hid::NpadButton::StickLRight) ? ">" : " ";
-            const char* l_down  = InputHelper::isButtonHold(nn::hid::NpadButton::StickLDown)  ? "v" : " ";
-            const char* stick_r = InputHelper::isButtonHold(nn::hid::NpadButton::StickR)      ? "R" : " ";
-            const char* r_left  = InputHelper::isButtonHold(nn::hid::NpadButton::StickRLeft)  ? "<" : " ";
-            const char* r_up    = InputHelper::isButtonHold(nn::hid::NpadButton::StickRUp)    ? "^" : " ";
-            const char* r_right = InputHelper::isButtonHold(nn::hid::NpadButton::StickRRight) ? ">" : " ";
-            const char* r_down  = InputHelper::isButtonHold(nn::hid::NpadButton::StickRDown)  ? "v" : " ";
-            //const char bq* = InputHelper::isKeyHold(nn::hid::KeyboardKey::Backquote) ? "`" : " ";
-            // TODO does game respond to any of these?
-            //LeftSL = 24,
-            //LeftSR = 25,
-            //RightSL = 26,
-            //RightSR = 27,
-            //Palma = 28,
-            //Verification = 29,
-            //HandheldLeftB = 30,  // (Left B button on NES controllers in Handheld mode)
-            //LeftC = 31,          // [12.0.0+] (Left C button in N64 controller)
-            //UpC = 32,            // [12.0.0+] (Up C button in N64 controller)
-            //RightC = 33,         // [12.0.0+] (Right C button in N64 controller)
-            //DownC = 34,          // [12.0.0+] (Down C button in N64 controller)
-
-            // All lit up:
-            //ZL L ^- +^  X R ZR
-            //    <L>^<R>Y A
-            //     v<v>v  B
-            const char* inputs_fmt = "%s %s %s%s %s%s  %s %s %s\n    %s%s%s%s%s%s%s%s %s\n     %s%s%s%s%s  %s\n";
-            writer->pprintf(
-                text_pos, inputs_fmt,
-                zl, l, l_up, minus, plus, r_up, x, r, zr,
-                l_left, stick_l, l_right, d_up, r_left, stick_r, r_right, y, a,
-                l_down, d_left, d_down, d_right, r_down, b
-            );
-        }
-
-        writer->mScale.x = 0.8;
-        writer->mScale.y = 0.8;
-        text_pos.x = 2.0;
-        text_pos.y = 2.0;
-        // TODO extract ActorWatcher::draw(sead::Vector2f pos, TextWriterExt* writer)
-        if (true) {
-            for (u8 i=0; i < sizeof(g_ModCommand_ActorWatcher); i++) {
-                auto &cmd = g_ModCommand_ActorWatcher[i];
-                if (!cmd.is_publishing_selection || cmd.actor == nullptr) { continue; }
-                const auto actor = cmd.actor;
-                const auto rot = actor->mRotationMatrix;
-                hknpMotion* motion = cmd.tracked_motion;
-
-                if (motion != nullptr) {
-                    const auto pos64 = motion->m_centerOfMass;
-                    writer->pprintf(text_pos, "%s\npos64: %f, %f, %f \nrot_physics: %f, %f, %f, %f \nphysics_ang_vel: %f, %f, %f \nphysics_vel: %f, %f, %f \ninertia: %f, %f, %f, %f \npos32: %f, %f, %f \nrot: [%f, %f, %f, %f, %f, %f, %f, %f, %f] \n\n",
-                        actor->mIActor.name,
-                        // hknpMotion
-                        pos64.X, pos64.Y, pos64.Z,
-                        motion->m_orientation.A, motion->m_orientation.B, motion->m_orientation.C, motion->m_orientation.D,
-                        motion->m_angularVelocityLocalAndSpeedLimit.X, motion->m_angularVelocityLocalAndSpeedLimit.Y, motion->m_angularVelocityLocalAndSpeedLimit.Z,
-                        motion->m_linearVelocityAndSpeedLimit.X, motion->m_linearVelocityAndSpeedLimit.Y, motion->m_linearVelocityAndSpeedLimit.Z,
-                        motion->m_inverseInertia[0], motion->m_inverseInertia[1], motion->m_inverseInertia[2], motion->m_inverseInertia[3],
-                        // Actor
-                        actor->mPosition.X, actor->mPosition.Y, actor->mPosition.Z,
-                        rot.m11, rot.m12, rot.m13, rot.m21, rot.m22, rot.m23, rot.m31, rot.m32, rot.m33
-                    );
-
-                } else {
-                    // Actor only
-                    writer->pprintf(text_pos, "%s\npos32: %f, %f, %f \nrot: [%f, %f, %f, %f, %f, %f, %f, %f, %f]\n\n",
-                        actor->mIActor.name,
-                        actor->mPosition.X, actor->mPosition.Y, actor->mPosition.Z,
-                        rot.m11, rot.m12, rot.m13, rot.m21, rot.m22, rot.m23, rot.m31, rot.m32, rot.m33
-                    );
-                }
-            }
-        }
-    }
-};
-

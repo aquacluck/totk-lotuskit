@@ -13,11 +13,12 @@ constexpr auto ALLOCATOR_POOL_SIZE = 0x20000;
 static u8 s_socketPool[SOCKET_POOL_SIZE + ALLOCATOR_POOL_SIZE] __attribute__((aligned(0x4000)));
 static u32 s_dgram_uniq_id_ctr = 0x00000000; // counter for all unsolicited messages we send
 
-// instead of connect
+// TODO instead of connect
 #define DO_SOCKET_LISTEN 0
 
-ModCommand_Savestate_ActorPos g_ModCommand_Savestate_ActorPos[4];
-ModCommand_ActorWatcher g_ModCommand_ActorWatcher[4];
+// TODO we'll prob need to lock these?
+ModCommand_Savestate_ActorPos g_ModCommand_Savestate_ActorPos[4]; // XXX trash glue
+ModCommand_ActorWatcher g_ModCommand_ActorWatcher[4]; // XXX trash glue. Player is always 0
 
 
 class LoggerTransport {
@@ -261,6 +262,7 @@ void Logger::tryRecvCommandMainLoop() {
         if (sscanf(query_buffer, fmt, &uniq_id, &target_slot, action, &action_arg) == 4) {
             u8 utarget_slot = (u8)target_slot;
             if (utarget_slot == 0) {
+                // Player is always 0
                 LoggerTransport::send_dgram(mSocketFd, false, uniq_id, NS_COMMAND, R"({"err": "actor select_slot target is reserved"})");
                 return; // fail
             } else if (utarget_slot < 1 || utarget_slot >= sizeof(g_ModCommand_ActorWatcher)) {
@@ -270,7 +272,7 @@ void Logger::tryRecvCommandMainLoop() {
             auto &cmd = g_ModCommand_ActorWatcher[utarget_slot];
 
             if (strcmp(action, "null") == 0) {
-                // FIXME we don't detect actor destruction -- you gotta clear this ahead of time, so its very easy to crash
+                // FIXME we don't detect actor destruction -- but actors are stored in a pool or something so this doesnt seem as crashy as i feared
                 cmd.clear();
             } else if (strcmp(action, "spawn") == 0) {
                 cmd.clear();

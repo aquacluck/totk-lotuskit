@@ -10,19 +10,22 @@
 #include "sym/engine/hacks.h"
 
 #include "hooks.hpp"
+#include "hooks/main_draw.hpp"
+#include "hooks/main_world.hpp"
+
 // TODO provider hooks extract or make available some data or eventual data, with minimal side effects, except for the returned value which may be stubbed/manipulated/etc
 // TODO drawer hooks may request their Draw() method to be called at agl Layer draw time, but are otherwise like provider hooks in seeking to minimize side effects.
 //      base classes interfaces etc with independent namespaces, dont categorize into folders
 
 HOOK_DEFINE_INLINE(nnMainHook) {
     // Steal execution from nnMain right before it jumps into the game
-    static const ptrdiff_t s_offset = sym::engine::nnMain_post_setup;
+    static const ptrdiff_t s_offset = sym::engine::nnMain_post_setup; // hacks
     static void Callback(exl::hook::InlineCtx* ctx) {
         // Effective entry point after sdk init
 
         ActorRelationAddHook::Install();
         ActorRelationRemoveHook::Install();
-        WorldManagerModuleBaseProcHook::Install();
+        WorldManagerModuleBaseProcHook::Install(); // main_world.hpp
         TryGetPlayerPhysicsPosPtrHook::Install();
 
 #if DO_XXX_ACTOR_CREATION_LOG
@@ -55,7 +58,7 @@ HOOK_DEFINE_INLINE(nnMainHook) {
             GetCreateArg::Install();
             DebugDrawEnsureFont::Setup();
             DebugDrawEnsureFont::Install();
-            DebugDrawImpl::Install();
+            DebugDrawImpl::Install(); // main_draw.hpp
         }
 
         // figure out where+when to connect

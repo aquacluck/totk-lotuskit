@@ -28,6 +28,22 @@ ec24835b294116f40dabcdf7a167afa5c630f77b257da840fd445349cf598719  atmosphere/con
 dd9ec52b865c268faa648a459815ea7e30aca350b4be7945942693cc4e94f1d7  atmosphere/contents/0100f2c0115b6000/romfs/Lib/sead/primitive_renderer/primitive_drawer_nvn_shader.bin
 ```
 
+## Architecture
+- `.github` automatically builds and [releases](https://github.com/aquacluck/totk-lotuskit/releases) each commit. You could reproduce the build with this or set it up in your own repo clone.
+- `dt_totk` contains a wide variety of patched C++ headers for libs used in the game, see above for details.
+- `frontend` is optional, but copied into every release zip and contains:
+   - a simple preact web ui, no build/deps/etc
+   - zero dependency python server which serves ^ static web assets. This could be any httpd.
+   - also relays messages between the web ui and the mod (TODO drop this and add ws server to mod, message+transport stuff was designed to be trashed)
+- `romfs` is a skeleton/template for files which are to be installed with the mod. This folder is copied into every release zip. Currently these files are all optional.
+- `src/program` is the C++ mod source:
+    - `main.cpp` only installs `hooks/main.hpp` which then bootstraps the rest of the mod when nn sdk is ready: installing more hooks, initial config, socket init, input init, etc.
+    - `hooks/main_draw.hpp` hooks `agl::lyr::Layer::drawDebugInfo_` which has been resurrected as a "main loop" for textwriter/primitive/etc draw calls.
+    - `hooks/main_world.hpp` hooks `game::wm::WorldManagerModule::baseProcExe` and serves as a "main loop" for game world related functionality.
+    - `hooks.hpp` are unorganized hooks, this should shrink over time.
+- `syms` is a symbol map+metadata build system, see above for details. We do not run python during `make` (including this), however the artifacts this produces are required and expected to be current at build time.
+    - FIXME I'm having trouble getting this python to emit stable sorts, so useless reordering results in a lot of commit noise here. the python inputs are authoritative
+
 ## Credits & Thanks
 - build + hooking + much more thanks to [exlaunch](https://github.com/shadowninja108/exlaunch) by shadow, licensed under GPL2
 - build + Logger + InputHelper thanks to [LunaKit](https://github.com/Amethyst-szs/smo-lunakit) licensed under GPL2
