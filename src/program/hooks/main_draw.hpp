@@ -25,6 +25,7 @@
 #include "sym/gfx/seadTextWriter.h"
 
 extern ModCommand_ActorWatcher g_ModCommand_ActorWatcher[4]; // XXX trash glue
+extern ModCommand_Hexdump g_ModCommand_Hexdump[4]; // XXX trash glue
 
 class TextWriterExt: public sead::TextWriter {
     public:
@@ -67,6 +68,75 @@ HOOK_DEFINE_TRAMPOLINE(DebugDrawImpl) {
 
         sead::Vector2f text_pos; // screen is always represented as 1280x720, upscaled for 1080p
         // scale: 0.665 @ 1080p = 1.0 at 720p. The re-up-scaling means reducing size here looks bad fast, 0.8 is legible
+        writer->mScale.x = 0.8;
+        writer->mScale.y = 0.8;
+        text_pos.x = 2.0;
+        text_pos.y = 2.0;
+
+        // no Player? either bootup or something very bad, unconditionally show feedback + version confirmation (if it'll even render) while we wait
+        // TODO source+display high level configs (socket, svclog, etc)
+        if (g_ModCommand_ActorWatcher[0].actor == nullptr) {
+            writer->pprintf(text_pos, "[totk-lotuskit:%d] awaiting Player, main_offset=%p\n", TOTK_VERSION, exl::util::GetMainModuleInfo().m_Total.m_Start);
+        }
+
+        // TODO extract ActorWatcher::draw(sead::Vector2f pos, TextWriterExt* writer)
+        if (true) {
+            for (u8 i=0; i < std::size(g_ModCommand_ActorWatcher); i++) {
+                auto &cmd = g_ModCommand_ActorWatcher[i];
+                if (!cmd.is_publishing_selection || cmd.actor == nullptr) { continue; }
+                const auto actor = cmd.actor;
+                const auto rot = actor->mRotationMatrix;
+                hknpMotion* motion = cmd.tracked_motion;
+
+                if (motion != nullptr) {
+                    const auto pos64 = motion->m_centerOfMass;
+                    writer->pprintf(text_pos, "%s\npos64: %f, %f, %f \nrot_physics: %f, %f, %f, %f \nphysics_ang_vel: %f, %f, %f \nphysics_vel: %f, %f, %f \ninertia: %f, %f, %f, %f \npos32: %f, %f, %f \nrot: [%f, %f, %f, %f, %f, %f, %f, %f, %f] \n\n",
+                        actor->mIActor.name,
+                        // hknpMotion
+                        pos64.X, pos64.Y, pos64.Z,
+                        motion->m_orientation.A, motion->m_orientation.B, motion->m_orientation.C, motion->m_orientation.D,
+                        motion->m_angularVelocityLocalAndSpeedLimit.X, motion->m_angularVelocityLocalAndSpeedLimit.Y, motion->m_angularVelocityLocalAndSpeedLimit.Z,
+                        motion->m_linearVelocityAndSpeedLimit.X, motion->m_linearVelocityAndSpeedLimit.Y, motion->m_linearVelocityAndSpeedLimit.Z,
+                        motion->m_inverseInertia[0], motion->m_inverseInertia[1], motion->m_inverseInertia[2], motion->m_inverseInertia[3],
+                        // Actor
+                        actor->mPosition.X, actor->mPosition.Y, actor->mPosition.Z,
+                        rot.m11, rot.m12, rot.m13, rot.m21, rot.m22, rot.m23, rot.m31, rot.m32, rot.m33
+                    );
+
+                } else {
+                    // Actor only
+                    writer->pprintf(text_pos, "%s\npos32: %f, %f, %f \nrot: [%f, %f, %f, %f, %f, %f, %f, %f, %f]\n\n",
+                        actor->mIActor.name,
+                        actor->mPosition.X, actor->mPosition.Y, actor->mPosition.Z,
+                        rot.m11, rot.m12, rot.m13, rot.m21, rot.m22, rot.m23, rot.m31, rot.m32, rot.m33
+                    );
+                }
+            }
+        }
+
+        // TODO extract ModCommand_Hexdump::draw
+        if (true) {
+            for (u8 i=0; i < std::size(g_ModCommand_Hexdump); i++) {
+                auto &cmd = g_ModCommand_Hexdump[i];
+                if (!cmd.is_draw || cmd.dump_src == nullptr) { continue; }
+
+                const char* live = cmd.calc_age == 0 ? "[LIVE]" : ""; // visible when buf has been updated this frame, for slow/intermittent/triggered/discontinued/etc dumps
+                writer->pprintf(text_pos, "%s[%d](dump_src=%p, dump_len=%d, age=%d) %s\n", cmd.label, i, cmd.dump_src, cmd.dump_len, cmd.calc_age, live);
+
+                u8* src = cmd.buf;
+                u32 row = 0;
+                do { if (row * 0x10 >= cmd.draw_len) { break; }
+
+                    writer->pprintf(text_pos,
+                        "%p | %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x\n",
+                        src, src[0], src[1], src[2], src[3], src[4], src[5], src[6], src[7], src[8], src[9], src[10], src[11], src[12], src[13], src[14], src[15]
+                    );
+
+                    row++;
+                    src += 0x10;
+                } while (true);
+            }
+        }
 
         writer->mScale.x = 0.5; // but we dont need legible here
         writer->mScale.y = 0.5;
@@ -124,51 +194,6 @@ HOOK_DEFINE_TRAMPOLINE(DebugDrawImpl) {
                 l_left, stick_l, l_right, d_up, r_left, stick_r, r_right, y, a,
                 l_down, d_left, d_down, d_right, r_down, b
             );
-        }
-
-        writer->mScale.x = 0.8;
-        writer->mScale.y = 0.8;
-        text_pos.x = 2.0;
-        text_pos.y = 2.0;
-        // TODO extract ActorWatcher::draw(sead::Vector2f pos, TextWriterExt* writer)
-        if (true) {
-            for (u8 i=0; i < sizeof(g_ModCommand_ActorWatcher); i++) {
-                auto &cmd = g_ModCommand_ActorWatcher[i];
-                if (!cmd.is_publishing_selection || cmd.actor == nullptr) { continue; }
-                const auto actor = cmd.actor;
-                const auto rot = actor->mRotationMatrix;
-                hknpMotion* motion = cmd.tracked_motion;
-
-                if (motion != nullptr) {
-                    const auto pos64 = motion->m_centerOfMass;
-                    writer->pprintf(text_pos, "%s\npos64: %f, %f, %f \nrot_physics: %f, %f, %f, %f \nphysics_ang_vel: %f, %f, %f \nphysics_vel: %f, %f, %f \ninertia: %f, %f, %f, %f \npos32: %f, %f, %f \nrot: [%f, %f, %f, %f, %f, %f, %f, %f, %f] \n\n",
-                        actor->mIActor.name,
-                        // hknpMotion
-                        pos64.X, pos64.Y, pos64.Z,
-                        motion->m_orientation.A, motion->m_orientation.B, motion->m_orientation.C, motion->m_orientation.D,
-                        motion->m_angularVelocityLocalAndSpeedLimit.X, motion->m_angularVelocityLocalAndSpeedLimit.Y, motion->m_angularVelocityLocalAndSpeedLimit.Z,
-                        motion->m_linearVelocityAndSpeedLimit.X, motion->m_linearVelocityAndSpeedLimit.Y, motion->m_linearVelocityAndSpeedLimit.Z,
-                        motion->m_inverseInertia[0], motion->m_inverseInertia[1], motion->m_inverseInertia[2], motion->m_inverseInertia[3],
-                        // Actor
-                        actor->mPosition.X, actor->mPosition.Y, actor->mPosition.Z,
-                        rot.m11, rot.m12, rot.m13, rot.m21, rot.m22, rot.m23, rot.m31, rot.m32, rot.m33
-                    );
-
-                } else {
-                    // Actor only
-                    writer->pprintf(text_pos, "%s\npos32: %f, %f, %f \nrot: [%f, %f, %f, %f, %f, %f, %f, %f, %f]\n\n",
-                        actor->mIActor.name,
-                        actor->mPosition.X, actor->mPosition.Y, actor->mPosition.Z,
-                        rot.m11, rot.m12, rot.m13, rot.m21, rot.m22, rot.m23, rot.m31, rot.m32, rot.m33
-                    );
-                }
-            }
-        }
-
-        // no Player? either bootup or something very bad, unconditionally show feedback + version confirmation (if it'll even render) while we wait
-        // TODO source+display high level configs (socket, svclog, etc)
-        if (g_ModCommand_ActorWatcher[0].actor == nullptr) {
-            writer->pprintf(text_pos, "[totk-lotuskit:%d] awaiting Player, main_offset=%p\n", TOTK_VERSION, exl::util::GetMainModuleInfo().m_Total.m_Start);
         }
     }
 };

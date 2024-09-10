@@ -53,7 +53,7 @@ HOOK_DEFINE_TRAMPOLINE(WorldManagerModuleBaseProcHook) {
         // Resolve pending actor selection via preactors
         // TODO efficiently pick slots needing resolve work
         // TODO check for entries that take too long to resolve -> hack to avoid checking this every frame for those cases (or just finish the create actor hooking and stop polling)
-        for (u8 i=1; i < sizeof(g_ModCommand_ActorWatcher); i++) {
+        for (u8 i=1; i < std::size(g_ModCommand_ActorWatcher); i++) {
             auto &cmd = g_ModCommand_ActorWatcher[i];
             if (!cmd.is_pending_selection || cmd.selection_type == 0 || cmd.preactor == nullptr) { continue; }
             if (cmd.preactor->mpActor != nullptr) {
@@ -67,7 +67,23 @@ HOOK_DEFINE_TRAMPOLINE(WorldManagerModuleBaseProcHook) {
 
         // Logging+instrumentation in this thread comes after ^ command proc
 
-        for (u8 i=0; i < sizeof(g_ModCommand_ActorWatcher); i++) {
+        for (u8 i=0; i < std::size(g_ModCommand_Hexdump); i++) {
+            auto &cmd = g_ModCommand_Hexdump[i];
+            if (!cmd.is_calc || cmd.dump_src == nullptr) { cmd.calc_age++; continue; }
+
+            // dump into buffer
+            auto len = abs(cmd.dump_len);
+            len = len > ModCommand_Hexdump::BUF_LEN ? ModCommand_Hexdump::BUF_LEN : len;
+            std::memcpy(cmd.buf, cmd.dump_src, len);
+
+            cmd.calc_age = 0;
+            if (cmd.is_pending_draw) {
+                cmd.is_pending_draw = false;
+                cmd.is_draw = true;
+            }
+        }
+
+        for (u8 i=0; i < std::size(g_ModCommand_ActorWatcher); i++) {
             auto &cmd = g_ModCommand_ActorWatcher[i];
             if (!cmd.is_publishing_selection || cmd.actor == nullptr) { continue; }
             const auto actor = cmd.actor;
@@ -124,6 +140,21 @@ HOOK_DEFINE_TRAMPOLINE(WorldManagerModuleBaseProcHook) {
 
         if (InputHelper::isKeyPress(nn::hid::KeyboardKey::Backquote)) {
             Logger::main->log(NS_DEFAULT_TEXT, "\"oink\"");
+            // XXX HACK bring up mr dumpo, then toggle calc
+            auto &dumpo = g_ModCommand_Hexdump[2];
+            if (!dumpo.is_calc) {
+                void* ptr = (void*)(g_ModCommand_ActorWatcher[0].tracked_motion);
+                if (ptr != nullptr) {
+                    dumpo.is_calc = true;
+                    dumpo.is_pending_draw = true;
+                    strcpy(dumpo.label, "Player main hknpMotion");
+                    dumpo.dump_src = ptr;
+                    dumpo.dump_len = 0x80;
+                    dumpo.draw_len = 0x80;
+                }
+            } else {
+                dumpo.is_calc = false; // leave the stale dump up to draw
+            }
         }
 
 

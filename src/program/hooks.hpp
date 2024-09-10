@@ -95,7 +95,7 @@ HOOK_DEFINE_TRAMPOLINE(ActorRelationAddHook) {
         //ActorMgr* ActorMgr_instance = &actor_mgr; // XXX removed global: do sead singleton stuff if we want this
 
         // resolve "via next relation" actor selection
-        for (u8 i=1; i < sizeof(g_ModCommand_ActorWatcher); i++) {
+        for (u8 i=1; i < std::size(g_ModCommand_ActorWatcher); i++) {
             auto &cmd = g_ModCommand_ActorWatcher[i];
             if (!cmd.is_pending_selection || cmd.selection_type != 2) { continue; }
             if (cmd.actor_selector_parent_relation == &parentBase) {
@@ -381,7 +381,7 @@ HOOK_DEFINE_TRAMPOLINE(TestCreateActorHook4) {
         }
 
         // resolve "next spawn" actor selection
-        for (u8 i=1; i < sizeof(g_ModCommand_ActorWatcher); i++) {
+        for (u8 i=1; i < std::size(g_ModCommand_ActorWatcher); i++) {
             auto &cmd = g_ModCommand_ActorWatcher[i];
             if (!cmd.is_pending_selection || cmd.selection_type != 1 || cmd.preactor != nullptr || pa == nullptr) { continue; }
             cmd.preactor = pa;

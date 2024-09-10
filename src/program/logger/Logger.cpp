@@ -17,6 +17,7 @@ static u32 s_dgram_uniq_id_ctr = 0x00000000; // counter for all unsolicited mess
 #define DO_SOCKET_LISTEN 0
 
 // TODO we'll prob need to lock these?
+ModCommand_Hexdump g_ModCommand_Hexdump[4]; // XXX trash glue
 ModCommand_Savestate_ActorPos g_ModCommand_Savestate_ActorPos[4]; // XXX trash glue
 ModCommand_ActorWatcher g_ModCommand_ActorWatcher[4]; // XXX trash glue. Player is always 0
 
@@ -265,7 +266,7 @@ void Logger::tryRecvCommandMainLoop() {
                 // Player is always 0
                 LoggerTransport::send_dgram(mSocketFd, false, uniq_id, NS_COMMAND, R"({"err": "actor select_slot target is reserved"})");
                 return; // fail
-            } else if (utarget_slot < 1 || utarget_slot >= sizeof(g_ModCommand_ActorWatcher)) {
+            } else if (utarget_slot < 1 || utarget_slot >= std::size(g_ModCommand_ActorWatcher)) {
                 LoggerTransport::send_dgram(mSocketFd, false, uniq_id, NS_COMMAND, R"({"err": "actor select_slot target out of bounds"})");
                 return; // fail
             }
@@ -282,7 +283,7 @@ void Logger::tryRecvCommandMainLoop() {
 
                 // TODO assert "source" action_arg slot contains a valid actor. eventually presenting custom names instead of slot indices would make slot dependencies like this copypastable by the user
                 u8 usource_slot = (u64)action_arg & 0xff;
-                if (usource_slot >= sizeof(g_ModCommand_ActorWatcher)) {
+                if (usource_slot >= std::size(g_ModCommand_ActorWatcher)) {
                     LoggerTransport::send_dgram(mSocketFd, false, uniq_id, NS_COMMAND, R"({"err": "actor select_slot source out of bounds"})");
                     return; // fail
                 }

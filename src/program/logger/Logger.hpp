@@ -108,6 +108,33 @@ public:
     Matrix33f rot;
 };
 
+class ModCommand_Hexdump {
+public:
+    static constexpr auto BUF_LEN = 0x1000; // 4KB
+    bool is_calc; // observe dump_src, to eg TODO watch/search and report to the frontend without drawing
+    bool is_pending_draw; // we want to draw, waiting for calc to give the ok (state transition to is_pending_draw=0 is_draw=1 so we're not drawing a stale+misleading buffer)
+    bool is_draw; // textwriter output
+    // TODO accept+store nso module offsets, sead::Heap* relative, etc traversal for certain container types
+    // src_type_id = absolute
+    void* dump_src; // absolute address to inspect TODO derive from ^. This is always the "beginning" of the observed region for any pagination/etc logic, even for negative
+    u8 buf[BUF_LEN]; // every calc will replace the contents of this buffer, perhaps performing comparisons/etc first
+    s32 dump_len; // abs(dump_len) capped at BUF_LEN, but +-2GB addressable. Should be a multiple of 0x10
+    u16 draw_len; // capped at smallest of: abs(dump_len) or BUF_LEN or about a screenful, to eg observe a large BUF_LEN but limit the output. default: about a screenful. Should be a multiple of 0x10
+    u32 calc_age; // calc ticks since is_calc was last true / buf was refreshed
+    char label[33];
+
+    void clear(void) {
+        this->is_calc = false;
+        this->is_pending_draw = false;
+        this->is_draw = false;
+        //this->src_type_id = absolute;
+        this->dump_src = nullptr;
+        this->dump_len = 0x20;
+        this->draw_len = 0x20;
+        this->calc_age = 0;
+        strcpy(this->label, "Hexdump");
+    }
+};
 
 
 // random socket enums

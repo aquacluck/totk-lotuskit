@@ -105,7 +105,8 @@ HOOK_DEFINE_INLINE(nnMainHook) {
         main_logger->logf(NS_DEFAULT_TEXT, R"("main_offset %p")", exl::util::GetMainModuleInfo().m_Total.m_Start);
 
         // idk spooky
-        for (u8 i=0; i < sizeof(g_ModCommand_ActorWatcher); i++) { g_ModCommand_ActorWatcher[i].clear(); }
+        for (u8 i=0; i < std::size(g_ModCommand_ActorWatcher); i++) { g_ModCommand_ActorWatcher[i].clear(); }
+        for (u8 i=0; i < std::size(g_ModCommand_Hexdump); i++) { g_ModCommand_Hexdump[i].clear(); }
 
         InputHelper::initKBM();
         InputHelper::setPort(0); // default controller port
