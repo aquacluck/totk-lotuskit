@@ -217,6 +217,9 @@ class RuntimeSymbol:
 
         elif isinstance(self.ast, FuncNode):
             namenode = self.ast.name
+            if namenode.kind == "cv_qual":
+                namenode = namenode.value
+
             if namenode.kind == "name":
                 self.subject_identifier = namenode.value
                 return # unqualified: no namespace

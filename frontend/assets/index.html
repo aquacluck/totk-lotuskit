@@ -231,6 +231,30 @@
         }
     };
 
+    class MemSearch extends Component {
+        constructor() {
+            super();
+            this.slot_needle_ptr_ref = createRef();
+        }
+
+        do_search(haystack_name) {
+            const needle_ptr = this.slot_needle_ptr_ref.current.value || 0;
+            // TODO await+display results?
+            fetch(`/backend/memsearch/invoke?uniq_id=${WSTransport.make_uniq_id()} ${haystack_name} ${needle_ptr}`, {method: "post"});
+        }
+
+        render({slot_i}, state) {
+            // TODO region picker
+            return html`
+                <div class="memsearch">
+                    Memory search <br/>
+                    <input placeholder="target ptr (hex)" size="20" ref=${this.slot_needle_ptr_ref} />
+                    <button onClick=${ () => this.do_search("sead::HeapMgr::sRootHeaps") } class="pushbutton">heap</button>
+                </div>
+            `;
+        }
+    };
+
     class ActorInspector extends Component {
         constructor() {
             super();
@@ -412,14 +436,15 @@
         return html`
         <div class="toolbox_main">
             ${WSTransport.signals.actor._XXX_tracked_aselectors.value.map((asel, asel_i) => html`<${ActorInspector} aselector_named=${asel} _XXX_aselector_i=${asel_i} />`)}
-            <section class="toolset_hexdump_controller">
-                <div class="slots">
+            <section class="toolset_memutils_controller">
+                <div class="hexdump">
                     Hexdump
                     <${HexdumpSlot} slot_i=0 />
                     <${HexdumpSlot} slot_i=1 />
                     <${HexdumpSlot} slot_i=2 />
                     <${HexdumpSlot} slot_i=3 />
                 </div>
+                <${MemSearch} />
             </section>
             <${ConnectionToolset} />
         </div>

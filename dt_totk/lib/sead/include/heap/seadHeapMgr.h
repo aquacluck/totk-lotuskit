@@ -64,7 +64,9 @@ public:
     using RootHeaps = FixedPtrArray<Heap, 4>;
     using IndependentHeaps = FixedPtrArray<Heap, 4>;
 
+#if not LOTUSKIT_HACK_SKIP_PRIVATE
 private:
+#endif
     friend class ScopedCurrentHeapSetter;
 
     /// Set the current heap to the specified heap and returns the previous "current heap".

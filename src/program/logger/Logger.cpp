@@ -4,6 +4,8 @@
 #include "nn/util.h"
 #include "lib.hpp"
 
+#include "heap/seadHeapMgr.h"
+
 constexpr inline auto AF_INET = 2; // XXX domain ams::socket::Family::Af_Inet (ipv4)
 constexpr inline u32 ip4_any = 0x00'00'00'00; // InAddr_Any
 constexpr inline u32 ip4_localhost = 0x7f'00'00'01; // InAddr_Loopback
@@ -397,6 +399,38 @@ void Logger::tryRecvCommandMainLoop() {
                 return; // ok
 
             } // TODO else if module relative(exking, nnSdk, multimedia, ...)
+        }
+
+        LoggerTransport::send_dgram(mSocketFd, false, uniq_id, NS_COMMAND, R"({"err": "malformed params for route"})");
+        return; // fail
+    }
+
+
+    constexpr auto memsearch_invoke = "POST /backend/memsearch/invoke?";
+    if (strncmp(memsearch_invoke, query_buffer, strlen(memsearch_invoke)) == 0) {
+        char action[33];
+        void* action_arg;
+        constexpr auto fmt = "POST /backend/memsearch/invoke?uniq_id=0x%08X %s %p";
+
+        if (sscanf(query_buffer, fmt, &uniq_id, action, &action_arg) == 3) {
+            if (strcmp(action, "sead::HeapMgr::sRootHeaps") == 0) {
+                LoggerTransport::send_dgram(mSocketFd, false, uniq_id, NS_COMMAND, R"({"msg": "beginning search"})"); // ok
+
+                auto rootheap0 = sead::HeapMgr::sRootHeaps[0];
+                void* needle_ptr = action_arg;
+                Logger::main->logf(NS_DEFAULT_TEXT, "\"searching for %p in root heap %p\"", needle_ptr, rootheap0);
+                void** haystack_ptr = (void**)(rootheap0->getStartAddress());
+                void** haystack_end = (void**)(rootheap0->getEndAddress());
+                while (haystack_ptr < haystack_end) {
+                    //if ((u64)haystack_ptr % 0x800000 == 0) { Logger::main->logf(NS_DEFAULT_TEXT, "\"%p \"", haystack_ptr); } // progress
+                    if (*haystack_ptr == needle_ptr) {
+                        Logger::main->logf(NS_DEFAULT_TEXT, "\"[MATCH] found %p at %p \"", needle_ptr, haystack_ptr);
+                    }
+                    haystack_ptr++;
+                }
+
+                return; // ok
+            }
         }
 
         LoggerTransport::send_dgram(mSocketFd, false, uniq_id, NS_COMMAND, R"({"err": "malformed params for route"})");

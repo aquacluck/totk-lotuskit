@@ -22,6 +22,9 @@ _ZN4sead10TextWriterC1EPNS_11DrawContextEPKNS_8ViewportE = __main_start +       
 _ZN4sead10TextWriterD1Ev         = __main_start +         0x010bfd60; /* sead::TextWriter::{dtor}() */
 _ZN4sead12GlobalRandom9sInstanceE = __main_start +         0x04719628; /* sead::GlobalRandom::sInstance */
 _ZN4sead6Random6getU32Ev         = __main_start +         0x011095ac; /* sead::Random::getU32() */
+_ZN4sead7HeapMgr10sRootHeapsE    = __main_start +         0x04719328; /* sead::HeapMgr::sRootHeaps */
+_ZN4sead7HeapMgr12sInstancePtrE  = __main_start +         0x047193c0; /* sead::HeapMgr::sInstancePtr */
+_ZN4sead7HeapMgr15createRootHeap_Ev = __main_start +         0x00ebb084; /* sead::HeapMgr::createRootHeap_() */
 _ZN6engine5actor16ActorInstanceMgr22requestCreateActorSyncEPv = __main_start +         0x012ba6c4; /* engine::actor::ActorInstanceMgr::requestCreateActorSync(void*) */
 _ZN6engine5actor16ActorInstanceMgr23requestCreateActorAsyncEPv = __main_start +         0x00bde0ac; /* engine::actor::ActorInstanceMgr::requestCreateActorAsync(void*) */
 _ZN6engine5actor16ActorInstanceMgr25createActorAndConnectSyncEPv = __main_start +         0x01181d94; /* engine::actor::ActorInstanceMgr::createActorAndConnectSync(void*) */
@@ -30,6 +33,7 @@ _ZN6engine5actor16ActorInstanceMgr29createActorAndConnectSyncImplEPv = __main_st
 _ZN6engine5actor8ActorMgr19removeActorRelationERS1_RNS0_9ActorBaseES4_ = __main_start +         0x008a6c80; /* engine::actor::ActorMgr::removeActorRelation(engine::actor::ActorMgr&, engine::actor::ActorBase&, engine::actor::ActorBase&) */
 _ZN6engine5actor8ActorMgr21registerActorRelationERS1_RNS0_9ActorBaseES4_ = __main_start +         0x00dc9360; /* engine::actor::ActorMgr::registerActorRelation(engine::actor::ActorMgr&, engine::actor::ActorBase&, engine::actor::ActorBase&) */
 _ZN9hkUNKNOWN19UNKNOWN_applyMotionEPvS0_P10hknpMotionS2_ = __main_start +         0x0020d98c; /* hkUNKNOWN::UNKNOWN_applyMotion(void*, void*, hknpMotion*, hknpMotion*) */
+_ZNK4sead7HeapMgr15findContainHeapEPKv = __main_start +         0x007612b0; /* sead::HeapMgr::findContainHeap const(void const*) */
 
 /* ======== END   EX-King (nso main) ================================ */
 
