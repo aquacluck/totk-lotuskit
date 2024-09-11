@@ -121,10 +121,10 @@ button.pushbutton {
 
     display: inline-grid;
     grid-template-rows: 1fr 1fr;
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 1fr;
     grid-template-areas:
-    'hexdump'
-    'memsearch';
+    'hexdump   hexdump'
+    'memsearch heapinfo';
 }
 .toolset_memutils_controller > .hexdump { grid-area: hexdump; }
 .toolset_memutils_controller > .memsearch { grid-area: memsearch; }

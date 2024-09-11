@@ -359,7 +359,7 @@ void Logger::tryRecvCommandMainLoop() {
     }
 
 
-    constexpr auto hexdump_assign_slot = "POST /backend/hexdump/assign_slot?";
+    constexpr auto hexdump_assign_slot = "POST /backend/memutils/hexdump/assign_slot?";
     if (strncmp(hexdump_assign_slot, query_buffer, strlen(hexdump_assign_slot)) == 0) {
         int target_slot;
         char action[33];
@@ -367,7 +367,7 @@ void Logger::tryRecvCommandMainLoop() {
         int dump_len;
         int draw_len;
         char label[33];
-        constexpr auto fmt = "POST /backend/hexdump/assign_slot?uniq_id=0x%08X %d %s %p %d %d %s";
+        constexpr auto fmt = "POST /backend/memutils/hexdump/assign_slot?uniq_id=0x%08X %d %s %p %d %d %s";
 
         if (sscanf(query_buffer, fmt, &uniq_id, &target_slot, action, &action_arg, &dump_len, &draw_len, label) == 7) {
             u8 utarget_slot = (u8)target_slot;
@@ -406,11 +406,11 @@ void Logger::tryRecvCommandMainLoop() {
     }
 
 
-    constexpr auto memsearch_invoke = "POST /backend/memsearch/invoke?";
+    constexpr auto memsearch_invoke = "POST /backend/memutils/memsearch/invoke?";
     if (strncmp(memsearch_invoke, query_buffer, strlen(memsearch_invoke)) == 0) {
         char action[33];
         void* action_arg;
-        constexpr auto fmt = "POST /backend/memsearch/invoke?uniq_id=0x%08X %s %p";
+        constexpr auto fmt = "POST /backend/memutils/memsearch/invoke?uniq_id=0x%08X %s %p";
 
         if (sscanf(query_buffer, fmt, &uniq_id, action, &action_arg) == 3) {
             if (strcmp(action, "sead::HeapMgr::sRootHeaps") == 0) {
@@ -431,6 +431,56 @@ void Logger::tryRecvCommandMainLoop() {
 
                 return; // ok
             }
+        }
+
+        LoggerTransport::send_dgram(mSocketFd, false, uniq_id, NS_COMMAND, R"({"err": "malformed params for route"})");
+        return; // fail
+    }
+
+    constexpr auto heapinfo_invoke = "POST /backend/memutils/heapinfo/invoke?";
+    if (strncmp(heapinfo_invoke, query_buffer, strlen(heapinfo_invoke)) == 0) {
+        constexpr auto fmt = "POST /backend/memutils/heapinfo/invoke?uniq_id=0x%08X";
+
+        if (sscanf(query_buffer, fmt, &uniq_id) == 1) {
+            LoggerTransport::send_dgram(mSocketFd, false, uniq_id, NS_COMMAND, R"({"msg": "beginning heap info dump"})"); // ok TODO send it back
+            const auto rootheap0 = sead::HeapMgr::sRootHeaps[0];
+            sead::Heap* h = rootheap0; // current/visiting entry
+            sead::Heap* htmp = nullptr;
+            u32 depth = 0;
+            char leftpad[65] = "                                                                ";
+
+            HEAPINFO_VISIT:
+            // log the entry: name + size + basic meta TODO accumulate json or something
+            leftpad[depth*4] = '\0'; // assert depth <= 16
+            Logger::main->logf(NS_DEFAULT_TEXT, "\"%s%s(%p) size: %#08x free: %#08x \"", leftpad, h->getName().cstr(), h, h->getSize(), h->getFreeSize());
+            leftpad[depth*4] = ' ';
+
+            // keep descending into first child
+            htmp = h->mChildren.front();
+            if (htmp != nullptr) {
+                depth++;
+                h = htmp;
+                goto HEAPINFO_VISIT;
+            }
+
+            // no children, proceed to siblings
+            HEAPINFO_DO_NEXT:
+            if (h->mParent == nullptr) {
+                // assert h == rootheap0
+                return; // ok
+            }
+            htmp = h->mParent->mChildren.next(h);
+            if (htmp != nullptr) {
+                h = htmp;
+                goto HEAPINFO_VISIT; // advance through siblings
+            }
+
+            // no more siblings, ascend and continue advancing through the aunts and uncles
+            depth--;
+            h = h->mParent;
+            goto HEAPINFO_DO_NEXT; // advance through siblings
+
+            return; // unreachable
         }
 
         LoggerTransport::send_dgram(mSocketFd, false, uniq_id, NS_COMMAND, R"({"err": "malformed params for route"})");

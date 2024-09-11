@@ -201,15 +201,15 @@
             const label = this.slot_label_ref.current.value.toString().slice(0, 32).replaceAll(" ", "-") || "_label";
             const ptr = this.slot_target_ptr_ref.current.value || 0;
             if (!ptr) { console.log("hexdump user lookin sussy", i); return; }
-            fetch(`/backend/hexdump/assign_slot?uniq_id=${WSTransport.make_uniq_id()} ${i} absolute ${ptr} ${dump_len} ${draw_len} ${label}`, {method: "post"});
+            fetch(`/backend/memutils/hexdump/assign_slot?uniq_id=${WSTransport.make_uniq_id()} ${i} absolute ${ptr} ${dump_len} ${draw_len} ${label}`, {method: "post"});
             console.log("hexdump absolute", i, ptr, {dump_len, draw_len, label});
         }
         do_pause(i) {
-            fetch(`/backend/hexdump/assign_slot?uniq_id=${WSTransport.make_uniq_id()} ${i} pause 0x0 0 0 _label`, {method: "post"});
+            fetch(`/backend/memutils/hexdump/assign_slot?uniq_id=${WSTransport.make_uniq_id()} ${i} pause 0x0 0 0 _label`, {method: "post"});
             console.log("hexdump pause", i);
         }
         do_clear(i) {
-            fetch(`/backend/hexdump/assign_slot?uniq_id=${WSTransport.make_uniq_id()} ${i} clear 0x0 0 0 _label`, {method: "post"});
+            fetch(`/backend/memutils/hexdump/assign_slot?uniq_id=${WSTransport.make_uniq_id()} ${i} clear 0x0 0 0 _label`, {method: "post"});
             console.log("hexdump clear", i);
         }
 
@@ -234,22 +234,40 @@
     class MemSearch extends Component {
         constructor() {
             super();
-            this.slot_needle_ptr_ref = createRef();
+            this.needle_ptr_ref = createRef();
         }
 
         do_search(haystack_name) {
-            const needle_ptr = this.slot_needle_ptr_ref.current.value || 0;
+            const needle_ptr = this.needle_ptr_ref.current.value || 0;
             // TODO await+display results?
-            fetch(`/backend/memsearch/invoke?uniq_id=${WSTransport.make_uniq_id()} ${haystack_name} ${needle_ptr}`, {method: "post"});
+            fetch(`/backend/memutils/memsearch/invoke?uniq_id=${WSTransport.make_uniq_id()} ${haystack_name} ${needle_ptr}`, {method: "post"});
         }
 
-        render({slot_i}, state) {
+        render(props, state) {
             // TODO region picker
             return html`
                 <div class="memsearch">
                     Memory search <br/>
-                    <input placeholder="target ptr (hex)" size="20" ref=${this.slot_needle_ptr_ref} />
+                    <input placeholder="target ptr (hex)" size="20" ref=${this.needle_ptr_ref} />
                     <button onClick=${ () => this.do_search("sead::HeapMgr::sRootHeaps") } class="pushbutton">heap</button>
+                </div>
+            `;
+        }
+    };
+
+    //constexpr auto fmt = "POST /backend/memutils/heapinfo/invoke?uniq_id=0x%08X";
+    class HeapInfo extends Component {
+        do_it() {
+            // TODO await+display results?
+            fetch(`/backend/memutils/heapinfo/invoke?uniq_id=${WSTransport.make_uniq_id()}`, {method: "post"});
+        }
+
+        render(props, state) {
+            // TODO region picker
+            return html`
+                <div class="heapinfo">
+                    Heap info <br/>
+                    <button onClick=${ () => this.do_it() } class="pushbutton">do it</button>
                 </div>
             `;
         }
@@ -445,6 +463,7 @@
                     <${HexdumpSlot} slot_i=3 />
                 </div>
                 <${MemSearch} />
+                <${HeapInfo} />
             </section>
             <${ConnectionToolset} />
         </div>
