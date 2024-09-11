@@ -89,19 +89,34 @@ HOOK_DEFINE_TRAMPOLINE(DebugDrawImpl) {
                 hknpMotion* motion = cmd.tracked_motion;
 
                 if (motion != nullptr) {
-                    const auto pos64 = motion->m_centerOfMass;
+                    auto* pos64 = &(motion->m_centerOfMass);
                     writer->pprintf(text_pos, "%s\npos64: %f, %f, %f \nrot_physics: %f, %f, %f, %f \nphysics_ang_vel: %f, %f, %f \nphysics_vel: %f, %f, %f \ninertia: %f, %f, %f, %f \npos32: %f, %f, %f \nrot: [%f, %f, %f, %f, %f, %f, %f, %f, %f] \n\n",
                         actor->mIActor.name,
                         // hknpMotion
-                        pos64.X, pos64.Y, pos64.Z,
+                        pos64->X, pos64->Y, pos64->Z,
                         motion->m_orientation.A, motion->m_orientation.B, motion->m_orientation.C, motion->m_orientation.D,
                         motion->m_angularVelocityLocalAndSpeedLimit.X, motion->m_angularVelocityLocalAndSpeedLimit.Y, motion->m_angularVelocityLocalAndSpeedLimit.Z,
                         motion->m_linearVelocityAndSpeedLimit.X, motion->m_linearVelocityAndSpeedLimit.Y, motion->m_linearVelocityAndSpeedLimit.Z,
-                        motion->m_inverseInertia[0], motion->m_inverseInertia[1], motion->m_inverseInertia[2], motion->m_inverseInertia[3],
+                        1.0/motion->m_inverseInertia[0], 1.0/motion->m_inverseInertia[1], 1.0/motion->m_inverseInertia[2], 1.0/motion->m_inverseInertia[3],
+                        //"nop", // FIXME uninvert, de-diagonalize(?), then divide by mass for raw inertia tensor? idk what any of this means, what i'm doing is still wrong
                         // Actor
                         actor->mPosition.X, actor->mPosition.Y, actor->mPosition.Z,
                         rot.m11, rot.m12, rot.m13, rot.m21, rot.m22, rot.m23, rot.m31, rot.m32, rot.m33
                     );
+
+                    /*// print other motions
+                    pos64 = &((++motion)->m_centerOfMass);
+                    writer->pprintf(text_pos, "%s\npos64: %f, %f, %f \nrot_physics: %f, %f, %f, %f \nphysics_ang_vel: %f, %f, %f \nphysics_vel: %f, %f, %f \ninertia: %f, %f, %f, %f \n\n",
+                        "motion+1 (climb)",
+                        pos64->X, pos64->Y, pos64->Z,
+                        motion->m_orientation.A, motion->m_orientation.B, motion->m_orientation.C, motion->m_orientation.D,
+                        motion->m_angularVelocityLocalAndSpeedLimit.X, motion->m_angularVelocityLocalAndSpeedLimit.Y, motion->m_angularVelocityLocalAndSpeedLimit.Z,
+                        motion->m_linearVelocityAndSpeedLimit.X, motion->m_linearVelocityAndSpeedLimit.Y, motion->m_linearVelocityAndSpeedLimit.Z,
+                        1.0/motion->m_inverseInertia[0], 1.0/motion->m_inverseInertia[1], 1.0/motion->m_inverseInertia[2], 1.0/motion->m_inverseInertia[3]
+                    );
+                    //pos64 = &((++motion)->m_centerOfMass); "motion+2 (surf)",
+                    //pos64 = &((++motion)->m_centerOfMass); "motion+3 (seal surf)",
+                    */
 
                 } else {
                     // Actor only

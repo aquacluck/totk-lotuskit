@@ -198,7 +198,7 @@
         do_absolute(i) {
             const draw_len = parseInt(this.draw_len.current.value) || 0x20;
             const dump_len = draw_len;
-            const label = this.slot_label_ref.current.value.toString().slice(0, 32) || "_label";
+            const label = this.slot_label_ref.current.value.toString().slice(0, 32).replaceAll(" ", "-") || "_label";
             const ptr = this.slot_target_ptr_ref.current.value || 0;
             if (!ptr) { console.log("hexdump user lookin sussy", i); return; }
             fetch(`/backend/hexdump/assign_slot?uniq_id=${WSTransport.make_uniq_id()} ${i} absolute ${ptr} ${dump_len} ${draw_len} ${label}`, {method: "post"});

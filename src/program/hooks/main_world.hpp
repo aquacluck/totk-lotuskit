@@ -39,7 +39,6 @@ HOOK_DEFINE_TRAMPOLINE(WorldManagerModuleBaseProcHook) {
             Player_physics->m_centerOfMass.X = cmd.pos64.X;
             Player_physics->m_centerOfMass.Y = cmd.pos64.Y;
             Player_physics->m_centerOfMass.Z = cmd.pos64.Z;
-            //Player_physics->m_centerOfMass = cmd.pos64; // FIXME spooky assignments, just copy members
             cmd.is_active_request = false;
 
             Logger::main->logf(NS_SAVESTATE, R"({"actor_paste": ["%s"], "actor_props": [{"pos64": [%f, %f, %f], "pos32": [%f, %f, %f], "rot": [%f, %f, %f, %f, %f, %f, %f, %f, %f] }] })",
