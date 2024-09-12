@@ -26,6 +26,7 @@
 #include "gfx/seadDrawContext.h"
 #include "gfx/seadTextWriter.h"
 #include "gfx/seadViewport.h"
+#include "heap/seadHeapMgr.h"
 #include "math/seadVector.hpp"
 #include "random/seadGlobalRandom.h"
 
@@ -462,20 +463,6 @@ struct GraphicsModuleCreateArg {
 };
 
 // used for DebugDrawEnsureFont
-HOOK_DEFINE_INLINE(StealHeap) {
-    static const ptrdiff_t s_offset = sym::engine::steal_heap; // hacks
-    inline static sead::Heap* stolen_heap = nullptr;
-    static void Callback(exl::hook::InlineCtx* ctx) {
-#ifdef TOTK_100
-        // TODO register annotation/aliasing instead
-        stolen_heap = reinterpret_cast<sead::Heap*>(ctx->X[19]);
-#else
-        stolen_heap = reinterpret_cast<sead::Heap*>(ctx->X[22]);
-#endif
-    }
-};
-
-// used for DebugDrawEnsureFont
 HOOK_DEFINE_INLINE(GetCreateArg) {
     static const ptrdiff_t s_offset = sym::agl::create_arg; // hacks
     inline static GraphicsModuleCreateArg* create_arg = nullptr;
@@ -517,7 +504,8 @@ HOOK_DEFINE_INLINE(DebugDrawEnsureFont) {
                 void(*InitDebugDrawers)(sead::Heap*, GraphicsModuleCreateArg&) = nullptr;
                 void** tmp = (void**)(&InitDebugDrawers);
                 *tmp = exl::util::pointer_path::FollowSafe<void*, sym::agl::init_debug_drawers>(); // hacks
-                InitDebugDrawers(StealHeap::stolen_heap, *GetCreateArg::create_arg);
+                auto* main_heap = sead::HeapMgr::sInstancePtr->findHeapByName("ModuleSystem", 0);
+                InitDebugDrawers(main_heap, *GetCreateArg::create_arg);
 
                 if (*sDefaultFont == nullptr) {
                     Logger::main->log(NS_DEFAULT_TEXT, R"("init default font fail")");

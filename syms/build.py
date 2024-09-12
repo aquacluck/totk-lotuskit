@@ -23,13 +23,12 @@ def run_symbol_def_imports():
     import agl.lyr.aglLayer
 
     import sead.gfx.seadTextWriter
-    import sead.random.seadGlobalRandom
-    import sead.random.seadRandom
     import sead.heap.seadHeap # nop
     import sead.heap.seadHeapMgr
+    import sead.random.seadGlobalRandom
+    import sead.random.seadRandom
 
     #import zstd.lib.zstd # nop
-
 
     import exking.engine.actor.ActorInstanceMgr
     import exking.engine.actor.ActorMgr

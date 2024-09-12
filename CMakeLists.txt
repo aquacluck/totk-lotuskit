@@ -61,6 +61,9 @@ include_directories(${PROJECT_SOURCE_DIR}/syms/output_hpp_sym_ns/TOTK_${TOTK_VER
 add_compile_definitions(SEAD_ZSTD=1)
 include_directories(${PROJECT_SOURCE_DIR}/dt_totk/lib/sead/include) # headers
 include_directories(${PROJECT_SOURCE_DIR}/syms/output_hpp_sym_ns/TOTK_${TOTK_VERSION}/sead) # symbols
+# Prevent specific reimpls from trying to do the game's job (eg calling ctors for static singleton members)
+add_compile_definitions(LOTUSKIT_HACK_SEAD_SKIP_IMPL=1)
+file(GLOB_RECURSE SEAD_SOURCES_CXX ${PROJECT_SOURCE_DIR}/dt_totk/lib/sead/*.cpp) # impls
 
 # zstd
 include_directories(${PROJECT_SOURCE_DIR}/dt_totk/lib/zstd/lib) # headers
@@ -82,7 +85,7 @@ include_directories(${PROJECT_SOURCE_DIR}/syms/output_hpp_sym_ns/TOTK_${TOTK_VER
 set(CMAKE_EXECUTABLE_SUFFIX ".elf")
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 #set_source_files_properties(${SOURCES_CXX} PROPERTIES LANGUAGE CXX)
-add_executable(subsdk9 ${SOURCES_ASM} ${SOURCES_C} ${SOURCES_H} ${SOURCES_CXX})
+add_executable(subsdk9 ${SOURCES_ASM} ${SOURCES_C} ${SOURCES_H} ${SOURCES_CXX} ${SEAD_SOURCES_CXX})
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/module/subsdk9.specs.template ${CMAKE_CURRENT_BINARY_DIR}/subsdk9.specs)
 
 # Build nso & generate npdm

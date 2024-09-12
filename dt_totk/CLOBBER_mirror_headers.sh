@@ -43,7 +43,13 @@ cp -r tmpgit/lib/agl/include lib/agl
 
 echo "cp lib/sead"
 mkdir -p lib/sead
+# headers
 cp -r tmpgit/lib/sead/include lib/sead
+# impl
+mkdir -p lib/sead/modules/src/heap
+cp {tmpgit/,}lib/sead/modules/src/heap/seadHeapMgr.cpp
+mkdir -p lib/sead/modules/src/thread/nin
+cp {tmpgit/,}lib/sead/modules/src/thread/nin/seadCriticalSectionNin.cpp
 
 echo "cp lib/zstd"
 mkdir -p lib/zstd/lib/{compress,decompress,common}
@@ -55,7 +61,7 @@ cp tmpgit/lib/zstd/lib/*.h lib/zstd/lib
 
 
 ### Apply patches
-# gen: git diff --binary lib > patches/0001-nn-init.patch
+# gen: git diff --binary --cached lib > patches/0001-nn-init.patch # staged changes only, afaik required for patching in new files
 echo
 echo "patching..."
 for patchfile in patches/*.patch; do

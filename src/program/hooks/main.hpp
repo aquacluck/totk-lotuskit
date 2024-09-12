@@ -53,7 +53,6 @@ HOOK_DEFINE_INLINE(nnMainHook) {
             ConfigHelper::FileExists("content:/Lib/sead/primitive_renderer/primitive_drawer_nvn_shader.bin")
         );
         if (do_textwriter) {
-            StealHeap::Install();
             GetCreateArg::Setup();
             GetCreateArg::Install();
             DebugDrawEnsureFont::Setup();
