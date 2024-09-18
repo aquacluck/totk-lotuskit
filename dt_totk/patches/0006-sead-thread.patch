@@ -1,0 +1,16 @@
+diff --git a/dt_totk/lib/sead/include/thread/seadThread.h b/dt_totk/lib/sead/include/thread/seadThread.h
+index da4360b..1403c40 100644
+--- a/dt_totk/lib/sead/include/thread/seadThread.h
++++ b/dt_totk/lib/sead/include/thread/seadThread.h
+@@ -186,7 +186,11 @@ protected:
+     void destroyMainThread_();
+     static u32 getCurrentThreadID_();
+ 
++#if not LOTUSKIT_HACK_SKIP_PRIVATE
+ private:
++#else
++public:
++#endif
+     ThreadList mList;
+     CriticalSection mListCS;
+     Thread* mMainThread = nullptr;

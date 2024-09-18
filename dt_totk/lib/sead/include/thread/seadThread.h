@@ -186,7 +186,11 @@ protected:
     void destroyMainThread_();
     static u32 getCurrentThreadID_();
 
+#if not LOTUSKIT_HACK_SKIP_PRIVATE
 private:
+#else
+public:
+#endif
     ThreadList mList;
     CriticalSection mListCS;
     Thread* mMainThread = nullptr;

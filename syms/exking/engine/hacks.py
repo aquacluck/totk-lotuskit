@@ -8,6 +8,11 @@ EXKING("_ZN6engineL17nnMain_post_setupE", {
     TOTK_121: 0x00e7ac48, # strb w8 ,[x21 , #0x8 ]. blr at 7100e7ac60 is point of no return? not sure what that call is
 }, SymbolType.INSTRUCTION)
 
+# namespace engine { static uintptr_t MainGetNpadStates; }
+EXKING("_ZN6engineL17MainGetNpadStatesE", {
+    TOTK_121: 0x02a267bc,
+})
+
 # namespace engine { static uintptr_t steal_heap; }
 EXKING("_ZN6engineL10steal_heapE", {
     TOTK_100: 0x008111a8,

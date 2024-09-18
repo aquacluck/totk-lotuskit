@@ -27,6 +27,7 @@ def run_symbol_def_imports():
     import sead.random.seadRandom
     import sead.heap.seadHeap # nop
     import sead.heap.seadHeapMgr
+    import sead.thread.seadThread
 
     #import zstd.lib.zstd # nop
 

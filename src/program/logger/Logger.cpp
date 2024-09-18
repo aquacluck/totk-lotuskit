@@ -5,6 +5,8 @@
 #include "lib.hpp"
 
 #include "heap/seadHeapMgr.h"
+#include "thread/seadThread.h"
+#include "sym/thread/seadThread.h"
 
 constexpr inline auto AF_INET = 2; // XXX domain ams::socket::Family::Af_Inet (ipv4)
 constexpr inline u32 ip4_any = 0x00'00'00'00; // InAddr_Any
@@ -481,6 +483,38 @@ void Logger::tryRecvCommandMainLoop() {
             goto HEAPINFO_DO_NEXT; // advance through siblings
 
             return; // unreachable
+        }
+
+        LoggerTransport::send_dgram(mSocketFd, false, uniq_id, NS_COMMAND, R"({"err": "malformed params for route"})");
+        return; // fail
+    }
+
+    constexpr auto threadinfo_invoke = "POST /backend/memutils/threadinfo/invoke?";
+    if (strncmp(threadinfo_invoke, query_buffer, strlen(threadinfo_invoke)) == 0) {
+        constexpr auto fmt = "POST /backend/memutils/threadinfo/invoke?uniq_id=0x%08X";
+
+        if (sscanf(query_buffer, fmt, &uniq_id) == 1) {
+            LoggerTransport::send_dgram(mSocketFd, false, uniq_id, NS_COMMAND, R"({"msg": "beginning thread info dump"})"); // ok TODO send it back
+
+	        sead::ThreadMgr* mgr = *exl::util::pointer_path::FollowSafe<sead::ThreadMgr*, sym::sead::ThreadMgr::sInstance>();
+	        sead::ThreadList* threads = &(mgr->mList);
+
+            const auto end = threads->end();
+            //TODO ScopedLock<CriticalSection> lock(getListCS());
+            for (auto it = threads->begin(); it != end; ++it) {
+				auto name = (*it)->getName().cstr();
+				// they seem to always be running in practice?
+				u32 state_ = (*it)->getState(); // SEAD_ENUM(State, cInitialized, cRunning, cQuitting, cTerminated, cReleased)
+				char state = state_ == 0 ? 'i' : // initialized
+				             state_ == 1 ? 'r' : // running
+				             state_ == 2 ? 'q' : // quitting
+				             state_ == 3 ? 't' : // terminated
+				             state_ == 4 ? '_' : // released
+							 '?';
+			    Logger::main->logf(NS_DEFAULT_TEXT, "\"thread %c %d: %s \"", state, (*it)->getId(), name);
+            }
+
+            return; // ok
         }
 
         LoggerTransport::send_dgram(mSocketFd, false, uniq_id, NS_COMMAND, R"({"err": "malformed params for route"})");

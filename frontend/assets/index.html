@@ -255,19 +255,23 @@
         }
     };
 
-    //constexpr auto fmt = "POST /backend/memutils/heapinfo/invoke?uniq_id=0x%08X";
-    class HeapInfo extends Component {
-        do_it() {
+    class QuickDumps extends Component {
+        do_heapinfo() {
             // TODO await+display results?
             fetch(`/backend/memutils/heapinfo/invoke?uniq_id=${WSTransport.make_uniq_id()}`, {method: "post"});
+        }
+        do_threadinfo() {
+            // TODO await+display results?
+            fetch(`/backend/memutils/threadinfo/invoke?uniq_id=${WSTransport.make_uniq_id()}`, {method: "post"});
         }
 
         render(props, state) {
             // TODO region picker
             return html`
-                <div class="heapinfo">
-                    Heap info <br/>
-                    <button onClick=${ () => this.do_it() } class="pushbutton">do it</button>
+                <div class="quickdumps">
+		    Quick dumps <br/>
+                    <button onClick=${ () => this.do_heapinfo() } class="pushbutton">heapinfo</button>
+                    <button onClick=${ () => this.do_threadinfo() } class="pushbutton">threadinfo</button>
                 </div>
             `;
         }
@@ -463,7 +467,7 @@
                     <${HexdumpSlot} slot_i=3 />
                 </div>
                 <${MemSearch} />
-                <${HeapInfo} />
+                <${QuickDumps} />
             </section>
             <${ConnectionToolset} />
         </div>

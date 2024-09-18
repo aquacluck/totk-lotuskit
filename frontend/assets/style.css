@@ -124,7 +124,7 @@ button.pushbutton {
     grid-template-columns: 1fr 1fr;
     grid-template-areas:
     'hexdump   hexdump'
-    'memsearch heapinfo';
+    'memsearch quickdumps';
 }
 .toolset_memutils_controller > .hexdump { grid-area: hexdump; }
 .toolset_memutils_controller > .memsearch { grid-area: memsearch; }
