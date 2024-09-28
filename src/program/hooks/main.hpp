@@ -3,6 +3,7 @@
 #include "nn/util.h"
 #include "helpers/InputHelper.hpp"
 #include "helpers/ConfigHelper.hpp"
+#include "helpers/TASHelper.hpp"
 #include "lib/util/sys/mem_layout.hpp"
 #include "types.h"
 #include "logger/Logger.hpp"
@@ -12,6 +13,7 @@
 #include "hooks.hpp"
 #include "hooks/main_draw.hpp"
 #include "hooks/main_world.hpp"
+#include "hooks/tas.hpp"
 
 // TODO provider hooks extract or make available some data or eventual data, with minimal side effects, except for the returned value which may be stubbed/manipulated/etc
 // TODO drawer hooks may request their Draw() method to be called at agl Layer draw time, but are otherwise like provider hooks in seeking to minimize side effects.
@@ -40,6 +42,9 @@ HOOK_DEFINE_INLINE(nnMainHook) {
         //TestCreateActorHookImpl::Install();
         //TestDeleteActorHookImpl::Install();
 #endif
+
+        // tas
+        lotuskit::hooks::tas::MainGetNpadStates::Install();
 
         // hooks for textwriter overlay
         bool do_textwriter = (

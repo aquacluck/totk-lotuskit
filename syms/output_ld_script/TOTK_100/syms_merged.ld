@@ -33,7 +33,7 @@ _ZN6engine5actor16ActorInstanceMgr28createActorAndConnectSync__2EPv = __main_sta
 _ZN6engine5actor16ActorInstanceMgr29createActorAndConnectSyncImplEPv = __main_start +         0x01293710; /* engine::actor::ActorInstanceMgr::createActorAndConnectSyncImpl(void*) */
 _ZN6engine5actor8ActorMgr19removeActorRelationERS1_RNS0_9ActorBaseES4_ = __main_start +         0x00ab8610; /* engine::actor::ActorMgr::removeActorRelation(engine::actor::ActorMgr&, engine::actor::ActorBase&, engine::actor::ActorBase&) */
 _ZN6engine5actor8ActorMgr21registerActorRelationERS1_RNS0_9ActorBaseES4_ = __main_start +         0x023c72a0; /* engine::actor::ActorMgr::registerActorRelation(engine::actor::ActorMgr&, engine::actor::ActorBase&, engine::actor::ActorBase&) */
-_ZN6engineL17MainGetNpadStatesE  = __main_start +         0x00000000; /* engine::MainGetNpadStates */
+_ZN6engineL17MainGetNpadStatesE  = __main_start +         0x029b442c; /* engine::MainGetNpadStates */
 _ZN9hkUNKNOWN19UNKNOWN_applyMotionEPvS0_P10hknpMotionS2_ = __main_start +         0x0022ed04; /* hkUNKNOWN::UNKNOWN_applyMotion(void*, void*, hknpMotion*, hknpMotion*) */
 _ZNK4sead7HeapMgr15findContainHeapEPKv = __main_start +         0x00783ac4; /* sead::HeapMgr::findContainHeap const(void const*) */
 

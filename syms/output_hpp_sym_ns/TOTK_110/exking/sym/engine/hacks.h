@@ -3,7 +3,7 @@
 namespace sym::engine {
     // _ZN6engineL17MainGetNpadStatesE
     // engine::MainGetNpadStates
-    static constexpr ptrdiff_t MainGetNpadStates = 0x00000000;
+    static constexpr ptrdiff_t MainGetNpadStates = 0x02a2c49c;
 
     // _ZN6engineL17nnMain_post_setupE
     // engine::nnMain_post_setup

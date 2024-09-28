@@ -1,5 +1,6 @@
 #pragma once
 #include "helpers/InputHelper.hpp"
+#include "helpers/TASHelper.hpp"
 #include "lib.hpp"
 #include "lib/util/ptr_path.hpp"
 #include "logger/Logger.hpp"
@@ -14,7 +15,21 @@ HOOK_DEFINE_TRAMPOLINE(WorldManagerModuleBaseProcHook) {
     static const auto s_offset = sym::game::wm::WorldManagerModule::baseProcExe;
 
     static void Callback(double self, double param_2, double param_3, double param_4, void *wmmodule, void *param_6) {
-        InputHelper::updatePadState();
+        if (lotuskit::tas::TASHelper::do_playback_simple || lotuskit::tas::TASHelper::do_playback_file) {
+            VFRMgr* vfr_mgr = *exl::util::pointer_path::FollowSafe<VFRMgr*, sym::engine::module::VFRMgr::sInstance>();
+            lotuskit::tas::TASHelper::proc_playback(vfr_mgr->mDeltaFrame);
+
+            auto input_element = lotuskit::tas::TASHelper::playback_current.load();
+            InputHelper::updatePadState(input_element); // inject played-back state
+
+        //} else if (lotuskit::tas::TASHelper::do_main_world_proc_record) {
+            //    InputHelper::updatePadState(nullptr);
+            //    VFRMgr* vfr_mgr = *exl::util::pointer_path::FollowSafe<VFRMgr*, sym::engine::module::VFRMgr::sInstance>();
+            //    lotuskit::tas::TASHelper::main_world_proc_record(vfr_mgr->mDeltaFrame); // TODO pass in state to be recorded
+
+        } else {
+                InputHelper::updatePadState(nullptr);
+        }
 
         ActorBase* Player = g_ModCommand_ActorWatcher[0].actor;
         if (Player == nullptr) {
@@ -139,14 +154,39 @@ HOOK_DEFINE_TRAMPOLINE(WorldManagerModuleBaseProcHook) {
 
         if (InputHelper::isKeyPress(nn::hid::KeyboardKey::Backquote)) {
             Logger::main->log(NS_DEFAULT_TEXT, "\"oink\"");
-            // XXX HACK bring up mr dumpo, then toggle calc
-            auto &dumpo = g_ModCommand_Hexdump[3];
-            if (!dumpo.is_calc) {
+
+            if (true) {
+            lotuskit::tas::TASHelper::script_simple.load_dummy_script();
+            lotuskit::tas::TASHelper::do_playback_simple = true;
+
+                //Logger::main->logf(NS_DEFAULT_TEXT, "\"stolen heap %s %p \"", StealHeap::stolen_heap->getName().cstr(), StealHeap::stolen_heap);
+                //Logger::main->logf(NS_DEFAULT_TEXT, "\"rootheaps %p %p %p %p \"", sead::HeapMgr::sRootHeaps[0], sead::HeapMgr::sRootHeaps[1], sead::HeapMgr::sRootHeaps[2], sead::HeapMgr::sRootHeaps[3]);
+                //Logger::main->logf(NS_DEFAULT_TEXT, "\"rootheap0 cur %p free %p alloclimit %p \"", rootheap0->getSize(), rootheap0->getFreeSize(), rootheap0->getMaxAllocatableSize(0x10));
+                //Logger::main->logf(NS_DEFAULT_TEXT, "\"rootheap0 start %p end %p  \"", rootheap0->getStartAddress(), rootheap0->getEndAddress());
+                //auto range = exl::util::mem_layout::s_Heap;
+                //range = exl::util::mem_layout::s_Stack;
+                //range = exl::util::GetMainModuleInfo().m_Text;
+                //range = exl::util::GetMainModuleInfo().m_Rodata;
+                //range = exl::util::GetMainModuleInfo().m_Data;
+                //Logger::main->logf(NS_DEFAULT_TEXT, "\"proc heap len %p: %p - %p \"", range.m_Size, range.m_Start, range.GetEnd());
+            }
+
+            if (false) {
                 void* ptr = (void*)(g_ModCommand_ActorWatcher[0].tracked_motion);
-                if (ptr != nullptr) {
+                hknpMotion* climb = ((hknpMotion*)ptr)+1;
+                climb->m_centerOfMass.X = 277.268;
+                climb->m_centerOfMass.Y = 1562.75; // just north of UH on wall facing south
+                climb->m_centerOfMass.Z = 889.27;
+            }
+
+            if (false) {
+                // XXX HACK bring up mr dumpo, then toggle calc
+                auto &dumpo = g_ModCommand_Hexdump[3];
+                if (!dumpo.is_calc) {
                     // should prob use mutex but i'm scared of fucking with the game's timing+accuracy by locking stuff.
                     // try to assign things in the safest possible order... but no guarantee this is preserved in the binary.
                     // *Requiring* that the resource is closed (ie request to close it and defer until !is_calc before reopening) might be pretty safe too, we prob don't need to reassign+redump the pointer frame perfectly
+                    void* ptr = (void*)(g_ModCommand_ActorWatcher[0].tracked_motion);
                     dumpo.is_calc = false;
                     strcpy(dumpo.label, "Player main hknpMotion");
                     dumpo.draw_len = 0x80;
@@ -154,9 +194,9 @@ HOOK_DEFINE_TRAMPOLINE(WorldManagerModuleBaseProcHook) {
                     dumpo.dump_src = ptr; // XXX eg is it possible we write to this while a draw thread is reading it? v spooky be v careful, ensuring this is atomic would be good at least
                     dumpo.is_pending_draw = true;
                     dumpo.is_calc = true;
+                } else {
+                    dumpo.is_calc = false; // leave the stale dump up to draw
                 }
-            } else {
-                dumpo.is_calc = false; // leave the stale dump up to draw
             }
         }
 

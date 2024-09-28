@@ -26,6 +26,7 @@ constexpr LoggerNS NS_COMMAND = "COMMAND";
 constexpr LoggerNS NS_VFRMGR = "VFRMGR";
 constexpr LoggerNS NS_BACKEND_CONFIG = "BACKEND_CONFIG";
 constexpr LoggerNS NS_PHYSICS_SPAM = "PHYSICS_SPAM";
+constexpr LoggerNS NS_TAS = "TAS";
 constexpr LoggerNS DoDebugLog_LogNS[] = {
     // only constexpr ns will ever be debug logged -- but dynamic ns can still pass to frontend
     NS_DEFAULT_TEXT,
@@ -33,6 +34,7 @@ constexpr LoggerNS DoDebugLog_LogNS[] = {
     NS_COMMAND,
     NS_BACKEND_CONFIG,
     NS_ACTOR,
+	NS_TAS,
     "", // XXX sizeof LoggerNS doesn't work, idk how2cpp lol. using std stuff complains about allocators even here with constexpr? idc about allocation, shouldnt it be compiled away? limit ~100 static buf
 };
 constexpr bool do_svcOutputDebugString_log(LoggerNS ns_str) {

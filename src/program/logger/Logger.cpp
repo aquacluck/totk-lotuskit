@@ -496,22 +496,23 @@ void Logger::tryRecvCommandMainLoop() {
         if (sscanf(query_buffer, fmt, &uniq_id) == 1) {
             LoggerTransport::send_dgram(mSocketFd, false, uniq_id, NS_COMMAND, R"({"msg": "beginning thread info dump"})"); // ok TODO send it back
 
-	        sead::ThreadMgr* mgr = *exl::util::pointer_path::FollowSafe<sead::ThreadMgr*, sym::sead::ThreadMgr::sInstance>();
-	        sead::ThreadList* threads = &(mgr->mList);
+            sead::ThreadMgr* mgr = *exl::util::pointer_path::FollowSafe<sead::ThreadMgr*, sym::sead::ThreadMgr::sInstance>();
+            Logger::main->logf(NS_DEFAULT_TEXT, "\"main thread %d: %s \"", mgr->mMainThread->getId(), mgr->mMainThread->getName().cstr());
+            sead::ThreadList* threads = &(mgr->mList);
 
             const auto end = threads->end();
             //TODO ScopedLock<CriticalSection> lock(getListCS());
             for (auto it = threads->begin(); it != end; ++it) {
-				auto name = (*it)->getName().cstr();
-				// they seem to always be running in practice?
-				u32 state_ = (*it)->getState(); // SEAD_ENUM(State, cInitialized, cRunning, cQuitting, cTerminated, cReleased)
-				char state = state_ == 0 ? 'i' : // initialized
-				             state_ == 1 ? 'r' : // running
-				             state_ == 2 ? 'q' : // quitting
-				             state_ == 3 ? 't' : // terminated
-				             state_ == 4 ? '_' : // released
-							 '?';
-			    Logger::main->logf(NS_DEFAULT_TEXT, "\"thread %c %d: %s \"", state, (*it)->getId(), name);
+                auto name = (*it)->getName().cstr();
+                // they seem to always be running in practice?
+                u32 state_ = (*it)->getState(); // SEAD_ENUM(State, cInitialized, cRunning, cQuitting, cTerminated, cReleased)
+                char state = state_ == 0 ? 'i' : // initialized
+                             state_ == 1 ? 'r' : // running
+                             state_ == 2 ? 'q' : // quitting
+                             state_ == 3 ? 't' : // terminated
+                             state_ == 4 ? '_' : // released
+                             '?';
+                Logger::main->logf(NS_DEFAULT_TEXT, "\"thread %c %d: %s \"", state, (*it)->getId(), name);
             }
 
             return; // ok

@@ -1,17 +1,17 @@
 #pragma once
 
 namespace sym::agl {
-    // _ZN3aglL10create_argE
-    // agl::create_arg
-    static constexpr ptrdiff_t create_arg = 0x00a9123c;
+    // _ZN3aglL12default_fontE
+    // agl::default_font
+    static constexpr ptrdiff_t default_font = 0x04716af8;
 
     // _ZN3aglL18init_debug_drawersE
     // agl::init_debug_drawers
     static constexpr ptrdiff_t init_debug_drawers = 0x00a92964;
 
-    // _ZN3aglL12default_fontE
-    // agl::default_font
-    static constexpr ptrdiff_t default_font = 0x04716af8;
+    // _ZN3aglL10create_argE
+    // agl::create_arg
+    static constexpr ptrdiff_t create_arg = 0x00a9123c;
 }
 
 namespace sym::agl::lyr::RenderDisplay::drawLayer_ {

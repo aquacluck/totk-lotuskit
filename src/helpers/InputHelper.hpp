@@ -1,12 +1,12 @@
 #pragma once
 
+#include "helpers/TASHelper.hpp"
 #include "nn/hid.h"
-//#include "helpers/ImGuiHelper.h"
 
 class InputHelper {
 
 public:
-    static void updatePadState();
+    static void updatePadState(lotuskit::tas::ScriptElement_NpadSimple*);
 
     static void setPort(ulong port) { selectedPort = port; }
 

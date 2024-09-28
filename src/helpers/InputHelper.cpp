@@ -1,7 +1,4 @@
 #include "InputHelper.hpp"
-//#include "diag/assert.hpp"
-
-//#include "devgui/DevGuiManager.h"
 
 static const char *styleNames[] = {
         "Pro Controller",
@@ -84,11 +81,15 @@ void InputHelper::initKBM() {
     nn::hid::InitializeMouse();
 }
 
-void InputHelper::updatePadState() {
+void InputHelper::updatePadState(lotuskit::tas::ScriptElement_NpadSimple* input_element=nullptr) {
     setIsHandheldMode();
 
     prevControllerState = curControllerState;
-    tryGetContState(&curControllerState, selectedPort);
+    if (input_element == nullptr) {
+        tryGetContState(&curControllerState, selectedPort);
+    } else {
+        input_element->apply(&curControllerState);
+    }
 
     prevKeyboardState = curKeyboardState;
     nn::hid::GetKeyboardState(&curKeyboardState);
@@ -96,9 +97,9 @@ void InputHelper::updatePadState() {
     prevMouseState = curMouseState;
     nn::hid::GetMouseState(&curMouseState);
 
-    if (isHoldR() && isHoldZR() && isPressZL()) {
-        toggleInput = !toggleInput;
-    }
+    //if (isHoldR() && isHoldZR() && isPressZL()) {
+    //    toggleInput = !toggleInput;
+    //}
 
     //if (!DevGuiManager::instance()->isMenuActive())
     //    toggleInput = false;
