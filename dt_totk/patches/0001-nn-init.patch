@@ -1,0 +1,54 @@
+diff --git a/dt_totk/lib/NintendoSDK/include/nn/socket.h b/dt_totk/lib/NintendoSDK/include/nn/socket.h
+index 6a4e353..df33635 100644
+--- a/dt_totk/lib/NintendoSDK/include/nn/socket.h
++++ b/dt_totk/lib/NintendoSDK/include/nn/socket.h
+@@ -15,7 +15,7 @@ struct ResourceStatistics;
+ #if NN_SDK_VER >= NN_MAKE_VER(7, 0, 0)
+ struct InAddr {
+     u32 addr;
+-}
++};
+ #else
+ using InAddr = ::in_addr;
+ #endif
+@@ -142,8 +142,8 @@ void nnsocketPoll(pollfd*, ulong, int);
+ void nnsocketFcntl(int, int, ...);
+ void nnsocketInetPton(int, const char*, void*);
+ const char* nnsocketInetNtop(int af, const void* src, char* dst, u32 size);
+-s32 nnsocketInetAton(const char* addressStr, InAddr* addressOut);
+-char* nnsocketInetNtoa(InAddr);
++s32 nnsocketInetAton(const char* addressStr, nn::socket::InAddr* addressOut);
++char* nnsocketInetNtoa(nn::socket::InAddr);
+ u16 nnsocketInetHtons(u16 val);
+ u32 nnsocketInetHtonl(u32);
+ u16 nnsocketInetNtohs(u16);
+diff --git a/dt_totk/lib/NintendoSDK/include/nn/util/util_BitUtil.h b/dt_totk/lib/NintendoSDK/include/nn/util/util_BitUtil.h
+index 8fdf58c..083d6c6 100644
+--- a/dt_totk/lib/NintendoSDK/include/nn/util/util_BitUtil.h
++++ b/dt_totk/lib/NintendoSDK/include/nn/util/util_BitUtil.h
+@@ -8,7 +8,7 @@ template <typename T>
+ T align_up(T x, size_t align) {
+     typedef typename detail::MakeUnsigned<T>::Type UIntType;
+     UIntType mask = align - 1;
+-    return (x + mask) & ~mask;
++    return reinterpret_cast<T>((UIntType)(x + mask) & ~mask);
+ }
+ 
+-}  // namespace nn::util
+\ No newline at end of file
++}  // namespace nn::util
+diff --git a/dt_totk/lib/NintendoSDK/include/nn/util/util_BytePtr.h b/dt_totk/lib/NintendoSDK/include/nn/util/util_BytePtr.h
+index 500c598..690ca46 100644
+--- a/dt_totk/lib/NintendoSDK/include/nn/util/util_BytePtr.h
++++ b/dt_totk/lib/NintendoSDK/include/nn/util/util_BytePtr.h
+@@ -32,8 +32,8 @@ public:
+     bool IsAligned(size_t alignment) const;
+ 
+     BytePtr& AlignUp(size_t alignment) {
+-        uintptr_t& ptr = reinterpret_cast<uintptr_t&>(m_Ptr);
+-        ptr = align_up(ptr, alignment);
++        //uintptr_t& ptr = reinterpret_cast<uintptr_t&>(m_Ptr); error: dereferencing type-punned pointer will break strict-aliasing rules
++        align_up((void*)m_Ptr, alignment);
+         return *this;
+     }
+ 

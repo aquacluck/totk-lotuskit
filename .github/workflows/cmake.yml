@@ -1,0 +1,74 @@
+name: Build mod binaries
+
+on:
+  push:
+    branches:
+    - main
+  workflow_dispatch:
+
+env:
+  # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
+  BUILD_TYPE: Release
+
+jobs:
+  Compile:
+    runs-on: ubuntu-22.04
+    container: pixelkiri/devkitpro-alpine-switch:latest
+
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+        fetch-depth: '0'
+
+    - name: Install tooling
+      run: |
+        sudo apk add zip wget
+        wget -q https://github.com/cli/cli/releases/download/v2.54.0/gh_2.54.0_linux_amd64.tar.gz
+        tar xf gh_2.54.0_linux_amd64.tar.gz
+        mv ./gh_2.54.0_linux_amd64/bin/gh ./gh
+        rm -rf ./gh_2.54.0_linux_amd64 gh_2.54.0_linux_amd64.tar.gz
+
+    - name: Setup CMake
+      uses: jwlawson/actions-setup-cmake@v1.13
+      with:
+        cmake-version: '3.26.x'
+
+    - name: Build 100
+      run: cmake -DTOTK_VERSION=100 --toolchain=cmake/toolchain.cmake -S . -B build && make -C build subsdk9_meta -j4
+
+    - name: Zip 100
+      run: |
+        mkdir -p totk100_lotuskit/exefs
+        cp build/main.npdm build/subsdk9 totk100_lotuskit/exefs
+        cp -r frontend romfs totk100_lotuskit
+        zip -r totk100_lotuskit totk100_lotuskit
+
+    - name: Build 110
+      run: cmake -DTOTK_VERSION=110 --toolchain=cmake/toolchain.cmake -S . -B build && make -C build subsdk9_meta -j4
+
+    - name: Zip 110
+      run: |
+        mkdir -p totk110_lotuskit/exefs
+        cp build/main.npdm build/subsdk9 totk110_lotuskit/exefs
+        cp -r frontend romfs totk110_lotuskit
+        zip -r totk110_lotuskit totk110_lotuskit
+
+    - name: Build 121
+      run: cmake -DTOTK_VERSION=121 --toolchain=cmake/toolchain.cmake -S . -B build && make -C build subsdk9_meta -j4
+
+    - name: Zip 121
+      run: |
+        mkdir -p totk121_lotuskit/exefs
+        cp build/main.npdm build/subsdk9 totk121_lotuskit/exefs
+        cp -r frontend romfs totk121_lotuskit
+        zip -r totk121_lotuskit totk121_lotuskit
+
+    - name: Create Release
+      run: |
+        git config --global --add safe.directory /__w/totk-lotuskit/totk-lotuskit
+        ./gh release delete latest -y --cleanup-tag
+        ./gh release create latest totk100_lotuskit.zip totk110_lotuskit.zip totk121_lotuskit.zip
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
