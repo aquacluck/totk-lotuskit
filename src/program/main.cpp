@@ -1,8 +1,11 @@
 #include "lib.hpp"
 #include "nn/util.h"
 
+#include "server/SocketThread.hpp"
+
 #include "sym/engine/hacks.h"
 #include "sym/game/wm/WorldManagerModule.h"
+
 
 HOOK_DEFINE_TRAMPOLINE(WorldManagerModuleBaseProcHook) {
     static const auto s_offset = sym::game::wm::WorldManagerModule::baseProcExe;
@@ -45,6 +48,8 @@ HOOK_DEFINE_INLINE(nnMainHook) {
         char buf[200];
         nn::util::SNPrintf(buf, sizeof(buf), "lotuskit test %d", 420);
         svcOutputDebugString(buf, strlen(buf));
+
+        lotuskit::server::SocketThread::CreateAndStart();
 
         /*
         // figure out where+when to connect
