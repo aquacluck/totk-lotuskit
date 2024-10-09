@@ -31,3 +31,5 @@
 #include "lib/hook/inline.hpp"
 #include "lib/hook/replace.hpp"
 #include "lib/hook/trampoline.hpp"
+
+#include "lib/socket_hack.hpp"
