@@ -1,9 +1,7 @@
 {
     // bootup + socket config
     //"disable": true, // to disable everything in the mod, set this or move/rename the file
-    "do_connect_on_bootup": true,
-    "do_connect_on_whistle": true,
-    "server_ip": "127.0.0.1",
+    "start_server_on_bootup": true,
 
     // misc hooking
     "do_log_rng": false,

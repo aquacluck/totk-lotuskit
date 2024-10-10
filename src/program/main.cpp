@@ -26,10 +26,17 @@ HOOK_DEFINE_INLINE(nnMainHook) {
         svcOutputDebugString(buf, strlen(buf));
 
         lotuskit::config::LoadJson();
-        if (lotuskit::config::json_config.contains("disable") && lotuskit::config::json_config["disable"].template get<bool>()) {
+        auto& config = lotuskit::config::json_config;
+
+        if (config.contains("disable") && config["disable"].template get<bool>()) {
             nn::util::SNPrintf(buf, sizeof(buf), "[totk-lotuskit:%d] all features disabled");
             svcOutputDebugString(buf, strlen(buf));
             return;
+        }
+
+        if (config["start_server_on_bootup"].template get<bool>()) {
+            // XXX make sure starting this later will work -- config name shouldnt imply things we cant actually do
+            lotuskit::server::SocketThread::CreateAndWaitForFrontend(); // block
         }
 
         WorldManagerModuleBaseProcHook::Install();
@@ -54,24 +61,10 @@ HOOK_DEFINE_INLINE(nnMainHook) {
             DebugDrawEnsureFont::Install();
             DebugDrawImpl::Install(); // main_draw.hpp
         }
-        */
-
-        lotuskit::server::SocketThread::CreateAndStart();
-
-        /*
-        // figure out where+when to connect
-        char ip[16] = "";
-        ConfigHelper::ReadFile(ip, "content:/totk_lotuskit/server_ip.txt", sizeof(ip), "127.0.0.1");
-        bool do_connect_on_whistle = ConfigHelper::ReadFileFlag("content:/totk_lotuskit/do_connect_on_whistle.txt", true);
-        bool do_connect_on_bootup = ConfigHelper::ReadFileFlag("content:/totk_lotuskit/do_connect_on_bootup.txt", true);
 
         if (do_connect_on_whistle) {
             LoggerConnectOnWhistleHook::Install();
         }
-
-        char buf[200];
-        nn::util::SNPrintf(buf, sizeof(buf), "lotuskit using ip4 addr %s, do_connect_on_bootup: %d, do_connect_on_whistle: %d, do_textwriter: %d", ip, do_connect_on_bootup, do_connect_on_whistle, do_textwriter);
-        svcOutputDebugString(buf, strlen(buf));
 
         // init logger socket
         auto main_logger = new Logger();
