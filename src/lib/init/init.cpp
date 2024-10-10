@@ -1,6 +1,6 @@
 #include "common.hpp"
 
-#include "program/setting.hpp"
+#include "lib/libsetting.hpp"
 
 extern "C" {
     /* These magic symbols are provided by the linker.  */
