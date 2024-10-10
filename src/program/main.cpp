@@ -1,6 +1,7 @@
 #include "lib.hpp"
 #include "nn/util.h"
 
+#include "config.hpp"
 #include "server/SocketThread.hpp"
 
 #include "sym/engine/hacks.h"
@@ -20,6 +21,16 @@ HOOK_DEFINE_INLINE(nnMainHook) {
     static const ptrdiff_t s_offset = sym::engine::nnMain_post_setup; // hacks
     static void Callback(exl::hook::InlineCtx* ctx) {
         // Effective entry point after sdk init
+        char buf[200];
+        nn::util::SNPrintf(buf, sizeof(buf), "[totk-lotuskit:%d] nnMainHook main_offset=%p", TOTK_VERSION, exl::util::GetMainModuleInfo().m_Total.m_Start);
+        svcOutputDebugString(buf, strlen(buf));
+
+        lotuskit::config::LoadJson();
+        if (lotuskit::config::json_config.contains("disable") && lotuskit::config::json_config["disable"].template get<bool>()) {
+            nn::util::SNPrintf(buf, sizeof(buf), "[totk-lotuskit:%d] all features disabled");
+            svcOutputDebugString(buf, strlen(buf));
+            return;
+        }
 
         WorldManagerModuleBaseProcHook::Install();
 
@@ -44,10 +55,6 @@ HOOK_DEFINE_INLINE(nnMainHook) {
             DebugDrawImpl::Install(); // main_draw.hpp
         }
         */
-
-        char buf[200];
-        nn::util::SNPrintf(buf, sizeof(buf), "lotuskit test %d", 420);
-        svcOutputDebugString(buf, strlen(buf));
 
         lotuskit::server::SocketThread::CreateAndStart();
 
@@ -89,6 +96,13 @@ HOOK_DEFINE_INLINE(nnMainHook) {
 };
 
 extern "C" void exl_main(void* x0, void* x1) {
+    // if you launch the wrong version this is all you'll see
+    char buf[] = "[totk-lotuskit:___] exl_main";
+    buf[15] = '0' + TOTK_VERSION/100;
+    buf[16] = '0' + TOTK_VERSION%100/10;
+    buf[17] = '0' + TOTK_VERSION%10;
+    svcOutputDebugString(buf, strlen(buf));
+
     exl::hook::Initialize();
     nnMainHook::Install();
 }
