@@ -1,5 +1,7 @@
 #pragma once
 #include "lib.hpp"
+#include "lib/base64.hpp"
+#include "lib/sha1.hpp"
 #include "nn/nifm.h"
 #include "nn/socket.h"
 #include "nn/util.h"
@@ -39,7 +41,8 @@ namespace lotuskit::server::SocketThread {
     }
 
     void CreateAndWaitForFrontend() {
-        char buf[0x800];
+        constexpr size_t MAX_HTTP_REQ_HEADER_LEN = 0x800;
+        char buf[MAX_HTTP_REQ_HEADER_LEN];
 
         // setup needs to happen in main thread
         nn::nifm::Initialize();
@@ -114,7 +117,6 @@ namespace lotuskit::server::SocketThread {
                     if (buf[buf_i] == '\r' && buf[buf_i+1] == '\n') {
                         isNewline = true;
                         buf_i += 2;
-                        //continue;
                     }
 
                     if (isNewline && // is Sec-WebSocket-Key header?
@@ -162,18 +164,23 @@ namespace lotuskit::server::SocketThread {
                     break;
                 }
 
-                nn::util::SNPrintf(buf, sizeof(buf), "[SocketThread] got ws key: %s ", wsKey);
-                svcOutputDebugString(buf, strlen(buf));
+                //nn::util::SNPrintf(buf, sizeof(buf), "[SocketThread] got ws key: %s ", wsKey);
+                //svcOutputDebugString(buf, strlen(buf));
 
                 // https://datatracker.ietf.org/doc/html/rfc6455#section-4.2.2
-                //const char* WS_MAGIC = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+                // py acceptKey = base64.b64encode(hashlib.sha1(wsKey + WS_MAGIC).digest())
+                const char* WS_MAGIC_FMT = "%s258EAFA5-E914-47DA-95CA-C5AB0DC85B11"; // 36 length
                 const char* WS_RESP_FMT = "HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: %s\r\n\r\n";
-
-                //TODO acceptKey: str = base64.b64encode(hashlib.sha1(wsKey + WS_MAGIC).digest())
-                char acceptKey[32] = "todo"; // once this is sent, we may send() freely
-                nn::util::SNPrintf(buf, sizeof(buf), WS_RESP_FMT, acceptKey);
-                svcOutputDebugString(buf, strlen(buf));
+                nn::util::SNPrintf(buf, sizeof(buf), WS_MAGIC_FMT, wsKey);
+                u8 digest[20];
+                websocketpp::sha1::calc(buf, strlen(buf), digest);
+                auto acceptKey = websocketpp::base64_encode(digest, 20); // once this is sent, we may send() freely
+                nn::util::SNPrintf(buf, sizeof(buf), WS_RESP_FMT, acceptKey.c_str());
+                //svcOutputDebugString(buf, strlen(buf));
                 /*s32 sentBytes =*/ nn::socket::Send(clientSocketFd, buf, strlen(buf), 0); // blocking
+
+                nn::util::SNPrintf(buf, sizeof(buf), "[SocketThread] ws connection established");
+                svcOutputDebugString(buf, strlen(buf));
                 isWsEstablished = true;
             }
         }
