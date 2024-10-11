@@ -1,7 +1,7 @@
 {
     // bootup + socket config
     //"disable": true, // to disable everything in the mod, set this or move/rename the file
-    "start_server_on_bootup": true,
+    "start_server_on_bootup": true, // the game will not boot until ws connection is made
 
     // misc hooking
     "do_log_rng": false,

@@ -2,7 +2,7 @@
 #include "nn/util.h"
 
 #include "config.hpp"
-#include "server/SocketThread.hpp"
+#include "server/WebSocket.hpp"
 
 #include "sym/engine/hacks.h"
 #include "sym/game/wm/WorldManagerModule.h"
@@ -20,7 +20,7 @@ HOOK_DEFINE_TRAMPOLINE(WorldManagerModuleBaseProcHook) {
             char buf[200];
             nn::util::SNPrintf(buf, sizeof(buf), R"({ "wmprocTick": "0x%p", "doSend": true })", svcGetSystemTick());
             svcOutputDebugString(buf, strlen(buf));
-            lotuskit::server::SocketThread::SendBlock(buf); // make noise
+            lotuskit::server::WebSocket::SendBlock(buf); // make noise
         }
 
         Orig(self, param_2, param_3, param_4, wmmodule, param_6);
@@ -37,7 +37,7 @@ HOOK_DEFINE_INLINE(nnMainHook) {
         svcOutputDebugString(buf, strlen(buf));
 
         lotuskit::config::LoadJson();
-        auto& config = lotuskit::config::json_config;
+        auto& config = lotuskit::config::jsonConfig;
 
         if (config.contains("disable") && config["disable"].template get<bool>()) {
             nn::util::SNPrintf(buf, sizeof(buf), "[totk-lotuskit:%d] all features disabled");
@@ -46,8 +46,7 @@ HOOK_DEFINE_INLINE(nnMainHook) {
         }
 
         if (config["start_server_on_bootup"].template get<bool>()) {
-            // XXX make sure starting this later will work -- config name shouldnt imply things we cant actually do
-            lotuskit::server::SocketThread::CreateAndWaitForFrontend(); // block
+            lotuskit::server::WebSocket::CreateAndWaitForFrontend(); // block
         }
 
         WorldManagerModuleBaseProcHook::Install();
@@ -76,22 +75,6 @@ HOOK_DEFINE_INLINE(nnMainHook) {
         if (do_connect_on_whistle) {
             LoggerConnectOnWhistleHook::Install();
         }
-
-        // init logger socket
-        auto main_logger = new Logger();
-        Logger::main = main_logger;
-        main_logger->mState = LoggerState::UNINITIALIZED;
-        main_logger->mDoOpenSocket = true; // prepare socket
-        main_logger->mDoLogSocket = true; // actually send to socket
-        main_logger->mDoHackCommandSocket = true; // also abuse logging socket to recv commands
-        strcpy(main_logger->ip, ip);
-        main_logger->init();
-        if (do_connect_on_bootup) {
-            main_logger->connect();
-        }
-
-        // TODO centralize on-connect info dump, or allow frontend to request it
-        main_logger->logf(NS_DEFAULT_TEXT, R"("main_offset %p")", exl::util::GetMainModuleInfo().m_Total.m_Start);
         */
 
         //InputHelper::initKBM();

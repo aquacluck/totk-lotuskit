@@ -6,7 +6,7 @@
 #include "nn/socket.h"
 #include "nn/util.h"
 
-namespace lotuskit::server::SocketThread {
+namespace lotuskit::server::WebSocket {
     constexpr inline auto AF_INET = 2; // XXX domain ams::socket::Family::Af_Inet (ipv4)
     constexpr size_t STACK_SIZE = 0x2000; // XXX idk
     alignas(PAGE_SIZE) u8 sendStack[STACK_SIZE];
@@ -22,20 +22,27 @@ namespace lotuskit::server::SocketThread {
     bool isWsEstablished = false;
 
     void SendMessageFrameImpl(const char* payload) {
-        // plaintext json only. no masking key, no extension data (for server)
-        // https://datatracker.ietf.org/doc/html/rfc6455#section-5.2
+        // plaintext json only. its tempting to use some fancy binary format but:
+        // - i like being able to read the wire in devtools network tab
+        // - interop
+        // - size difference isnt meaningful at reasonable msg volumes
+        // - i dont care about decode speed in the mod, busy workloads should be builtin or script driven
+        // - for hot logging paths, manually encoding simple json will be faster than a lib anyways, and textwriter or files may be more appropriate
+        // - in the browser, plain json is usually just as fast as binary formats. this one is asmjs tho https://github.com/artcompiler/L16/blob/master/src/ubjson.js
+        // so lets not deal with it unless we really need it
 
+        // no masking key, no extension data (for server)
+        // https://datatracker.ietf.org/doc/html/rfc6455#section-5.2
         // frame type byte, + 0x80 = message FIN
         // 01 = text frame (2=bin, 8=close)
-
         // size byte (mask=0 for server). Oversizing is rejected by firefox, so we can't just ignore the small type and only send medium
         // 00 - 7d = 1 - 125B      -- 7 bit payload len (small)
         // 7e      = 126B - 64KB   -- next 2B are payload len (medium)
         // 7f      = >64KB         -- next 8B are payload len (large)
 
-        int pLen = strlen(payload);
+        u32 pLen = strlen(payload);
         if (pLen <= 125) {
-            int mLen = 2 + pLen;
+            u32 mLen = 2 + pLen;
             char buf[mLen];
             buf[0] = 0x81;
             buf[1] = pLen;
@@ -43,7 +50,7 @@ namespace lotuskit::server::SocketThread {
             nn::socket::Send(clientSocketFd, buf, mLen, 0);
 
         } else if (pLen <= 65535) {
-            int mLen = 4 + pLen;
+            u32 mLen = 4 + pLen;
             char buf[mLen];
             buf[0] = 0x81;
             buf[1] = 0x7e;
@@ -53,7 +60,7 @@ namespace lotuskit::server::SocketThread {
             nn::socket::Send(clientSocketFd, buf, mLen, 0);
 
         } else {
-            int mLen = 10 + pLen;
+            u32 mLen = 10 + pLen;
             char buf[mLen];
             buf[0] = 0x81;
             buf[1] = 0x7f;
@@ -111,13 +118,13 @@ namespace lotuskit::server::SocketThread {
         while (nn::nifm::IsNetworkRequestOnHold()) {}
         if (!nn::nifm::IsNetworkAvailable()) {
             //mState = LoggerState::UNAVAILABLE;
-            nn::util::SNPrintf(buf, sizeof(buf), "[SocketThread] nifm::IsNetworkAvailable() falsy");
+            nn::util::SNPrintf(buf, sizeof(buf), "[WebSocket] nifm::IsNetworkAvailable() falsy");
             svcOutputDebugString(buf, strlen(buf));
             // XXX just ignore it? we'll see...
         }
         if ((serverSocketFd = nn::socket::Socket(AF_INET, (s32)(SocketType::SOCK_STREAM), (s32)(SocketProtocol::IPPROTO_TCP))) < 0) {
             //mState = LoggerState::UNAVAILABLE;
-            nn::util::SNPrintf(buf, sizeof(buf), "[SocketThread] socket::Socket() errno %d", serverSocketFd);
+            nn::util::SNPrintf(buf, sizeof(buf), "[WebSocket] socket::Socket() errno %d", serverSocketFd);
             svcOutputDebugString(buf, strlen(buf));
         }
         // set keepalive
@@ -131,7 +138,7 @@ namespace lotuskit::server::SocketThread {
 
         s32 sockErrno;
         if ((sockErrno = nn::socket::Bind(serverSocketFd, &serverAddress, sizeof(serverAddress))) != 0) {
-            nn::util::SNPrintf(buf, sizeof(buf), "[SocketThread] socket::Bind() errno %d", sockErrno);
+            nn::util::SNPrintf(buf, sizeof(buf), "[WebSocket] socket::Bind() errno %d", sockErrno);
             svcOutputDebugString(buf, strlen(buf));
             return;
         }
@@ -141,12 +148,12 @@ namespace lotuskit::server::SocketThread {
         while (!isWsEstablished) {
             while (!clientSocketFd) {
                 if ((sockErrno = nn::socket::Listen(serverSocketFd, 1)) != 0) {
-                    nn::util::SNPrintf(buf, sizeof(buf), "[SocketThread] socket::Listen() errno %d", sockErrno);
+                    nn::util::SNPrintf(buf, sizeof(buf), "[WebSocket] socket::Listen() errno %d", sockErrno);
                     svcOutputDebugString(buf, strlen(buf));
                     return;
                 }
 
-                nn::util::SNPrintf(buf, sizeof(buf), "[SocketThread] socket::Accept() for ws client on %d...", serverSocketFd);
+                nn::util::SNPrintf(buf, sizeof(buf), "[WebSocket] socket::Accept() for ws client on %d...", serverSocketFd);
                 svcOutputDebugString(buf, strlen(buf));
                 if ((clientSocketFd = nn::socket::Accept(serverSocketFd, &clientAddress, &clientAddressLen)) < 0) { // blocking
                     nn::util::SNPrintf(buf, sizeof(buf), "socket::Accept() errno %d", clientSocketFd);
@@ -162,7 +169,7 @@ namespace lotuskit::server::SocketThread {
 
                 if (buf[0] != 'G' || buf[1] != 'E' || buf[2] != 'T' || buf[3] != ' ' || buf[4] != '/' || buf[5] != ' ') {
                     svcOutputDebugString(buf, recvSize);
-                    nn::util::SNPrintf(buf, sizeof(buf), "[SocketThread] closing client socket: no route found for req ^");
+                    nn::util::SNPrintf(buf, sizeof(buf), "[WebSocket] closing client socket: no route found for req ^");
                     svcOutputDebugString(buf, strlen(buf));
                     nn::socket::Close(clientSocketFd);
                     clientSocketFd = 0;
@@ -217,14 +224,14 @@ namespace lotuskit::server::SocketThread {
 
                 if (wsKey[0] == '\0') {
                     svcOutputDebugString(buf, recvSize);
-                    nn::util::SNPrintf(buf, sizeof(buf), "[SocketThread] closing client socket: Sec-WebSocket-Key header not found in GET / ^");
+                    nn::util::SNPrintf(buf, sizeof(buf), "[WebSocket] closing client socket: Sec-WebSocket-Key header not found in GET / ^");
                     svcOutputDebugString(buf, strlen(buf));
                     nn::socket::Close(clientSocketFd);
                     clientSocketFd = 0;
                     break;
                 }
 
-                //nn::util::SNPrintf(buf, sizeof(buf), "[SocketThread] got ws key: %s ", wsKey);
+                //nn::util::SNPrintf(buf, sizeof(buf), "[WebSocket] got ws key: %s ", wsKey);
                 //svcOutputDebugString(buf, strlen(buf));
 
                 // https://datatracker.ietf.org/doc/html/rfc6455#section-4.2.2
@@ -239,7 +246,7 @@ namespace lotuskit::server::SocketThread {
                 //svcOutputDebugString(buf, strlen(buf));
                 /*s32 sentBytes =*/ nn::socket::Send(clientSocketFd, buf, strlen(buf), 0); // blocking
 
-                nn::util::SNPrintf(buf, sizeof(buf), "[SocketThread] ws connection established");
+                nn::util::SNPrintf(buf, sizeof(buf), "[WebSocket] ws connection established");
                 svcOutputDebugString(buf, strlen(buf));
                 isWsEstablished = true;
             }

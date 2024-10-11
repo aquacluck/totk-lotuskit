@@ -13,10 +13,12 @@ namespace lotuskit::util::romfs {
         return true;
     }
 
-    void ReadFile(char* out, const char* path, int max_len, const char* default_) {
+    void ReadTextFile(char* out, const char* path, s64 maxLen, const char* default_) {
         char errbuf[200];
+
         nn::fs::FileHandle fd;
         nn::Result res = nn::fs::OpenFile(&fd, path, nn::fs::OpenMode_Read);
+
         if (!res.IsSuccess()) {
             strcpy(out, default_);
             nn::util::SNPrintf(errbuf, sizeof(errbuf), "[ERROR] cant open file %s ", path);
@@ -24,22 +26,22 @@ namespace lotuskit::util::romfs {
             return;
         }
 
-        long int fd_len = 0;
-        res = nn::fs::GetFileSize(&fd_len, fd);
+        s64 fdLen = 0;
+        res = nn::fs::GetFileSize(&fdLen, fd);
         if (!res.IsSuccess()) {
             strcpy(out, default_);
             nn::util::SNPrintf(errbuf, sizeof(errbuf), "[ERROR] cant get file size %s ", path);
             svcOutputDebugString(errbuf, strlen(errbuf));
             return;
         }
-        if (fd_len > max_len) {
+        if (fdLen > maxLen) {
             strcpy(out, default_);
-            nn::util::SNPrintf(errbuf, sizeof(errbuf), "[ERROR] file contents too long %d > %d %s ", fd_len, max_len, path);
+            nn::util::SNPrintf(errbuf, sizeof(errbuf), "[ERROR] file contents too long %d > %d %s ", fdLen, maxLen, path);
             svcOutputDebugString(errbuf, strlen(errbuf));
             return;
         }
 
-        res = nn::fs::ReadFile(fd, 0, out, fd_len);
+        res = nn::fs::ReadFile(fd, 0, out, fdLen);
         if (!res.IsSuccess()) {
             strcpy(out, default_);
             nn::util::SNPrintf(errbuf, sizeof(errbuf), "[ERROR] file read fail %s ", path);
