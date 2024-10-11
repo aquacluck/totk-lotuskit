@@ -12,6 +12,17 @@ HOOK_DEFINE_TRAMPOLINE(WorldManagerModuleBaseProcHook) {
     static const auto s_offset = sym::game::wm::WorldManagerModule::baseProcExe;
 
     static void Callback(double self, double param_2, double param_3, double param_4, void *wmmodule, void *param_6) {
+        static u64 lastPrintTick = 0;
+        u64 thisTick = svcGetSystemTick();
+        if (thisTick >= lastPrintTick + 20000000) {
+            lastPrintTick = thisTick;
+
+            char buf[200];
+            nn::util::SNPrintf(buf, sizeof(buf), R"({ "wmprocTick": "0x%p", "doSend": true })", svcGetSystemTick());
+            svcOutputDebugString(buf, strlen(buf));
+            lotuskit::server::SocketThread::SendBlock(buf); // make noise
+        }
+
         Orig(self, param_2, param_3, param_4, wmmodule, param_6);
     }
 };

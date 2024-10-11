@@ -21,12 +21,65 @@ namespace lotuskit::server::SocketThread {
     u32 clientAddressLen;
     bool isWsEstablished = false;
 
+    void SendMessageFrameImpl(const char* payload) {
+        // plaintext json only. no masking key, no extension data (for server)
+        // https://datatracker.ietf.org/doc/html/rfc6455#section-5.2
+
+        // frame type byte, + 0x80 = message FIN
+        // 01 = text frame (2=bin, 8=close)
+
+        // size byte (mask=0 for server). Oversizing is rejected by firefox, so we can't just ignore the small type and only send medium
+        // 00 - 7d = 1 - 125B      -- 7 bit payload len (small)
+        // 7e      = 126B - 64KB   -- next 2B are payload len (medium)
+        // 7f      = >64KB         -- next 8B are payload len (large)
+
+        int pLen = strlen(payload);
+        if (pLen <= 125) {
+            int mLen = 2 + pLen;
+            char buf[mLen];
+            buf[0] = 0x81;
+            buf[1] = pLen;
+            std::memcpy(&buf[2], payload, pLen);
+            nn::socket::Send(clientSocketFd, buf, mLen, 0);
+
+        } else if (pLen <= 65535) {
+            int mLen = 4 + pLen;
+            char buf[mLen];
+            buf[0] = 0x81;
+            buf[1] = 0x7e;
+            buf[2] = pLen / 0x100;
+            buf[3] = pLen % 0x100;
+            std::memcpy(&buf[4], payload, pLen);
+            nn::socket::Send(clientSocketFd, buf, mLen, 0);
+
+        } else {
+            int mLen = 10 + pLen;
+            char buf[mLen];
+            buf[0] = 0x81;
+            buf[1] = 0x7f;
+            buf[2] = 0; //pLen / (1 << 8*7); // 64b size
+            buf[3] = 0; //pLen % (1 << 8*7) / (1 << 8*6);
+            buf[4] = 0; //pLen % (1 << 8*6) / (1 << 8*5);
+            buf[5] = 0; //pLen % (1 << 8*5) / (1 << 8*4);
+            buf[6] = pLen / (1 << 8*3);
+            buf[7] = pLen % (1 << 8*3) / (1 << 8*2);
+            buf[8] = pLen % (1 << 8*2) / (1 << 8*1);
+            buf[9] = pLen % (1 << 8*1);
+            std::memcpy(&buf[10], payload, pLen);
+            nn::socket::Send(clientSocketFd, buf, mLen, 0);
+        }
+    }
+
     // sends queued/deferred ws messages. See SendBlock to bypass this and send immediately, eg to get a log out before a known crash
     void ThreadFuncSend(void* _) {
         char buf[200];
+        // TODO queue.consume([](msg){ SendMessageFrameImpl(msg); })
         while (true) {
-            nn::util::SNPrintf(buf, sizeof(buf), "woo %d", 420);
+            // TODO locking
+            if (!isWsEstablished) { continue; } // TODO detect dead ws on send, cleanup
+            nn::util::SNPrintf(buf, sizeof(buf), R"({ "threadedTick": "0x%p", "doSend": false })", svcGetSystemTick());
             svcOutputDebugString(buf, strlen(buf));
+            //SendMessageFrameImpl(buf); // FIXME can't even send in the thread without crashing? thats not right
             svcSleepThread(1000000000); // 1B ns = 1s
             //nn::os::SleepThread(nn::os::ConvertToTimeSpan(1000000000));
         }
@@ -36,8 +89,15 @@ namespace lotuskit::server::SocketThread {
         if (!isWsEstablished) { return; }
     }
 
-    void SendBlock() {
+    void SendNoblock() {
         if (!isWsEstablished) { return; }
+        // TODO enqueue for ThreadFuncSend
+    }
+
+    void SendBlock(const char* payload) {
+        if (!isWsEstablished) { return; }
+        // TODO fd mutex
+        SendMessageFrameImpl(payload);
     }
 
     void CreateAndWaitForFrontend() {
