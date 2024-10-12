@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" type="text/css" href="assets/style.css" />
+<script type="module">
+    import { createRef, h, render, Component } from '/assets/js-vendor/preact@10.23.1.mjs';
+    import htm from '/assets/js-vendor/htm@3.1.1.mjs';
+    import { signal } from "/assets/js-vendor/preact-signals@1.3.0.mjs";
+    const html = htm.bind(h);
+
+
+    class WSTransport {
+        static websock = undefined;
+        static _new_actor_signal_group() {
+            return {
+                pos32: signal([0.0, 0.0, 0.0]),
+                pos64: signal([0.0, 0.0, 0.0]),
+                rot: signal([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
+                rot_physics: signal([0.0, 0.0, 0.0, 0.0]),
+                vel_frame: signal([0.0, 0.0, 0.0]), // per-frame calculated velocity, unused
+                physics_vel: signal([0.0, 0.0, 0.0]),
+                physics_ang_vel: signal([0.0, 0.0, 0.0]),
+                inertia: signal([0.0, 0.0, 0.0, 0.0]),
+            };
+        };
+        static signals = {
+            // TODO allow components to call into here, to create new signal groups on the fly, to observe+route changes from incoming logs (eg subscribe to currently selected actors)
+            // XXX dont pass signals into props/etc, they appear to leak? values are fine
+            actor: {
+                Player: this._new_actor_signal_group(),
+                ACTOR_SLOT_1: this._new_actor_signal_group(),
+                ACTOR_SLOT_2: this._new_actor_signal_group(),
+                ACTOR_SLOT_3: this._new_actor_signal_group(),
+                _XXX_tracked_aselectors: signal(["Player", "ACTOR_SLOT_1", "ACTOR_SLOT_2", "ACTOR_SLOT_3"]), // client side only, mod side holds this separately for now until selector format/references/etc are better planned. we just juggle some hardcoded names here for now
+            },
+            config: {
+                frontend: {
+                    ws_is_connected: signal(false),
+                    //console_log_ns_passlist: signal(false),
+                    console_log_ns_faillist: signal(["ACTOR_PLAYER", "ACTOR_SLOT_1", "ACTOR_SLOT_2", "ACTOR_SLOT_3", "VFRMGR"]),
+                },
+
+                // our state ^ is freely writable, but the below need to command+receive their mutations
+                proxy: {
+                    backend_is_connected: signal(false),
+                },
+                backend: {
+                    //do_keybind: signal(true),
+                    //do_player_log: signal(true), // XXX try and generalize more of this to an actor subscription, when comfortable w actor+physics+etc systems
+                    //do_vfrmgr_log: signal(false),
+                    //svcOutputDebugString_log_ns_passlist: signal([]),
+                },
+            },
+        };
+
+        static send(data, skipEncode) {
+            if (!skipEncode) {
+                data = JSON.stringify(data);
+            }
+            WSTransport.ws.send(data);
+        }
+
+        static _ws_on_open(e) {
+            console.log("ws open success");
+            WSTransport.signals.config.frontend.ws_is_connected.value = true;
+        }
+        static _ws_on_close(e) {
+            console.log("ws closed");
+            WSTransport.signals.config.frontend.ws_is_connected.value = false;
+        }
+        static _ws_on_message(e) {
+            WSTransport.consume_ws_msg(JSON.parse(e.data));
+        }
+
+        static connect() {
+            if (WSTransport.signals.config.frontend.ws_is_connected.value) {
+                console.log("ws closing to reopen");
+                WSTransport.signals.config.frontend.ws_is_connected.value = false;
+                WSTransport.websock.close(); // XXX proxy doesnt really know how to close, so this will eventually timeout instead
+                WSTransport.websock.removeEventListener("open", WSTransport._ws_on_open);
+                WSTransport.websock.removeEventListener("close", WSTransport._ws_on_close);
+                WSTransport.websock.removeEventListener("message", WSTransport._ws_on_message);
+                WSTransport.websock = undefined;
+            }
+
+            //const ws_location = "ws://" + window.location.host;
+            const ws_location = "ws://127.0.0.1:7072"; // TODO input with localStorage default+recents in ConnectionToolset
+            console.log("ws open try", ws_location);
+            WSTransport.websock = new WebSocket(ws_location);
+            WSTransport.websock.addEventListener("open", WSTransport._ws_on_open);
+            WSTransport.websock.addEventListener("close", WSTransport._ws_on_close);
+            WSTransport.websock.addEventListener("message", WSTransport._ws_on_message);
+
+            //window.addEventListener("beforeunload", function() {
+            //    WSTransport.websock.close();
+            //});
+        }
+
+        static consume_ws_msg(dgram_arr) {
+            const [uniq_id, ns, payload] = dgram_arr;
+
+            // Filter out noisy/instrumentation/etc logs
+            const faillist = WSTransport.signals.config.frontend.console_log_ns_faillist.value;
+            if (!faillist || faillist.indexOf(ns) == -1) {
+                console.log(ns, payload);
+            }
+
+            // Publish updates into ui components
+            // TODO is a special player ns useful? should we keep it to split common actor info away from any Player-specifics?
+            let aselector = "";
+            if (ns == "ACTOR_PLAYER") { aselector = "Player"; }
+            else if (ns == "ACTOR_SLOT_1") { aselector = "ACTOR_SLOT_1"; }
+            else if (ns == "ACTOR_SLOT_2") { aselector = "ACTOR_SLOT_2"; }
+            else if (ns == "ACTOR_SLOT_3") { aselector = "ACTOR_SLOT_3"; }
+            if (aselector) {
+                // XXX just iterate over these?
+                if ("pos32"     in payload) { WSTransport.signals.actor[aselector].pos32.value     = payload.pos32; }
+                if ("pos64"     in payload) { WSTransport.signals.actor[aselector].pos64.value     = payload.pos64; }
+                if ("rot"       in payload) { WSTransport.signals.actor[aselector].rot.value       = payload.rot; }
+                if ("rot_physics" in payload) { WSTransport.signals.actor[aselector].rot_physics.value = payload.rot_physics; }
+                //if ("vel_frame" in payload) { WSTransport.signals.actor[aselector].vel_frame.value = payload.vel_frame; }
+                if ("physics_vel" in payload) { WSTransport.signals.actor[aselector].physics_vel.value = payload.physics_vel; }
+                if ("physics_ang_vel" in payload) { WSTransport.signals.actor[aselector].physics_ang_vel.value = payload.physics_ang_vel; }
+                if ("inertia" in payload) { WSTransport.signals.actor[aselector].inertia.value = payload.inertia; }
+
+            }
+            else if (ns == "BACKEND_CONFIG") {
+                if ("backend_is_connected" in payload) { WSTransport.signals.config.proxy.backend_is_connected.value = payload.backend_is_connected; }
+            }
+        }
+
+        static make_uniq_id() {
+            var id = Math.floor(Math.random() * 0xffffffff);
+            id = id.toString(16).padStart(8, '0');
+            return "0x"+id;
+        }
+    };
+
+
+    // general vector stuff
+
+    class VecUtil {
+        static UI_HEIGHT_OFFSET = 105.5;
+        static engine_to_ui(engine_vec3) { return [engine_vec3[0],                       -1 * engine_vec3[2], engine_vec3[1] - VecUtil.UI_HEIGHT_OFFSET]; }
+        static ui_to_engine(    ui_vec3) { return [    ui_vec3[0],     ui_vec3[2] + VecUtil.UI_HEIGHT_OFFSET,                           -1 * ui_vec3[1]]; }
+    }
+
+    const VecComponentPatterns = {
+        XYZ: "XYZ",
+        XZY: "XZY",
+        ZX:  "ZX",
+        ZXY: "ZXY",
+    };
+
+
+    // ui util
+
+    function CompassSpinny({value}) {
+        const [rz, rx] = value;
+        const rad = Math.atan2(rz, rx);
+
+        let ns = rz > 0 ? 'S' : 'N';
+        let ew = rx > 0 ? 'E' : 'W';
+        if (Math.abs(rz) == 1.0) { ew = "\xa0"; }
+        if (Math.abs(rx) == 1.0) { ns = "\xa0"; }
+
+        return html`<span style="transform: rotate(${rad}rad);" class="compass_spinny vec_components_${VecComponentPatterns.ZX}"><span>${ns}</span><span>${ew}</span>→</span>`
+    }
+
+    function CompassSpinnyPhysics({value}) { // Quaternionf
+        const rad = (-2 * Math.atan2(value[1], value[3])) + Math.PI/2;
+        // FIXME calc NSEW from rad
+        return html`<span style="transform: rotate(${rad}rad);" class="compass_spinny"><span>\xa0</span><span>\xa0</span>→</span>`
+    }
+
+    function ReadoutVec3({label, value, vecComponentPattern}) {
+        const v = value;
+        const c = vecComponentPattern || "";
+        return html`<span label=${label} class="readout readout_vec3 vec_components_${c}"><span>${v[0]}</span> <span>${v[1]}</span> <span>${v[2]}</span></span>`;
+    }
+    function ReadoutVec2({label, value, vecComponentPattern}) {
+        const v = value;
+        const c = vecComponentPattern || "";
+        return html`<span label=${label} class="readout readout_vec2 vec_components_${c}"><span>${v[0]}</span> <span>${v[1]}</span></span>`;
+    }
+    function ReadoutQuat({label, value, vecComponentPattern}) {
+        const v = value;
+        const c = vecComponentPattern || "";
+        return html`<span label=${label} class="readout readout_quat vec_components_${c}"><span>${v[0]}</span> <span>${v[1]}</span> <span>${v[2]}</span> <span>${v[3]}</span></span>`;
+    }
+
+
+    // main ui
+
+    class HexdumpSlot extends Component {
+        constructor() {
+            super();
+            //this.slot_i_ref = createRef();
+            this.slot_label_ref = createRef();
+            this.slot_target_ptr_ref = createRef();
+            this.dump_len = createRef();
+            this.draw_len = createRef();
+        }
+
+        do_absolute(i) {
+            const draw_len = parseInt(this.draw_len.current.value) || 0x20;
+            const dump_len = draw_len;
+            const label = this.slot_label_ref.current.value.toString().slice(0, 32).replaceAll(" ", "-") || "_label";
+            const ptr = this.slot_target_ptr_ref.current.value || 0;
+            if (!ptr) { console.log("hexdump user lookin sussy", i); return; }
+            fetch(`/backend/memutils/hexdump/assign_slot?uniq_id=${WSTransport.make_uniq_id()} ${i} absolute ${ptr} ${dump_len} ${draw_len} ${label}`, {method: "post"});
+            console.log("hexdump absolute", i, ptr, {dump_len, draw_len, label});
+        }
+        do_pause(i) {
+            fetch(`/backend/memutils/hexdump/assign_slot?uniq_id=${WSTransport.make_uniq_id()} ${i} pause 0x0 0 0 _label`, {method: "post"});
+            console.log("hexdump pause", i);
+        }
+        do_clear(i) {
+            fetch(`/backend/memutils/hexdump/assign_slot?uniq_id=${WSTransport.make_uniq_id()} ${i} clear 0x0 0 0 _label`, {method: "post"});
+            console.log("hexdump clear", i);
+        }
+
+        render({slot_i}, state) {
+            // TODO symbol picker
+            return html`
+                <div class="hexdump_slot">
+                    ${slot_i}${"\xa0"}
+                    <input placeholder="any label, max 32" ref=${this.slot_label_ref} />
+                    <!-- TODO <select>absolute, main, ...</select> -->
+                    <input placeholder="target ptr (hex)" size="20" ref=${this.slot_target_ptr_ref} />
+                    <!--<input placeholder="0x20" size="6" ref=${this.dump_len} />-->
+                    <input placeholder="0x20" size="6" ref=${this.draw_len} />
+                    <button onClick=${ () => this.do_absolute(slot_i) } class="pushbutton">dump</button>
+                    <button onClick=${ () => this.do_pause(slot_i) } class="pushbutton">pause</button>
+                    <button onClick=${ () => this.do_clear(slot_i) } class="pushbutton">clear</button>
+                </div>
+            `;
+        }
+    };
+
+    class MemSearch extends Component {
+        constructor() {
+            super();
+            this.needle_ptr_ref = createRef();
+        }
+
+        do_search(haystack_name) {
+            const needle_ptr = this.needle_ptr_ref.current.value || 0;
+            // TODO await+display results?
+            fetch(`/backend/memutils/memsearch/invoke?uniq_id=${WSTransport.make_uniq_id()} ${haystack_name} ${needle_ptr}`, {method: "post"});
+        }
+
+        render(props, state) {
+            // TODO region picker
+            return html`
+                <div class="memsearch">
+                    Memory search <br/>
+                    <input placeholder="target ptr (hex)" size="20" ref=${this.needle_ptr_ref} />
+                    <button onClick=${ () => this.do_search("sead::HeapMgr::sRootHeaps") } class="pushbutton">heap</button>
+                </div>
+            `;
+        }
+    };
+
+    class QuickDumps extends Component {
+        do_heapinfo() {
+            // TODO await+display results?
+            fetch(`/backend/memutils/heapinfo/invoke?uniq_id=${WSTransport.make_uniq_id()}`, {method: "post"});
+        }
+        do_threadinfo() {
+            // TODO await+display results?
+            fetch(`/backend/memutils/threadinfo/invoke?uniq_id=${WSTransport.make_uniq_id()}`, {method: "post"});
+        }
+
+        render(props, state) {
+            // TODO region picker
+            return html`
+                <div class="quickdumps">
+		    Quick dumps <br/>
+                    <button onClick=${ () => this.do_heapinfo() } class="pushbutton">heapinfo</button>
+                    <button onClick=${ () => this.do_threadinfo() } class="pushbutton">threadinfo</button>
+                </div>
+            `;
+        }
+    };
+
+    class ActorInspector extends Component {
+        constructor() {
+            super();
+            this.state = {idk: 420};
+            this.bumper_increment_ref = createRef();
+            this.savestate_textbox_ref = createRef();
+            this._XXX_aselector_finder_relation_parent_i = createRef();
+        }
+
+        do_paste_coords(aselector_named, dest) {
+            console.log("command_savestate_paste_simple", aselector_named, dest);
+            fetch(`/backend/savestate/paste_simple?uniq_id=${WSTransport.make_uniq_id()} ${aselector_named} pos32 ${dest.pos32[0]} ${dest.pos32[1]} ${dest.pos32[2]} pos64 ${dest.pos64[0]} ${dest.pos64[1]} ${dest.pos64[2]}`, {method: "post"});
+        }
+
+        do_relative_move_calc(actor_signals, unit_vec, delta) {
+            // XXX accessing signals in here may leak?
+            // TODO extract to VecUtil?
+            // engine unit vector, relative
+            let pos64 = [...actor_signals.pos64.value]; // copy
+            let pos32 = [...actor_signals.pos32.value]; // copy
+            const rot = actor_signals.rot.value;
+
+            if (unit_vec[1] != 0) { // up/down
+                pos64[1] += unit_vec[1] * delta;
+                pos32[1] += unit_vec[1] * delta;
+                return {pos32, pos64};
+            }
+
+            // move in cardinal offsets wrt nearest cardinal direction
+            var dim_pos, dim_input, sign;
+            if (Math.abs(rot[0]) > Math.abs(rot[2])) {
+                // actor facing north-south
+                sign = rot[0] > 0 ? -1 : 1;
+                if (unit_vec[0] != 0) { // lateral
+                    dim_input = 0;
+                    dim_pos = 0; // east-west
+                } else { // forward/backward
+                    sign *= -1;
+                    dim_input = 2;
+                    dim_pos = 2; // north-south
+                }
+            } else {
+                //actor facing east-west
+                sign = rot[2] > 0 ? 1 : -1;
+                if (unit_vec[0] != 0) { // lateral
+                    dim_input = 0;
+                    dim_pos = 2; // north-south
+                } else { // forward/backward
+                    dim_input = 2;
+                    dim_pos = 0; // east-west
+                }
+            }
+
+            pos64[dim_pos] += unit_vec[dim_input] * delta * sign;
+            pos32[dim_pos] += unit_vec[dim_input] * delta * sign;
+
+            return {pos32, pos64};
+        }
+
+        do_relative_move(aselector_named, unit_vec) {
+            const actor_signals = WSTransport.signals.actor[aselector_named];
+            const delta = parseInt(this.bumper_increment_ref.current.value) || 10.0;
+            this.do_paste_coords(aselector_named, this.do_relative_move_calc(actor_signals, unit_vec, delta));
+        }
+
+        do_absolute_move(aselector_named) {
+            let v = this.savestate_textbox_ref.current.value;
+            v = v.replaceAll(",", "").split(" ").filter(x => x !== "").map(x => parseFloat(x));
+            // TODO accept+convert ui coords with a flag
+            // FIXME generally ignoring physics height offset, pos32 is not accurately restored
+            this.do_paste_coords(aselector_named, {pos32: [...v], pos64: [...v]});
+        }
+
+        dump_pos_to_savestate_textbox(aselector_named) {
+            // XXX are we losing any precision in all these conversions?
+            const actor_signals = WSTransport.signals.actor[aselector_named];
+            let v = [...actor_signals.pos64.value]; // copy XXX leaky?
+            this.savestate_textbox_ref.current.value = `${v[0]}, ${v[1]}, ${v[2]}`;
+        }
+
+        do_subscribe_slot(_XXX_aselector_i, subscribe_options) {
+            // TODO add+remove actor selector slots on demand instead of all this? otoh keeping these "static" makes it ez to reason 1:1::js:cpp
+            const action = subscribe_options.action;
+            let action_arg = 0x0;
+            if (action == "null") {
+            } else if (action == "spawn") {
+            } else if (action == "next_relation_of_i") {
+                action_arg = parseInt(this._XXX_aselector_finder_relation_parent_i.current.value || 0);
+            }
+            fetch(`/backend/actor/select_slot?uniq_id=${WSTransport.make_uniq_id()} ${_XXX_aselector_i} ${subscribe_options.action} ${action_arg}`, {method: "post"});
+        }
+
+        render({aselector_named, _XXX_aselector_i}, state) {
+            // TODO actor selector: spawn one of these toolsets scoped to some actor, direct the mod to publish its data, cleanup when actor is destroyed.
+            // TODO more generally: we get a handle to the actor from the mod (be it name/index/pointer/whatever) which is used to ^ request+identify subscriptions, and used as a handle for savestate pasting etc.
+            //                      symbolic handles too -- eg names/singletons like Player, relative traversals such as RelationOf(Player, "Weapon_Lsword_020"), static create-if-missing named test actors, ...
+
+            //if (WSTransport.signals.actor._XXX_tracked_aselectors[_XXX_aselector_i] != aselector_named) { debugger; } // assert
+            const asig = WSTransport.signals.actor[aselector_named];
+            const compass_rot = [asig.rot.value[0], asig.rot.value[2]];
+
+            return html`
+                <section class="toolset_actor_inspector">
+                    <div class="actor_selector_current">Actor: ${aselector_named}</div>
+                    <div class="actor_selector_options">
+                        Select:
+                        <button onClick=${ () => this.do_subscribe_slot(_XXX_aselector_i, {action: "null"}) } class="pushbutton">null</button>
+                        <button onClick=${ () => this.do_subscribe_slot(_XXX_aselector_i, {action: "spawn"}) } class="pushbutton">spawn</button>
+                        <button onClick=${ () => this.do_subscribe_slot(_XXX_aselector_i, {action: "next_relation_of_i"}) } class="pushbutton">on rel</button>
+                        <input type="number" placeholder="0" size="2" min="0" max="3" ref=${this._XXX_aselector_finder_relation_parent_i} size=2 />
+                    </div>
+                    <div class="actor_pos32_ui">
+                        <${ReadoutVec3} label="pos32 (ui)\xa0" value=${VecUtil.engine_to_ui(asig.pos32.value)} vecComponentPattern=${VecComponentPatterns.XZY} />
+                    </div>
+                    <div class="actor_pos32">
+                        <${ReadoutVec3} label="pos32\xa0\xa0\xa0\xa0\xa0\xa0" value=${asig.pos32.value} vecComponentPattern=${VecComponentPatterns.XYZ} />
+                    </div>
+                    <div class="actor_pos64_ui">
+                        <${ReadoutVec3} label="pos64 (ui)\xa0" value=${VecUtil.engine_to_ui(asig.pos64.value)} vecComponentPattern=${VecComponentPatterns.XZY} />
+                    </div>
+                    <div class="actor_pos64">
+                        <${ReadoutVec3} label="pos64\xa0\xa0\xa0\xa0\xa0\xa0" value=${asig.pos64.value} vecComponentPattern=${VecComponentPatterns.XYZ} />
+                    </div>
+                    <div class="actor_vel_frame">
+                        <${ReadoutVec3} label="vel physics" value=${asig.physics_vel.value} vecComponentPattern=${VecComponentPatterns.XYZ} />
+                        <br />
+                        <!--<${ReadoutVec3} label="vel rta\xa0\xa0\xa0\xa0" value=${asig.vel_frame.value} vecComponentPattern=${VecComponentPatterns.XYZ} />-->
+                        <${ReadoutQuat} label="inertia" value=${asig.inertia.value} /> <!-- inverse inertia, idk why 4 maybe just f16 alignment -->
+                    </div>
+                    <div class="actor_compass">
+                        <${ReadoutVec2} label="rot\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0" value=${compass_rot} vecComponentPattern=${VecComponentPatterns.ZX} />
+                        <${CompassSpinny} value=${compass_rot} />
+                        <br />
+                        <${ReadoutQuat} label="rot_physics" value=${asig.rot_physics.value} />
+                        <${CompassSpinnyPhysics} value=${asig.rot_physics.value} />
+                        <br />
+                        <${ReadoutVec3} label="ang vel\xa0\xa0\xa0\xa0" value=${asig.physics_ang_vel.value} />
+                    </div>
+
+                    <div class="bumper_pushbuttons">
+                        <span>Move by <input type="number" placeholder="10" size="4" min="0" max="10000" step="any" ref=${this.bumper_increment_ref} />m:</span>
+                        <br />
+                        <br />
+                        <button onClick=${ () => this.do_relative_move(aselector_named, [-1, 0, 0]) } class="pushbutton pushbutton_left_lateral">\xa0\xa0left\xa0\xa0</button>
+                        <button onClick=${ () => this.do_relative_move(aselector_named, [0, 1, 0]) }  class="pushbutton pushbutton_up_vertical">\xa0up\xa0</button>
+                        <button onClick=${ () => this.do_relative_move(aselector_named, [1, 0, 0]) }  class="pushbutton pushbutton_right_lateral">\xa0right\xa0</button>
+                        <br />
+                        <button onClick=${ () => this.do_relative_move(aselector_named, [0, 0, -1]) } class="pushbutton pushbutton_left_behind">backward</button>
+                        <button onClick=${ () => this.do_relative_move(aselector_named, [0, -1, 0]) } class="pushbutton pushbutton_down_vertical">down</button>
+                        <button onClick=${ () => this.do_relative_move(aselector_named, [0, 0, 1]) }  class="pushbutton pushbutton_right_forward">forward</button>
+                    </div>
+
+                    <div class="savestate_slot_actions">
+                        Position:
+                        <button class="pushbutton" onClick=${() => this.dump_pos_to_savestate_textbox(aselector_named) }>dump</button>
+                        <button class="pushbutton" onClick=${() => this.do_absolute_move(aselector_named)}>assign</button>
+                        <br />
+                        <input ref=${this.savestate_textbox_ref} size=40 />
+                    </div>
+                </section>
+            `;
+        }
+    };
+
+    function ConnectionToolset() {
+        const ws = WSTransport.signals.config.frontend.ws_is_connected.value ? "✅" : "❌";
+        const backend = WSTransport.signals.config.proxy.backend_is_connected.value ? "✅" : "❌"; // FIXME can be desynced upon ws reconnect
+        return html`
+            <section class="toolset_connection">
+                <button class="ws pushbutton" onClick=${() => WSTransport.connect()}>${ws} ws</button>
+                <div class="backend">${backend} backend</div>
+            </section>
+        `;
+    }
+
+    // init
+
+    function MainToolbox() {
+        return html`
+        <div class="toolbox_main">
+            ${WSTransport.signals.actor._XXX_tracked_aselectors.value.map((asel, asel_i) => html`<${ActorInspector} aselector_named=${asel} _XXX_aselector_i=${asel_i} />`)}
+            <section class="toolset_memutils_controller">
+                <div class="hexdump">
+                    Hexdump
+                    <${HexdumpSlot} slot_i=0 />
+                    <${HexdumpSlot} slot_i=1 />
+                    <${HexdumpSlot} slot_i=2 />
+                    <${HexdumpSlot} slot_i=3 />
+                </div>
+                <${MemSearch} />
+                <${QuickDumps} />
+            </section>
+            <${ConnectionToolset} />
+        </div>
+        `;
+    }
+
+    window.addEventListener("load", async function() {
+        WSTransport.connect();
+        const toolbox = document.querySelector(".toolbox_main");
+        render(html`<${MainToolbox} />`, toolbox);
+    });
+
+
+
+    /*
+
+    function send_cmd_savestate_persist() {
+        console.log("command_savestate_persist");
+        // FIXME url
+        fetch(`/backend/testwarp?uniq_id=${make_uniq_id()}`, {method: "post"}).then((resp) => {
+            console.log("command_savestate_persist", resp);
+        });
+    }
+    function send_cmd_savestate_restore() {
+        console.log("command_savestate_restore");
+        // FIXME url
+        fetch(`/backend/testwarp?uniq_id=${make_uniq_id()}`, {method: "post"}).then((resp) => {
+            console.log("command_savestate_restore", resp);
+        });
+    }
+
+    function send_cmd_savestate_actor_pos64_assign() {
+        console.log("command_savestate_actor_pos64_assign");
+        fetch(`/backend/savestate/paste_simple?uniq_id=${make_uniq_id()} Player pos64 -420.0 300.0 200.0`, {method: "post"}).then((resp) => {
+            console.log("command_savestate_actor_pos64_assign", resp);
+        });
+    }
+    */
+</script>
+</head>
+<body>
+    <div class="toolbox_main"></div>
+</body>
+</html>
