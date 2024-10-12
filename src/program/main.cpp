@@ -20,7 +20,11 @@ HOOK_DEFINE_TRAMPOLINE(WorldManagerModuleBaseProcHook) {
             char buf[200];
             nn::util::SNPrintf(buf, sizeof(buf), R"({ "wmprocTick": "0x%p", "doSend": true })", svcGetSystemTick());
             svcOutputDebugString(buf, strlen(buf));
-            lotuskit::server::WebSocket::SendBlock(buf); // make noise
+
+            lotuskit::server::WebSocket::SendTextNoblock(buf);
+            lotuskit::server::WebSocket::SendTextNoblock(buf);
+            lotuskit::server::WebSocket::FlushSendQueueBlocking();
+            //lotuskit::server::WebSocket::SendTextBlocking(buf);
         }
 
         Orig(self, param_2, param_3, param_4, wmmodule, param_6);
