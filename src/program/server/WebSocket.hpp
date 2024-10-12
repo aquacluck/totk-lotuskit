@@ -152,12 +152,13 @@ namespace lotuskit::server::WebSocket {
 
     void SendTextNoblock(const char* payload) {
         if (!isWsEstablished) { return; }
-        SendQueue::EnqueueText(payload); // (it can still block on the mutex, could prob be lock free if head is atomic ptr we bump by frame size then fill behind it)
+        SendQueue::EnqueueText(payload); // (it can still block on the mutex, TODO look into lock free wizard shit)
     }
 
     void SendTextBlocking(const char* payload) {
         if (!isWsEstablished) { return; }
-        // TODO fd mutex?
+        // TODO fd mutex? I'm unclear how all this behaves + where this giant socketPool fits into things...
+        // (Is it copying my data into there? Does it do any locking of its own? If it's blocking, shouldn't it use the pointer we call send with, instead of copying?)
 
         // plaintext json only. its tempting to use some fancy binary format but:
         // - i like being able to read the wire in devtools network tab
@@ -240,7 +241,7 @@ namespace lotuskit::server::WebSocket {
             while (!isWsEstablished) {
                 // TODO allow cors upon OPTIONS?
                 // recv and upgrade+establish ws for GET
-                s32 recvSize = nn::socket::Recv(clientSocketFd, buf, sizeof(buf), 0);
+                s32 recvSize = nn::socket::Recv(clientSocketFd, buf, sizeof(buf), 0); // blocking
 
                 if (buf[0] != 'G' || buf[1] != 'E' || buf[2] != 'T' || buf[3] != ' ' || buf[4] != '/' || buf[5] != ' ') {
                     svcOutputDebugString(buf, recvSize);

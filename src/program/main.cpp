@@ -32,10 +32,9 @@ HOOK_DEFINE_TRAMPOLINE(WorldManagerModuleBaseProcHook) {
 };
 
 HOOK_DEFINE_INLINE(nnMainHook) {
-    // Steal execution from nnMain right before it jumps into the game
     static const ptrdiff_t s_offset = sym::engine::nnMain_post_setup; // hacks
     static void Callback(exl::hook::InlineCtx* ctx) {
-        // Effective entry point after sdk init
+        // Effective entry point after sdk init, stealing execution from nnMain right before it jumps into the game
         char buf[200];
         nn::util::SNPrintf(buf, sizeof(buf), "[totk-lotuskit:%d] nnMainHook main_offset=%p", TOTK_VERSION, exl::util::GetMainModuleInfo().m_Total.m_Start);
         svcOutputDebugString(buf, strlen(buf));
