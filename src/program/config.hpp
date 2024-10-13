@@ -9,7 +9,7 @@ namespace lotuskit::config {
 
     void LoadJson() {
         constexpr const char* JSON_PATH = "content:/totk_lotuskit/config.json";
-        constexpr const char* JSON_PRESET_DISABLE = R"({"disable": true})";
+        constexpr const char* JSON_PRESET_DISABLE = R"({"global": {"disable": true}})";
         constexpr u32 JSON_MAX_FILESIZE = 0x2000;
         char buf[JSON_MAX_FILESIZE];
 

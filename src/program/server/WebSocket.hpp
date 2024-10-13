@@ -246,11 +246,28 @@ namespace lotuskit::server::WebSocket {
         }
     }
 
+    // Many things invokable (like this?) should have a name/repr used to: inject configs (romfs or otherwise), runtime wiring for scripting+syms, etc. Make sure it interops with codegen approaches!
+    // TODO crazy things like https://stackoverflow.com/questions/35941045 ?
+    // TODO note that there's no path/pointer here to reflect->execute CreateAndWaitForFrontend. We need that (whether a standard Proc class+method or something else) and wire scripting to invoke it.
+    const json::json_pointer EXECNS("/server/WebSocket");
+
     void CreateAndWaitForFrontend() {
         constexpr size_t MAX_HTTP_REQ_HEADER_LEN = 0x800;
         char buf[MAX_HTTP_REQ_HEADER_LEN];
 
-        // setup needs to happen in main thread
+        // XXX dont depend on this just-get-the-config pattern too much -- we'll need to merge options from other places at runtime, and many details like pass-vs-pull are unclear.
+        // FIXME extract helper for traversing value(json_pointer) with JSON_NOEXCEPTION. The lib advertises turning off exceptions in several places but still has
+        //       these issues even when simple workarounds exist. Obviously unclear behavior and I'll probably keep running into these situations :(
+        //       https://github.com/nlohmann/json/issues/2724#issuecomment-829202517 https://github.com/nlohmann/json/issues/1738 https://github.com/nlohmann/json/issues/871
+        //       I spent hours on this shit trying to figure out why it just doesnt do what it says it will :(
+        auto config = lotuskit::config::jsonConfig.contains(EXECNS) ? lotuskit::config::jsonConfig[EXECNS] : json::object();
+        if (config.value("disabled", false) || !config.value("listenOnBootup", false)) {
+            nn::util::SNPrintf(buf, sizeof(buf), "[WebSocket] disabled on bootup by config");
+            svcOutputDebugString(buf, strlen(buf));
+            return;
+        }
+
+        // setup needs to happen in main thread TODO explicit setup/proc machinery
         SendQueue::Setup();
         nn::nifm::Initialize();
         nn::socket::Initialize(socketPool, SOCKET_POOL_SIZE, ALLOCATOR_POOL_SIZE, 14);
@@ -262,7 +279,7 @@ namespace lotuskit::server::WebSocket {
             svcOutputDebugString(buf, strlen(buf));
             // XXX just ignore it? we'll see...
         }
-        constexpr auto AF_INET = 2; // XXX domain ams::socket::Family::Af_Inet (ipv4)
+        constexpr auto AF_INET = 2; // domain ams::socket::Family::Af_Inet (ipv4)
         if ((serverSocketFd = nn::socket::Socket(AF_INET, (s32)(SocketType::SOCK_STREAM), (s32)(SocketProtocol::IPPROTO_TCP))) < 0) {
             //mState = LoggerState::UNAVAILABLE;
             nn::util::SNPrintf(buf, sizeof(buf), "[WebSocket] socket::Socket() errno %d", serverSocketFd);
@@ -272,10 +289,11 @@ namespace lotuskit::server::WebSocket {
         u32 flags = 1; // XXX what is this
         nn::socket::SetSockOpt(serverSocketFd, (s32)(SocketLevel::Sol_Socket), (u32)(SocketOption::So_KeepAlive), &flags, sizeof(flags));
 
-        const u16 bindPort = 7072;
+        const u16 bindPort = config.value("bindPort", 7072);
         serverAddress.family = AF_INET;
         serverAddress.port = nn::socket::InetHtons(bindPort);
-        nn::socket::InetAton("127.0.0.1", (nn::socket::InAddr*)&serverAddress.address);
+        const char* bindIp = config.value("bindIp", "127.0.0.1").c_str();
+        nn::socket::InetAton(bindIp, (nn::socket::InAddr*)&serverAddress.address);
 
         s32 sockErrno;
         if ((sockErrno = nn::socket::Bind(serverSocketFd, &serverAddress, sizeof(serverAddress))) != 0) {
@@ -294,7 +312,7 @@ namespace lotuskit::server::WebSocket {
                     return;
                 }
 
-                nn::util::SNPrintf(buf, sizeof(buf), "[WebSocket] socket::Accept() for ws client on %d...", serverSocketFd);
+                nn::util::SNPrintf(buf, sizeof(buf), "[WebSocket] socket::Accept() for ws client on ws://%s:%d...", bindIp, bindPort);
                 svcOutputDebugString(buf, strlen(buf));
                 if ((clientSocketFd = nn::socket::Accept(serverSocketFd, &clientAddress, &clientAddressLen)) < 0) { // blocking
                     nn::util::SNPrintf(buf, sizeof(buf), "socket::Accept() errno %d", clientSocketFd);

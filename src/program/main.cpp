@@ -46,15 +46,14 @@ HOOK_DEFINE_INLINE(nnMainHook) {
         lotuskit::config::LoadJson();
         auto& config = lotuskit::config::jsonConfig;
 
-        if (config.contains("disable") && config["disable"].template get<bool>()) {
-            nn::util::SNPrintf(buf, sizeof(buf), "[totk-lotuskit:%d] all features disabled");
+        const json::json_pointer GLOBAL_DISABLE("/global/disable");
+        if (config.contains(GLOBAL_DISABLE) && config[GLOBAL_DISABLE]) {
+            nn::util::SNPrintf(buf, sizeof(buf), "[totk-lotuskit:%d] all features disabled", TOTK_VERSION);
             svcOutputDebugString(buf, strlen(buf));
             return;
         }
 
-        if (config["start_server_on_bootup"].template get<bool>()) {
-            lotuskit::server::WebSocket::CreateAndWaitForFrontend(); // block
-        }
+        lotuskit::server::WebSocket::CreateAndWaitForFrontend(); // blocking if enabled
 
         WorldManagerModuleBaseProcHook::Install();
 

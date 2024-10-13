@@ -1,9 +1,20 @@
 {
-    // bootup + socket config
-    //"disable": true, // to disable everything in the mod, set this or move/rename the file
-    "start_server_on_bootup": true, // the game will not boot until ws connection is made
+    "global": { // TODO global impl (fallback+shadowing)
+        "disable": false // to disable everything in the mod, set this or move/rename the file
+    },
 
-    // misc hooking
-    "do_log_rng": false,
-    "do_stub_rng": false
+    "server": { "WebSocket": {
+        "listenOnBootup": true, // the game will not boot until ws connection is made
+        "bindIp": "127.0.0.1",
+        "bindPort": 7072
+    }},
+
+    // TODO "hook": {
+    //     "sym": { "somesymname": {hookoptions} }, // eg enable hook, set stub values, etc. These should be the same option names the frontend can send at runtime
+    //     "addr": { "0x71aaaaaaaa": {hookoptions} } // (json cant do hex) Perhaps ur hook doesn't have a good name yet and u wanna fuck around at runtime
+    // },
+
+    // TODO embed or sideload/manifest scripts
+
+    "4":20 // useless final json entry, so previous entries can always use comma. Beware of trailing commas! Also remember numbers are not valid json keys!
 }
