@@ -58,7 +58,7 @@
             if (!skipEncode) {
                 data = JSON.stringify(data);
             }
-            WSTransport.ws.send(data);
+            WSTransport.websock.send(data);
         }
 
         static _ws_on_open(e) {
@@ -266,7 +266,10 @@
     class QuickDumps extends Component {
         do_heapinfo() {
             // TODO await+display results?
-            fetch(`/backend/memutils/heapinfo/invoke?uniq_id=${WSTransport.make_uniq_id()}`, {method: "post"});
+            //fetch(`/backend/memutils/heapinfo/invoke?uniq_id=${WSTransport.make_uniq_id()}`, {method: "post"});
+            WSTransport.send({uhh: "cowabunga dudes", 420: 69}); // small
+            WSTransport.send({uhh: "medium", 100: (420).toFixed(100), 200: (420).toFixed(100)});
+            // XXX aint gonna need large (>64KB) for awhile until we send large binary (eg savedata blobs)
         }
         do_threadinfo() {
             // TODO await+display results?
@@ -277,7 +280,7 @@
             // TODO region picker
             return html`
                 <div class="quickdumps">
-		    Quick dumps <br/>
+                    Quick dumps <br/>
                     <button onClick=${ () => this.do_heapinfo() } class="pushbutton">heapinfo</button>
                     <button onClick=${ () => this.do_threadinfo() } class="pushbutton">threadinfo</button>
                 </div>

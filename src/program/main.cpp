@@ -23,9 +23,13 @@ HOOK_DEFINE_TRAMPOLINE(WorldManagerModuleBaseProcHook) {
 
             lotuskit::server::WebSocket::SendTextNoblock(buf);
             lotuskit::server::WebSocket::SendTextNoblock(buf);
-            lotuskit::server::WebSocket::FlushSendQueueBlocking();
             //lotuskit::server::WebSocket::SendTextBlocking(buf);
         }
+
+        lotuskit::server::WebSocket::RecvNoblockAndProc(); // noblock poll ws -> dispatch commands (sometimes blocking)
+        lotuskit::server::WebSocket::FlushSendQueueBlocking(); // send any deferred logs since last proc. try to minimize useless logs!
+        // FIXME until we get threaded sends to work, logging may impact performance/accuracy/???
+        // TODO run some tests to verify ^ this is a real issue, use devtools throttling to break it, spam it etc and see what really blocks
 
         Orig(self, param_2, param_3, param_4, wmmodule, param_6);
     }

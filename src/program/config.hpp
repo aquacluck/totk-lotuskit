@@ -1,7 +1,7 @@
 #pragma once
 #include <cstring>
 #include "util/romfs.hpp"
-#include "json.hpp"
+#include "lib/json.hpp"
 using json = nlohmann::json;
 
 namespace lotuskit::config {

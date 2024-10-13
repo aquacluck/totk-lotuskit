@@ -1,10 +1,12 @@
 #pragma once
 #include "lib.hpp"
 #include "lib/base64.hpp"
+#include "lib/json.hpp"
 #include "lib/sha1.hpp"
 #include "nn/nifm.h"
 #include "nn/socket.h"
 #include "nn/util.h"
+using json = nlohmann::json;
 
 #define WEBSOCKET_DO_THREADED_SEND false
 #define WEBSOCKET_DO_THREADED_RECV false
@@ -179,6 +181,69 @@ namespace lotuskit::server::WebSocket {
 
     void RecvNoblockAndProc() {
         if (!isWsEstablished) { return; }
+        u8 frameType__sizeByte__12more[14]; // minimum supported frame length (client ws frames can go as short as 6B)
+        constexpr auto NOBLOCK = (s32)(SocketMsgFlag::Msg_DontWait);
+
+        while (true) { // keep handling messages until would block
+            // recv ws frame header+excess if available
+            s32 recvSize = nn::socket::Recv(clientSocketFd, frameType__sizeByte__12more, 14, NOBLOCK);
+            if (recvSize == -1) { return; } // XXX wheres the errno so we can see EWOULDBLOCK? lets just assume its EWOULDBLOCK
+            if (recvSize != 14) { return; }
+            if (frameType__sizeByte__12more[0] != 0x81) { return; } // FIXME noob impl -- lets just hope browsers dont like to fragment
+
+            // get size+mask from header
+            u8 maskKey[4];
+            u32 payloadLen = 0;
+            u8 sizeByte = 0x7f & frameType__sizeByte__12more[1]; // remove mask bit
+            if (sizeByte < 0x7e) {
+                payloadLen = sizeByte;
+                *(u32*)&maskKey = *(u32*)&(frameType__sizeByte__12more[2]);
+                // payload at [6...13]
+            } else if (sizeByte == 0x7e) {
+                payloadLen = frameType__sizeByte__12more[2] * 0x100 + frameType__sizeByte__12more[3];
+                *(u32*)&maskKey = *(u32*)&(frameType__sizeByte__12more[4]);
+                // payload at [8...13]
+            } else if (sizeByte == 0x7f) {
+                // bytes 2345 ignored, really cant imagine anyone needed 64b lengths lmao
+                payloadLen = frameType__sizeByte__12more[6]*0x1000000 + frameType__sizeByte__12more[7]*0x10000 + frameType__sizeByte__12more[8]*0x100 + frameType__sizeByte__12more[9];
+                *(u32*)&maskKey = *(u32*)&(frameType__sizeByte__12more[10]);
+                // need to recv entire payload
+            }
+
+            // alloc payload, backfill excess header read bytes, recv remainder of payload -- this could block but we know its inflight
+            u8 payload[payloadLen+1];
+            if (sizeByte < 0x7e) {
+                *(u64*)payload = *(u64*)(&frameType__sizeByte__12more[6]);
+                recvSize = nn::socket::Recv(clientSocketFd, payload+8, payloadLen-8, 0); // blocking
+                // assert recvSize == payloadLen-8
+            } else if (sizeByte == 0x7e) {
+                payload[0] = frameType__sizeByte__12more[8];
+                payload[1] = frameType__sizeByte__12more[9];
+                payload[2] = frameType__sizeByte__12more[10];
+                payload[3] = frameType__sizeByte__12more[11];
+                payload[4] = frameType__sizeByte__12more[12];
+                payload[5] = frameType__sizeByte__12more[13];
+                recvSize = nn::socket::Recv(clientSocketFd, payload+6, payloadLen-6, 0); // blocking
+                // assert recvSize == payloadLen-6
+            } else if (sizeByte == 0x7f) {
+                recvSize = nn::socket::Recv(clientSocketFd, payload, payloadLen, 0); // blocking
+                // assert recvSize == payloadLen
+            }
+
+            // unmask, terminate, json parse
+            // TODO branch here on frameType is all we need for binary frames? just ignore excess string termination byte, it wont matter
+            u32 payload_i = payloadLen;
+            while (payload_i--) { payload[payload_i] ^= maskKey[payload_i%4]; }
+            payload[payloadLen] = '\0';
+            json jsonPayload = json::parse((char*)payload);
+
+            // TODO dispatch json
+            if (jsonPayload.contains("uhh")) {
+                char buf[1024];
+                nn::util::SNPrintf(buf, sizeof(buf), "[WebSocket] got %s", jsonPayload["uhh"].template get<std::string>().c_str());
+                svcOutputDebugString(buf, strlen(buf));
+            }
+        }
     }
 
     void CreateAndWaitForFrontend() {
