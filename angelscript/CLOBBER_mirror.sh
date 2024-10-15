@@ -11,7 +11,7 @@ if [[ ! $REPLY =~ ^[Yy]$ ]]; then
 fi
 echo
 echo OH BOY ITS CLOBBERIN TIME
-rm -rf include source projects/cmake # lib is generated
+rm -rf include source
 
 
 
@@ -33,20 +33,25 @@ fi
 
 
 ### Copy just what we need
-mkdir -p include source projects/cmake
-mkdir lib && touch lib/.gitkeep
+mkdir -p include source
 cp tmpgit/sdk/angelscript/include/angelscript.h include
-cp tmpgit/sdk/angelscript/source/* source
-cp -r tmpgit/sdk/angelscript/projects/cmake/* projects/cmake
-#TODO addons
+cp tmpgit/sdk/angelscript/source/*.h source
+cp tmpgit/sdk/angelscript/source/as_callfunc_arm64_gcc.S source
+cp tmpgit/sdk/angelscript/source/as_[abd-z]*.cpp source
+cp tmpgit/sdk/angelscript/source/as_callfunc.cpp source
+cp tmpgit/sdk/angelscript/source/as_callfunc_arm64.cpp source
+cp tmpgit/sdk/angelscript/source/as_compiler.cpp source
+cp tmpgit/sdk/angelscript/source/as_configgroup.cpp source
+cp tmpgit/sdk/angelscript/source/as_context.cpp source
+#TODO addons?
 
 
 
 ### Apply patches
-# gen: git diff --binary lib > patches/0001-nn-init.patch
-#echo
-#echo "patching..."
-#for patchfile in patches/*.patch; do
-#    echo "git apply $patchfile"
-#    git apply $patchfile
-#done
+# gen: git diff --binary --cached include source > patches/0001-as-init.patch # staged changes only, afaik required for patching in new files
+echo
+echo "patching..."
+for patchfile in patches/*.patch; do
+    echo "git apply $patchfile"
+    git apply $patchfile
+done

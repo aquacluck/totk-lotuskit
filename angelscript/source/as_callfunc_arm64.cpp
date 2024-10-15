@@ -403,7 +403,7 @@ asQWORD CallSystemFunctionNative(asCContext *context, asCScriptFunction *descr, 
 		CallARM64(gpRegArgs, numGPRegArgs, floatRegArgs, numFloatRegArgs, stackArgs, numStackArgs, func);
 		if( (retTypeInfo->flags & asOBJ_APP_CLASS_ALIGN8) != 0 )
 		{
-			if( structSize <= sizeof(double) * 2 )
+			if( structSize <= (int)sizeof(double) * 2 )
 				GetHFAReturnDouble(&retQW, &retQW2, structSize);
 			else
 				GetHFAReturnDouble((asQWORD*)retPointer, ((asQWORD*)retPointer) + 1, structSize);
@@ -422,7 +422,7 @@ asQWORD CallSystemFunctionNative(asCContext *context, asCScriptFunction *descr, 
 		retQW = CallARM64RetInMemory(gpRegArgs, numGPRegArgs, floatRegArgs, numFloatRegArgs, stackArgs, numStackArgs, retPointer, func);
 	else
 	{
-		if( retType.GetSizeInMemoryBytes() > sizeof(asQWORD) )
+		if( retType.GetSizeInMemoryBytes() > (int)sizeof(asQWORD) )
 			retQW = CallARM64Ret128(gpRegArgs, numGPRegArgs, floatRegArgs, numFloatRegArgs, stackArgs, numStackArgs, &retQW2, func);
 		else
 			retQW = CallARM64(gpRegArgs, numGPRegArgs, floatRegArgs, numFloatRegArgs, stackArgs, numStackArgs, func);
