@@ -125,6 +125,7 @@ public:
 	const T* GetLast() const;
 
 	const asCArray<asUINT> &GetIndexes(const asSNameSpace *ns, const asCString &name) const;
+	static asCArray<asUINT> dummy;
 
 	asUINT   Put(T* entry);
 
@@ -153,6 +154,9 @@ private:
 	asCArray<T*>                                    m_entries;
 	unsigned int                                    m_size;
 };
+
+template<class T>
+asCArray<asUINT> asCSymbolTable<T>::dummy = {};
 
 
 
@@ -215,7 +219,6 @@ const asCArray<asUINT> &asCSymbolTable<T>::GetIndexes(const asSNameSpace *ns, co
 	if( m_map.MoveTo(&cursor, key) )
 		return m_map.GetValue(cursor);
 
-	static asCArray<asUINT> dummy;
 	return dummy;
 }
 

@@ -1,0 +1,30 @@
+diff --git a/angelscript/source/as_symboltable.h b/angelscript/source/as_symboltable.h
+index 261b4f3..0ce7cf6 100644
+--- a/angelscript/source/as_symboltable.h
++++ b/angelscript/source/as_symboltable.h
+@@ -125,6 +125,7 @@ public:
+ 	const T* GetLast() const;
+ 
+ 	const asCArray<asUINT> &GetIndexes(const asSNameSpace *ns, const asCString &name) const;
++	static asCArray<asUINT> dummy;
+ 
+ 	asUINT   Put(T* entry);
+ 
+@@ -154,6 +155,9 @@ private:
+ 	unsigned int                                    m_size;
+ };
+ 
++template<class T>
++asCArray<asUINT> asCSymbolTable<T>::dummy = {};
++
+ 
+ 
+ 
+@@ -215,7 +219,6 @@ const asCArray<asUINT> &asCSymbolTable<T>::GetIndexes(const asSNameSpace *ns, co
+ 	if( m_map.MoveTo(&cursor, key) )
+ 		return m_map.GetValue(cursor);
+ 
+-	static asCArray<asUINT> dummy;
+ 	return dummy;
+ }
+ 
