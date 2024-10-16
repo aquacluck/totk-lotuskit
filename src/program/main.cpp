@@ -3,9 +3,10 @@
 
 #include "config.hpp"
 #include "server/WebSocket.hpp"
+#include "script/engine.hpp"
+#include "script/globals.hpp"
 
 #include "sym/engine/hacks.h"
-#include "sym/game/ai/execute/ExecutePlayerWhistle.h"
 #include "sym/game/wm/WorldManagerModule.h"
 
 #include "angelscript.h"
@@ -23,119 +24,54 @@ HOOK_DEFINE_INLINE(StealHeap) {
         stolenHeap = reinterpret_cast<sead::Heap*>(ctx->X[22]);
 #endif
         svcOutputDebugString("yoink", 5);
+        lotuskit::script::engine::AssignHeap(stolenHeap);
     }
 };
 
-inline void* ASAlloc(size_t size) { return StealHeap::stolenHeap->alloc(size); }
-inline void ASFree(void* ptr) { StealHeap::stolenHeap->free(ptr); }
-
-//RegisterStdString(engine); // TODO simpler string impl?
-//void ASTrashPrint(auto &msg) {
-//    const char* str = msg.c_str();
-//    svcOutputDebugString(str, strlen(str));
-//}
-void ASTrashPrintInt(int num) {
-    char buf[1000];
-    nn::util::SNPrintf(buf, sizeof(buf), "oink %d", num);
-    svcOutputDebugString(buf, strlen(buf));
-}
-
-void ASMessageCallback(const asSMessageInfo *msg, void *param) {
-    const char *type = "ERR ";
-    if (msg->type == asMSGTYPE_WARNING) {
-        type = "WARN ";
-    } else if(msg->type == asMSGTYPE_INFORMATION) {
-        type = "INFO ";
-    }
-    char buf[0x1000];
-    nn::util::SNPrintf(buf, sizeof(buf), "%s (%d, %d) : %s : %s\n", msg->section, msg->row, msg->col, type, msg->message);
-    svcOutputDebugString(buf, strlen(buf));
-}
-
-
 void TestAngelScript() {
-    char buf[1000];
+    // TODO extract a longer lived engine instance, route ws+tas through it
+    //auto* engine = lotuskit::script::engine::CreateAndSetupEngine();
+    AngelScript::asIScriptEngine *engine = AngelScript::asCreateScriptEngine();
+    lotuskit::script::engine::ConfigureEngine(engine);
+    lotuskit::script::globals::RegisterGlobals(engine);
 
-    nn::util::SNPrintf(buf, sizeof(buf), "[angelscript] TestAngelScript engine startup");
-    svcOutputDebugString(buf, strlen(buf));
-
-    asSetGlobalMemoryFunctions(ASAlloc, ASFree);
-
-    // Create the script engine
-    asIScriptEngine *engine = asCreateScriptEngine();
-
-    // Set the message callback to receive information on errors in human readable form.
-    s32 asErrno = engine->SetMessageCallback(asFUNCTION(ASMessageCallback), 0, asCALL_CDECL); assert( asErrno >= 0 );
-
-    // Register the function that we want the scripts to call
-    //asErrno = engine->RegisterGlobalFunction("void TrashPrint(const string &in)", asFUNCTION(ASTrashPrint), asCALL_CDECL); assert( asErrno >= 0 );
-    asErrno = engine->RegisterGlobalFunction("void TrashPrintInt(int)", asFUNCTION(ASTrashPrintInt), asCALL_CDECL); assert( asErrno >= 0 );
     const char* scriptText = R"( void main() { int wow = 419; TrashPrintInt(++wow); } )";
+    const char* entryPoint = "void main()";
+    auto* mod = lotuskit::script::engine::TestBuildModule(engine, scriptText);
+    lotuskit::script::engine::TestExecFuncInNewCtx(engine, mod, entryPoint);
 
-    // Create a new script module
-    asIScriptModule *mod = engine->GetModule("module", asGM_ALWAYS_CREATE);
-    mod->AddScriptSection("script.as", scriptText);
-
-    // Build the module
-    asErrno = mod->Build();
-    if (asErrno < 0) {
-      // The build failed. The message stream will have received
-      // compiler errors that shows what needs to be fixed
-    }
-
-    // Find the function that is to be called.
-    asIScriptFunction *asEntryPoint = mod->GetFunctionByDecl("void main()");
-    if (asEntryPoint == nullptr) {
-        nn::util::SNPrintf(buf, sizeof(buf), "[angelscript] missing entry point main()");
-        svcOutputDebugString(buf, strlen(buf));
-        // will crash TODO err handle
-    }
-
-    // Create our context, prepare it, and then execute
-    asIScriptContext *asCtx = engine->CreateContext();
-    asCtx->Prepare(asEntryPoint);
-    asErrno = asCtx->Execute();
-    if (asErrno != asEXECUTION_FINISHED) {
-          // The execution didn't complete as expected. Determine what happened.
-        if (asErrno == asEXECUTION_EXCEPTION) {
-            // An exception occurred, let the script writer know what happened so it can be corrected.
-            nn::util::SNPrintf(buf, sizeof(buf), "[angelscript] uncaught: %s", asCtx->GetExceptionString());
-            svcOutputDebugString(buf, strlen(buf));
-        }
-    }
-
-    // Clean up
-    asCtx->Release();
     engine->ShutDownAndRelease();
-    nn::util::SNPrintf(buf, sizeof(buf), "[angelscript] engine shutdown");
-    svcOutputDebugString(buf, strlen(buf));
 }
 
+/*
+#include "sym/game/ai/execute/ExecutePlayerWhistle.h"
 HOOK_DEFINE_TRAMPOLINE(OnWhistleHook) {
     static const ptrdiff_t s_offset = sym::game::ai::execute::ExecutePlayerWhistle::enterImpl_;
-
     static void Callback(void* param) {
         TestAngelScript();
         Orig(param);
     }
 };
+*/
 
 HOOK_DEFINE_TRAMPOLINE(WorldManagerModuleBaseProcHook) {
     static const auto s_offset = sym::game::wm::WorldManagerModule::baseProcExe;
 
     static void Callback(double self, double param_2, double param_3, double param_4, void *wmmodule, void *param_6) {
-        static u64 lastPrintTick = 0;
-        u64 thisTick = svcGetSystemTick();
-        if (thisTick >= lastPrintTick + 20000000) {
-            lastPrintTick = thisTick;
+        TestAngelScript();
 
-            char buf[200];
-            nn::util::SNPrintf(buf, sizeof(buf), R"({ "wmprocTick": "0x%p", "doSend": true })", svcGetSystemTick());
-            svcOutputDebugString(buf, strlen(buf));
-
-            lotuskit::server::WebSocket::SendTextNoblock(buf);
-            lotuskit::server::WebSocket::SendTextNoblock(buf);
-            //lotuskit::server::WebSocket::SendTextBlocking(buf);
+        if (false) { // make noise
+            static u64 lastPrintTick = 0;
+            u64 thisTick = svcGetSystemTick();
+            if (thisTick >= lastPrintTick + 20000000) {
+                lastPrintTick = thisTick;
+                char buf[200];
+                nn::util::SNPrintf(buf, sizeof(buf), R"({ "wmprocTick": "0x%p", "doSend": true })", svcGetSystemTick());
+                svcOutputDebugString(buf, strlen(buf));
+                lotuskit::server::WebSocket::SendTextNoblock(buf);
+                lotuskit::server::WebSocket::SendTextNoblock(buf);
+                //lotuskit::server::WebSocket::SendTextBlocking(buf);
+            }
         }
 
         lotuskit::server::WebSocket::RecvNoblockAndProc(); // noblock poll ws -> dispatch commands (sometimes blocking)
@@ -166,9 +102,9 @@ HOOK_DEFINE_INLINE(nnMainHook) {
         }
 
         //lotuskit::server::WebSocket::CreateAndWaitForFrontend(); // blocking if enabled
-        //WorldManagerModuleBaseProcHook::Install();
+        WorldManagerModuleBaseProcHook::Install();
         StealHeap::Install();
-        OnWhistleHook::Install();
+        //OnWhistleHook::Install();
 
 
         /*
@@ -190,10 +126,6 @@ HOOK_DEFINE_INLINE(nnMainHook) {
             DebugDrawEnsureFont::Setup();
             DebugDrawEnsureFont::Install();
             DebugDrawImpl::Install(); // main_draw.hpp
-        }
-
-        if (do_connect_on_whistle) {
-            LoggerConnectOnWhistleHook::Install();
         }
         */
 

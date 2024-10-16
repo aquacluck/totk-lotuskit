@@ -17,9 +17,9 @@ add_compile_definitions(EXL_PROGRAM_ID=${CONFIG_TITLE_ID} EXL_LOAD_KIND=Module E
 set(CMAKE_C_STANDARD 17)
 set(CMAKE_CXX_STANDARD 23)
 
-# angelscript sources   #add_subdirectory(angelscript)
+# angelscript sources
 include_directories(${PROJECT_SOURCE_DIR}/angelscript/include)
-add_compile_definitions(AS_NO_EXCEPTIONS=1 __SWITCH__=1)
+add_compile_definitions(AS_NO_EXCEPTIONS=1 AS_USE_NAMESPACE=1 AS_64BIT_PTR=1 __SWITCH__=1) # implied: AS_NO_THREADS=1
 file(GLOB_RECURSE AS_SOURCES_ASM ${PROJECT_SOURCE_DIR}/angelscript/source/*.S)
 file(GLOB_RECURSE AS_SOURCES_H ${PROJECT_SOURCE_DIR}/angelscript/source/*.h)
 file(GLOB_RECURSE AS_SOURCES_CXX ${PROJECT_SOURCE_DIR}/angelscript/source/*.cpp)
