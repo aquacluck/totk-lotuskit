@@ -383,10 +383,9 @@ namespace lotuskit::server {
 
     void WebSocket::Init() {
         // XXX dont depend on this just-get-the-config pattern too much -- we'll need to merge options from other places at runtime, and many details like pass-vs-pull are unclear.
-        // FIXME extract helper for traversing value(json_pointer) with JSON_NOEXCEPTION. The lib advertises turning off exceptions in several places but still has
-        //       these issues even when simple workarounds exist. Obviously unclear behavior and I'll probably keep running into these situations :(
+        // FIXME extract helper for traversing value(json_pointer) with JSON_NOEXCEPTION. "Turning off exceptions" in the lib exposes the existence of an internal exception
+        //       (otherwise-transparently used for flow control / traversal within the call) which now unexpectedly crashes/hangs because exceptions are turned off.
         //       https://github.com/nlohmann/json/issues/2724#issuecomment-829202517 https://github.com/nlohmann/json/issues/1738 https://github.com/nlohmann/json/issues/871
-        //       I spent hours on this shit trying to figure out why it just doesnt do what it says it will :(
         auto config = lotuskit::Config::jsonConfig.contains(EXECNS) ? lotuskit::Config::jsonConfig[EXECNS] : json::object();
         if (config.value("disabled", false) || !config.value("listenOnBootup", false)) {
             char buf[100];
@@ -396,7 +395,7 @@ namespace lotuskit::server {
             return;
         }
 
-        // setup needs to happen in main thread TODO explicit setup/proc machinery
+        // setup needs to happen in main thread
         WebSocketImpl::SendQueue::Init();
         nn::nifm::Initialize();
         nn::socket::Initialize(socketPool, SOCKET_POOL_SIZE, ALLOCATOR_POOL_SIZE, 14);

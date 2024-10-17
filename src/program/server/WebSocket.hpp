@@ -12,7 +12,7 @@ namespace lotuskit::server {
         public:
         // Many things invokable (like this?) should have a name/repr used to: inject configs (romfs or otherwise), runtime wiring for scripting+syms, etc. Make sure it interops with codegen approaches!
         // TODO crazy things like https://stackoverflow.com/questions/35941045 ?
-        inline static json::json_pointer EXECNS = json::json_pointer("/server/WebSocket");
+        inline static const json::json_pointer EXECNS = json::json_pointer("/server/WebSocket");
         static void Calc();
 
         static void SendTextNoblock(const char*);
@@ -24,4 +24,5 @@ namespace lotuskit::server {
         static void RecvNoblockAndProc();
         static void FlushSendQueueBlocking();
     };
+
 } // ns

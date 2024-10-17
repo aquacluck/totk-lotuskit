@@ -2,6 +2,7 @@
 #include "nn/util.h"
 
 #include "Config.hpp"
+#include "Logger.hpp"
 #include "server/WebSocket.hpp"
 #include "script/engine.hpp"
 #include "script/globals.hpp"
@@ -11,6 +12,8 @@
 
 #include "angelscript.h"
 #include "heap/seadHeap.h"
+
+using Logger = lotuskit::Logger;
 
 
 HOOK_DEFINE_INLINE(StealHeap) {
@@ -65,12 +68,10 @@ HOOK_DEFINE_TRAMPOLINE(WorldManagerModuleBaseProcHook) {
             u64 thisTick = svcGetSystemTick();
             if (thisTick >= lastPrintTick + 20000000) {
                 lastPrintTick = thisTick;
-                char buf[200];
-                nn::util::SNPrintf(buf, sizeof(buf), R"({ "wmprocTick": "0x%p", "doSend": true })", svcGetSystemTick());
-                svcOutputDebugString(buf, strlen(buf));
-                lotuskit::server::WebSocket::SendTextNoblock(buf);
-                lotuskit::server::WebSocket::SendTextNoblock(buf);
-                //lotuskit::server::WebSocket::SendTextBlocking(buf);
+
+                Logger::logText("wowzers");
+                Logger::logText("ffffeeeeddddcccc", "/HexDump/0", true); // blocking ws
+                Logger::logJson(json::object({{"kee", "vee"}, {"k2", 420}}));
             }
         }
 
