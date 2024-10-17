@@ -64,7 +64,7 @@ namespace lotuskit::server {
         u8* sendQueueHead = sendQueueBuf;
         u8* sendQueueTail = sendQueueBuf;
 
-        void Setup() {
+        void Init() {
             sendQueueBuf[0] = 0x00;
             nn::os::InitializeMutex(&enqueueMutex, true, 0);
         }
@@ -121,6 +121,7 @@ namespace lotuskit::server {
         sockaddr clientAddress;
         u32 clientAddressLen;
         bool isWsEstablished = false;
+        bool needsInit = true;
 #if WEBSOCKET_DO_THREADED_SEND
         constexpr size_t STACK_SIZE = 0x2000; // XXX idk
         alignas(PAGE_SIZE) u8 sendThreadStack[STACK_SIZE];
@@ -246,37 +247,12 @@ namespace lotuskit::server {
         }
     }
 
-    void WebSocket::CreateAndWaitForFrontend() {
+    void WebSocket::ListenAndWaitForFrontend(const char* bindIp, const u16 bindPort) {
         constexpr size_t MAX_HTTP_REQ_HEADER_LEN = 0x800;
         char buf[MAX_HTTP_REQ_HEADER_LEN];
 
-        // XXX dont depend on this just-get-the-config pattern too much -- we'll need to merge options from other places at runtime, and many details like pass-vs-pull are unclear.
-        // FIXME extract helper for traversing value(json_pointer) with JSON_NOEXCEPTION. The lib advertises turning off exceptions in several places but still has
-        //       these issues even when simple workarounds exist. Obviously unclear behavior and I'll probably keep running into these situations :(
-        //       https://github.com/nlohmann/json/issues/2724#issuecomment-829202517 https://github.com/nlohmann/json/issues/1738 https://github.com/nlohmann/json/issues/871
-        //       I spent hours on this shit trying to figure out why it just doesnt do what it says it will :(
-        auto config = lotuskit::Config::jsonConfig.contains(EXECNS) ? lotuskit::Config::jsonConfig[EXECNS] : json::object();
-        if (config.value("disabled", false) || !config.value("listenOnBootup", false)) {
-            nn::util::SNPrintf(buf, sizeof(buf), "[WebSocket] disabled on bootup by config");
-            svcOutputDebugString(buf, strlen(buf));
-            return;
-        }
-
-        // setup needs to happen in main thread TODO explicit setup/proc machinery
-        WebSocketImpl::SendQueue::Setup();
-        nn::nifm::Initialize();
-        nn::socket::Initialize(socketPool, SOCKET_POOL_SIZE, ALLOCATOR_POOL_SIZE, 14);
-        nn::nifm::SubmitNetworkRequest();
-        while (nn::nifm::IsNetworkRequestOnHold()) {}
-        if (!nn::nifm::IsNetworkAvailable()) {
-            //mState = LoggerState::UNAVAILABLE;
-            nn::util::SNPrintf(buf, sizeof(buf), "[WebSocket] nifm::IsNetworkAvailable() falsy");
-            svcOutputDebugString(buf, strlen(buf));
-            // XXX just ignore it? we'll see...
-        }
         constexpr auto AF_INET = 2; // domain ams::socket::Family::Af_Inet (ipv4)
         if ((serverSocketFd = nn::socket::Socket(AF_INET, (s32)(SocketType::SOCK_STREAM), (s32)(SocketProtocol::IPPROTO_TCP))) < 0) {
-            //mState = LoggerState::UNAVAILABLE;
             nn::util::SNPrintf(buf, sizeof(buf), "[WebSocket] socket::Socket() errno %d", serverSocketFd);
             svcOutputDebugString(buf, strlen(buf));
         }
@@ -284,10 +260,8 @@ namespace lotuskit::server {
         u32 flags = 1; // XXX what is this
         nn::socket::SetSockOpt(serverSocketFd, (s32)(SocketLevel::Sol_Socket), (u32)(SocketOption::So_KeepAlive), &flags, sizeof(flags));
 
-        const u16 bindPort = config.value("bindPort", 7072);
         serverAddress.family = AF_INET;
         serverAddress.port = nn::socket::InetHtons(bindPort);
-        const char* bindIp = config.value("bindIp", "127.0.0.1").c_str();
         nn::socket::InetAton(bindIp, (nn::socket::InAddr*)&serverAddress.address);
 
         s32 sockErrno;
@@ -405,6 +379,39 @@ namespace lotuskit::server {
                 isWsEstablished = true;
             }
         }
+    }
+
+    void WebSocket::Init() {
+        // XXX dont depend on this just-get-the-config pattern too much -- we'll need to merge options from other places at runtime, and many details like pass-vs-pull are unclear.
+        // FIXME extract helper for traversing value(json_pointer) with JSON_NOEXCEPTION. The lib advertises turning off exceptions in several places but still has
+        //       these issues even when simple workarounds exist. Obviously unclear behavior and I'll probably keep running into these situations :(
+        //       https://github.com/nlohmann/json/issues/2724#issuecomment-829202517 https://github.com/nlohmann/json/issues/1738 https://github.com/nlohmann/json/issues/871
+        //       I spent hours on this shit trying to figure out why it just doesnt do what it says it will :(
+        auto config = lotuskit::Config::jsonConfig.contains(EXECNS) ? lotuskit::Config::jsonConfig[EXECNS] : json::object();
+        if (config.value("disabled", false) || !config.value("listenOnBootup", false)) {
+            char buf[100];
+            nn::util::SNPrintf(buf, sizeof(buf), "[WebSocket] disabled on bootup by config");
+            svcOutputDebugString(buf, strlen(buf));
+            needsInit = false;
+            return;
+        }
+
+        // setup needs to happen in main thread TODO explicit setup/proc machinery
+        WebSocketImpl::SendQueue::Init();
+        nn::nifm::Initialize();
+        nn::socket::Initialize(socketPool, SOCKET_POOL_SIZE, ALLOCATOR_POOL_SIZE, 14);
+        nn::nifm::SubmitNetworkRequest();
+        while (nn::nifm::IsNetworkRequestOnHold()) {}
+        if (!nn::nifm::IsNetworkAvailable()) {
+            char buf[100];
+            nn::util::SNPrintf(buf, sizeof(buf), "[WebSocket] nifm::IsNetworkAvailable() falsy");
+            svcOutputDebugString(buf, strlen(buf));
+            // XXX just ignore it? we'll see...
+        }
+
+        const char* bindIp = config.value("bindIp", "127.0.0.1").c_str();
+        const u16 bindPort = config.value("bindPort", 7072);
+        ListenAndWaitForFrontend(bindIp, bindPort); // blocking
 
 #if WEBSOCKET_DO_THREADED_SEND
         // create writer thread for this ws connection
@@ -414,6 +421,18 @@ namespace lotuskit::server {
         svcCreateThread(&sendHandle, (void*)&ThreadFuncSend, nullptr, sendThreadStack+STACK_SIZE, PRIO, CORE_ID);
         svcStartThread(sendHandle);
 #endif
+
+        needsInit = false;
+    }
+
+    void WebSocket::Calc() {
+        if (needsInit) { Init(); }
+        if (isWsEstablished) {
+            RecvNoblockAndProc(); // noblock poll ws -> dispatch commands (sometimes blocking)
+            FlushSendQueueBlocking(); // send any deferred logs since last proc. try to minimize useless logs!
+            // FIXME until we get threaded sends to work, logging may impact performance/accuracy/???
+            // TODO run some tests to verify ^ this is a real issue, use devtools throttling to break it, spam it etc and see what really blocks
+        }
     }
 
 } // ns

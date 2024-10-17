@@ -74,10 +74,7 @@ HOOK_DEFINE_TRAMPOLINE(WorldManagerModuleBaseProcHook) {
             }
         }
 
-        lotuskit::server::WebSocket::RecvNoblockAndProc(); // noblock poll ws -> dispatch commands (sometimes blocking)
-        lotuskit::server::WebSocket::FlushSendQueueBlocking(); // send any deferred logs since last proc. try to minimize useless logs!
-        // FIXME until we get threaded sends to work, logging may impact performance/accuracy/???
-        // TODO run some tests to verify ^ this is a real issue, use devtools throttling to break it, spam it etc and see what really blocks
+        lotuskit::server::WebSocket::Calc(); // noblock recv, but blocking processing if enabled
 
         Orig(self, param_2, param_3, param_4, wmmodule, param_6);
     }
@@ -86,7 +83,7 @@ HOOK_DEFINE_TRAMPOLINE(WorldManagerModuleBaseProcHook) {
 HOOK_DEFINE_INLINE(nnMainHook) {
     static const ptrdiff_t s_offset = sym::engine::nnMain_post_setup; // hacks
     static void Callback(exl::hook::InlineCtx* ctx) {
-        // Effective entry point after sdk init, stealing execution from nnMain right before it jumps into the game
+        // Effective entry point after sdk init
         char buf[200];
         nn::util::SNPrintf(buf, sizeof(buf), "[totk-lotuskit:%d] nnMainHook main_offset=%p", TOTK_VERSION, exl::util::GetMainModuleInfo().m_Total.m_Start);
         svcOutputDebugString(buf, strlen(buf));
@@ -101,9 +98,9 @@ HOOK_DEFINE_INLINE(nnMainHook) {
             return;
         }
 
-        lotuskit::server::WebSocket::CreateAndWaitForFrontend(); // blocking if enabled
-        WorldManagerModuleBaseProcHook::Install();
-        StealHeap::Install();
+        lotuskit::server::WebSocket::Calc(); // blocking if listenOnBootup
+        WorldManagerModuleBaseProcHook::Install(); // "main loop"
+        StealHeap::Install(); // called once, a bit later during bootup
         //OnWhistleHook::Install();
 
 
