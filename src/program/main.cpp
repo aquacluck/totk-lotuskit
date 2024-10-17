@@ -1,7 +1,7 @@
 #include "lib.hpp"
 #include "nn/util.h"
 
-#include "config.hpp"
+#include "Config.hpp"
 #include "server/WebSocket.hpp"
 #include "script/engine.hpp"
 #include "script/globals.hpp"
@@ -91,8 +91,8 @@ HOOK_DEFINE_INLINE(nnMainHook) {
         nn::util::SNPrintf(buf, sizeof(buf), "[totk-lotuskit:%d] nnMainHook main_offset=%p", TOTK_VERSION, exl::util::GetMainModuleInfo().m_Total.m_Start);
         svcOutputDebugString(buf, strlen(buf));
 
-        lotuskit::config::LoadJson();
-        auto& config = lotuskit::config::jsonConfig;
+        lotuskit::Config::LoadJson();
+        auto& config = lotuskit::Config::jsonConfig;
 
         const json::json_pointer GLOBAL_DISABLE("/global/disable");
         if (config.contains(GLOBAL_DISABLE) && config[GLOBAL_DISABLE]) {

@@ -1,4 +1,4 @@
-#include "config.hpp"
+#include "Config.hpp"
 #include "lib.hpp"
 #include "nn/util.h"
 #include "nn/os.h"
@@ -7,9 +7,9 @@
 
 using json = nlohmann::json;
 
-namespace lotuskit::config {
-    json jsonConfig;
-    void LoadJson() {
+namespace lotuskit {
+    json Config::jsonConfig;
+    void Config::LoadJson() {
         constexpr const char* JSON_PATH = "content:/totk_lotuskit/config.json";
         constexpr const char* JSON_PRESET_DISABLE = R"({"global": {"disable": true}})";
         constexpr u32 JSON_MAX_FILESIZE = 0x2000;
@@ -27,4 +27,4 @@ namespace lotuskit::config {
         nn::util::SNPrintf(buf, sizeof(buf), "Loaded %s as: %s", JSON_PATH, jsonConfig.dump(4).c_str()); // visual bug: will be truncated near JSON_MAX_FILESIZE
         svcOutputDebugString(buf, strlen(buf));
     }
-}
+} // ns
