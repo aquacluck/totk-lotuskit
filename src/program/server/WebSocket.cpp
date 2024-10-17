@@ -10,7 +10,7 @@
 
 namespace lotuskit::server {
     namespace WebSocketImpl::SendFrame {
-        inline u8 HeaderLenFromPayloadLen(u32 pLen) {
+        inline u8 headerLenFromPayloadLen(u32 pLen) {
             // no masking key, no extension data (for server)
             // https://datatracker.ietf.org/doc/html/rfc6455#section-5.2
             // frame type byte, + 0x80 = message FIN
@@ -23,7 +23,7 @@ namespace lotuskit::server {
                    pLen < 65535 ? 4 : 10;
         }
 
-        inline void SerializeHeader(u8* dst, u8 frameType, u8 hLen, u32 pLen) {
+        inline void serializeHeader(u8* dst, u8 frameType, u8 hLen, u32 pLen) {
             if (hLen == 2) {
                 dst[0] = frameType;
                 dst[1] = pLen;
@@ -48,7 +48,7 @@ namespace lotuskit::server {
             }
         }
 
-        inline u32 GetSerializedFrameSize(u8* frame) {
+        inline u32 getSerializedFrameSize(u8* frame) {
             if (frame[1] < 0x7e) { return 2 + frame[1]; }
             if (frame[1] == 0x7e) { return 4 + frame[2]*0x100 + frame[3]; }
             if (frame[1] == 0x7f) { return 10 + frame[6]*0x1000000 + frame[7]*0x10000 + frame[8]*0x100 + frame[9]; }
@@ -64,12 +64,12 @@ namespace lotuskit::server {
         u8* sendQueueHead = sendQueueBuf;
         u8* sendQueueTail = sendQueueBuf;
 
-        void Init() {
+        void init() {
             sendQueueBuf[0] = 0x00;
             nn::os::InitializeMutex(&enqueueMutex, true, 0);
         }
 
-        inline u8* GetNextFrameForEnqueue(u32 fLen) {
+        inline u8* getNextFrameForEnqueue(u32 fLen) {
             if (sendQueueHead + fLen <= sendQueueBufEnd) {
                 return sendQueueHead; // not near the end, it fits
             }
@@ -80,15 +80,15 @@ namespace lotuskit::server {
             return sendQueueBuf;
         }
 
-        inline void EnqueueText(const char* payload) {
+        inline void enqueueText(const char* payload) {
             nn::os::LockMutex(&enqueueMutex);
 
             u32 pLen = strlen(payload);
-            u8 hLen = SendFrame::HeaderLenFromPayloadLen(pLen);
+            u8 hLen = SendFrame::headerLenFromPayloadLen(pLen);
             u32 fLen = hLen + pLen; // frame is header + payload
 
-            u8* dst = GetNextFrameForEnqueue(fLen);
-            SendFrame::SerializeHeader(dst, 0x81, hLen, pLen);
+            u8* dst = getNextFrameForEnqueue(fLen);
+            SendFrame::serializeHeader(dst, 0x81, hLen, pLen);
             std::memcpy(&dst[hLen], payload, pLen);
 
             sendQueueHead = (u8*)ALIGN_UP(dst + fLen, 8); // advance ptr to next
@@ -99,7 +99,7 @@ namespace lotuskit::server {
             nn::os::UnlockMutex(&enqueueMutex);
         }
 
-        inline void DequeueFrame(u32 fLen) {
+        inline void dequeueFrame(u32 fLen) {
             if (*sendQueueTail == 0x00) {
                 sendQueueTail = sendQueueBuf; // wrap to beginning
                 return;
@@ -130,7 +130,7 @@ namespace lotuskit::server {
 
 #if WEBSOCKET_DO_THREADED_SEND
     // sends queued/deferred ws messages. See SendTextBlocking to bypass this and send immediately, eg to get a log out before a known crash
-    void WebSocket::ThreadFuncSend(void* _) {
+    void WebSocket::threadFuncSend(void* _) {
         char buf[200];
         while (true) {
             if (!isWsEstablished) { continue; } // TODO detect dead ws on send, cleanup
@@ -143,22 +143,22 @@ namespace lotuskit::server {
     }
 #endif
 
-    // alternative to ThreadFuncSend, flushing deferred messages
-    void WebSocket::FlushSendQueueBlocking() {
+    // alternative to threadFuncSend, flushing deferred messages
+    void WebSocket::flushSendQueueBlocking() {
         if (!isWsEstablished) { return; }
         while (WebSocketImpl::SendQueue::sendQueueTail != WebSocketImpl::SendQueue::sendQueueHead) {
-            u32 fLen = WebSocketImpl::SendFrame::GetSerializedFrameSize(WebSocketImpl::SendQueue::sendQueueTail);
+            u32 fLen = WebSocketImpl::SendFrame::getSerializedFrameSize(WebSocketImpl::SendQueue::sendQueueTail);
             nn::socket::Send(clientSocketFd, WebSocketImpl::SendQueue::sendQueueTail, fLen, 0); // blocking
-            WebSocketImpl::SendQueue::DequeueFrame(fLen);
+            WebSocketImpl::SendQueue::dequeueFrame(fLen);
         }
     }
 
-    void WebSocket::SendTextNoblock(const char* payload) {
+    void WebSocket::sendTextNoblock(const char* payload) {
         if (!isWsEstablished) { return; }
-        WebSocketImpl::SendQueue::EnqueueText(payload); // (it can still block on the mutex, TODO look into lock free wizard shit)
+        WebSocketImpl::SendQueue::enqueueText(payload); // (it can still block on the mutex, TODO look into lock free wizard shit)
     }
 
-    void WebSocket::SendTextBlocking(const char* payload) {
+    void WebSocket::sendTextBlocking(const char* payload) {
         if (!isWsEstablished) { return; }
         // TODO fd mutex? I'm unclear how all this behaves + where this giant socketPool fits into things...
         // (Is it copying my data into there? Does it do any locking of its own? If it's blocking, shouldn't it use the pointer we call send with, instead of copying?)
@@ -172,15 +172,15 @@ namespace lotuskit::server {
         // - in the browser, plain json is usually just as fast as binary formats. this one is asmjs tho https://github.com/artcompiler/L16/blob/master/src/ubjson.js
         // so lets not deal with it unless we really need it
         u32 pLen = strlen(payload);
-        u8 hLen = WebSocketImpl::SendFrame::HeaderLenFromPayloadLen(pLen);
+        u8 hLen = WebSocketImpl::SendFrame::headerLenFromPayloadLen(pLen);
         u32 fLen = hLen + pLen; // frame is header + payload
         char buf[fLen];
-        WebSocketImpl::SendFrame::SerializeHeader((u8*)buf, 0x81, hLen, pLen);
+        WebSocketImpl::SendFrame::serializeHeader((u8*)buf, 0x81, hLen, pLen);
         std::memcpy(&buf[hLen], payload, pLen);
         nn::socket::Send(clientSocketFd, buf, fLen, 0); // blocking
     }
 
-    void WebSocket::RecvNoblockAndProc() {
+    void WebSocket::recvNoblockAndProc() {
         if (!isWsEstablished) { return; }
         u8 frameType__sizeByte__12more[14]; // minimum supported frame length (client ws frames can go as short as 6B)
         constexpr auto NOBLOCK = (s32)(SocketMsgFlag::Msg_DontWait);
@@ -247,7 +247,7 @@ namespace lotuskit::server {
         }
     }
 
-    void WebSocket::ListenAndWaitForFrontend(const char* bindIp, const u16 bindPort) {
+    void WebSocket::listenAndWaitForFrontend(const char* bindIp, const u16 bindPort) {
         constexpr size_t MAX_HTTP_REQ_HEADER_LEN = 0x800;
         char buf[MAX_HTTP_REQ_HEADER_LEN];
 
@@ -381,7 +381,7 @@ namespace lotuskit::server {
         }
     }
 
-    void WebSocket::Init() {
+    void WebSocket::init() {
         // XXX dont depend on this just-get-the-config pattern too much -- we'll need to merge options from other places at runtime, and many details like pass-vs-pull are unclear.
         // FIXME extract helper for traversing value(json_pointer) with JSON_NOEXCEPTION. "Turning off exceptions" in the lib exposes the existence of an internal exception
         //       (otherwise-transparently used for flow control / traversal within the call) which now unexpectedly crashes/hangs because exceptions are turned off.
@@ -396,7 +396,7 @@ namespace lotuskit::server {
         }
 
         // setup needs to happen in main thread
-        WebSocketImpl::SendQueue::Init();
+        WebSocketImpl::SendQueue::init();
         nn::nifm::Initialize();
         nn::socket::Initialize(socketPool, SOCKET_POOL_SIZE, ALLOCATOR_POOL_SIZE, 14);
         nn::nifm::SubmitNetworkRequest();
@@ -410,7 +410,7 @@ namespace lotuskit::server {
 
         const char* bindIp = config.value("bindIp", "127.0.0.1").c_str();
         const u16 bindPort = config.value("bindPort", 7072);
-        ListenAndWaitForFrontend(bindIp, bindPort); // blocking
+        listenAndWaitForFrontend(bindIp, bindPort); // blocking
 
 #if WEBSOCKET_DO_THREADED_SEND
         // create writer thread for this ws connection
@@ -424,11 +424,11 @@ namespace lotuskit::server {
         needsInit = false;
     }
 
-    void WebSocket::Calc() {
-        if (needsInit) { Init(); }
+    void WebSocket::calc() {
+        if (needsInit) { init(); }
         if (isWsEstablished) {
-            RecvNoblockAndProc(); // noblock poll ws -> dispatch commands (sometimes blocking)
-            FlushSendQueueBlocking(); // send any deferred logs since last proc. try to minimize useless logs!
+            recvNoblockAndProc(); // noblock poll ws -> dispatch commands (sometimes blocking)
+            flushSendQueueBlocking(); // send any deferred logs since last proc. try to minimize useless logs!
             // FIXME until we get threaded sends to work, logging may impact performance/accuracy/???
             // TODO run some tests to verify ^ this is a real issue, use devtools throttling to break it, spam it etc and see what really blocks
         }

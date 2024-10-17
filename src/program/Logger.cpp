@@ -21,10 +21,10 @@ namespace lotuskit {
 
         if (doBlocking) {
             svcOutputDebugString(out.c_str(), out.size());
-            lotuskit::server::WebSocket::SendTextBlocking(out.c_str());
+            lotuskit::server::WebSocket::sendTextBlocking(out.c_str());
         } else {
             svcOutputDebugString(out.c_str(), out.size());
-            lotuskit::server::WebSocket::SendTextNoblock(out.c_str());
+            lotuskit::server::WebSocket::sendTextNoblock(out.c_str());
         }
     }
 

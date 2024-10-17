@@ -27,21 +27,21 @@ HOOK_DEFINE_INLINE(StealHeap) {
         stolenHeap = reinterpret_cast<sead::Heap*>(ctx->X[22]);
 #endif
         svcOutputDebugString("yoink", 5);
-        lotuskit::script::engine::AssignHeap(stolenHeap);
+        lotuskit::script::engine::assignHeap(stolenHeap);
     }
 };
 
-void TestAngelScript() {
+void testAngelScript() {
     // TODO extract a longer lived engine instance, route ws+tas through it
     //auto* engine = lotuskit::script::engine::CreateAndSetupEngine();
     AngelScript::asIScriptEngine *engine = AngelScript::asCreateScriptEngine();
-    lotuskit::script::engine::ConfigureEngine(engine);
-    lotuskit::script::globals::RegisterGlobals(engine);
+    lotuskit::script::engine::configureEngine(engine);
+    lotuskit::script::globals::registerGlobals(engine);
 
-    const char* scriptText = R"( void main() { int wow = 419; TrashPrintInt(++wow); } )";
+    const char* scriptText = R"( void main() { int wow = 419; trashPrintInt(++wow); } )";
     const char* entryPoint = "void main()";
-    auto* mod = lotuskit::script::engine::TestBuildModule(engine, scriptText);
-    lotuskit::script::engine::TestExecFuncInNewCtx(engine, mod, entryPoint);
+    auto* mod = lotuskit::script::engine::testBuildModule(engine, scriptText);
+    lotuskit::script::engine::testExecFuncInNewCtx(engine, mod, entryPoint);
 
     engine->ShutDownAndRelease();
 }
@@ -51,7 +51,7 @@ void TestAngelScript() {
 HOOK_DEFINE_TRAMPOLINE(OnWhistleHook) {
     static const ptrdiff_t s_offset = sym::game::ai::execute::ExecutePlayerWhistle::enterImpl_;
     static void Callback(void* param) {
-        TestAngelScript();
+        testAngelScript();
         Orig(param);
     }
 };
@@ -61,7 +61,7 @@ HOOK_DEFINE_TRAMPOLINE(WorldManagerModuleBaseProcHook) {
     static const auto s_offset = sym::game::wm::WorldManagerModule::baseProcExe;
 
     static void Callback(double self, double param_2, double param_3, double param_4, void *wmmodule, void *param_6) {
-        TestAngelScript();
+        testAngelScript();
 
         if (false) { // make noise
             static u64 lastPrintTick = 0;
@@ -75,7 +75,7 @@ HOOK_DEFINE_TRAMPOLINE(WorldManagerModuleBaseProcHook) {
             }
         }
 
-        lotuskit::server::WebSocket::Calc(); // noblock recv, but blocking processing if enabled
+        lotuskit::server::WebSocket::calc(); // noblock recv, but blocking processing if enabled
 
         Orig(self, param_2, param_3, param_4, wmmodule, param_6);
     }
@@ -89,7 +89,7 @@ HOOK_DEFINE_INLINE(nnMainHook) {
         nn::util::SNPrintf(buf, sizeof(buf), "[totk-lotuskit:%d] nnMainHook main_offset=%p", TOTK_VERSION, exl::util::GetMainModuleInfo().m_Total.m_Start);
         svcOutputDebugString(buf, strlen(buf));
 
-        lotuskit::Config::LoadJson();
+        lotuskit::Config::loadJson();
         auto& config = lotuskit::Config::jsonConfig;
 
         const json::json_pointer GLOBAL_DISABLE("/global/disable");
@@ -99,7 +99,7 @@ HOOK_DEFINE_INLINE(nnMainHook) {
             return;
         }
 
-        lotuskit::server::WebSocket::Calc(); // blocking if listenOnBootup
+        lotuskit::server::WebSocket::calc(); // blocking if listenOnBootup
         WorldManagerModuleBaseProcHook::Install(); // "main loop"
         StealHeap::Install(); // called once, a bit later during bootup
         //OnWhistleHook::Install();

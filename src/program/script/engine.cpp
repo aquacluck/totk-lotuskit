@@ -7,12 +7,12 @@ namespace lotuskit::script::engine {
     // AngelScript-wide allocation
     sead::Heap* engineHeap = nullptr;
 
-    void AssignHeap(sead::Heap* heap) {
+    void assignHeap(sead::Heap* heap) {
         engineHeap = heap;
-        AngelScript::asSetGlobalMemoryFunctions(ASAllocImpl, ASFreeImpl);
+        AngelScript::asSetGlobalMemoryFunctions(asAllocImpl, asFreeImpl);
     }
 
-    void ASMessageCallback(const AngelScript::asSMessageInfo* msg, void* param) {
+    void asMessageCallback(const AngelScript::asSMessageInfo* msg, void* param) {
         const char *type = "ERR ";
         if (msg->type == AngelScript::asMSGTYPE_WARNING) {
             type = "WARN ";
@@ -24,7 +24,7 @@ namespace lotuskit::script::engine {
         svcOutputDebugString(buf, strlen(buf));
     }
 
-    void ConfigureEngine(AngelScript::asIScriptEngine* engine) {
+    void configureEngine(AngelScript::asIScriptEngine* engine) {
         // do more unsafe C stuff
         engine->SetEngineProperty(AngelScript::asEP_ALLOW_MULTILINE_STRINGS, true);
         engine->SetEngineProperty(AngelScript::asEP_ALLOW_UNSAFE_REFERENCES, true);
@@ -49,11 +49,11 @@ namespace lotuskit::script::engine {
         engine->SetEngineProperty(AngelScript::asEP_BUILD_WITHOUT_LINE_CUES, true);
 
         // Set the message callback to receive information on errors in human readable form.
-        s32 asErrno = engine->SetMessageCallback(AngelScript::asFUNCTION(ASMessageCallback), 0, AngelScript::asCALL_CDECL); assert( asErrno >= 0 );
+        s32 asErrno = engine->SetMessageCallback(AngelScript::asFUNCTION(asMessageCallback), 0, AngelScript::asCALL_CDECL); assert( asErrno >= 0 );
         //RegisterStdString(engine); // TODO simpler string impl?
     }
 
-    AngelScript::asIScriptModule* TestBuildModule(AngelScript::asIScriptEngine* engine, const char* scriptText) {
+    AngelScript::asIScriptModule* testBuildModule(AngelScript::asIScriptEngine* engine, const char* scriptText) {
         // Create a new script module
         AngelScript::asIScriptModule* mod = engine->GetModule("module", AngelScript::asGM_ALWAYS_CREATE);
         mod->AddScriptSection("script.as", scriptText);
@@ -65,7 +65,7 @@ namespace lotuskit::script::engine {
         return mod;
     }
 
-    void TestExecFuncInNewCtx(AngelScript::asIScriptEngine* engine, AngelScript::asIScriptModule* mod, const char* entryPoint) {
+    void testExecFuncInNewCtx(AngelScript::asIScriptEngine* engine, AngelScript::asIScriptModule* mod, const char* entryPoint) {
         char buf[500];
 
         // Find the function that is to be called (mod+entryPoint -> funcptr)

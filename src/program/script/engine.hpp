@@ -5,14 +5,14 @@
 namespace lotuskit::script::engine {
     // AngelScript-wide allocation
     extern sead::Heap* engineHeap;
-    inline void* ASAllocImpl(size_t size) { return engineHeap->alloc(size); }
-    inline void ASFreeImpl(void* ptr) { engineHeap->free(ptr); }
-    void AssignHeap(sead::Heap*);
+    inline void* asAllocImpl(size_t size) { return engineHeap->alloc(size); }
+    inline void asFreeImpl(void* ptr) { engineHeap->free(ptr); }
+    void assignHeap(sead::Heap*);
 
-    //void ASMessageCallback(const AngelScript::asSMessageInfo*, void*);
-    void ConfigureEngine(AngelScript::asIScriptEngine*);
+    //void asMessageCallback(const AngelScript::asSMessageInfo*, void*);
+    void configureEngine(AngelScript::asIScriptEngine*);
 
-    AngelScript::asIScriptModule* TestBuildModule(AngelScript::asIScriptEngine* engine, const char* scriptText);
-    void TestExecFuncInNewCtx(AngelScript::asIScriptEngine* engine, AngelScript::asIScriptModule* mod, const char* entryPoint);
+    AngelScript::asIScriptModule* testBuildModule(AngelScript::asIScriptEngine* engine, const char* scriptText);
+    void testExecFuncInNewCtx(AngelScript::asIScriptEngine* engine, AngelScript::asIScriptModule* mod, const char* entryPoint);
 
 } // ns

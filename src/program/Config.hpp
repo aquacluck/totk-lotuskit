@@ -6,6 +6,6 @@ namespace lotuskit {
     class Config {
         public:
         static json jsonConfig;
-        static void LoadJson();
+        static void loadJson();
     };
 } // ns

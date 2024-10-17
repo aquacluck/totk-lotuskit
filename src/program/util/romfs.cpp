@@ -4,7 +4,7 @@
 #include <cstring>
 
 namespace lotuskit::util::romfs {
-    bool FileExists(const char* path) {
+    bool fileExists(const char* path) {
         nn::fs::FileHandle fd;
         nn::Result res = nn::fs::OpenFile(&fd, path, nn::fs::OpenMode_Read);
         if (!res.IsSuccess()) {
@@ -14,7 +14,7 @@ namespace lotuskit::util::romfs {
         return true;
     }
 
-    void ReadTextFile(char* out, const char* path, s64 maxLen, const char* default_) {
+    void readTextFile(char* out, const char* path, s64 maxLen, const char* default_) {
         char errbuf[200];
 
         nn::fs::FileHandle fd;
