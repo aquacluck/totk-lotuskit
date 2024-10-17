@@ -101,7 +101,7 @@ HOOK_DEFINE_INLINE(nnMainHook) {
             return;
         }
 
-        //lotuskit::server::WebSocket::CreateAndWaitForFrontend(); // blocking if enabled
+        lotuskit::server::WebSocket::CreateAndWaitForFrontend(); // blocking if enabled
         WorldManagerModuleBaseProcHook::Install();
         StealHeap::Install();
         //OnWhistleHook::Install();

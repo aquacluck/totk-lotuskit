@@ -8,6 +8,9 @@ all:
 send:
 	cmake -DTOTK_VERSION=$(TOTK_VERSION) --toolchain=cmake/toolchain.cmake -DFTP_IP=$(FTP_IP) -S . -B build && $(MAKE) -C build subsdk9_meta
 
+# ryu manual eg:
+# TOTK_VERSION=121 make && cp build/{main.npdm,subsdk9} ~/appdata/Roaming/Ryujinx/sdcard/atmosphere/contents/0100f2c0115b6000/exefs/
+
 clean:
 	rm -r build || true
 
