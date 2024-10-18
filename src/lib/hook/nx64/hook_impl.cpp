@@ -49,15 +49,17 @@
 namespace exl::hook::nx64 {
 
     namespace {
-
-        // Hooking constants
+        // Local hooking constants
         constexpr size_t HookPoolSize = setting::JitSize;
         constexpr s64 MaxInstructions = 5;
         constexpr size_t TrampolineSize = MaxInstructions * 10;
-        constexpr u64 HookMax = HookPoolSize / (TrampolineSize * sizeof(uint32_t));
         constexpr u64 MaxReferences = MaxInstructions * 2;
         constexpr u32 Aarch64Nop = 0xd503201f;
+    }
 
+    constexpr u64 HookMax = HookPoolSize / (TrampolineSize * sizeof(uint32_t)); // keep visible to program
+
+    namespace {
         typedef uint32_t HookPool[HookMax][TrampolineSize];
         static_assert(sizeof(HookPool) <= HookPoolSize, "");
 
@@ -513,6 +515,7 @@ namespace exl::hook::nx64 {
     //-------------------------------------------------------------------------
 
     JIT_CREATE(s_HookJit, setting::JitSize);
+    volatile s32 HookEntryIndex = -1;
 
     void Initialize() {
        s_HookJit.Initialize();
@@ -523,9 +526,8 @@ namespace exl::hook::nx64 {
 
     static Result AllocForTrampoline(uint32_t** rx, uint32_t** rw) {
         static_assert((TrampolineSize * sizeof(uint32_t)) % 8 == 0, "8-byte align");
-        static volatile s32 index = -1;
 
-        uint32_t i = __atomic_increase(&index);
+        uint32_t i = __atomic_increase(&HookEntryIndex);
         
         if(i > HookMax)
             return result::HookTrampolineAllocFail;

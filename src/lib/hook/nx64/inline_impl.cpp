@@ -19,10 +19,10 @@ namespace exl::hook::nx64 {
         uintptr_t m_Callback;
     };
 
-    static constexpr size_t InlinePoolCount = setting::InlinePoolSize / sizeof(Entry);
+    constexpr size_t InlinePoolCount = setting::InlinePoolSize / sizeof(Entry);
 
     JIT_CREATE(s_InlineHookJit, setting::InlinePoolSize);
-    static size_t s_EntryIndex = 0;
+    size_t InlineEntryIndex = 0;
 
     extern "C" {
         extern char exl_inline_hook_impl;
@@ -46,13 +46,13 @@ namespace exl::hook::nx64 {
 
     void HookInline(uintptr_t hook, uintptr_t callback) {
         /* Ensure enough space in the pool. */
-        if(s_EntryIndex >= InlinePoolCount)
+        if(InlineEntryIndex >= InlinePoolCount)
             EXL_ABORT(result::HookTrampolineAllocFail);
 
         /* Grab entry from pool. */
-        auto entryRx = &GetEntryRx()[s_EntryIndex];
-        auto entryRw = &GetEntryRw()[s_EntryIndex];
-        s_EntryIndex++;
+        auto entryRx = &GetEntryRx()[InlineEntryIndex];
+        auto entryRw = &GetEntryRw()[InlineEntryIndex];
+        InlineEntryIndex++;
 
         /* Get pointer to entry's entrypoint. */
         uintptr_t entryCb = reinterpret_cast<uintptr_t>(&entryRx->m_CbEntry);
