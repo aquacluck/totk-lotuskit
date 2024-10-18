@@ -38,7 +38,8 @@ void testAngelScript() {
     lotuskit::script::engine::configureEngine(engine);
     lotuskit::script::globals::registerGlobals(engine);
 
-    const char* scriptText = R"( void main() { int wow = 419; trashPrintInt(++wow); } )";
+    //const char* scriptText = R"( void main() { int wow = 419; trashPrintInt(++wow); } )";
+    const char* scriptText = R"( void main() { trashPrintHookLimits(); } )";
     const char* entryPoint = "void main()";
     auto* mod = lotuskit::script::engine::testBuildModule(engine, scriptText);
     lotuskit::script::engine::testExecFuncInNewCtx(engine, mod, entryPoint);
