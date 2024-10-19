@@ -1,4 +1,5 @@
 #include "script/engine.hpp"
+#include "script/globals.hpp"
 #include "angelscript.h"
 #include "nn/util.h"
 #include "lib.hpp"
@@ -8,6 +9,7 @@ using Logger = lotuskit::Logger;
 namespace lotuskit::script::engine {
     // AngelScript-wide allocation
     sead::Heap* engineHeap = nullptr;
+    AngelScript::asIScriptEngine* asEngine = nullptr;
 
     void assignHeap(sead::Heap* heap) {
         engineHeap = heap;
@@ -56,9 +58,22 @@ namespace lotuskit::script::engine {
         //RegisterStdString(engine); // TODO simpler string impl?
     }
 
-    AngelScript::asIScriptModule* testBuildModule(AngelScript::asIScriptEngine* engine, const char* scriptText) {
+    void createAndConfigureEngine() {
+        asEngine = AngelScript::asCreateScriptEngine();
+        configureEngine(asEngine);
+        lotuskit::script::globals::registerGlobals(asEngine);
+        // asEngine->ShutDownAndRelease();
+    }
+
+    void execInScratchModule(const char* scriptText) {
+        auto* mod = lotuskit::script::engine::compileToScratchModule(asEngine, scriptText);
+        const char* entryPoint = "void main()";
+        lotuskit::script::engine::execFuncInNewCtx(asEngine, mod, entryPoint);
+    }
+
+    AngelScript::asIScriptModule* compileToScratchModule(AngelScript::asIScriptEngine* engine, const char* scriptText) {
         // Create a new script module
-        AngelScript::asIScriptModule* mod = engine->GetModule("module", AngelScript::asGM_ALWAYS_CREATE);
+        AngelScript::asIScriptModule* mod = engine->GetModule("scratch", AngelScript::asGM_ALWAYS_CREATE); // clobber existing
         mod->AddScriptSection("script.as", scriptText);
         s32 asErrno = mod->Build(); // Build the module
         if (asErrno < 0) {
@@ -68,7 +83,7 @@ namespace lotuskit::script::engine {
         return mod;
     }
 
-    void testExecFuncInNewCtx(AngelScript::asIScriptEngine* engine, AngelScript::asIScriptModule* mod, const char* entryPoint) {
+    void execFuncInNewCtx(AngelScript::asIScriptEngine* engine, AngelScript::asIScriptModule* mod, const char* entryPoint) {
         char buf[500];
 
         // Find the function that is to be called (mod+entryPoint -> funcptr)

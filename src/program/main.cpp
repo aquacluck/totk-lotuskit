@@ -22,7 +22,7 @@ HOOK_DEFINE_INLINE(StealHeap) {
 #endif
         svcOutputDebugString("yoink", 5);
         lotuskit::script::engine::assignHeap(stolenHeap);
-        // TODO prepare as engine + anything to be shared between tas and json?
+        lotuskit::script::engine::createAndConfigureEngine();
     }
 };
 
@@ -45,14 +45,12 @@ HOOK_DEFINE_TRAMPOLINE(WorldManagerModuleBaseProcHook) {
             u64 thisTick = svcGetSystemTick();
             if (thisTick >= lastPrintTick + 20000000) {
                 lastPrintTick = thisTick;
-
-                Logger::logText("wowzers");
                 Logger::logText("ffffeeeeddddcccc", "/HexDump/0", true); // blocking ws
                 Logger::logJson(json::object({{"kee", "vee"}, {"k2", 420}}));
-                //testAngelScript();
             }
         }
 
+        // TODO tas calc -> script resume etc
         lotuskit::server::WebSocket::calc(); // noblock recv, but blocking processing if enabled
 
         Orig(self, param_2, param_3, param_4, wmmodule, param_6);
