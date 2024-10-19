@@ -46,23 +46,24 @@ def run_symbol_def_imports():
 
 class TrashCommands:
     @staticmethod
-    def build_gameversion_linkerscript_syms(version: GameVersion, do_export_nullptr=True):
+    def build_gameversion_syms(version: GameVersion, do_export_nullptr=True):
         version_str = GameVersion.to_str(version)
-        pathlib.Path(f"output_ld_script/{version_str}").mkdir(parents=True, exist_ok=True)
-        with open(f"output_ld_script/{version_str}/syms_merged.ld", "w") as symfile:
-            symfile.write(f"__game_version = {version}; /* {version_str} */")
+        pathlib.Path(f"output/{version_str}").mkdir(parents=True, exist_ok=True)
+        with open(f"output/{version_str}/syms_merged.hpp", "w") as hppfile, open(f"output/{version_str}/syms_merged.ld", "w") as ldfile:
+            hppfile.write(f'#pragma once\n\n') #hppfile.write(f'#pragma once\n#include "lib/json.hpp"\nusing json = nlohmann::json;\n\n')
+            ldfile.write(f"__game_version = {version}; /* {version_str} */")
+
             for mod in NSOModule.ALL_MODULES:
                 if mod.module_start_sym == MagicWords.SKIP:
                     continue
 
-                symfile.write(f"\n\n/* ======== BEGIN {mod.module_name} (nso {mod.nso_filename}, symbol {mod.module_start_sym}) =========== */\n\n")
+                hppfile.write(f"\n\n/* ======== BEGIN {mod.module_name} (nso {mod.nso_filename}, symbol {mod.module_start_sym}) =========== */\n\n")
+                ldfile.write( f"\n\n/* ======== BEGIN {mod.module_name} (nso {mod.nso_filename}, symbol {mod.module_start_sym}) =========== */\n\n")
+
                 if mod.module_start_offset and mod.module_start_offset != MagicWords.SKIP:
-                    symfile.write(f"{mod.module_start_sym}_offset = {mod.module_start_offset[version]:#x};\n\n")
+                    ldfile.write(f"{mod.module_start_sym}_offset = {mod.module_start_offset[version]:#x};\n\n")
 
                 for sym in mod.sym_map.values():
-                    if sym.symbol_type in (SymbolType.DATA, SymbolType.INSTRUCTION):
-                        # useless for me? why store stuff in symbols if you're not gonna invoke it, pointers exist... maybe if i did a lot of inline asm
-                        continue
                     addr = sym.address[version]
                     if addr == MagicWords.SKIP:
                         continue
@@ -70,64 +71,41 @@ class TrashCommands:
                         continue
 
                     if addr <= 0xffffffff:
-                        addr = f"        {addr:#010x}"
+                        addr_str = f"{addr:#010x}"
                     else:
-                        addr = f"{addr:#018x}"
-                    symfile.write(f"{sym.mangled:32} = {mod.module_start_sym} + {addr}; /* {sym.name} */\n")
-                symfile.write(f"\n/* ======== END   {mod.module_name} (nso {mod.nso_filename}) ================================ */\n\n")
+                        addr_str = f"{addr:#018x}"
 
+                    if sym.symbol_type not in (SymbolType.DATA, SymbolType.INSTRUCTION):
+                        # only func ptrs are relevant for ld symbols?
+                        ldfile.write(f"{sym.mangled:32} = {mod.module_start_sym} + {addr_str}; /* {sym.name} */\n")
 
-    @staticmethod
-    def build_all_hpp_syms():
-        for module in NSOModule.ALL_MODULES:
-            for source_path in module.unique_source_paths():
-                # TODO annotate each hpp with a module identifier? then we can hook anything by name
-                source_syms: Tuple[RuntimeSymbol] = tuple(sym for sym in module.sym_map.values() if sym.source_path == source_path)
-                if not source_syms:
-                    continue
+                    # TODO module_start_offset for xmodule hooks?
+                    # include everything in hpp -- {{ is escaped { for f-strings
+                    identifier = sym.subject_identifier or sym.mangled
+                    # TODO how to expose syms across cpp+as+js -- trivial to access in cpp, trivial to register to as, trivial to forward over ws for js ui
+                    '''
+                    inline static json stuff = {{
+                        {{"offset", {addr_str}}},
+                        {{"mangled", "{sym.mangled}"}},
+                        {{"demangled", "{sym.name}"}}
+                    }};
+                    '''
 
-                if len(source_path) < 2:
-                    raise ImportError(f"source_path {source_path} requires at least 2 parts: a leading library name and a trailing python filename")
-                basename_output = source_path[-1] + ".h"
-                cmake_include_folder = source_path[0]
-                mkdirp_args = source_path[1:-1] # empty when len(source_path) == 2
+                    hppfile.write(f"""
+namespace sym::{'::'.join(sym.ns)} {{
+class {identifier} {{
+    public:
+    inline static constexpr ptrdiff_t offset = {addr_str};
+}};
+}}\n""")
 
-                unique_namespaces_in_source: Tuple[Tuple[str]] = tuple(sorted({ sym.ns for sym in source_syms }))
-                for version_str in GameVersion.ALL_STR:
-                    version = GameVersion.to_i(version_str)
-                    pathlib.Path(os.path.join("output_hpp_sym_ns", version_str, cmake_include_folder, "sym", *mkdirp_args)).mkdir(parents=True, exist_ok=True)
-                    with open(os.path.join("output_hpp_sym_ns", version_str, cmake_include_folder, "sym", *mkdirp_args, basename_output), "w") as hppfile:
-                        hppfile.write("#pragma once\n")
-
-                        for ns in unique_namespaces_in_source:
-                            hppfile.write(f"\nnamespace sym::{'::'.join(ns)} {{")
-
-                            for sym in source_syms:
-                                if sym.ns != ns:
-                                    continue
-
-                                address = sym.address[version]
-                                if address == MagicWords.SKIP:
-                                    continue
-
-                                if address <= 0xffffffff:
-                                    address = f"{address:#010x}"
-                                else:
-                                    address = f"{address:#018x}"
-
-                                identifier = sym.subject_identifier or sym.mangled
-                                hppfile.write(f"\n    // {sym.mangled}\n    // {sym.name}\n    static constexpr ptrdiff_t {identifier} = {address};\n")
-
-                            hppfile.write("}\n")
+                hppfile.write(f"\n/* ======== END {mod.module_name} (nso {mod.nso_filename}) ================================ */\n\n")
+                ldfile.write( f"\n/* ======== END {mod.module_name} (nso {mod.nso_filename}) ================================ */\n\n")
 
 
 if __name__ == "__main__":
-    # TODO cleanup empty/stale files
-    # git rm -rf output_ld_script/TOTK* output_hpp_sym_ns/TOTK*; ./build.py && git add output_*
-
     run_symbol_def_imports()
     [module.postprocess() for module in NSOModule.ALL_MODULES]
     for v in GameVersion.ALL_STR:
-        TrashCommands.build_gameversion_linkerscript_syms(GameVersion.to_i(v))
-    TrashCommands.build_all_hpp_syms()
+        TrashCommands.build_gameversion_syms(GameVersion.to_i(v))
 

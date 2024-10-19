@@ -7,8 +7,7 @@
 #include "script/engine.hpp"
 #include "script/globals.hpp"
 
-#include "sym/engine/hacks.h"
-#include "sym/game/wm/WorldManagerModule.h"
+#include "syms_merged.hpp"
 
 #include "angelscript.h"
 #include "heap/seadHeap.h"
@@ -17,7 +16,7 @@ using Logger = lotuskit::Logger;
 
 
 HOOK_DEFINE_INLINE(StealHeap) {
-    static const ptrdiff_t s_offset = sym::engine::steal_heap; // hacks
+    static const ptrdiff_t s_offset = sym::engine::steal_heap::offset; // hacks
     inline static sead::Heap* stolenHeap = nullptr;
     static void Callback(exl::hook::InlineCtx* ctx) {
 #ifdef TOTK_100
@@ -48,9 +47,8 @@ void testAngelScript() {
 }
 
 /*
-#include "sym/game/ai/execute/ExecutePlayerWhistle.h"
 HOOK_DEFINE_TRAMPOLINE(OnWhistleHook) {
-    static const ptrdiff_t s_offset = sym::game::ai::execute::ExecutePlayerWhistle::enterImpl_;
+    static const ptrdiff_t s_offset = sym::game::ai::execute::ExecutePlayerWhistle::enterImpl_::offset;
     static void Callback(void* param) {
         testAngelScript();
         Orig(param);
@@ -59,7 +57,7 @@ HOOK_DEFINE_TRAMPOLINE(OnWhistleHook) {
 */
 
 HOOK_DEFINE_TRAMPOLINE(WorldManagerModuleBaseProcHook) {
-    static const auto s_offset = sym::game::wm::WorldManagerModule::baseProcExe;
+    static const auto s_offset = sym::game::wm::WorldManagerModule::baseProcExe::offset;
 
     static void Callback(double self, double param_2, double param_3, double param_4, void *wmmodule, void *param_6) {
         testAngelScript();
@@ -83,7 +81,7 @@ HOOK_DEFINE_TRAMPOLINE(WorldManagerModuleBaseProcHook) {
 };
 
 HOOK_DEFINE_INLINE(nnMainHook) {
-    static const ptrdiff_t s_offset = sym::engine::nnMain_post_setup; // hacks
+    static const ptrdiff_t s_offset = sym::engine::nnMain_post_setup::offset; // hacks
     static void Callback(exl::hook::InlineCtx* ctx) {
         // Effective entry point after sdk init
         char buf[200];

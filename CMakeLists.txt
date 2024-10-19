@@ -39,6 +39,7 @@ include(${CMAKE_SOURCE_DIR}/cmake/SwitchTools.cmake)
 
 
 # Begin game headers + symbols
+include_directories(${PROJECT_SOURCE_DIR}/syms/output/TOTK_${TOTK_VERSION}) # symbols in syms_merged.hpp
 
 # Used by header patches to override visibility in specific cases.
 # Turn this off and re-clobber the headers for eg private method mangling compatibility (no need for this yet)
@@ -58,30 +59,24 @@ add_compile_definitions(
   NN_WARE_PATCH=1
 )
 include_directories(${PROJECT_SOURCE_DIR}/dt_totk/lib/NintendoSDK/include) # headers
-include_directories(${PROJECT_SOURCE_DIR}/syms/output_hpp_sym_ns/TOTK_${TOTK_VERSION}/NintendoSDK) # symbols
 
 # agl
 include_directories(${PROJECT_SOURCE_DIR}/dt_totk/lib/agl/include) # headers
-include_directories(${PROJECT_SOURCE_DIR}/syms/output_hpp_sym_ns/TOTK_${TOTK_VERSION}/agl) # symbols
 
 # sead
 add_compile_definitions(SEAD_ZSTD=1)
 include_directories(${PROJECT_SOURCE_DIR}/dt_totk/lib/sead/include) # headers
-include_directories(${PROJECT_SOURCE_DIR}/syms/output_hpp_sym_ns/TOTK_${TOTK_VERSION}/sead) # symbols
 
 # zstd
 include_directories(${PROJECT_SOURCE_DIR}/dt_totk/lib/zstd/lib) # headers
 #include_directories(${PROJECT_SOURCE_DIR}/dt_totk/lib/zstd/lib/common)
 #include_directories(${PROJECT_SOURCE_DIR}/dt_totk/lib/zstd/lib/compress)
 #include_directories(${PROJECT_SOURCE_DIR}/dt_totk/lib/zstd/lib/decompress)
-include_directories(${PROJECT_SOURCE_DIR}/syms/output_hpp_sym_ns/TOTK_${TOTK_VERSION}/zstd) # symbols
 
 # havok
-include_directories(${PROJECT_SOURCE_DIR}/syms/output_hpp_sym_ns/TOTK_${TOTK_VERSION}/havok) # symbols
 
-# game, engine, ... -- symbols from the game where I don't have a well-defined header structure (ie not (yet) from dt_totk) are treated as an "exking" lib
 # TODO structured exking header folder (game, engine, ...)
-include_directories(${PROJECT_SOURCE_DIR}/syms/output_hpp_sym_ns/TOTK_${TOTK_VERSION}/exking) # symbols
+# game, engine, ... -- symbols from the game where I don't have a well-defined header structure (ie not (yet) from dt_totk) are treated as an "exking" lib
 
 
 

@@ -1,13 +1,13 @@
 #include "Logger.hpp"
 #include "server/WebSocket.hpp"
 #include "thread/seadThread.h"
-#include "sym/thread/seadThread.h"
+#include "syms_merged.hpp"
 using json = nlohmann::json;
 
 namespace lotuskit {
     // TODO filters/flags/??? for log outputs (svcOutputDebugString, ws, perhaps textwriter)
     void Logger::logJson(json obj, const std::string& ns, bool doBlocking) {
-        sead::ThreadMgr* mgr = *exl::util::pointer_path::FollowSafe<sead::ThreadMgr*, sym::sead::ThreadMgr::sInstance>();
+        sead::ThreadMgr* mgr = *exl::util::pointer_path::FollowSafe<sead::ThreadMgr*, sym::sead::ThreadMgr::sInstance::offset>();
         sead::Thread* thread = mgr->getCurrentThread(); // XXX what happens if we invoke this from a non-sead thread?
 
         // note these are kv pairs, ie json {msg:"msg", sys:{ns:"", tick:420, ...}}
