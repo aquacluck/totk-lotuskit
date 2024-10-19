@@ -1,12 +1,13 @@
 #include "lib.hpp"
 #include "nn/util.h"
 #include "heap/seadHeap.h"
+#include "syms_merged.hpp"
 
 #include "Config.hpp"
 #include "Logger.hpp"
 #include "server/WebSocket.hpp"
 #include "script/engine.hpp"
-#include "syms_merged.hpp"
+#include "tas/Playback.hpp"
 using Logger = lotuskit::Logger;
 
 
@@ -40,17 +41,10 @@ HOOK_DEFINE_TRAMPOLINE(WorldManagerModuleBaseProcHook) {
     static const auto s_offset = sym::game::wm::WorldManagerModule::baseProcExe::offset;
 
     static void Callback(double self, double param_2, double param_3, double param_4, void *wmmodule, void *param_6) {
-        if (false) { // make noise
-            static u64 lastPrintTick = 0;
-            u64 thisTick = svcGetSystemTick();
-            if (thisTick >= lastPrintTick + 20000000) {
-                lastPrintTick = thisTick;
-                Logger::logText("ffffeeeeddddcccc", "/HexDump/0", true); // blocking ws
-                Logger::logJson(json::object({{"kee", "vee"}, {"k2", 420}}));
-            }
-        }
+        //Logger::logText("ffffeeeeddddcccc", "/HexDump/0", true); // blocking ws
+        //Logger::logJson(json::object({{"kee", "vee"}, {"k2", 420}}));
 
-        // TODO tas calc -> script resume etc
+        lotuskit::tas::Playback::calc(); // may re-enter script when currently scheduled input is complete
         lotuskit::server::WebSocket::calc(); // noblock recv, but blocking processing if enabled
 
         Orig(self, param_2, param_3, param_4, wmmodule, param_6);

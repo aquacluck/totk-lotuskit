@@ -90,7 +90,7 @@ namespace lotuskit::script::engine {
         AngelScript::asIScriptFunction *asEntryPoint = mod->GetFunctionByDecl(entryPoint);
         if (asEntryPoint == nullptr) {
             nn::util::SNPrintf(buf, sizeof(buf), "[angelscript] missing entry point %s", entryPoint);
-            svcOutputDebugString(buf, strlen(buf));
+            Logger::logText(buf, "/script/engine");
             return;
         }
 
@@ -98,13 +98,18 @@ namespace lotuskit::script::engine {
         AngelScript::asIScriptContext *asCtx = engine->CreateContext();
         asCtx->Prepare(asEntryPoint);
         s32 asErrno = asCtx->Execute();
-        if (asErrno != AngelScript::asEXECUTION_FINISHED) { // The execution didn't complete as expected. Determine what happened.
-            if (asErrno == AngelScript::asEXECUTION_EXCEPTION) { // An exception occurred, let the script writer know what happened so it can be corrected.
-                nn::util::SNPrintf(buf, sizeof(buf), "[angelscript] uncaught: %s", asCtx->GetExceptionString());
-                svcOutputDebugString(buf, strlen(buf));
-            }
-        }
 
-        asCtx->Release();
+        if (asErrno == AngelScript::asEXECUTION_FINISHED) {
+            asCtx->Release();
+
+        } else if (asErrno == AngelScript::asEXECUTION_EXCEPTION) {
+            // TODO exceptions
+            nn::util::SNPrintf(buf, sizeof(buf), "[angelscript] uncaught: %s", asCtx->GetExceptionString());
+            Logger::logText(buf, "/script/engine");
+            asCtx->Release();
+
+        } else if (asErrno == AngelScript::asEXECUTION_SUSPENDED) {
+            // do not release ongoing async ctx
+        }
     }
 } // ns
