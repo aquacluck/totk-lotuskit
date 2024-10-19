@@ -2,6 +2,8 @@
 #include "angelscript.h"
 #include "nn/util.h"
 #include "lib.hpp"
+#include "Logger.hpp"
+using Logger = lotuskit::Logger;
 
 namespace lotuskit::script::engine {
     // AngelScript-wide allocation
@@ -19,9 +21,10 @@ namespace lotuskit::script::engine {
         } else if(msg->type == AngelScript::asMSGTYPE_INFORMATION) {
             type = "INFO ";
         }
+
         char buf[0x1000];
         nn::util::SNPrintf(buf, sizeof(buf), "%s (%d, %d) : %s : %s\n", msg->section, msg->row, msg->col, type, msg->message);
-        svcOutputDebugString(buf, strlen(buf));
+        Logger::logText(buf, "/script/engine");
     }
 
     void configureEngine(AngelScript::asIScriptEngine* engine) {

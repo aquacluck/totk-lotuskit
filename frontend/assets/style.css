@@ -23,14 +23,14 @@
 
 body { margin: 0; }
 
-body, input, button {
+body, input, button, textarea {
     background-color: #000;
     color: #eee;
     font-family: "Source Code Pro", monospace;
     font-weight: 500;
 }
 
-input, button {
+input, button, textarea {
              border: 2px solid;
              border-color: #666 #222 #222 #666;
   &:hover  { border-color: #666 #333 #333 #666; }
@@ -50,6 +50,12 @@ button.pushbutton {
         opacity: 0;
         pointer-events: none;
     }
+}
+
+textarea {
+    width: 100%;
+    min-height: 60px;
+    height: 100%;
 }
 
 :root {
@@ -120,14 +126,17 @@ button.pushbutton {
     border: 1px solid #444;
 
     display: inline-grid;
-    grid-template-rows: 1fr 1fr;
+    grid-template-rows: 1fr 1fr 1fr 1fr;
     grid-template-columns: 1fr 1fr;
     grid-template-areas:
     'hexdump   hexdump'
-    'memsearch quickdumps';
+    'memsearch quickdumps'
+    'execscript execscript'
+    'execscript execscript';
 }
 .toolset_memutils_controller > .hexdump { grid-area: hexdump; }
 .toolset_memutils_controller > .memsearch { grid-area: memsearch; }
+.toolset_memutils_controller > .execscript { grid-area: execscript; }
 
 
 .toolset_connection {

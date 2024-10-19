@@ -1,4 +1,5 @@
 #include "server/WebSocket.hpp"
+#include "server/JsonDispatch.hpp"
 
 #include "Config.hpp"
 #include "lib/base64.hpp"
@@ -231,19 +232,13 @@ namespace lotuskit::server {
                 // assert recvSize == payloadLen
             }
 
-            // unmask, terminate, json parse
+            // unmask+terminate
             // TODO branch here on frameType is all we need for binary frames? just ignore excess string termination byte, it wont matter
             u32 payload_i = payloadLen;
             while (payload_i--) { payload[payload_i] ^= maskKey[payload_i%4]; }
             payload[payloadLen] = '\0';
-            json jsonPayload = json::parse((char*)payload);
 
-            // TODO dispatch json
-            if (jsonPayload.contains("uhh")) {
-                char buf[1024];
-                nn::util::SNPrintf(buf, sizeof(buf), "[WebSocket] got %s", jsonPayload["uhh"].template get<std::string>().c_str());
-                svcOutputDebugString(buf, strlen(buf));
-            }
+            lotuskit::server::JsonDispatch::dispatchText((char*)payload);
         }
     }
 

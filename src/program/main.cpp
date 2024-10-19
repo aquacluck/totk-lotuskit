@@ -1,17 +1,12 @@
 #include "lib.hpp"
 #include "nn/util.h"
+#include "heap/seadHeap.h"
 
 #include "Config.hpp"
 #include "Logger.hpp"
 #include "server/WebSocket.hpp"
 #include "script/engine.hpp"
-#include "script/globals.hpp"
-
 #include "syms_merged.hpp"
-
-#include "angelscript.h"
-#include "heap/seadHeap.h"
-
 using Logger = lotuskit::Logger;
 
 
@@ -27,24 +22,9 @@ HOOK_DEFINE_INLINE(StealHeap) {
 #endif
         svcOutputDebugString("yoink", 5);
         lotuskit::script::engine::assignHeap(stolenHeap);
+        // TODO prepare as engine + anything to be shared between tas and json?
     }
 };
-
-void testAngelScript() {
-    // TODO extract a longer lived engine instance, route ws+tas through it
-    //auto* engine = lotuskit::script::engine::CreateAndSetupEngine();
-    AngelScript::asIScriptEngine *engine = AngelScript::asCreateScriptEngine();
-    lotuskit::script::engine::configureEngine(engine);
-    lotuskit::script::globals::registerGlobals(engine);
-
-    //const char* scriptText = R"( void main() { int wow = 419; trashPrintInt(++wow); } )";
-    const char* scriptText = R"( void main() { trashPrintHookLimits(); } )";
-    const char* entryPoint = "void main()";
-    auto* mod = lotuskit::script::engine::testBuildModule(engine, scriptText);
-    lotuskit::script::engine::testExecFuncInNewCtx(engine, mod, entryPoint);
-
-    engine->ShutDownAndRelease();
-}
 
 /*
 HOOK_DEFINE_TRAMPOLINE(OnWhistleHook) {
@@ -60,8 +40,6 @@ HOOK_DEFINE_TRAMPOLINE(WorldManagerModuleBaseProcHook) {
     static const auto s_offset = sym::game::wm::WorldManagerModule::baseProcExe::offset;
 
     static void Callback(double self, double param_2, double param_3, double param_4, void *wmmodule, void *param_6) {
-        testAngelScript();
-
         if (false) { // make noise
             static u64 lastPrintTick = 0;
             u64 thisTick = svcGetSystemTick();
@@ -71,6 +49,7 @@ HOOK_DEFINE_TRAMPOLINE(WorldManagerModuleBaseProcHook) {
                 Logger::logText("wowzers");
                 Logger::logText("ffffeeeeddddcccc", "/HexDump/0", true); // blocking ws
                 Logger::logJson(json::object({{"kee", "vee"}, {"k2", 420}}));
+                //testAngelScript();
             }
         }
 
