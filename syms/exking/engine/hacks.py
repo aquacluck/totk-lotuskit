@@ -10,6 +10,8 @@ EXKING("_ZN6engineL17nnMain_post_setupE", {
 
 # namespace engine { static uintptr_t MainGetNpadStates; }
 EXKING("_ZN6engineL17MainGetNpadStatesE", {
+    TOTK_100: 0x029b442c,
+    TOTK_110: 0x02a2c49c,
     TOTK_121: 0x02a267bc,
 })
 

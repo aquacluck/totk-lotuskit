@@ -1,4 +1,5 @@
 #include "lib.hpp"
+#include "nn/hid.h"
 #include "nn/util.h"
 #include "heap/seadHeap.h"
 #include "syms_merged.hpp"
@@ -37,6 +38,22 @@ HOOK_DEFINE_TRAMPOLINE(OnWhistleHook) {
 };
 */
 
+HOOK_DEFINE_TRAMPOLINE(MainGetNpadStates) {
+    static const ptrdiff_t s_offset = sym::engine::MainGetNpadStates::offset; // hacks
+
+    static void Callback(void* param_1) {
+        // TODO option to lock/snap inputs to 90d/45d while ZL is held?
+        // TODO see if we can totally stub this. bad sampling number or something if we don't call it, appears to recreate controller stuff every frame `ServiceAm .ctor: Applet 'Controller' created`
+        // HLE.OsThread.47 ServiceHid Start: Stubbed. ControllerApplet ArgPriv 20 1072 ShowControllerSupport HoldType:Horizontal StyleSets:ProController, Handheld, JoyconPair
+        Orig(param_1);
+
+        constexpr u32 target_idk = 0; // styleset? iterates over 3?
+        nn::hid::NpadBaseState* state = (nn::hid::NpadBaseState*)(param_1 + target_idk * 0xe98 + 0x58);
+        //Logger::main->logf(NS_TAS, R"({"state": "%p", "sample": %d, "tick": %d, "LDown": "%d %d"})", state, state->mSamplingNumber, tick, state->mAnalogStickL.mY, state->mButtons);
+        lotuskit::tas::Playback::applyCurrentInput(state);
+    }
+};
+
 HOOK_DEFINE_TRAMPOLINE(WorldManagerModuleBaseProcHook) {
     static const auto s_offset = sym::game::wm::WorldManagerModule::baseProcExe::offset;
 
@@ -73,6 +90,7 @@ HOOK_DEFINE_INLINE(nnMainHook) {
         WorldManagerModuleBaseProcHook::Install(); // "main loop"
         StealHeap::Install(); // called once, a bit later during bootup
         //OnWhistleHook::Install();
+        MainGetNpadStates::Install();
 
 
         /*

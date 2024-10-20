@@ -218,7 +218,7 @@ class steal_heap {
 namespace sym::engine {
 class MainGetNpadStates {
     public:
-    inline static constexpr ptrdiff_t offset = 0x00000000;
+    inline static constexpr ptrdiff_t offset = 0x02a2c49c;
 };
 }
 
