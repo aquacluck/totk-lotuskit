@@ -1,3 +1,4 @@
+#include <string>
 #include "nn/util.h"
 #include "tas/Record.hpp"
 #include "syms_merged.hpp"
@@ -45,10 +46,38 @@ namespace lotuskit::tas {
     }
 
     void Record::dumpCompletedInput(RecordInput* output, u32 outputDuration60) {
-        // TODO option for nx-TAS format? or at least KEY_ZL|KEY_X style button repr
+        u64 buttons = *(u64*)&(output->buttons);
+
         // TODO option to queue to bg file writer thread, instead of wasting time with socket send?
-        char buf[1000];
-        nn::util::SNPrintf(buf, sizeof(buf), "tas::input(%d, %lld, %d, %d, %d, %d);\n", outputDuration60, *(u64*)&(output->buttons), output->LStick.mX, output->LStick.mY, output->RStick.mX, output->RStick.mY);
-        Logger::logText(buf, "/tas/Record");
+        //constexpr bool useFormat_nxTASAll = false; // TODO option for pure nx-TAS output? tsv?
+        constexpr bool useFormat_nxTASButtons = true;
+        if (useFormat_nxTASButtons) {
+            std::string buttonsStr = "";
+            if (buttons & (1 << 0)) { buttonsStr += "|KEY_A"; }
+            if (buttons & (1 << 1)) { buttonsStr += "|KEY_B"; }
+            if (buttons & (1 << 2)) { buttonsStr += "|KEY_X"; }
+            if (buttons & (1 << 3)) { buttonsStr += "|KEY_Y"; }
+            if (buttons & (1 << 6)) { buttonsStr += "|KEY_L"; }
+            if (buttons & (1 << 7)) { buttonsStr += "|KEY_R"; }
+            if (buttons & (1 << 8)) { buttonsStr += "|KEY_ZL"; }
+            if (buttons & (1 << 9)) { buttonsStr += "|KEY_ZR"; }
+            if (buttons & (1 << 10)) { buttonsStr += "|KEY_PLUS"; }
+            if (buttons & (1 << 11)) { buttonsStr += "|KEY_MINUS"; }
+            if (buttons & (1 << 12)) { buttonsStr += "|KEY_DLEFT"; }
+            if (buttons & (1 << 13)) { buttonsStr += "|KEY_DUP"; }
+            if (buttons & (1 << 14)) { buttonsStr += "|KEY_DRIGHT"; }
+            if (buttons & (1 << 15)) { buttonsStr += "|KEY_DDOWN"; }
+            if (buttons & (1 << 4)) { buttonsStr += "|KEY_LSTICK"; }
+            if (buttons & (1 << 5)) { buttonsStr += "|KEY_RSTICK"; }
+            if (buttonsStr.size() == 0) { buttonsStr = " NONE"; }
+
+            char buf[1000];
+            nn::util::SNPrintf(buf, sizeof(buf), "tas::input(%d, %s, %d, %d, %d, %d);\n", outputDuration60, buttonsStr.c_str()+1, output->LStick.mX, output->LStick.mY, output->RStick.mX, output->RStick.mY);
+            Logger::logText(buf, "/tas/Record");
+        } else {
+            char buf[1000];
+            nn::util::SNPrintf(buf, sizeof(buf), "tas::input(%d, %lld, %d, %d, %d, %d);\n", outputDuration60, buttons, output->LStick.mX, output->LStick.mY, output->RStick.mX, output->RStick.mY);
+            Logger::logText(buf, "/tas/Record");
+        }
     }
 } // ns
