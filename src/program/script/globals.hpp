@@ -8,15 +8,98 @@
 using json = nlohmann::json;
 using Logger = lotuskit::Logger;
 
+#include "heap/seadHeapMgr.h"
+#include "thread/seadThread.h"
+#include "syms_merged.hpp"
+
+
 namespace lotuskit::script::globals {
-    void trashPrintHookLimits() {
-        Logger::logJson(json::object({
-            {"inlineUsed", exl::hook::nx64::InlineEntryIndex},
-            {"inlineMax", exl::hook::nx64::InlinePoolCount},
-            {"hookUsed", exl::hook::nx64::HookEntryIndex},
-            {"hookMax", exl::hook::nx64::HookMax}
-        }), "/script/trashPrintHookLimits");
-    }
+
+    namespace sys {
+        void hookLimits() {
+            Logger::logJson(json::object({
+                {"inlineUsed", exl::hook::nx64::InlineEntryIndex},
+                {"inlineMax", exl::hook::nx64::InlinePoolCount},
+                {"hookUsed", exl::hook::nx64::HookEntryIndex},
+                {"hookMax", exl::hook::nx64::HookMax}
+            }), "/script/sys/hookLimits");
+        }
+        void heapInfo() {
+            const auto rootheap0 = sead::HeapMgr::sRootHeaps[0];
+            sead::Heap* h = rootheap0; // current/visiting entry
+            sead::Heap* htmp = nullptr;
+            u32 depth = 0;
+            char printbuf[256];
+            char leftpad[65] = "                                                                ";
+
+            HEAPINFO_VISIT:
+            // log the entry
+            leftpad[depth*4] = '\0'; // assert depth <= 16
+            nn::util::SNPrintf(printbuf, sizeof(printbuf), "%s%s(%p)", leftpad, h->getName().cstr(), h);
+            Logger::logJson(json::object({
+                {"msg", printbuf},
+                //{"ptr", h}, {"depth", depth}, // TODO hex string? proper tree/ptr structure? split up printbuf
+                {"size", h->getSize()},
+                {"free", h->getFreeSize()}
+            }), "/script/sys/heapInfo");
+            leftpad[depth*4] = ' ';
+
+            // keep descending into first child
+            htmp = h->mChildren.front();
+            if (htmp != nullptr) {
+                depth++;
+                h = htmp;
+                goto HEAPINFO_VISIT;
+            }
+
+            // no children, proceed to siblings
+            HEAPINFO_DO_NEXT:
+            if (h->mParent == nullptr) {
+                // assert h == rootheap0
+                return; // ok
+            }
+            htmp = h->mParent->mChildren.next(h);
+            if (htmp != nullptr) {
+                h = htmp;
+                goto HEAPINFO_VISIT; // advance through siblings
+            }
+
+            // no more siblings, ascend and continue advancing through the aunts and uncles
+            depth--;
+            h = h->mParent;
+            goto HEAPINFO_DO_NEXT; // advance through siblings
+
+            return; // unreachable
+        }
+        void threadInfo() {
+            sead::ThreadMgr* mgr = *exl::util::pointer_path::FollowSafe<sead::ThreadMgr*, sym::sead::ThreadMgr::sInstance::offset>();
+            sead::ThreadList* threads = &(mgr->mList);
+            //output["main"] = json::object({ {"id", mgr->mMainThread->getId()}, {"name", mgr->mMainThread->getName().cstr()} });
+            Logger::logJson(json::object({ {"id", mgr->mMainThread->getId()}, {"name", mgr->mMainThread->getName().cstr()}, {"isMainThread", true} }), "/script/sys/threadInfo");
+
+            // XXX ScopedLock<CriticalSection> lock(getListCS());
+            const auto end = threads->end();
+            for (auto it = threads->begin(); it != end; ++it) {
+                // they seem to always be running in practice?
+                /*
+                u32 state_ = (*it)->getState(); // SEAD_ENUM(State, cInitialized, cRunning, cQuitting, cTerminated, cReleased)
+                char state = state_ == 0 ? 'i' : // initialized
+                             state_ == 1 ? 'r' : // running
+                             state_ == 2 ? 'q' : // quitting
+                             state_ == 3 ? 't' : // terminated
+                             state_ == 4 ? '_' : // released
+                             '?';
+                */
+                auto name = (*it)->getName().cstr();
+                auto tid = (*it)->getId();
+                //FIXME cant log all at once -- stack or fakeheap exhausted? idk. TODO break off a sead::Heap and alloc more stuff through it
+                //output[std::to_string(tid)] = json::object({ {"id", tid}, {"name", name}, {"state", state} });
+                Logger::logJson(json::object({ {"id", tid}, {"name", name} }), "/script/sys/threadInfo");
+            }
+        }
+    } // ns
+
+    // ns Logger
     //void trashPrint(auto &msg) {
     //    const char* str = msg.c_str();
     //    svcOutputDebugString(str, strlen(str));
@@ -24,12 +107,17 @@ namespace lotuskit::script::globals {
     void trashPrintInt(int num) {
         Logger::logJson(json::object({ {"oink", num} }), "/script/trashPrintInt");
     }
+
     void registerGlobals(AngelScript::asIScriptEngine* engine) {
         //engine->SetDefaultNamespace("Logger");
         //engine->RegisterGlobalFunction("void logText(string, string)", AngelScript::asFUNCTION(Logger::logText), AngelScript::asCALL_CDECL);
-        s32 asErrno = engine->RegisterGlobalFunction("void trashPrintInt(int)", AngelScript::asFUNCTION(trashPrintInt), AngelScript::asCALL_CDECL); assert( asErrno >= 0 );
-        asErrno = engine->RegisterGlobalFunction("void trashPrintHookLimits()", AngelScript::asFUNCTION(trashPrintHookLimits), AngelScript::asCALL_CDECL); assert( asErrno >= 0 );
-        //asErrno = engine->RegisterGlobalFunction("void trashPrint(const string &in)", AngelScript::asFUNCTION(trashPrint), AngelScript::asCALL_CDECL); assert( asErrno >= 0 );
+        s32 asErrno = engine->RegisterGlobalFunction("void trashPrintInt(int)", AngelScript::asFUNCTION(trashPrintInt), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        //asErrno = engine->RegisterGlobalFunction("void trashPrint(const string &in)", AngelScript::asFUNCTION(trashPrint), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+
+        engine->SetDefaultNamespace("sys");
+        asErrno = engine->RegisterGlobalFunction("void hookLimits()", AngelScript::asFUNCTION(sys::hookLimits), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void heapInfo()", AngelScript::asFUNCTION(sys::heapInfo), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void threadInfo()", AngelScript::asFUNCTION(sys::threadInfo), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
 
         engine->SetDefaultNamespace("tas");
         asErrno = engine->RegisterGlobalFunction(

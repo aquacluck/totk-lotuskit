@@ -163,6 +163,12 @@
     };
 
 
+    // script format stuff
+    function wrap_implicit_main(script_text) {
+        return `void main() { ${script_text} \n}`; // newline closes any trailing line comment
+    }
+
+
     // general vector stuff
 
     class VecUtil {
@@ -289,18 +295,9 @@
     };
 
     class QuickDumps extends Component {
-        do_heapinfo() {
-            // TODO await+display results?
-            //fetch(`/backend/memutils/heapinfo/invoke?uniq_id=${WSTransport.make_uniq_id()}`, {method: "post"});
-            WSTransport.send({uhh: "cowabunga dudes", 420: 69}); // small
-            WSTransport.send({uhh: "medium", 100: (420).toFixed(100), 200: (420).toFixed(100)});
-            // XXX aint gonna need large (>64KB) for awhile until we send large binary (eg savedata blobs)
-        }
-        do_threadinfo() {
-            // TODO await+display results?
-            fetch(`/backend/memutils/threadinfo/invoke?uniq_id=${WSTransport.make_uniq_id()}`, {method: "post"});
-        }
-
+        // TODO display output somewhere?
+        do_heapinfo() { WSTransport.send({execScriptString: wrap_implicit_main("sys::heapInfo();")}); }
+        do_threadinfo() { WSTransport.send({execScriptString: wrap_implicit_main("sys::threadInfo();")}); }
         render(props, state) {
             // TODO region picker
             return html`
@@ -324,23 +321,18 @@
             this.output_text_ref = createRef();
         }
 
-        wrap_implicit_main(script_text) {
-            return `void main() { ${script_text} \n}`; // newline closes any trailing line comment
-        }
-
         do_exec() {
             let script_text = this.script_text_ref.current.value;
             if (this.use_implicit_main_ref.current.checked) {
-                script_text = this.wrap_implicit_main(script_text);
+                script_text = wrap_implicit_main(script_text);
             }
             WSTransport.send({execScriptString: script_text});
         }
 
         do_toggle_record() {
-            // TODO extract some of this up to WSTransport/etc sugar
-            // TODO subscribe to ns, opt-in req id to await specific calls (eg to learn what new ns to subscribe)?
+            // TODO opt-in req id to await specific calls (eg to learn what new ns to subscribe)?
             // TODO use ns to build signal structure?
-            WSTransport.send({execScriptString: this.wrap_implicit_main("tas::toggleDump();")});
+            WSTransport.send({execScriptString: wrap_implicit_main("tas::toggleDump();")});
         }
 
         recv_tas_record(payload) {
@@ -354,13 +346,13 @@
             return html`
                 <div class="execscript">
                     <br/>AngelScript
-                    <button onClick=${ () => this.do_exec() } class="pushbutton">exec</button>
+                    <button title="Run the script below" onClick=${ () => this.do_exec() } class="pushbutton">exec</button>
                     <label title="Automatically wrap input into void main() {...} entry point" for="execscript_use_implicit_main">implicit main:</label>
                     <input type="checkbox" id="execscript_use_implicit_main" ref=${this.use_implicit_main_ref} checked />
-                    <button title='Toggle "record" over logger' onClick=${ () => this.do_toggle_record() } class="pushbutton">tas dump</button>
+                    <button title='Toggle "record" into output field' onClick=${ () => this.do_toggle_record() } class="pushbutton">tas dump</button>
                     <br/>
-                    <textarea placeholder="trashPrintHookLimits();\ntrashPrintInt(420);" ref=${this.script_text_ref}></textarea>
-                    <textarea placeholder="[output]" ref=${this.output_text_ref}></textarea>
+                    <textarea placeholder="// 1 frame @ 30fps = 2 @ 60fps:\ntas::input(2, KEY_A|KEY_B, 0, -32767, 0, 0);\n\nsys::heapInfo();\nsys::threadInfo();\nsys::hookLimits();" ref=${this.script_text_ref}></textarea>
+                    <textarea placeholder="[tas output]" ref=${this.output_text_ref}></textarea>
                 </div>
             `;
         }
