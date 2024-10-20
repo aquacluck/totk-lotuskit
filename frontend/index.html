@@ -298,7 +298,7 @@
         do_exec() {
             let script_text = this.script_text_ref.current.value;
             if (this.use_implicit_main_ref.current.checked) {
-                script_text = `void main() { ${script_text} }`;
+                script_text = `void main() { ${script_text} \n}`; // newline closes any trailing line comment
             }
             WSTransport.send({execScriptString: script_text});
         }
