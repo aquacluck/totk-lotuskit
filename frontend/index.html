@@ -12,6 +12,7 @@
 
     class WSTransport {
         static websock = undefined;
+        static ns_subscriptions = {}; // {ns_json_pointer: [cbfunc, ...]}
         static _new_actor_signal_group() {
             return {
                 pos32: signal([0.0, 0.0, 0.0]),
@@ -97,7 +98,19 @@
             //});
         }
 
-        static consume_ws_msg(dgram_arr) {
+        static consume_ws_msg(payload) {
+            const ns = payload.sys.ns;
+            if (ns in WSTransport.ns_subscriptions) {
+                WSTransport.ns_subscriptions[ns].forEach(cb => cb(payload));
+
+            } else if ("msg" in payload) {
+                console.log(payload["msg"]);
+
+            } else if ("err" in payload) {
+                console.error(payload["err"]);
+            }
+
+            /*// dead
             const [uniq_id, ns, payload] = dgram_arr;
 
             // Filter out noisy/instrumentation/etc logs
@@ -128,13 +141,25 @@
             else if (ns == "BACKEND_CONFIG") {
                 if ("backend_is_connected" in payload) { WSTransport.signals.config.proxy.backend_is_connected.value = payload.backend_is_connected; }
             }
+            */
         }
 
+        static subscribe_ns(ns, cbfunc) {
+            // TODO dedupe, unsubscribe?
+            if (ns in WSTransport.ns_subscriptions) {
+                WSTransport.ns_subscriptions[ns].push(cbfunc);
+            } else {
+                WSTransport.ns_subscriptions[ns] = [cbfunc];
+            }
+        }
+
+        /*// dead
         static make_uniq_id() {
             var id = Math.floor(Math.random() * 0xffffffff);
             id = id.toString(16).padStart(8, '0');
             return "0x"+id;
         }
+        */
     };
 
 
@@ -291,16 +316,36 @@
     class ExecScript extends Component {
         constructor() {
             super();
+
             this.script_text_ref = createRef();
             this.use_implicit_main_ref = createRef();
+
+            WSTransport.subscribe_ns("/tas/Record", this.recv_tas_record.bind(this))
+            this.output_text_ref = createRef();
+        }
+
+        wrap_implicit_main(script_text) {
+            return `void main() { ${script_text} \n}`; // newline closes any trailing line comment
         }
 
         do_exec() {
             let script_text = this.script_text_ref.current.value;
             if (this.use_implicit_main_ref.current.checked) {
-                script_text = `void main() { ${script_text} \n}`; // newline closes any trailing line comment
+                script_text = this.wrap_implicit_main(script_text);
             }
             WSTransport.send({execScriptString: script_text});
+        }
+
+        do_toggle_record() {
+            // TODO extract some of this up to WSTransport/etc sugar
+            // TODO subscribe to ns, opt-in req id to await specific calls (eg to learn what new ns to subscribe)?
+            // TODO use ns to build signal structure?
+            WSTransport.send({execScriptString: this.wrap_implicit_main("tas::toggleDump();")});
+        }
+
+        recv_tas_record(payload) {
+            const el = this.output_text_ref.current;
+            el.value += payload["msg"];
         }
 
         render(props, state) {
@@ -308,11 +353,14 @@
             // TODO ctrl+enter do_exec()
             return html`
                 <div class="execscript">
-                    <br/>AngelScript <button onClick=${ () => this.do_exec() } class="pushbutton">exec</button>
+                    <br/>AngelScript
+                    <button onClick=${ () => this.do_exec() } class="pushbutton">exec</button>
                     <label title="Automatically wrap input into void main() {...} entry point" for="execscript_use_implicit_main">implicit main:</label>
                     <input type="checkbox" id="execscript_use_implicit_main" ref=${this.use_implicit_main_ref} checked />
+                    <button title='Toggle "record" over logger' onClick=${ () => this.do_toggle_record() } class="pushbutton">tas dump</button>
                     <br/>
                     <textarea placeholder="trashPrintHookLimits();\ntrashPrintInt(420);" ref=${this.script_text_ref}></textarea>
+                    <textarea placeholder="[output]" ref=${this.output_text_ref}></textarea>
                 </div>
             `;
         }

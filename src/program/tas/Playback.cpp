@@ -66,4 +66,4 @@ namespace lotuskit::tas {
             ctx->Suspend(); // assert ctx->GetState() == asEXECUTION_SUSPENDED
         }
     }
-}
+} // ns

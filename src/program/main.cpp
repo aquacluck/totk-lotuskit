@@ -9,6 +9,7 @@
 #include "server/WebSocket.hpp"
 #include "script/engine.hpp"
 #include "tas/Playback.hpp"
+#include "tas/Record.hpp"
 using Logger = lotuskit::Logger;
 
 
@@ -51,6 +52,7 @@ HOOK_DEFINE_TRAMPOLINE(MainGetNpadStates) {
         nn::hid::NpadBaseState* state = (nn::hid::NpadBaseState*)(param_1 + target_idk * 0xe98 + 0x58);
         //Logger::main->logf(NS_TAS, R"({"state": "%p", "sample": %d, "tick": %d, "LDown": "%d %d"})", state, state->mSamplingNumber, tick, state->mAnalogStickL.mY, state->mButtons);
         lotuskit::tas::Playback::applyCurrentInput(state);
+        lotuskit::tas::Record::applyCurrentInput(state);
     }
 };
 
@@ -62,6 +64,7 @@ HOOK_DEFINE_TRAMPOLINE(WorldManagerModuleBaseProcHook) {
         //Logger::logJson(json::object({{"kee", "vee"}, {"k2", 420}}));
 
         lotuskit::tas::Playback::calc(); // may re-enter script when currently scheduled input is complete
+        lotuskit::tas::Record::calc();
         lotuskit::server::WebSocket::calc(); // noblock recv, but blocking processing if enabled
 
         Orig(self, param_2, param_3, param_4, wmmodule, param_6);

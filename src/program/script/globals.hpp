@@ -3,6 +3,7 @@
 #include "angelscript.h"
 #include "lib/json.hpp"
 #include "tas/Playback.hpp"
+#include "tas/Record.hpp"
 #include "Logger.hpp"
 using json = nlohmann::json;
 using Logger = lotuskit::Logger;
@@ -34,6 +35,11 @@ namespace lotuskit::script::globals {
         asErrno = engine->RegisterGlobalFunction(
             "void input(uint duration60=2, uint64 nextButtons=0, int nextLStickX=0, int nextLStickY=0, int nextRStickX=0, int nextRStickY=0)",
             AngelScript::asFUNCTION(lotuskit::tas::Playback::setCurrentInput),
+            AngelScript::asCALL_CDECL
+        ); assert( asErrno >= 0 );
+        asErrno = engine->RegisterGlobalFunction(
+            "void toggleDump()",
+            AngelScript::asFUNCTION(lotuskit::tas::Record::trashToggleDump),
             AngelScript::asCALL_CDECL
         ); assert( asErrno >= 0 );
 
