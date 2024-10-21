@@ -6,10 +6,12 @@
 
 #include "Config.hpp"
 #include "Logger.hpp"
+#include "TextWriter.hpp"
 #include "server/WebSocket.hpp"
 #include "script/engine.hpp"
 #include "tas/Playback.hpp"
 #include "tas/Record.hpp"
+#include "util/romfs.hpp"
 using Logger = lotuskit::Logger;
 
 
@@ -24,6 +26,7 @@ HOOK_DEFINE_INLINE(StealHeap) {
         stolenHeap = reinterpret_cast<sead::Heap*>(ctx->X[22]);
 #endif
         svcOutputDebugString("yoink", 5);
+        lotuskit::TextWriter::assignHeap(stolenHeap);
         lotuskit::script::engine::assignHeap(stolenHeap);
         lotuskit::script::engine::createAndConfigureEngine();
     }
@@ -50,7 +53,6 @@ HOOK_DEFINE_TRAMPOLINE(MainGetNpadStates) {
 
         constexpr u32 target_idk = 0; // styleset? iterates over 3?
         nn::hid::NpadBaseState* state = (nn::hid::NpadBaseState*)(param_1 + target_idk * 0xe98 + 0x58);
-        //Logger::main->logf(NS_TAS, R"({"state": "%p", "sample": %d, "tick": %d, "LDown": "%d %d"})", state, state->mSamplingNumber, tick, state->mAnalogStickL.mY, state->mButtons);
         lotuskit::tas::Playback::applyCurrentInput(state);
         lotuskit::tas::Record::applyCurrentInput(state);
     }
@@ -95,28 +97,23 @@ HOOK_DEFINE_INLINE(nnMainHook) {
         //OnWhistleHook::Install();
         MainGetNpadStates::Install();
 
-
-        /*
         // hooks for textwriter overlay
         bool do_textwriter = (
-            ConfigHelper::FileExists("content:/Lib/sead/nvn_font/nvn_font.ntx") &&
-            ConfigHelper::FileExists("content:/Lib/sead/nvn_font/nvn_font_jis1.ntx") &&
-            ConfigHelper::FileExists("content:/Lib/sead/nvn_font/nvn_font_jis1_mipmap.xtx") &&
-            ConfigHelper::FileExists("content:/Lib/sead/nvn_font/nvn_font_jis1_tbl.bin") &&
-            ConfigHelper::FileExists("content:/Lib/sead/nvn_font/nvn_font_shader.bin") &&
-            ConfigHelper::FileExists("content:/Lib/sead/nvn_font/nvn_font_shader_jis1.bin") &&
-            ConfigHelper::FileExists("content:/Lib/sead/nvn_font/nvn_font_shader_jis1_mipmap.bin") &&
-            ConfigHelper::FileExists("content:/Lib/sead/primitive_renderer/primitive_drawer_nvn_shader.bin")
+            lotuskit::util::romfs::fileExists("content:/Lib/sead/nvn_font/nvn_font.ntx") &&
+            lotuskit::util::romfs::fileExists("content:/Lib/sead/nvn_font/nvn_font_jis1.ntx") &&
+            lotuskit::util::romfs::fileExists("content:/Lib/sead/nvn_font/nvn_font_jis1_mipmap.xtx") &&
+            lotuskit::util::romfs::fileExists("content:/Lib/sead/nvn_font/nvn_font_jis1_tbl.bin") &&
+            lotuskit::util::romfs::fileExists("content:/Lib/sead/nvn_font/nvn_font_shader.bin") &&
+            lotuskit::util::romfs::fileExists("content:/Lib/sead/nvn_font/nvn_font_shader_jis1.bin") &&
+            lotuskit::util::romfs::fileExists("content:/Lib/sead/nvn_font/nvn_font_shader_jis1_mipmap.bin") &&
+            lotuskit::util::romfs::fileExists("content:/Lib/sead/primitive_renderer/primitive_drawer_nvn_shader.bin")
         );
         if (do_textwriter) {
-            StealHeap::Install();
-            GetCreateArg::Setup();
-            GetCreateArg::Install();
-            DebugDrawEnsureFont::Setup();
-            DebugDrawEnsureFont::Install();
-            DebugDrawImpl::Install(); // main_draw.hpp
+            lotuskit::TextWriterHooks::GetCreateArg::Install();
+            lotuskit::TextWriterHooks::DebugDrawEnsureFont::Setup();
+            lotuskit::TextWriterHooks::DebugDrawEnsureFont::Install();
+            lotuskit::TextWriterHooks::DebugDrawHook::Install();
         }
-        */
 
         //InputHelper::initKBM();
         //InputHelper::setPort(0); // default controller port
