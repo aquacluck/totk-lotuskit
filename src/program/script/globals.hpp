@@ -97,6 +97,10 @@ namespace lotuskit::script::globals {
                 Logger::logJson(json::object({ {"id", tid}, {"name", name} }), "/script/sys/threadInfo");
             }
         }
+        void suspendCtx() {
+            AngelScript::asIScriptContext *ctx = AngelScript::asGetActiveContext();
+            if (ctx != nullptr) { ctx->Suspend(); }
+        }
     } // ns
 
     // ns Logger
@@ -104,20 +108,23 @@ namespace lotuskit::script::globals {
     //    const char* str = msg.c_str();
     //    svcOutputDebugString(str, strlen(str));
     //}
-    void trashPrintInt(int num) {
-        Logger::logJson(json::object({ {"oink", num} }), "/script/trashPrintInt");
-    }
+    //void trashPrintInt(int num) {
+    //    Logger::logJson(json::object({ {"oink", num} }), "/script/trashPrintInt");
+    //}
 
     void registerGlobals(AngelScript::asIScriptEngine* engine) {
+        s32 asErrno = engine->RegisterGlobalFunction("void yield()", AngelScript::asFUNCTION(sys::suspendCtx), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+
         //engine->SetDefaultNamespace("Logger");
         //engine->RegisterGlobalFunction("void logText(string, string)", AngelScript::asFUNCTION(Logger::logText), AngelScript::asCALL_CDECL);
-        s32 asErrno = engine->RegisterGlobalFunction("void trashPrintInt(int)", AngelScript::asFUNCTION(trashPrintInt), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        //s32 asErrno = engine->RegisterGlobalFunction("void trashPrintInt(int)", AngelScript::asFUNCTION(trashPrintInt), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
         //asErrno = engine->RegisterGlobalFunction("void trashPrint(const string &in)", AngelScript::asFUNCTION(trashPrint), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
 
         engine->SetDefaultNamespace("sys");
         asErrno = engine->RegisterGlobalFunction("void hookLimits()", AngelScript::asFUNCTION(sys::hookLimits), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
         asErrno = engine->RegisterGlobalFunction("void heapInfo()", AngelScript::asFUNCTION(sys::heapInfo), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
         asErrno = engine->RegisterGlobalFunction("void threadInfo()", AngelScript::asFUNCTION(sys::threadInfo), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void suspendCtx()", AngelScript::asFUNCTION(sys::suspendCtx), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
 
         engine->SetDefaultNamespace("tas");
         asErrno = engine->RegisterGlobalFunction(

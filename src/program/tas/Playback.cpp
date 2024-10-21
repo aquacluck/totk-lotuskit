@@ -49,8 +49,9 @@ namespace lotuskit::tas {
 
     void Playback::setCurrentInput(u32 duration60, u64 nextButtons, s32 nextLStickX, s32 nextLStickY, s32 nextRStickX, s32 nextRStickY) {
         // called by tas script to specify input for next n frames
-        AngelScript::asIScriptContext *ctx = AngelScript::asGetActiveContext();
+        if (duration60 == 0) { return; } // ignore
 
+        AngelScript::asIScriptContext *ctx = AngelScript::asGetActiveContext();
         if (ctx != nullptr) {
             //TODO atomic toggle between double buffer currentInput+nextInput
             currentInputTTL60 = duration60;
