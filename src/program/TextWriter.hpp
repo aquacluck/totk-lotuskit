@@ -1,11 +1,14 @@
 #pragma once
+#include <atomic>
 #include "lib.hpp"
 #include "syms_merged.hpp"
 #include "Logger.hpp"
 using Logger = lotuskit::Logger;
 
 #include "nn/nn.h"
+#include "nn/util.h"
 #include "heap/seadHeap.h"
+#include "heap/seadFrameHeap.h"
 #include "math/seadVector.hpp"
 
 // agl+gfx include
@@ -18,6 +21,22 @@ using Logger = lotuskit::Logger;
 
 
 namespace lotuskit {
+    class TextWriterExt;
+    using TextWriterDrawCallback = void(*)(TextWriterExt*);
+
+    struct TextWriterDrawNode {
+        // nodes drawn sequentially, invoking fn if set (eg for positioning) and drawing outputText if set
+        char* outputText;
+        TextWriterDrawCallback fn;
+        std::atomic<TextWriterDrawNode*> next;
+    };
+
+    struct TextWriterDrawFrame {
+        static constexpr size_t MAX_DRAWLISTS = 8;
+        inline static std::atomic<TextWriterDrawNode*> drawLists[MAX_DRAWLISTS] = {0}; // independent chains of calls (eg for different relative positionings)
+        inline static sead::FrameHeap* heap = nullptr; // draw state is wiped each frame
+    };
+
     class TextWriterExt: public sead::TextWriter {
         public:
         void getCursorFromTopLeftImpl(sead::Vector2f* pos) const {
@@ -47,8 +66,44 @@ namespace lotuskit {
 
     class TextWriter {
         public:
-        inline static sead::Heap* debugDrawerHeap = nullptr;
-        inline static void assignHeap(sead::Heap* heap) { debugDrawerHeap = heap; }
+        inline static void printf(size_t drawList_i, const char* fmt, auto&&... args) {
+            // FIXME some symbol export issue if placed in cpp? [rtld] Unresolved symbol: _ZN8lotuskit10TextWriter6printfIJRA4_KcEEEvmPS2_DpOT_
+
+            TextWriterDrawFrame* frame = currentDrawFrame;
+            TextWriterDrawNode* newNode = (TextWriterDrawNode*)frame->heap->alloc(sizeof(TextWriterDrawNode));
+            newNode->next.store(nullptr);
+
+            // set outputText
+            char buf[2000]; // TODO std::format etc with proper allocator?
+            nn::util::SNPrintf(buf, sizeof(buf), fmt, std::forward<decltype(args)>(args)...);
+            newNode->outputText = (char*)frame->heap->alloc(strlen(buf));
+            std::memcpy(newNode->outputText, buf, strlen(buf)+1);
+
+            // append newNode TODO extract
+            TextWriterDrawNode* cmpNode = nullptr; // ensure null at time of write
+            if (frame->drawLists[drawList_i].compare_exchange_weak(cmpNode, newNode)) { return; } // success -- appended to empty list
+            // not null, enter the list
+            TextWriterDrawNode* node = frame->drawLists[drawList_i].load();
+            while (true) {
+                cmpNode = nullptr; // ensure null at time of write
+                if (node->next.compare_exchange_weak(cmpNode, newNode)) { return; } // success
+                // not null, traverse into next
+                node = cmpNode;
+            }
+        }
+
+        // buffer+swap+draw impl
+        static TextWriterDrawFrame drawFrames[2];
+        inline static TextWriterDrawFrame* currentDrawFrame = nullptr;
+        inline static sead::Heap* debugDrawerInternalHeap = nullptr; // idk what really happens in here yet
+        inline static void assignHeap(sead::Heap* heap) {
+            debugDrawerInternalHeap = heap;
+            currentDrawFrame = drawFrames;
+            drawFrames[0].heap = sead::FrameHeap::create(0x4000, "lotuskit::TextWriterDrawFrame[0]", heap, 8, sead::Heap::cHeapDirection_Forward, 0); // XXX what are args 4+6?
+            drawFrames[1].heap = sead::FrameHeap::create(0x4000, "lotuskit::TextWriterDrawFrame[1]", heap, 8, sead::Heap::cHeapDirection_Forward, 0);
+            //debugDrawCallHeap->alloc(32); debugDrawCallHeap->freeAll();
+        }
+        static void drawFrame(TextWriterExt*);
     };
 
     namespace TextWriterHooks {
@@ -98,7 +153,7 @@ namespace lotuskit {
                         void(*InitDebugDrawers)(sead::Heap*, GraphicsModuleCreateArg&) = nullptr;
                         void** tmp = (void**)(&InitDebugDrawers);
                         *tmp = exl::util::pointer_path::FollowSafe<void*, sym::agl::init_debug_drawers::offset>(); // hacks
-                        InitDebugDrawers(TextWriter::debugDrawerHeap, GetCreateArg::create_arg);
+                        InitDebugDrawers(TextWriter::debugDrawerInternalHeap, GetCreateArg::create_arg);
 
                         if (*sDefaultFont == nullptr) {
                             Logger::logText("init default font fail", "/TextWriter");
@@ -125,18 +180,7 @@ namespace lotuskit {
                 sead::TextWriter _writer(sead_draw_ctx, info.viewport);
                 TextWriterExt* writer = (TextWriterExt*)(&_writer);
 
-                sead::Vector2f text_pos; // screen is always represented as 1280x720, upscaled for 1080p
-                // scale: 0.665 @ 1080p = 1.0 at 720p. The re-up-scaling means reducing size here looks bad fast, 0.8 is legible
-                writer->mScale.x = 0.8;
-                writer->mScale.y = 0.8;
-                text_pos.x = 2.0;
-                text_pos.y = 2.0;
-
-                // no Player? either bootup or something very bad, unconditionally show feedback + version confirmation (if it'll even render) while we wait
-                // TODO source+display high level configs (socket, svclog, etc)
-                if (true) { //if (g_ModCommand_ActorWatcher[0].actor == nullptr) {
-                    writer->pprintf(text_pos, "[totk-lotuskit:%d] awaiting Player, main_offset=%p\n", TOTK_VERSION, exl::util::GetMainModuleInfo().m_Total.m_Start);
-                }
+                lotuskit::TextWriter::drawFrame(writer);
             }
         };
 

@@ -131,6 +131,13 @@ class createRootHeap_ {
 };
 }
 
+namespace sym::sead::FrameHeap {
+class create {
+    public:
+    inline static constexpr ptrdiff_t offset = 0x00b51918;
+};
+}
+
 namespace sym::sead::ThreadMgr {
 class sInstance {
     public:

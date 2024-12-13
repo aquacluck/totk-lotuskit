@@ -64,6 +64,11 @@ HOOK_DEFINE_TRAMPOLINE(WorldManagerModuleBaseProcHook) {
     static void Callback(double self, double param_2, double param_3, double param_4, void *wmmodule, void *param_6) {
         //Logger::logText("ffffeeeeddddcccc", "/HexDump/0", true); // blocking ws
         //Logger::logJson(json::object({{"kee", "vee"}, {"k2", 420}}));
+        // TODO source+display high level configs (socket, svclog, etc)?
+
+        if (true) { //if (g_ModCommand_ActorWatcher[0].actor == nullptr) {
+            lotuskit::TextWriter::printf(0, "[totk-lotuskit:%d] awaiting Player, main_offset=%p\n", TOTK_VERSION, exl::util::GetMainModuleInfo().m_Total.m_Start);
+        }
 
         lotuskit::tas::Playback::calc(); // may re-enter script when currently scheduled input is complete
         lotuskit::tas::Record::calc();

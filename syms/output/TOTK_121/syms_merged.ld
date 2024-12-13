@@ -25,6 +25,7 @@ _ZN4sead6Random6getU32Ev         = __main_start + 0x010f1c6c; /* sead::Random::g
 _ZN4sead7HeapMgr10sRootHeapsE    = __main_start + 0x04716c08; /* sead::HeapMgr::sRootHeaps */
 _ZN4sead7HeapMgr12sInstancePtrE  = __main_start + 0x04716ca0; /* sead::HeapMgr::sInstancePtr */
 _ZN4sead7HeapMgr15createRootHeap_Ev = __main_start + 0x00e7cdc4; /* sead::HeapMgr::createRootHeap_() */
+_ZN4sead9FrameHeap6createEmRKNS_14SafeStringBaseIcEEPNS_4HeapEiNS5_13HeapDirectionEb = __main_start + 0x00ac2bfc; /* sead::FrameHeap::create(unsigned long, sead::SafeStringBase<char> const&, sead::Heap*, int, sead::Heap::HeapDirection, bool) */
 _ZN4sead9ThreadMgr9sInstanceE    = __main_start + 0x04716e00; /* sead::ThreadMgr::sInstance */
 _ZN6engine5actor16ActorInstanceMgr22requestCreateActorSyncEPv = __main_start + 0x012a8b44; /* engine::actor::ActorInstanceMgr::requestCreateActorSync(void*) */
 _ZN6engine5actor16ActorInstanceMgr23requestCreateActorAsyncEPv = __main_start + 0x00ab92cc; /* engine::actor::ActorInstanceMgr::requestCreateActorAsync(void*) */
