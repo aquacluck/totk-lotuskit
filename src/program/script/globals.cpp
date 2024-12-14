@@ -173,7 +173,7 @@ namespace lotuskit::script::globals {
         ); assert( asErrno >= 0 );
 
         // define nx-TAS buttons: KEY_ZL;KEY_X -> KEY_ZL|KEY_X
-        engine->SetDefaultNamespace("");
+        engine->SetDefaultNamespace(""); // root
         asErrno = engine->RegisterEnum("nxTASButton"); assert(asErrno >= 0);
         asErrno = engine->RegisterEnumValue("nxTASButton", "NONE", 0); assert(asErrno >= 0);
         asErrno = engine->RegisterEnumValue("nxTASButton", "KEY_A", (1 << 0)); assert(asErrno >= 0);
@@ -202,7 +202,7 @@ namespace lotuskit::script::globals {
         */
 
         // actor system
-        engine->SetDefaultNamespace("");
+        engine->SetDefaultNamespace(""); // root
         asErrno = engine->RegisterObjectType("ActorBase", 0, AngelScript::asOBJ_REF | AngelScript::asOBJ_NOCOUNT); assert(asErrno >= 0);
         asErrno = engine->RegisterObjectMethod("ActorBase", "float get_pos_x() property", AngelScript::asFUNCTION(actor_pos_get_x), AngelScript::asCALL_CDECL_OBJLAST); assert(asErrno >= 0);
         asErrno = engine->RegisterObjectMethod("ActorBase", "float get_pos_y() property", AngelScript::asFUNCTION(actor_pos_get_y), AngelScript::asCALL_CDECL_OBJLAST); assert(asErrno >= 0);

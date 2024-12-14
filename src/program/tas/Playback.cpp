@@ -57,11 +57,22 @@ namespace lotuskit::tas {
         if (ctx != nullptr) {
             //TODO atomic toggle between double buffer currentInput+nextInput
             currentInputTTL60 = duration60;
-            *(u64*)&(currentInput.buttons) = nextButtons;
             currentInput.LStick.mX = nextLStickX;
             currentInput.LStick.mY = nextLStickY;
             currentInput.RStick.mX = nextRStickX;
             currentInput.RStick.mY = nextRStickY;
+
+            // rehydrate axis flags, matching 16400 sdk threshold (arguably bad for us, hiding low signals). idk why these are buttons but it's useful to preserve them for InputDisplay
+            if (nextLStickX >  16400) { nextButtons |= (1 << (u32)nn::hid::NpadButton::StickLRight); }
+            if (nextLStickX < -16400) { nextButtons |= (1 << (u32)nn::hid::NpadButton::StickLLeft); }
+            if (nextLStickY >  16400) { nextButtons |= (1 << (u32)nn::hid::NpadButton::StickLUp); }
+            if (nextLStickY < -16400) { nextButtons |= (1 << (u32)nn::hid::NpadButton::StickLDown); }
+            if (nextRStickX >  16400) { nextButtons |= (1 << (u32)nn::hid::NpadButton::StickRRight); }
+            if (nextRStickX < -16400) { nextButtons |= (1 << (u32)nn::hid::NpadButton::StickRLeft); }
+            if (nextRStickY >  16400) { nextButtons |= (1 << (u32)nn::hid::NpadButton::StickRUp); }
+            if (nextRStickY < -16400) { nextButtons |= (1 << (u32)nn::hid::NpadButton::StickRDown); }
+
+            *(u64*)&(currentInput.buttons) = nextButtons;
             isPlaybackActive = true;
 
             // yield execution from script back to game, to be resumed in n frames
