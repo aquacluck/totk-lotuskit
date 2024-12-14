@@ -48,6 +48,7 @@ namespace lotuskit::tas {
     }
 
     void Record::dumpCompletedInput(RecordInput* output, u32 outputDuration60) {
+        if (outputDuration60 == 0) { return; }
         u64 buttons = *(u64*)&(output->buttons);
 
         // TODO option to queue to bg file writer thread, instead of wasting time with socket send?
