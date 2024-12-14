@@ -1,15 +1,18 @@
+#include <string.h>
 #include "lib.hpp"
 #include "nn/hid.h"
 #include "nn/util.h"
 #include "heap/seadHeap.h"
 #include "syms_merged.hpp"
 
+#include "structs/engineActor.hpp"
 #include "Config.hpp"
 #include "Logger.hpp"
 #include "HexDump.hpp"
 #include "TextWriter.hpp"
 #include "server/WebSocket.hpp"
 #include "script/engine.hpp"
+#include "script/globals.hpp"
 #include "tas/InputDisplay.hpp"
 #include "tas/Playback.hpp"
 #include "tas/Record.hpp"
@@ -43,6 +46,44 @@ HOOK_DEFINE_TRAMPOLINE(OnWhistleHook) {
     }
 };
 */
+
+HOOK_DEFINE_TRAMPOLINE(ActorRelationAddHook) {
+    static const ptrdiff_t s_offset = sym::engine::actor::ActorMgr::registerActorRelation::offset;
+
+    static u32 Callback(engine::actor::ActorMgr &actorMgr, engine::actor::ActorBase &parent, engine::actor::ActorBase &child) {
+        u32 result = Orig(actorMgr, parent, child);
+
+        // register ResidentActors for use everywhere
+        if (!strcmp(parent.mName.cstr(), "Player") && lotuskit::script::globals::ResidentActors::Player != &parent) {
+            lotuskit::script::globals::ResidentActors::Player = &parent;
+            Logger::logJson(json::object({ {"Player", (u64)(&parent)} }), "/hook/sym/ActorMgr_registerActorRelation");
+        }
+        if (!strcmp(parent.mName.cstr(), "PlayerCamera") && lotuskit::script::globals::ResidentActors::PlayerCamera != &parent) {
+            lotuskit::script::globals::ResidentActors::PlayerCamera = &parent;
+            Logger::logJson(json::object({ {"PlayerCamera", (u64)(&parent)} }), "/hook/sym/ActorMgr_registerActorRelation");
+        }
+        if (!strcmp(parent.mName.cstr(), "EventCamera") && lotuskit::script::globals::ResidentActors::EventCamera != &parent) {
+            lotuskit::script::globals::ResidentActors::EventCamera = &parent;
+            Logger::logJson(json::object({ {"EventCamera", (u64)(&parent)} }), "/hook/sym/ActorMgr_registerActorRelation");
+        }
+
+        // TODO logging settings
+        if (false) {
+            Logger::logJson(json::object({
+                {"parent", json::object({
+                    {"name", parent.mName.cstr()},
+                    {"ringSize", parent.mDependencyRing.mSize}
+                })},
+                {"child", json::object({
+                    {"name", child.mName.cstr()},
+                    {"ringSize", child.mDependencyRing.mSize}
+                })}
+            }), "/hook/sym/ActorMgr_registerActorRelation");
+        }
+
+        return result;
+    }
+};
 
 HOOK_DEFINE_TRAMPOLINE(MainGetNpadStates) {
     static const ptrdiff_t s_offset = sym::engine::MainGetNpadStates::offset; // hacks
@@ -112,6 +153,7 @@ HOOK_DEFINE_INLINE(nnMainHook) {
         WorldManagerModuleBaseProcHook::Install(); // "main loop"
         StealHeap::Install(); // called once, a bit later during bootup
         //OnWhistleHook::Install();
+        ActorRelationAddHook::Install();
         MainGetNpadStates::Install();
 
         // hooks for textwriter overlay

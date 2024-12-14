@@ -300,7 +300,9 @@ public:
 
     void clear() { mHead = mSize = 0; }
 
+#if not LOTUSKIT_HACK_SKIP_PRIVATE
 protected:
+#endif
     s32 calcRealIdx(s32 idx) const
     {
         s32 real_idx = mHead + idx;

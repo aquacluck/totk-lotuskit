@@ -1,0 +1,14 @@
+diff --git a/dt_totk/lib/sead/include/container/seadRingBuffer.h b/dt_totk/lib/sead/include/container/seadRingBuffer.h
+index ff9c08f..4f1e4e6 100755
+--- a/dt_totk/lib/sead/include/container/seadRingBuffer.h
++++ b/dt_totk/lib/sead/include/container/seadRingBuffer.h
+@@ -300,7 +300,9 @@ public:
+ 
+     void clear() { mHead = mSize = 0; }
+ 
++#if not LOTUSKIT_HACK_SKIP_PRIVATE
+ protected:
++#endif
+     s32 calcRealIdx(s32 idx) const
+     {
+         s32 real_idx = mHead + idx;
