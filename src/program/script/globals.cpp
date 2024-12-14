@@ -9,6 +9,7 @@
 #include "TextWriter.hpp"
 using json = nlohmann::json;
 using Logger = lotuskit::Logger;
+#include <math/seadVector.h>
 #include "heap/seadHeapMgr.h"
 #include "thread/seadThread.h"
 #include "syms_merged.hpp"
@@ -133,6 +134,10 @@ namespace lotuskit::script::globals {
         }
     } // ns
 
+    float actor_pos_get_x(::engine::actor::ActorBase* actor) { return actor->mPosition.x; }
+    float actor_pos_get_y(::engine::actor::ActorBase* actor) { return actor->mPosition.y; }
+    float actor_pos_get_z(::engine::actor::ActorBase* actor) { return actor->mPosition.z; }
+
     void registerGlobals(AngelScript::asIScriptEngine* engine) {
         s32 asErrno = engine->RegisterGlobalFunction("void yield()", AngelScript::asFUNCTION(sys::suspendCtx), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
 
@@ -188,8 +193,21 @@ namespace lotuskit::script::globals {
         asErrno = engine->RegisterEnumValue("nxTASButton", "KEY_LSTICK", (1 << 4)); assert(asErrno >= 0);
         asErrno = engine->RegisterEnumValue("nxTASButton", "KEY_RSTICK", (1 << 5)); assert(asErrno >= 0);
 
+        /* //no worky
+        engine->SetDefaultNamespace("sead");
+        asErrno = engine->RegisterObjectType("Vector3f", 0, AngelScript::asOBJ_REF | AngelScript::asOBJ_NOCOUNT); assert(asErrno >= 0);
+        asErrno = engine->RegisterObjectProperty("Vector3f", "float x", asOFFSET(sead::Vector3f, x)); assert(asErrno >= 0);
+        asErrno = engine->RegisterObjectProperty("Vector3f", "float y", asOFFSET(sead::Vector3f, y)); assert(asErrno >= 0);
+        asErrno = engine->RegisterObjectProperty("Vector3f", "float z", asOFFSET(sead::Vector3f, z)); assert(asErrno >= 0);
+        */
+
         // actor system
+        engine->SetDefaultNamespace("");
         asErrno = engine->RegisterObjectType("ActorBase", 0, AngelScript::asOBJ_REF | AngelScript::asOBJ_NOCOUNT); assert(asErrno >= 0);
+        asErrno = engine->RegisterObjectMethod("ActorBase", "float get_pos_x() property", AngelScript::asFUNCTION(actor_pos_get_x), AngelScript::asCALL_CDECL_OBJLAST); assert(asErrno >= 0);
+        asErrno = engine->RegisterObjectMethod("ActorBase", "float get_pos_y() property", AngelScript::asFUNCTION(actor_pos_get_y), AngelScript::asCALL_CDECL_OBJLAST); assert(asErrno >= 0);
+        asErrno = engine->RegisterObjectMethod("ActorBase", "float get_pos_z() property", AngelScript::asFUNCTION(actor_pos_get_z), AngelScript::asCALL_CDECL_OBJLAST); assert(asErrno >= 0);
+        //asErrno = engine->RegisterObjectProperty("ActorBase", "sead::Vector3f &pos", asOFFSET(::engine::actor::ActorBase, mPosition)); assert(asErrno >= 0);
         //engine->SetDefaultNamespace("ResidentActors");
         asErrno = engine->RegisterGlobalProperty("ActorBase@ Player", &ResidentActors::Player); assert(asErrno >= 0);
         asErrno = engine->RegisterGlobalProperty("ActorBase@ PlayerCamera", &ResidentActors::PlayerCamera); assert(asErrno >= 0);
