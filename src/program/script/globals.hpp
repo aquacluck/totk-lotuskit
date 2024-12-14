@@ -16,14 +16,6 @@ using Logger = lotuskit::Logger;
 namespace lotuskit::script::globals {
 
     namespace sys {
-        void hookLimits() {
-            Logger::logJson(json::object({
-                {"inlineUsed", exl::hook::nx64::InlineEntryIndex},
-                {"inlineMax", exl::hook::nx64::InlinePoolCount},
-                {"hookUsed", exl::hook::nx64::HookEntryIndex},
-                {"hookMax", exl::hook::nx64::HookMax}
-            }), "/script/sys/hookLimits");
-        }
         void heapInfo() {
             const auto rootheap0 = sead::HeapMgr::sRootHeaps[0];
             sead::Heap* h = rootheap0; // current/visiting entry
@@ -70,6 +62,31 @@ namespace lotuskit::script::globals {
             goto HEAPINFO_DO_NEXT; // advance through siblings
 
             return; // unreachable
+        }
+        void hookLimits() {
+            Logger::logJson(json::object({
+                {"inlineUsed", exl::hook::nx64::InlineEntryIndex},
+                {"inlineMax", exl::hook::nx64::InlinePoolCount},
+                {"hookUsed", exl::hook::nx64::HookEntryIndex},
+                {"hookMax", exl::hook::nx64::HookMax}
+            }), "/script/sys/hookLimits");
+        }
+        void memSearch(u64 needle) {
+            // TODO better ptr+hex conversions for AS calls + json?
+            const auto rootheap0 = sead::HeapMgr::sRootHeaps[0];
+            //Logger::main->logf(NS_DEFAULT_TEXT, "\"searching for %p in root heap %p\"", needle_ptr, rootheap0);
+            void** haystackPtr = (void**)(rootheap0->getStartAddress());
+            void** haystackEnd = (void**)(rootheap0->getEndAddress());
+            while (haystackPtr < haystackEnd) {
+                //if ((u64)haystackPtr % 0x800000 == 0) { Logger::main->logf(NS_DEFAULT_TEXT, "\"%p \"", haystackPtr); } // progress
+                if ((u64)(*haystackPtr) == needle) {
+                    Logger::logJson(json::object({
+                        {"match", (u64)haystackPtr},
+                        {"needle", needle}
+                    }), "/script/sys/memSearch");
+                }
+                haystackPtr++;
+            }
         }
         void threadInfo() {
             sead::ThreadMgr* mgr = *exl::util::pointer_path::FollowSafe<sead::ThreadMgr*, sym::sead::ThreadMgr::sInstance::offset>();
@@ -121,8 +138,9 @@ namespace lotuskit::script::globals {
         //asErrno = engine->RegisterGlobalFunction("void trashPrint(const string &in)", AngelScript::asFUNCTION(trashPrint), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
 
         engine->SetDefaultNamespace("sys");
-        asErrno = engine->RegisterGlobalFunction("void hookLimits()", AngelScript::asFUNCTION(sys::hookLimits), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
         asErrno = engine->RegisterGlobalFunction("void heapInfo()", AngelScript::asFUNCTION(sys::heapInfo), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void hookLimits()", AngelScript::asFUNCTION(sys::hookLimits), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void memSearch(uint64)", AngelScript::asFUNCTION(sys::memSearch), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
         asErrno = engine->RegisterGlobalFunction("void threadInfo()", AngelScript::asFUNCTION(sys::threadInfo), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
         asErrno = engine->RegisterGlobalFunction("void suspendCtx()", AngelScript::asFUNCTION(sys::suspendCtx), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
 

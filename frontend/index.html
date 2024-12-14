@@ -276,14 +276,14 @@
             this.needle_ptr_ref = createRef();
         }
 
-        do_search(haystack_name) {
+        do_search(haystack_name_UNUSED) {
+            // TODO more search types
             const needle_ptr = this.needle_ptr_ref.current.value || 0;
-            // TODO await+display results?
-            fetch(`/backend/memutils/memsearch/invoke?uniq_id=${WSTransport.make_uniq_id()} ${haystack_name} ${needle_ptr}`, {method: "post"});
+            WSTransport.send({execScriptString: wrap_implicit_main(`sys::memSearch(${needle_ptr});`)});
         }
 
         render(props, state) {
-            // TODO region picker
+            // TODO region/scope picker
             return html`
                 <div class="memsearch">
                     Memory search <br/>
@@ -296,15 +296,16 @@
 
     class QuickDumps extends Component {
         // TODO display output somewhere?
-        do_heapinfo() { WSTransport.send({execScriptString: wrap_implicit_main("sys::heapInfo();")}); }
-        do_threadinfo() { WSTransport.send({execScriptString: wrap_implicit_main("sys::threadInfo();")}); }
+        do_heapInfo() { WSTransport.send({execScriptString: wrap_implicit_main("sys::heapInfo();")}); }
+        do_threadInfo() { WSTransport.send({execScriptString: wrap_implicit_main("sys::threadInfo();")}); }
+        do_hookLimits() { WSTransport.send({execScriptString: wrap_implicit_main("sys::hookLimits();")}); }
         render(props, state) {
-            // TODO region picker
             return html`
                 <div class="quickdumps">
                     Quick dumps <br/>
-                    <button onClick=${ () => this.do_heapinfo() } class="pushbutton">heapinfo</button>
-                    <button onClick=${ () => this.do_threadinfo() } class="pushbutton">threadinfo</button>
+                    <button onClick=${ () => this.do_heapInfo() } class="pushbutton">heapInfo</button>
+                    <button onClick=${ () => this.do_threadInfo() } class="pushbutton">threadInfo</button>
+                    <button onClick=${ () => this.do_hookLimits() } class="pushbutton">hookLimits</button>
                 </div>
             `;
         }
@@ -351,7 +352,7 @@
                     <input type="checkbox" id="execscript_use_implicit_main" ref=${this.use_implicit_main_ref} checked />
                     <button title='Toggle "record" into output field' onClick=${ () => this.do_toggle_record() } class="pushbutton">tas dump</button>
                     <br/>
-                    <textarea placeholder="// 1 frame @ 30fps = 2 @ 60fps:\ntas::input(2, KEY_A|KEY_B, 0, -32767, 0, 0);\n\nsys::heapInfo();\nsys::threadInfo();\nsys::hookLimits();" ref=${this.script_text_ref}></textarea>
+                    <textarea placeholder="// 1 frame @ 30fps = 2 @ 60fps:\ntas::input(2, KEY_A|KEY_B, 0, -32767, 0, 0);\n\nsys::heapInfo();\nsys::threadInfo();\nsys::hookLimits();\nsys::memSearch(0x08504000);" ref=${this.script_text_ref}></textarea>
                     <textarea placeholder="[tas output]" ref=${this.output_text_ref}></textarea>
                 </div>
             `;
