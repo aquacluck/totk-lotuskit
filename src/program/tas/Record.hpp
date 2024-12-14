@@ -21,7 +21,7 @@ namespace lotuskit::tas {
         static inline bool isRecordActive = false;
 
         inline static void applyCurrentInput(nn::hid::NpadBaseState* src) {
-            if (!isRecordActive) { return; }
+            if (!isRecordActive) { } // no return, currentInput still feeds input display
             // XXX should i just poll input on calc instead? i'm not confident hooks will always be getting called concurrently with calc()
             std::memcpy((void*)&(currentInput.buttons), (void*)&(src->mButtons), 24);
         }

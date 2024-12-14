@@ -7,6 +7,29 @@ namespace lotuskit {
 
     TextWriterDrawFrame TextWriter::drawFrames[2] = {};
 
+    TextWriterDrawNode* TextWriter::appendNewDrawNode(size_t drawList_i) {
+        // alloc
+        TextWriterDrawFrame* frame = currentDrawFrame;
+        TextWriterDrawNode* newNode = (TextWriterDrawNode*)frame->heap->alloc(sizeof(TextWriterDrawNode));
+        newNode->outputText = nullptr;
+        newNode->fn = nullptr;
+        newNode->next.store(nullptr);
+
+        // append
+        TextWriterDrawNode* cmpNode = nullptr; // ensure null at time of write
+        if (frame->drawLists[drawList_i].compare_exchange_weak(cmpNode, newNode)) { return newNode; } // success -- appended to empty list
+        // not null, enter the list
+        TextWriterDrawNode* node = frame->drawLists[drawList_i].load();
+        while (true) {
+            cmpNode = nullptr; // ensure null at time of write
+            if (node->next.compare_exchange_weak(cmpNode, newNode)) { return newNode; } // success
+            // not null, traverse into next
+            node = cmpNode;
+        }
+
+        return nullptr; // unreachable
+    }
+
     void TextWriter::drawFrame(TextWriterExt* writer) {
         TextWriterDrawFrame* frame = currentDrawFrame;
         currentDrawFrame = currentDrawFrame == drawFrames ? &(drawFrames[1]) : drawFrames; // swap any further calls to the other buffer
@@ -25,7 +48,7 @@ namespace lotuskit {
 
             do {
                 if (node->fn) {
-                    node->fn(writer); // TODO textPos
+                    node->fn(writer, &textPos);
                 }
                 if (node->outputText != nullptr) {
                     writer->pprintf(textPos, node->outputText);

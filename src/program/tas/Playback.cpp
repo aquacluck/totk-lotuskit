@@ -3,6 +3,7 @@
 #include "syms_merged.hpp"
 #include "structs/VFRMgr.hpp"
 #include "Logger.hpp"
+#include "TextWriter.hpp"
 using Logger = lotuskit::Logger;
 
 namespace lotuskit::tas {
@@ -10,6 +11,7 @@ namespace lotuskit::tas {
 
     void Playback::calc() {
         if (!isPlaybackActive) { return; } // not doing playback
+        lotuskit::TextWriter::printf(1, "[tas] playback\n");
 
         // is the current input still playing?
         VFRMgr* vfrMgr = *exl::util::pointer_path::FollowSafe<VFRMgr*, sym::engine::module::VFRMgr::sInstance::offset>();

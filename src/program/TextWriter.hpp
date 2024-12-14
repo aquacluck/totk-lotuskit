@@ -22,7 +22,7 @@ using Logger = lotuskit::Logger;
 
 namespace lotuskit {
     class TextWriterExt;
-    using TextWriterDrawCallback = void(*)(TextWriterExt*);
+    using TextWriterDrawCallback = void(*)(TextWriterExt*, sead::Vector2f*);
 
     struct TextWriterDrawNode {
         // nodes drawn sequentially, invoking fn if set (eg for positioning) and drawing outputText if set
@@ -68,28 +68,18 @@ namespace lotuskit {
         public:
         inline static void printf(size_t drawList_i, const char* fmt, auto&&... args) {
             // FIXME some symbol export issue if placed in cpp? [rtld] Unresolved symbol: _ZN8lotuskit10TextWriter6printfIJRA4_KcEEEvmPS2_DpOT_
-
-            TextWriterDrawFrame* frame = currentDrawFrame;
-            TextWriterDrawNode* newNode = (TextWriterDrawNode*)frame->heap->alloc(sizeof(TextWriterDrawNode));
-            newNode->next.store(nullptr);
+            // FIXME early return if textwriter disabled?
+            TextWriterDrawNode* newNode = appendNewDrawNode(drawList_i);
 
             // set outputText
             char buf[2000]; // TODO std::format etc with proper allocator?
             nn::util::SNPrintf(buf, sizeof(buf), fmt, std::forward<decltype(args)>(args)...);
-            newNode->outputText = (char*)frame->heap->alloc(strlen(buf));
+            newNode->outputText = (char*)currentDrawFrame->heap->alloc(strlen(buf));
             std::memcpy(newNode->outputText, buf, strlen(buf)+1);
-
-            // append newNode TODO extract
-            TextWriterDrawNode* cmpNode = nullptr; // ensure null at time of write
-            if (frame->drawLists[drawList_i].compare_exchange_weak(cmpNode, newNode)) { return; } // success -- appended to empty list
-            // not null, enter the list
-            TextWriterDrawNode* node = frame->drawLists[drawList_i].load();
-            while (true) {
-                cmpNode = nullptr; // ensure null at time of write
-                if (node->next.compare_exchange_weak(cmpNode, newNode)) { return; } // success
-                // not null, traverse into next
-                node = cmpNode;
-            }
+        }
+        inline static void appendCallback(size_t drawList_i, TextWriterDrawCallback fn) {
+            TextWriterDrawNode* newNode = appendNewDrawNode(drawList_i);
+            newNode->fn = fn;
         }
 
         // buffer+swap+draw impl
@@ -103,6 +93,7 @@ namespace lotuskit {
             drawFrames[1].heap = sead::FrameHeap::create(0x4000, "lotuskit::TextWriterDrawFrame[1]", heap, 8, sead::Heap::cHeapDirection_Forward, 0);
             //debugDrawCallHeap->alloc(32); debugDrawCallHeap->freeAll();
         }
+        static TextWriterDrawNode* appendNewDrawNode(size_t drawList_i);
         static void drawFrame(TextWriterExt*);
     };
 

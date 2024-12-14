@@ -9,6 +9,7 @@
 #include "TextWriter.hpp"
 #include "server/WebSocket.hpp"
 #include "script/engine.hpp"
+#include "tas/InputDisplay.hpp"
 #include "tas/Playback.hpp"
 #include "tas/Record.hpp"
 #include "util/romfs.hpp"
@@ -70,8 +71,17 @@ HOOK_DEFINE_TRAMPOLINE(WorldManagerModuleBaseProcHook) {
             lotuskit::TextWriter::printf(0, "[totk-lotuskit:%d] awaiting Player, main_offset=%p\n", TOTK_VERSION, exl::util::GetMainModuleInfo().m_Total.m_Start);
         }
 
+        // drawlist 0 near top-left (default)
+        // drawlist 1 near top-right
+        lotuskit::TextWriter::appendCallback(1, [](lotuskit::TextWriterExt* writer, sead::Vector2f* textPos) {
+            textPos->x = 1280.0 - 150.0;
+            textPos->y = 2.0;
+        });
+
         lotuskit::tas::Playback::calc(); // may re-enter script when currently scheduled input is complete
         lotuskit::tas::Record::calc();
+        lotuskit::tas::InputDisplay::draw();
+
         lotuskit::server::WebSocket::calc(); // noblock recv, but blocking processing if enabled
 
         Orig(self, param_2, param_3, param_4, wmmodule, param_6);
