@@ -227,28 +227,27 @@
     class HexdumpSlot extends Component {
         constructor() {
             super();
-            //this.slot_i_ref = createRef();
-            this.slot_label_ref = createRef();
-            this.slot_target_ptr_ref = createRef();
-            this.dump_len = createRef();
-            this.draw_len = createRef();
+            this.slotLabelRef = createRef();
+            this.slotTargetPtrRef = createRef();
+            this.dumpLen = createRef();
+            this.drawLen = createRef();
         }
 
         do_absolute(i) {
-            const draw_len = parseInt(this.draw_len.current.value) || 0x20;
-            const dump_len = draw_len;
-            const label = this.slot_label_ref.current.value.toString().slice(0, 32).replaceAll(" ", "-") || "_label";
-            const ptr = this.slot_target_ptr_ref.current.value || 0;
+            const drawLen = parseInt(this.drawLen.current.value) || 0x20;
+            const dumpLen = drawLen;
+            const label = this.slotLabelRef.current.value.toString().slice(0, 32).replaceAll(" ", "-") || "_label";
+            const ptr = this.slotTargetPtrRef.current.value || 0;
             if (!ptr) { console.log("hexdump user lookin sussy", i); return; }
-            fetch(`/backend/memutils/hexdump/assign_slot?uniq_id=${WSTransport.make_uniq_id()} ${i} absolute ${ptr} ${dump_len} ${draw_len} ${label}`, {method: "post"});
-            console.log("hexdump absolute", i, ptr, {dump_len, draw_len, label});
+            WSTransport.send({execScriptString: wrap_implicit_main(`HexDump::assignSlotAbsolute(${i}, ${ptr}, ${dumpLen}, ${drawLen});`)}); // TODO label
+            console.log("hexdump absolute", i, ptr, {dumpLen, drawLen, label});
         }
         do_pause(i) {
-            fetch(`/backend/memutils/hexdump/assign_slot?uniq_id=${WSTransport.make_uniq_id()} ${i} pause 0x0 0 0 _label`, {method: "post"});
+            WSTransport.send({execScriptString: wrap_implicit_main(`HexDump::pauseSlot(${i});`)});
             console.log("hexdump pause", i);
         }
         do_clear(i) {
-            fetch(`/backend/memutils/hexdump/assign_slot?uniq_id=${WSTransport.make_uniq_id()} ${i} clear 0x0 0 0 _label`, {method: "post"});
+            WSTransport.send({execScriptString: wrap_implicit_main(`HexDump::clearSlot(${i});`)});
             console.log("hexdump clear", i);
         }
 
@@ -257,11 +256,11 @@
             return html`
                 <div class="hexdump_slot">
                     ${slot_i}${"\xa0"}
-                    <input placeholder="any label, max 32" ref=${this.slot_label_ref} />
+                    <input placeholder="any label, max 32" ref=${this.slotLabelRef} />
                     <!-- TODO <select>absolute, main, ...</select> -->
-                    <input placeholder="target ptr (hex)" size="20" ref=${this.slot_target_ptr_ref} />
-                    <!--<input placeholder="0x20" size="6" ref=${this.dump_len} />-->
-                    <input placeholder="0x20" size="6" ref=${this.draw_len} />
+                    <input placeholder="target ptr (hex)" size="20" ref=${this.slotTargetPtrRef} />
+                    <!--<input placeholder="0x20" size="6" ref=${this.dumpLen} />-->
+                    <input placeholder="0x20" size="6" ref=${this.drawLen} />
                     <button onClick=${ () => this.do_absolute(slot_i) } class="pushbutton">dump</button>
                     <button onClick=${ () => this.do_pause(slot_i) } class="pushbutton">pause</button>
                     <button onClick=${ () => this.do_clear(slot_i) } class="pushbutton">clear</button>
@@ -352,7 +351,7 @@
                     <input type="checkbox" id="execscript_use_implicit_main" ref=${this.use_implicit_main_ref} checked />
                     <button title='Toggle "record" into output field' onClick=${ () => this.do_toggle_record() } class="pushbutton">tas dump</button>
                     <br/>
-                    <textarea placeholder="// 1 frame @ 30fps = 2 @ 60fps:\ntas::input(2, KEY_A|KEY_B, 0, -32767, 0, 0);\n\nsys::heapInfo();\nsys::threadInfo();\nsys::hookLimits();\nsys::memSearch(0x08504000);" ref=${this.script_text_ref}></textarea>
+                    <textarea placeholder="// 1 frame @ 30fps = 2 @ 60fps:\ntas::input(2, KEY_A|KEY_B, 0, -32767, 0, 0);\n\nsys::heapInfo();\nsys::threadInfo();\nsys::hookLimits();\nsys::memSearch(0x08504000);\nHexDump::assignSlotAbsolute(0, sys::mainOffset(), 0x20, 0x20);" ref=${this.script_text_ref}></textarea>
                     <textarea placeholder="[tas output]" ref=${this.output_text_ref}></textarea>
                 </div>
             `;

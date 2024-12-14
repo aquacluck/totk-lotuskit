@@ -6,6 +6,7 @@
 
 #include "Config.hpp"
 #include "Logger.hpp"
+#include "HexDump.hpp"
 #include "TextWriter.hpp"
 #include "server/WebSocket.hpp"
 #include "script/engine.hpp"
@@ -83,6 +84,7 @@ HOOK_DEFINE_TRAMPOLINE(WorldManagerModuleBaseProcHook) {
         lotuskit::tas::InputDisplay::draw();
 
         lotuskit::server::WebSocket::calc(); // noblock recv, but blocking processing if enabled
+        lotuskit::HexDump::calc();
 
         Orig(self, param_2, param_3, param_4, wmmodule, param_6);
     }

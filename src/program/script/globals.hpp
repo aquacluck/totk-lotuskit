@@ -4,6 +4,7 @@
 #include "lib/json.hpp"
 #include "tas/Playback.hpp"
 #include "tas/Record.hpp"
+#include "HexDump.hpp"
 #include "Logger.hpp"
 #include "TextWriter.hpp"
 using json = nlohmann::json;
@@ -17,6 +18,8 @@ using Logger = lotuskit::Logger;
 namespace lotuskit::script::globals {
 
     namespace sys {
+        u64 mainOffset() { return exl::util::GetMainModuleInfo().m_Total.m_Start; }
+        u32 totkVersion() { return TOTK_VERSION; }
         void heapInfo() {
             const auto rootheap0 = sead::HeapMgr::sRootHeaps[0];
             sead::Heap* h = rootheap0; // current/visiting entry
@@ -149,6 +152,13 @@ namespace lotuskit::script::globals {
         asErrno = engine->RegisterGlobalFunction("void memSearch(uint64)", AngelScript::asFUNCTION(sys::memSearch), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
         asErrno = engine->RegisterGlobalFunction("void threadInfo()", AngelScript::asFUNCTION(sys::threadInfo), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
         asErrno = engine->RegisterGlobalFunction("void suspendCtx()", AngelScript::asFUNCTION(sys::suspendCtx), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("uint64 mainOffset()", AngelScript::asFUNCTION(sys::mainOffset), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("uint32 totkVersion()", AngelScript::asFUNCTION(sys::totkVersion), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+
+        engine->SetDefaultNamespace("HexDump");
+        asErrno = engine->RegisterGlobalFunction("void clearSlot(uint32)", AngelScript::asFUNCTION(lotuskit::HexDump::clearSlot), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void pauseSlot(uint32)", AngelScript::asFUNCTION(lotuskit::HexDump::pauseSlot), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void assignSlotAbsolute(uint32, uint64, uint32, uint32)", AngelScript::asFUNCTION(lotuskit::HexDump::assignSlotAbsolute), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
 
         engine->SetDefaultNamespace("tas");
         asErrno = engine->RegisterGlobalFunction(
