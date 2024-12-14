@@ -37,6 +37,12 @@ namespace lotuskit {
         inline static sead::FrameHeap* heap = nullptr; // draw state is wiped each frame
     };
 
+    struct TextWriterToastNode {
+        char* outputText;
+        TextWriterDrawCallback fn;
+        u64 expirySystemTick;
+    };
+
     class TextWriterExt: public sead::TextWriter {
         public:
         void getCursorFromTopLeftImpl(sead::Vector2f* pos) const {
@@ -81,6 +87,32 @@ namespace lotuskit {
             TextWriterDrawNode* newNode = appendNewDrawNode(drawList_i);
             newNode->fn = fn;
         }
+        inline static void toastf(u64 ttl30, const char* fmt, auto&&... args) {
+            TextWriterToastNode* newNode = (TextWriterToastNode*)debugDrawerInternalHeap->alloc(sizeof(TextWriterToastNode));
+            newNode->outputText = nullptr;
+            newNode->fn = nullptr;
+            newNode->expirySystemTick = ttl30 * 1000000 + svcGetSystemTick(); // FIXME approximate conversion, doesnt matter much
+
+            // set outputText
+            char buf[2000]; // TODO std::format etc with proper allocator?
+            nn::util::SNPrintf(buf, sizeof(buf), fmt, std::forward<decltype(args)>(args)...);
+            newNode->outputText = (char*)debugDrawerInternalHeap->alloc(strlen(buf));
+            std::memcpy(newNode->outputText, buf, strlen(buf)+1);
+
+            TextWriterToastNode* cmpNode;
+            for(size_t i=0; i < MAX_TOASTS; i++) {
+                //if (toasts[i] == nullptr) { toasts[i] = newNode; }
+                cmpNode = nullptr; // ensure null at time of write
+                if (toasts[i].compare_exchange_weak(cmpNode, newNode)) { return; } // success -- inserted
+            }
+
+            // fail
+            Logger::logText("[ERROR] toast overflow", "/TextWriter");
+        }
+
+        // toast storage: repeated draw calls for some duration, not part of any drawlist
+        static constexpr size_t MAX_TOASTS = 0x20; // best not to go crazy on these, there's no way to scroll besides staggered ttl anyways
+        inline static std::atomic<TextWriterToastNode*> toasts[MAX_TOASTS] = {0};
 
         // buffer+swap+draw impl
         static TextWriterDrawFrame drawFrames[2];
@@ -95,6 +127,7 @@ namespace lotuskit {
         }
         static TextWriterDrawNode* appendNewDrawNode(size_t drawList_i);
         static void drawFrame(TextWriterExt*);
+        static void drawToasts(TextWriterExt*);
     };
 
     namespace TextWriterHooks {
@@ -172,6 +205,7 @@ namespace lotuskit {
                 TextWriterExt* writer = (TextWriterExt*)(&_writer);
 
                 lotuskit::TextWriter::drawFrame(writer);
+                lotuskit::TextWriter::drawToasts(writer);
             }
         };
 

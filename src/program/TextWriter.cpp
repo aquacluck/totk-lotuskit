@@ -63,4 +63,33 @@ namespace lotuskit {
         frame->heap->freeAll();
     }
 
+    void TextWriter::drawToasts(TextWriterExt* writer) {
+        sead::Vector2f textPos; // screen is always represented as 1280x720, upscaled for 1080p
+        // scale: 0.665 @ 1080p = 1.0 at 720p. The re-up-scaling means reducing size here looks bad fast, 0.8 is legible
+        writer->mScale.x = 0.8;
+        writer->mScale.y = 0.8;
+        textPos.x = 1280.0 - 500.0; // mid right ish
+        textPos.y = 128.0;
+
+        u64 nowSystemTick = svcGetSystemTick();
+        for (size_t i=0; i < TextWriter::MAX_TOASTS; i++) {
+            TextWriterToastNode* node = toasts[i].load();
+            if (node == nullptr) { continue; }
+            if (nowSystemTick > node->expirySystemTick) {
+                toasts[i].store(nullptr);
+                if (node->outputText != nullptr) {
+                    debugDrawerInternalHeap->free(node->outputText);
+                }
+                debugDrawerInternalHeap->free(node);
+                continue;
+            }
+            if (node->fn) {
+                node->fn(writer, &textPos);
+            }
+            if (node->outputText != nullptr) {
+                writer->pprintf(textPos, node->outputText);
+            }
+        }
+    }
+
 } // ns

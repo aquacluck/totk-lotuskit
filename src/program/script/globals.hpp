@@ -5,6 +5,7 @@
 #include "tas/Playback.hpp"
 #include "tas/Record.hpp"
 #include "Logger.hpp"
+#include "TextWriter.hpp"
 using json = nlohmann::json;
 using Logger = lotuskit::Logger;
 
@@ -70,6 +71,10 @@ namespace lotuskit::script::globals {
                 {"hookUsed", exl::hook::nx64::HookEntryIndex},
                 {"hookMax", exl::hook::nx64::HookMax}
             }), "/script/sys/hookLimits");
+            lotuskit::TextWriter::toastf(
+                5*30, "[sys::hookLimits] inlineUsed: %d, inlineMax: %d, hookUsed: %d, hookMax: %d\n",
+                exl::hook::nx64::InlineEntryIndex, exl::hook::nx64::InlinePoolCount, exl::hook::nx64::HookEntryIndex, exl::hook::nx64::HookMax
+            );
         }
         void memSearch(u64 needle) {
             // TODO better ptr+hex conversions for AS calls + json?
@@ -84,6 +89,7 @@ namespace lotuskit::script::globals {
                         {"match", (u64)haystackPtr},
                         {"needle", needle}
                     }), "/script/sys/memSearch");
+                    lotuskit::TextWriter::toastf(5*30, "[match] found %p at %p\n", needle, haystackPtr);
                 }
                 haystackPtr++;
             }
