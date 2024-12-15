@@ -1,9 +1,15 @@
 #include "util/actor.hpp"
 #include "syms_merged.hpp"
+#include "structs/bbBlackboard.hpp"
+#include "structs/engineActor.hpp"
+#include <prim/seadSafeString.h>
 
 namespace lotuskit::util::actor {
+    using CreateFunc = bool (engine::actor::ActorInstanceMgr*, const sead::SafeString&, const engine::actor::ActorMgr::CreateArg&,
+                             engine::actor::CreateWatcherRef*, engine::actor::CreatePriority, engine::actor::PreActor*,
+                             engine::actor::ActorFile*, sead::Function*, bool, engine::actor::ActorMgr::Result*, engine::actor::PreActor**);
 
-    void testCreate() {
+    void createSimple(const std::string &actorName) {
         bb::InitInfo<32> initInfo;
         //initInfo.setParam(sead::SafeString{"EquipmentUser_Bow"}, sead::SafeString{"Weapon_Bow_032"});
         //initInfo.setParam(sead::SafeString{"EquipmentUser_Shield"}, sead::SafeString{"Weapon_Shield_018"});
@@ -19,11 +25,10 @@ namespace lotuskit::util::actor {
         engine::actor::ActorInstanceMgr* actorInstanceMgr = *reinterpret_cast<engine::actor::ActorInstanceMgr**>(exl::util::modules::GetTargetOffset(sym::engine::actor::ActorInstanceMgr::sInstance::offset));
         engine::actor::ActorMgr::Result result;
 
-        bool ret = requestCreateActorAsync(actorInstanceMgr, sead::SafeString{"Animal_Kokko_A"}, createArg, nullptr, engine::actor::CreatePriority::High, nullptr, nullptr, nullptr, false, &result, nullptr);
+        bool ret = requestCreateActorAsync(actorInstanceMgr, actorName.c_str(), createArg, nullptr, engine::actor::CreatePriority::High, nullptr, nullptr, nullptr, false, &result, nullptr);
 
-        char buf[1000];
-        nn::util::SNPrintf(buf, sizeof(buf), "[testCreate] flag %d code %d", ret?1:0, (u32)result); // flag 1 code 0
+        char buf[200];
+        nn::util::SNPrintf(buf, sizeof(buf), "actor::createSimple(%s) -> %d, code %d", actorName.c_str(), ret?1:0, (u32)result);
         svcOutputDebugString(buf, strlen(buf));
     }
-
 }

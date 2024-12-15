@@ -1,10 +1,13 @@
 #include "script/engine.hpp"
 #include "script/globals.hpp"
-#include "angelscript.h"
 #include "nn/util.h"
 #include "lib.hpp"
 #include "Logger.hpp"
 using Logger = lotuskit::Logger;
+
+#include "angelscript.h"
+#include "scriptarray.h"
+#include "scriptstdstring.h"
 
 namespace lotuskit::script::engine {
     // AngelScript-wide allocation
@@ -55,7 +58,11 @@ namespace lotuskit::script::engine {
 
         // Set the message callback to receive information on errors in human readable form.
         s32 asErrno = engine->SetMessageCallback(AngelScript::asFUNCTION(asMessageCallback), 0, AngelScript::asCALL_CDECL); assert( asErrno >= 0 );
-        //RegisterStdString(engine); // TODO simpler string impl?
+
+        // addons
+        AngelScript::RegisterScriptArray(engine, true);
+        AngelScript::RegisterStdString(engine);
+        AngelScript::RegisterStdStringUtils(engine);
     }
 
     void createAndConfigureEngine() {
