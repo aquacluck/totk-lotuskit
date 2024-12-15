@@ -2,6 +2,7 @@
 #include "syms_merged.hpp"
 #include "structs/bbBlackboard.hpp"
 #include "structs/engineActor.hpp"
+#include "script/globals.hpp"
 #include <prim/seadSafeString.h>
 
 namespace lotuskit::util::actor {
@@ -10,7 +11,11 @@ namespace lotuskit::util::actor {
                              engine::actor::ActorFile*, sead::Function*, bool, engine::actor::ActorMgr::Result*, engine::actor::PreActor**);
 
     void createSimple(const std::string &actorName) {
-        createSimpleXYZ(actorName, 30, 1520, 1500); // near fuse
+        if (lotuskit::script::globals::ResidentActors::Player == nullptr) {
+            return createSimpleXYZ(actorName, 0, 0, 0);
+        }
+        auto pos = lotuskit::script::globals::ResidentActors::Player->mPosition;
+        createSimpleXYZ(actorName, pos.x + 10.f, pos.y + 5.f, pos.z + 10.f);
     }
 
     void createSimpleXYZ(const std::string &actorName, float x, float y, float z) {
