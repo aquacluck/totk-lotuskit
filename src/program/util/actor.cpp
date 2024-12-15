@@ -4,16 +4,14 @@
 namespace lotuskit::util::actor {
 
     void testCreate() {
-        //bb::InitInfo<32> initInfo;
+        bb::InitInfo<32> initInfo;
         //initInfo.setParam(sead::SafeString{"EquipmentUser_Bow"}, sead::SafeString{"Weapon_Bow_032"});
         //initInfo.setParam(sead::SafeString{"EquipmentUser_Shield"}, sead::SafeString{"Weapon_Shield_018"});
         //initInfo.setParam(sead::SafeString{"EquipmentUser_Weapon"}, sead::SafeString{"Weapon_Sword_124"});
         engine::actor::ActorMgr::CreateArg createArg;
         createArg.position = {30.f, 1520.f, 1500.f}; // fuse
-        //createArg.position = player->getPosition();
         createArg.scale = { 1.f, 1.f, 1.f };
-        createArg.blackboard_info = nullptr;
-        //createArg.blackboard_info = &initInfo;
+        createArg.blackboard_info = &initInfo;
         createArg.transform_flags.set(engine::actor::ActorMgr::CreateArg::TransformFlags::UsePosition);
         createArg.transform_flags.set(engine::actor::ActorMgr::CreateArg::TransformFlags::UseScale);
 
