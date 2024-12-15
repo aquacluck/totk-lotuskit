@@ -790,6 +790,11 @@ asCString asCScriptFunction::GetDeclarationStr(bool includeObjectName, bool incl
 		}
 	}
 
+	if (IsVariadic())
+	{
+		str += "...";
+	}
+
 	str += ")";
 
 	if( IsReadOnly() )
@@ -994,7 +999,7 @@ const char *asCScriptFunction::GetVarDecl(asUINT index, bool includeNamespace) c
 }
 
 // internal
-void asCScriptFunction::AddVariable(const asCString &in_name, asCDataType &in_type, int in_stackOffset, bool in_onHeap)
+void asCScriptFunction::AddVariable(const asCString &in_name, const asCDataType &in_type, int in_stackOffset, bool in_onHeap)
 {
 	asASSERT( scriptData );
 	asSScriptVariable *var = asNEW(asSScriptVariable);
@@ -1802,6 +1807,12 @@ bool asCScriptFunction::IsExplicit() const
 bool asCScriptFunction::IsProperty() const
 {
 	return traits.GetTrait(asTRAIT_PROPERTY);
+}
+
+// interface
+bool asCScriptFunction::IsVariadic() const
+{
+	return traits.GetTrait(asTRAIT_VARIADIC);
 }
 
 // internal

@@ -93,6 +93,7 @@ enum eTokenType
 	ttDec,                 // --
 
 	ttDot,                 // .
+	ttVariadic,            // ...
 	ttScope,               // ::
 
 	// Statement tokens
@@ -130,6 +131,7 @@ enum eTokenType
 	ttIf,                  // if
 	ttElse,                // else
 	ttFor,                 // for
+	ttForEach,             // foreach
 	ttWhile,               // while
 	ttBool,                // bool
 	ttFuncDef,             // funcdef
@@ -207,6 +209,7 @@ sTokenWord const tokenWords[] =
 	asTokenDef("="         , ttAssignment),
 	asTokenDef("=="        , ttEqual),
 	asTokenDef("."         , ttDot),
+	asTokenDef("..."       , ttVariadic),
 	asTokenDef("|"         , ttBitOr),
 	asTokenDef("|="        , ttOrAssign),
 	asTokenDef("||"        , ttOr),
@@ -264,6 +267,7 @@ sTokenWord const tokenWords[] =
 	asTokenDef("false"     , ttFalse),
 	asTokenDef("float"     , ttFloat),
 	asTokenDef("for"       , ttFor),
+	asTokenDef("foreach"   , ttForEach),
 	asTokenDef("funcdef"   , ttFuncDef),
 	asTokenDef("if"        , ttIf),
 	asTokenDef("import"    , ttImport),

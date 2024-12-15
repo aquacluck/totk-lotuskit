@@ -190,6 +190,7 @@ enum asEEngineProp
 	asEP_ALWAYS_IMPL_DEFAULT_COPY_CONSTRUCT = 37,
 	asEP_MEMBER_INIT_MODE                   = 38,
 	asEP_BOOL_CONVERSION_MODE               = 39,
+	asEP_FOREACH_SUPPORT                    = 40,
 
 	asEP_LAST_PROPERTY
 };
@@ -1170,6 +1171,7 @@ public:
 	virtual bool             IsShared() const = 0;
 	virtual bool             IsExplicit() const = 0;
 	virtual bool             IsProperty() const = 0;
+	virtual bool             IsVariadic() const = 0;
 	virtual asUINT           GetParamCount() const = 0;
 	virtual int              GetParam(asUINT index, int *typeId, asDWORD *flags = 0, const char **name = 0, const char **defaultArg = 0) const = 0;
 	virtual int              GetReturnTypeId(asDWORD *flags = 0) const = 0;

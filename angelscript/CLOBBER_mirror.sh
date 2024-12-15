@@ -22,9 +22,9 @@ if [[ "$KEEP_TMPGIT" != "1" ]]; then
     rm -rf tmpgit
 
     # temp repo, clone ~1.5s
-    # last base: Version 2.38.0 WIP - 2024/10/13 - "Fixed the test_dump.cpp test case for string::regexFind"
-    #            https://github.com/codecat/angelscript-mirror/commit/094e827ca022ae7c9cc75b8402081a55ee3c846c
-    #            https://sourceforge.net/p/angelscript/code/2974/log/
+    # last base: Version 2.38.0 WIP - 2024/11/22 - "Fixed crash when passing function pointer without @ prefix to argument expecting asOBJ_ASHANDLE"
+    #            https://github.com/codecat/angelscript-mirror/commit/57ef77e4793ca14f448f485f52392ab0eefe968b
+    #            https://sourceforge.net/p/angelscript/code/2988/log/
     git clone --recursive --depth 1 https://github.com/codecat/angelscript-mirror tmpgit
     echo
     echo

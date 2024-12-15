@@ -1635,6 +1635,11 @@ void asCCompiler::CompileInitAsCopy(asCDataType &dt, int offset, asCExprContext 
 	asCObjectType *ot = CastToObjectType(dt.GetTypeInfo());
 	if(!dt.IsObjectHandle() && ot && (ot->beh.copyconstruct || ot->beh.copyfactory))
 	{
+		// Make sure the copy constructor is not flagged as explicit
+		asCScriptFunction* func = ot->beh.copyconstruct ? engine->scriptFunctions[ot->beh.copyconstruct] : engine->scriptFunctions[ot->beh.copyfactory];
+		if (func->traits.GetTrait(asTRAIT_EXPLICIT))
+			Error(TXT_CANNOT_IMPLICITLY_CALL_EXPLICIT_COPY_CONSTR, node);
+
 		PrepareForAssignment(&dt, arg, node, true);
 		int r = CallCopyConstructor(dt, offset, isObjectOnHeap, ctx, arg, node, isVarGlobOrMem, derefDestination);
 		if( r < 0 && tempVariables.Exists(offset) )
@@ -1821,7 +1826,7 @@ int asCCompiler::PrepareArgument(asCDataType *paramType, asCExprContext *ctx, as
 					// For parameters expecting a reference to a handle we need to make sure the argument
 					// is really a handle, and not just a reference to the object. Do this check before the
 					// implicit conversion so it can be treated correctly.
-					if (dt.IsObjectHandle() && !ctx->type.dataType.IsObjectHandle() && !ctx->IsAnonymousInitList())
+					if (dt.IsObjectHandle() && !ctx->type.dataType.IsObjectHandle() && !ctx->IsAnonymousInitList() && ctx->type.dataType.SupportHandles())
 					{
 						// Make a refCopy into a local handle variable
 						// Allocate a handle variable
@@ -2240,7 +2245,7 @@ int asCCompiler::PrepareFunctionCall(int funcId, asCByteCode *bc, asCArray<asCEx
 	// When a match has been found, compile the final byte code using correct parameter types
 	asCScriptFunction *descr = builder->GetFunctionDescription(funcId);
 
-	asASSERT( descr->parameterTypes.GetLength() == args.GetLength() );
+	asASSERT( (descr->IsVariadic() && args.GetLength() >= descr->parameterTypes.GetLength() - 1) || descr->parameterTypes.GetLength() == args.GetLength() );
 
 	// If the function being called is the opAssign or copy constructor for the same type
 	// as the argument, then we should avoid making temporary copy of the argument
@@ -2261,7 +2266,14 @@ int asCCompiler::PrepareFunctionCall(int funcId, asCByteCode *bc, asCArray<asCEx
 		for( int m = n; m >= 0; m-- )
 			args[m]->bc.GetVarsUsed(reservedVariables);
 
-		int r = PrepareArgument2(&e, args[n], &descr->parameterTypes[n], true, descr->inOutFlags[n], makingCopy);
+		asUINT realParamIdx = n;
+		if (descr->IsVariadic())
+		{
+			if (n >= (int)descr->parameterTypes.GetLength() - 1)
+				realParamIdx = descr->parameterTypes.GetLength() - 1;
+		}
+
+		int r = PrepareArgument2(&e, args[n], &descr->parameterTypes[realParamIdx], true, descr->inOutFlags[realParamIdx], makingCopy);
 		reservedVariables.SetLength(l);
 
 		if (r < 0)
@@ -2285,6 +2297,9 @@ void asCCompiler::MoveArgsToStack(int funcId, asCByteCode *bc, asCArray<asCExprC
 	if( descr->DoesReturnOnStack() )
 		offset += AS_PTR_SIZE;
 
+	if (descr->IsVariadic())
+		offset += 1;
+
 #ifdef AS_DEBUG
 	// If the function being called is the opAssign or copy constructor for the same type
 	// as the argument, then we should avoid making temporary copy of the argument
@@ -2297,13 +2312,17 @@ void asCCompiler::MoveArgsToStack(int funcId, asCByteCode *bc, asCArray<asCExprC
 #endif
 
 	// Move the objects that are sent by value to the stack just before the call
-	for( asUINT n = 0; n < descr->parameterTypes.GetLength(); n++ )
+	for( asUINT n = 0; n < args.GetLength(); n++ )
 	{
-		if( descr->parameterTypes[n].IsReference() )
+		asUINT realParamIdx = n;
+		if (descr->IsVariadic() && n >= descr->parameterTypes.GetLength() - 1)
+			realParamIdx = descr->parameterTypes.GetLength() - 1;
+		
+		if( descr->parameterTypes[realParamIdx].IsReference() )
 		{
-			if( (descr->parameterTypes[n].IsObject() || descr->parameterTypes[n].IsFuncdef()) && !descr->parameterTypes[n].IsObjectHandle() )
+			if( (descr->parameterTypes[realParamIdx].IsObject() || descr->parameterTypes[realParamIdx].IsFuncdef()) && !descr->parameterTypes[realParamIdx].IsObjectHandle() )
 			{
-				if( descr->inOutFlags[n] != asTM_INOUTREF && !args[n]->type.isRefSafe )
+				if( descr->inOutFlags[realParamIdx] != asTM_INOUTREF && !args[n]->type.isRefSafe )
 				{
 #ifdef AS_DEBUG
 					// This assert is inside AS_DEBUG because of the variable makingCopy which is only defined in debug mode
@@ -2323,14 +2342,14 @@ void asCCompiler::MoveArgsToStack(int funcId, asCByteCode *bc, asCArray<asCExprC
 				if( args[n]->type.dataType.IsObjectHandle() )
 					bc->InstrWORD(asBC_ChkNullS, (asWORD)offset);
 			}
-			else if( descr->inOutFlags[n] != asTM_INOUTREF )
+			else if( descr->inOutFlags[realParamIdx] != asTM_INOUTREF )
 			{
 				// If the argument is already known to be safe, i.e. has a guaranteed lifetime,
 				// then the address on the stack is already pointing to the correct object so no
 				// need to do anything else
 				if (!args[n]->type.isRefSafe)
 				{
-					if (descr->parameterTypes[n].GetTokenType() == ttQuestion &&
+					if (descr->parameterTypes[realParamIdx].GetTokenType() == ttQuestion &&
 						(args[n]->type.dataType.IsObject() || args[n]->type.dataType.IsFuncdef()) &&
 						!args[n]->type.dataType.IsObjectHandle())
 					{
@@ -2343,7 +2362,7 @@ void asCCompiler::MoveArgsToStack(int funcId, asCByteCode *bc, asCArray<asCExprC
 						else
 							bc->InstrWORD(asBC_GETOBJREF, (asWORD)offset);
 					}
-					else if (descr->parameterTypes[n].GetTokenType() == ttQuestion &&
+					else if (descr->parameterTypes[realParamIdx].GetTokenType() == ttQuestion &&
 						args[n]->type.dataType.IsObjectHandle() && !args[n]->type.isExplicitHandle)
 					{
 						// The object handle is being passed as an object, so dereference it before
@@ -2369,7 +2388,7 @@ void asCCompiler::MoveArgsToStack(int funcId, asCByteCode *bc, asCArray<asCExprC
 				}
 			}
 		}
-		else if( descr->parameterTypes[n].IsObject() || descr->parameterTypes[n].IsFuncdef() )
+		else if( descr->parameterTypes[realParamIdx].IsObject() || descr->parameterTypes[realParamIdx].IsFuncdef() )
 		{
 			asASSERT(!args[n]->type.isRefSafe);
 
@@ -2386,7 +2405,7 @@ void asCCompiler::MoveArgsToStack(int funcId, asCByteCode *bc, asCArray<asCExprC
 			args[n]->type.isTemporary = false;
 		}
 
-		offset += descr->parameterTypes[n].GetSizeOnStackDWords();
+		offset += descr->parameterTypes[realParamIdx].GetSizeOnStackDWords();
 	}
 }
 
@@ -2639,11 +2658,21 @@ asUINT asCCompiler::MatchFunctions(asCArray<int> &funcs, asCArray<asCExprContext
 
 		for( n = 0; n < funcs.GetLength(); ++n )
 		{
+			bool noMatch = false;
 			asCScriptFunction *desc = builder->GetFunctionDescription(funcs[n]);
-
-			if( desc->parameterTypes.GetLength() != totalArgs )
+			if (desc->IsVariadic())
 			{
-				bool noMatch = true;
+				asASSERT(desc->parameterTypes.GetLength() >= 1);
+				asUINT argsWithoutLast = desc->parameterTypes.GetLength() - 1;
+
+				// TODO: variadic: Handle default args
+
+				if (totalArgs <= argsWithoutLast)
+					noMatch = true;
+			}
+			else if( desc->parameterTypes.GetLength() != totalArgs )
+			{
+				noMatch = true;
 				if( totalArgs < desc->parameterTypes.GetLength() )
 				{
 					// For virtual functions, the default args are defined in the real function of the object
@@ -2659,16 +2688,16 @@ asUINT asCCompiler::MatchFunctions(asCArray<int> &funcs, asCArray<asCExprContext
 					if( totalArgs >= desc->parameterTypes.GetLength() - defaultArgs )
 						noMatch = false;
 				}
+			}
 
-				if( noMatch )
-				{
-					// remove it from the list
-					if( n == funcs.GetLength()-1 )
-						funcs.PopLast();
-					else
-						funcs[n] = funcs.PopLast();
-					n--;
-				}
+			if( noMatch )
+			{
+				// remove it from the list
+				if( n == funcs.GetLength()-1 )
+					funcs.PopLast();
+				else
+					funcs[n] = funcs.PopLast();
+				n--;
 			}
 		}
 
@@ -3064,32 +3093,8 @@ void asCCompiler::CompileDeclaration(asCScriptNode *decl, asCByteCode *bc)
 		}
 
 		int offset = AllocateVariable(type, false);
-		if( variables->DeclareVariable(name.AddressOf(), type, offset, IsVariableOnHeap(offset)) < 0 )
-		{
-			// TODO: It might be an out-of-memory too
-
-			asCString str;
-			str.Format(TXT_s_ALREADY_DECLARED, name.AddressOf());
-			Error(str, node);
-
-			// Don't continue after this error, as it will just
-			// lead to more errors that are likely false
+		if (DeclareVariable(name, type, offset, bc, node) < 0)
 			return;
-		}
-		else
-		{
-			// Warn if this variable hides another variable in a higher scope
-			if( variables->parent && variables->parent->GetVariable(name.AddressOf()) )
-			{
-				asCString str;
-				str.Format(TXT_s_HIDES_VAR_IN_OUTER_SCOPE, name.AddressOf());
-				Warning(str, node);
-			}
-		}
-
-		// Add marker that the variable has been declared
-		bc->VarDecl((int)outFunc->scriptData->variables.GetLength());
-		outFunc->AddVariable(name, type, offset, IsVariableOnHeap(offset));
 
 		// Keep the node for the variable decl
 		asCScriptNode *varNode = node;
@@ -3409,11 +3414,15 @@ bool asCCompiler::CompileInitializationWithAssignment(asCByteCode* bc, const asC
 		args.PushLast(rexpr);
 		MatchFunctions(funcs, args, rnode, str.AddressOf(), 0, 0, 0, true);
 
-		// Make sure the argument is of the right type (and not just compatible with the expression)
 		if (funcs.GetLength() == 1)
 		{
 			asCScriptFunction* f = engine->scriptFunctions[funcs[0]];
-			if (!f->parameterTypes[0].IsEqualExceptRefAndConst(rexpr->type.dataType))
+
+			// Don't allow the constructor to be used if it is marked as explicit
+			if (f->traits.GetTrait(asTRAIT_EXPLICIT))
+				funcs.PopLast();
+			// Make sure the argument is of the right type (and not just compatible with the expression)
+			else if (!f->parameterTypes[0].IsEqualExceptRefAndConst(rexpr->type.dataType))
 				funcs.PopLast();
 		}
 	}
@@ -4300,6 +4309,8 @@ void asCCompiler::CompileStatement(asCScriptNode *statement, bool *hasReturn, as
 		CompileIfStatement(statement, hasReturn, bc);
 	else if (statement->nodeType == snFor)
 		CompileForStatement(statement, bc);
+	else if (statement->nodeType == snForEach)
+		CompileForEachStatement(statement, bc);
 	else if (statement->nodeType == snWhile)
 		CompileWhileStatement(statement, bc);
 	else if (statement->nodeType == snDoWhile)
@@ -5062,6 +5073,530 @@ void asCCompiler::CompileForStatement(asCScriptNode *fnode, asCByteCode *bc)
 		// Don't deallocate function parameters
 		if( v->stackOffset > 0 )
 			DeallocateVariable(v->stackOffset);
+	}
+
+	RemoveVariableScope();
+	bc->Block(false);
+}
+
+int asCCompiler::DeclareVariable(const asCString& name, const asCDataType& type, int offset, asCByteCode* bc, asCScriptNode *node)
+{
+	if (variables->DeclareVariable(name.AddressOf(), type, offset, IsVariableOnHeap(offset)) < 0)
+	{
+		// TODO: It might be an out-of-memory too
+
+		asCString str;
+		str.Format(TXT_s_ALREADY_DECLARED, name.AddressOf());
+		Error(str, node);
+
+		// Don't continue after this error, as it will just
+		// lead to more errors that are likely false
+		return -1;
+	}
+	else
+	{
+		// Warn if this variable hides another variable in a higher scope
+		if (name != "" && variables->parent && variables->parent->GetVariable(name.AddressOf()))
+		{
+			asCString str;
+			str.Format(TXT_s_HIDES_VAR_IN_OUTER_SCOPE, name.AddressOf());
+			Warning(str, node);
+		}
+	}
+
+	// Add marker that the variable has been declared
+	bc->VarDecl((int)outFunc->scriptData->variables.GetLength());
+	outFunc->AddVariable(name, type, offset, IsVariableOnHeap(offset));
+
+	return 0;
+}
+
+void asCCompiler::CompileForEachStatement(asCScriptNode* node, asCByteCode* bc)
+{
+	const char* const BEGIN_NAME = "opForBegin";
+	const char* const END_NAME = "opForEnd";
+	const char* const NEXT_NAME = "opForNext";
+	const char* const VALUE_NAME = "opForValue";
+
+	asCArray<asCDataType> itemDataTypes;
+	asCArray<asCScriptNode*> itemNodes; // Item identifiers
+	asUINT itemCount = 0;
+
+	asCScriptNode* rangeNode = node->firstChild;
+	while (rangeNode->nodeType != snAssignment)
+	{
+		++itemCount;
+
+		// Datatype of the item
+		asASSERT(rangeNode->nodeType == snDataType);
+		asCDataType itemDt = builder->CreateDataTypeFromNode(rangeNode, script, outFunc->nameSpace, false, outFunc->objectType);
+		itemDataTypes.PushLast(itemDt);
+
+		// Indentifier
+		asASSERT(rangeNode->next->nodeType == snIdentifier);
+		itemNodes.PushLast(rangeNode->next);
+
+		rangeNode = rangeNode->next->next;
+	}
+
+	//---------------------------------------
+	// Compile the range expression and store in a local variable
+	asCExprContext rangeExpr(engine);
+	if (CompileAssignment(rangeNode, &rangeExpr) < 0)
+		return;
+	bool isConstRange = rangeExpr.type.dataType.IsReadOnly() || rangeExpr.type.dataType.IsHandleToConst();
+
+	asCTypeInfo* rangeTypeInfo = rangeExpr.type.dataType.GetTypeInfo();
+	if (!rangeTypeInfo)
+	{
+		asCString str;
+		str.Format(TXT_s_NOT_A_FOREACH_TYPE, rangeExpr.type.dataType.Format(outFunc->nameSpace).AddressOf());
+		Error(str, node->lastChild);
+		return;
+	}
+
+	asCDataType rangeDt = rangeExpr.type.dataType;
+	rangeDt.MakeReference(false);
+	if (rangeDt.SupportHandles()) rangeDt.MakeHandle(true);
+	int rangeOffset = AllocateVariable(rangeDt, false);
+	if (DeclareVariable("", rangeDt, rangeOffset, &rangeExpr.bc, node) < 0)
+		return;
+
+	CompileInitializationWithAssignment(&rangeExpr.bc, rangeDt, rangeNode, rangeOffset, 0, asVGM_VARIABLE, rangeNode, &rangeExpr);
+	ProcessDeferredParams(&rangeExpr);
+	rangeExpr.bc.OptimizeLocally(tempVariableOffsets);
+
+	//---------------------------------------
+	// Check for required operators
+	// Method ids
+	int opForBeginId = 0, opForEndId = 0, opForNextId = 0;
+	asCArray<int> opForValueNIds; // For multiple items
+
+	// TypeId of the iterator type
+	int iterTid = asTYPEID_VOID;
+
+	{
+		asCArray<int> funcs;
+		builder->GetObjectMethodDescriptions(BEGIN_NAME, CastToObjectType(rangeTypeInfo), funcs, isConstRange);
+
+		for (asUINT i = 0; i < funcs.GetLength(); i++)
+		{
+			asIScriptFunction* f = engine->scriptFunctions[funcs[i]];
+			if (f->GetParamCount() == 0)
+			{
+				if (opForBeginId != 0 && !isConstRange)
+				{
+					// Is the new function a better match?
+					if (!f->IsReadOnly())
+						opForBeginId = funcs[i];
+				}
+				else
+					opForBeginId = funcs[i];
+			}
+		}
+
+		if (opForBeginId)
+			iterTid = engine->scriptFunctions[opForBeginId]->GetReturnTypeId();
+	}
+
+	if (iterTid)
+	{
+		asCArray<int> funcs;
+		builder->GetObjectMethodDescriptions(END_NAME, CastToObjectType(rangeTypeInfo), funcs, isConstRange);
+
+		for (asUINT i = 0; i < funcs.GetLength(); i++)
+		{
+			asIScriptFunction* f = engine->scriptFunctions[funcs[i]];
+			asDWORD flags;
+			int paramTid;
+			if (f->GetParamCount() == 1 && f->GetReturnTypeId(&flags) == asTYPEID_BOOL && !(flags && asTM_INOUTREF) && f->GetParam(0, &paramTid) >= 0 && paramTid == iterTid)
+			{
+				if (opForEndId != 0 && !isConstRange)
+				{
+					// Is the new function a better match?
+					if (!f->IsReadOnly())
+						opForEndId = funcs[i];
+				}
+				else
+					opForEndId = funcs[i];
+			}
+		}
+	}
+
+	if (iterTid)
+	{
+		asCArray<int> funcs;
+		builder->GetObjectMethodDescriptions(NEXT_NAME, CastToObjectType(rangeTypeInfo), funcs, isConstRange);
+
+		for (asUINT i = 0; i < funcs.GetLength(); i++)
+		{
+			asIScriptFunction* f = engine->scriptFunctions[funcs[i]];
+			int paramTid;
+			if (f->GetParamCount() == 1 && f->GetReturnTypeId() == iterTid && f->GetParam(0, &paramTid) >= 0 && paramTid == iterTid)
+			{
+				if (opForNextId != 0 && !isConstRange)
+				{
+					// Is the new function a better match?
+					if (!f->IsReadOnly())
+						opForNextId = funcs[i];
+				}
+				else
+					opForNextId = funcs[i];
+			}
+		}
+	}
+
+	if (iterTid)
+	{
+		// Find the methods and types for each value
+		if (itemCount > 1 || opForValueNIds.GetLength() == 0)
+		{
+			for (asUINT i = 0; i < itemCount; ++i)
+			{
+				int opForValueIdN = 0;
+
+				asCArray<int> funcs;
+
+				// Special case for only one item
+				// try the opForValue without an index suffix at first
+				asCString methodName;
+				if (itemCount == 1)
+					builder->GetObjectMethodDescriptions(VALUE_NAME, CastToObjectType(rangeTypeInfo), funcs, isConstRange);
+				if (funcs.GetLength() == 0)
+				{
+					methodName.Format("%s%d", VALUE_NAME, (int)i);
+					builder->GetObjectMethodDescriptions(methodName.AddressOf(), CastToObjectType(rangeTypeInfo), funcs, isConstRange);
+				}
+
+				for (asUINT j = 0; j < funcs.GetLength(); j++)
+				{
+					asIScriptFunction* f = engine->scriptFunctions[funcs[j]];
+					int paramTid;
+					if (f->GetParamCount() == 1 && f->GetParam(0, &paramTid) >= 0 && paramTid == iterTid)
+					{
+						if (opForValueIdN != 0 && !isConstRange)
+						{
+							// Is the new function a better match?
+							if (!f->IsReadOnly())
+								opForValueIdN = funcs[j];
+						}
+						else
+							opForValueIdN = funcs[j];
+					}
+				}
+
+				if (opForValueIdN == 0)
+					break;
+				else
+					opForValueNIds.PushLast(opForValueIdN);
+
+				// Resolve auto using return type of opForValueN
+				if (itemDataTypes[i].IsAuto())
+				{
+					asDWORD retFlags;
+					int retTid = engine->scriptFunctions[opForValueIdN]->GetReturnTypeId(&retFlags);
+
+					bool isConst = itemDataTypes[i].IsReadOnly() || retFlags & asTM_CONST;
+					asCDataType dt = asCDataType::CreateById(engine, retTid, isConst);
+
+					itemDataTypes[i] = dt;
+				}
+			}
+		}
+	}
+
+	// Give a clear error message about which part not satisfies the requirement
+	if (!(opForBeginId && opForEndId && opForNextId && opForValueNIds.GetLength() == itemCount))
+	{
+		asCString str;
+		str.Format(TXT_s_NOT_A_FOREACH_TYPE, rangeExpr.type.dataType.Format(outFunc->nameSpace).AddressOf());
+		Error(str, node->lastChild);
+
+		if (!opForBeginId)
+		{
+			str.Format(TXT_MISSING_OR_INVALID_DEFINITON_OF_s, BEGIN_NAME);
+			Information(str, node->lastChild);
+		}
+		else
+		{
+			// Only report the other methods if opForBegin is valid, otherwise the error might be misleading
+			if (!opForEndId)
+			{
+				str.Format(TXT_MISSING_OR_INVALID_DEFINITON_OF_s, END_NAME);
+				Information(str, node->lastChild);
+			}
+			if (!opForNextId)
+			{
+				str.Format(TXT_MISSING_OR_INVALID_DEFINITON_OF_s, NEXT_NAME);
+				Information(str, node->lastChild);
+			}
+			if (opForValueNIds.GetLength() != itemCount)
+			{
+				str.Format(TXT_MISSING_OR_INVALID_DEFINITON_OF_s, (asCString(VALUE_NAME) + "#").AddressOf());
+				Information(str, node->lastChild);
+			}
+		}
+
+		return;
+	}
+
+	// The following part is majorly copied from CompileForStatement
+
+	// Add a variable scope that will be used by CompileBreak/Continue to know where to stop deallocating variables
+	bc->Block(true);
+	AddVariableScope(true, true);
+
+	// We will use three labels for the for loop
+	int conditionLabel = nextLabel++;
+	int afterLabel = nextLabel++;
+	int continueLabel = nextLabel++;
+	int insideLabel = nextLabel++;
+
+	continueLabels.PushLast(continueLabel);
+	breakLabels.PushLast(afterLabel);
+
+	//---------------------------------------
+	// Compile the initialization statement
+	asCByteCode initBC(engine);
+	LineInstr(&initBC, node->firstChild->tokenPos);
+	asCDataType iterDt = asCDataType::CreateById(engine, iterTid, false);
+	int iterOffset = AllocateVariable(iterDt, false);
+	if (DeclareVariable("", iterDt, iterOffset, &initBC, node) < 0)
+		return;
+
+	asCExprContext opForBeginExpr(engine);
+	{
+		opForBeginExpr.bc.InstrSHORT(asBC_PshVPtr, short(rangeOffset));
+
+		asCArray<asCExprContext*> args;
+		int r = MakeFunctionCall(
+			&opForBeginExpr,
+			opForBeginId,
+			CastToObjectType(rangeExpr.type.dataType.GetTypeInfo()),
+			args,
+			node->firstChild
+		);
+		UNUSED_VAR(r);
+		asASSERT(r >= 0);
+	}
+	CompileInitializationWithAssignment(
+		&initBC, iterDt, node->firstChild, iterOffset, NULL, asVGM_VARIABLE, rangeNode, &opForBeginExpr
+	);
+	ReleaseTemporaryVariable(opForBeginExpr.type, &initBC);
+	initBC.OptimizeLocally(tempVariableOffsets);
+
+	//-----------------------------------
+	// Compile the condition statement
+	asCExprContext opForEndExpr(engine);
+	{
+		opForEndExpr.bc.InstrSHORT(asBC_PshVPtr, short(rangeOffset));
+
+		asCArray<asCExprContext*> args;
+		asCExprContext arg(engine);
+		arg.type.SetVariable(iterDt, iterOffset, false);
+		if (!iterDt.IsPrimitive())
+		{
+			arg.bc.InstrSHORT(asBC_PSF, (short)iterOffset);
+			if( iterDt.IsObjectHandle() ) arg.type.dataType.MakeReference(true);
+		}
+		arg.type.isLValue = true;
+		arg.exprNode = node;
+		args.PushLast(&arg);
+
+		int r = MakeFunctionCall(
+			&opForEndExpr,
+			opForEndId,
+			CastToObjectType(rangeExpr.type.dataType.GetTypeInfo()),
+			args,
+			node
+		);
+		UNUSED_VAR(r);
+		asASSERT(r >= 0);
+
+		ConvertToVariable(&opForEndExpr);
+		ProcessDeferredParams(&opForEndExpr);
+
+		// If expression is true exit the loop
+		opForEndExpr.bc.InstrSHORT(asBC_CpyVtoR4, (short)opForEndExpr.type.stackOffset);
+		opForEndExpr.bc.Instr(asBC_ClrHi);
+		opForEndExpr.bc.InstrDWORD(asBC_JZ, insideLabel);
+		ReleaseTemporaryVariable(opForEndExpr.type, &opForEndExpr.bc);
+
+		opForEndExpr.bc.OptimizeLocally(tempVariableOffsets);
+
+		// Prepend the line instruction for the condition
+		asCByteCode tmp(engine);
+		LineInstr(&tmp, node->firstChild->tokenPos);
+		tmp.AddCode(&opForEndExpr.bc);
+		opForEndExpr.bc.AddCode(&tmp);
+	}
+
+	//---------------------------
+	// Compile the increment statement
+	asCExprContext next(engine);
+	{
+		asCExprContext opForNextExpr(engine);
+		opForNextExpr.bc.InstrSHORT(asBC_PshVPtr, short(rangeOffset));
+
+		asCArray<asCExprContext*> args;
+		asCExprContext arg(engine);
+		arg.type.SetVariable(iterDt, iterOffset, false);
+		if (!iterDt.IsPrimitive())
+		{
+			arg.bc.InstrSHORT(asBC_PSF, (short)iterOffset);
+			if (iterDt.IsObjectHandle()) arg.type.dataType.MakeReference(true);
+		}
+		arg.type.isLValue = true;
+		arg.exprNode = node;
+		args.PushLast(&arg);
+
+		int r = MakeFunctionCall(
+			&opForNextExpr,
+			opForNextId,
+			CastToObjectType(rangeExpr.type.dataType.GetTypeInfo()),
+			args,
+			node
+		);
+		UNUSED_VAR(r);
+		asASSERT(r >= 0);
+
+		asCExprContext lhs(engine);
+		lhs.type.SetVariable(iterDt, iterOffset, false);
+		if (!iterDt.IsPrimitive())
+		{
+			lhs.bc.InstrSHORT(asBC_PSF, (short)iterOffset);
+			if (iterDt.IsObjectHandle()) lhs.type.dataType.MakeReference(true);
+		}
+		if (iterDt.IsObjectHandle())
+			lhs.type.isExplicitHandle = true;
+		lhs.type.isLValue = true;
+		lhs.exprNode = node;
+
+		DoAssignment(
+			&next,
+			&lhs,
+			&opForNextExpr,
+			node,
+			node,
+			ttAssignment,
+			node
+		);
+		ReleaseTemporaryVariable(next.type, &next.bc);
+
+		// Pop the value from the stack
+		if (!next.type.dataType.IsPrimitive())
+			next.bc.Instr(asBC_PopPtr);
+
+		next.bc.OptimizeLocally(tempVariableOffsets);
+	}
+
+	//------------------------------
+	// Compile loop statement
+	bool hasReturn;
+	asCByteCode foreachBC(engine);
+
+	asCArray<int> itemOffsets;
+	for (asUINT i = 0; i < itemCount; ++i)
+	{
+		asCByteCode itemNBC(engine);
+
+		asCDataType& itemDt = itemDataTypes[i];
+		asCScriptNode* itemNode = itemNodes[i];
+
+		int itemOffset = AllocateVariable(itemDt, false);
+		asCString itemName(&script->code[itemNode->tokenPos], itemNode->tokenLength);
+		if (DeclareVariable(itemName, itemDt, itemOffset, &itemNBC, node) < 0)
+			return;
+
+		itemOffsets.PushLast(itemOffset);
+
+		asCExprContext opForValueNExpr(engine);
+
+		opForValueNExpr.bc.InstrSHORT(asBC_PshVPtr, short(rangeOffset));
+
+		asCArray<asCExprContext*> args;
+		asCExprContext arg(engine);
+		arg.type.SetVariable(iterDt, iterOffset, false);
+		if (!iterDt.IsPrimitive())
+		{
+			arg.bc.InstrSHORT(asBC_PSF, (short)iterOffset);
+			if (iterDt.IsObjectHandle()) arg.type.dataType.MakeReference(true);
+		}
+		arg.type.isLValue = true;
+		arg.exprNode = node;
+		args.PushLast(&arg);
+		int r = MakeFunctionCall(
+			&opForValueNExpr,
+			opForValueNIds[i],
+			CastToObjectType(rangeExpr.type.dataType.GetTypeInfo()),
+			args,
+			node->firstChild
+		);
+		UNUSED_VAR(r);
+		asASSERT(r >= 0);
+
+		CompileInitializationWithAssignment(
+			&itemNBC, itemDt, itemNode->prev, itemOffset, NULL, asVGM_VARIABLE, rangeNode, &opForValueNExpr
+		);
+		ReleaseTemporaryVariable(opForValueNExpr.type, &itemNBC);
+
+		// Suppress the compiler warning of uninitialized variable
+		variables->GetVariableByOffset(itemOffset)->isInitialized = true;
+
+		itemNBC.OptimizeLocally(tempVariableOffsets);
+
+		foreachBC.AddCode(&itemNBC);
+	}
+
+	CompileStatement(node->lastChild, &hasReturn, &foreachBC);
+
+	// Reversely destruct the items,
+	// we'll re-initialize them in the next iteration
+	for (asUINT i = itemOffsets.GetLength(); i != 0; --i)
+	{
+		int itemOffset = itemOffsets[i - 1];
+		asCDataType& itemDt = itemDataTypes[i - 1];
+		CallDestructor(itemDt, itemOffset, IsVariableOnHeap(itemOffset), &foreachBC);
+
+		// No need to deallocate here,
+		// we'll deallocate them after the loop is done
+	}
+
+	//-------------------------------
+	// Join the code pieces
+	bc->AddCode(&rangeExpr.bc);
+	bc->AddCode(&initBC);
+	bc->InstrDWORD(asBC_JMP, conditionLabel);
+
+	bc->Label((short)insideLabel);
+
+	// Add a suspend bytecode inside the loop to guarantee
+	// that the application can suspend the execution
+	bc->Instr(asBC_SUSPEND);
+	bc->InstrPTR(asBC_JitEntry, 0);
+
+	LineInstr(bc, node->lastChild->tokenPos);
+	bc->AddCode(&foreachBC);
+
+	bc->Label((short)continueLabel);
+	bc->AddCode(&next.bc);
+
+	bc->Label((short)conditionLabel);
+	bc->AddCode(&opForEndExpr.bc);
+
+	bc->Label((short)afterLabel);
+
+	continueLabels.PopLast();
+	breakLabels.PopLast();
+
+	// Deallocate variables in this block, in reverse order
+	for (int n = (int)variables->variables.GetLength() - 1; n >= 0; n--)
+	{
+		sVariable* v = variables->variables[n];
+
+		// Call variable destructors here, for variables not yet destroyed
+		CallDestructor(v->type, v->stackOffset, v->onHeap, bc);
+		DeallocateVariable(v->stackOffset);
 	}
 
 	RemoveVariableScope();
@@ -5896,6 +6431,7 @@ void asCCompiler::DeallocateVariable(int offset)
 	n = GetVariableSlot(offset);
 	if( n != -1 )
 	{
+		asASSERT(!freeVariables.Exists(n));
 		freeVariables.PushLast(n);
 		return;
 	}
@@ -7410,7 +7946,6 @@ asUINT asCCompiler::ImplicitConvObjectValue(asCExprContext *ctx, const asCDataTy
 	// another object then we can try an implicit value cast
 	if( to.GetTypeInfo() != ctx->type.dataType.GetTypeInfo() )
 	{
-		// TODO: Implement support for implicit constructor/factory
 		asCObjectType *ot = CastToObjectType(ctx->type.dataType.GetTypeInfo());
 		if( ot == 0 )
 			return cost;
@@ -7927,6 +8462,8 @@ asUINT asCCompiler::ImplicitConvObjectToObject(asCExprContext *ctx, const asCDat
 		{
 			if( generateCode )
 			{
+				DetermineSingleFunc(ctx, node);
+
 				asASSERT( ctx->type.dataType.IsObjectHandle() );
 
 				// If the input type is a handle, then a simple ref copy is enough
@@ -11479,25 +12016,29 @@ void asCCompiler::AfterFunctionCall(int funcID, asCArray<asCExprContext*> &args,
 	// to the evaluated expression if it is an lvalue
 
 	// Evaluate the arguments from last to first
-	int n = (int)descr->parameterTypes.GetLength() - 1;
+	int n = (int)args.GetLength() - 1;
 	for( ; n >= 0; n-- )
 	{
+		asUINT realParamIdx = n;
+		if (descr->IsVariadic() && n >= (int)descr->parameterTypes.GetLength() - 1)
+			realParamIdx = descr->parameterTypes.GetLength() - 1;
+		
 		// All &out arguments must be deferred, except if the argument is clean, in which case the actual reference was passed in to the function
 		// If deferAll is set all objects passed by reference or handle must be deferred
-		if( (descr->parameterTypes[n].IsReference() && (descr->inOutFlags[n] & asTM_OUTREF) && !args[n]->isCleanArg) ||
-			(descr->parameterTypes[n].IsObject() && deferAll && (descr->parameterTypes[n].IsReference() || descr->parameterTypes[n].IsObjectHandle())) )
+		if( (descr->parameterTypes[realParamIdx].IsReference() && (descr->inOutFlags[realParamIdx] & asTM_OUTREF) && !args[realParamIdx]->isCleanArg) ||
+			(descr->parameterTypes[realParamIdx].IsObject() && deferAll && (descr->parameterTypes[realParamIdx].IsReference() || descr->parameterTypes[realParamIdx].IsObjectHandle())) )
 		{
-			asASSERT( !(descr->parameterTypes[n].IsReference() && (descr->inOutFlags[n] == asTM_OUTREF) && !args[n]->isCleanArg) || args[n]->origExpr );
+			asASSERT( !(descr->parameterTypes[realParamIdx].IsReference() && (descr->inOutFlags[realParamIdx] == asTM_OUTREF) && !args[realParamIdx]->isCleanArg) || args[realParamIdx]->origExpr );
 
 			// For &inout, only store the argument if it is for a temporary variable
 			if( engine->ep.allowUnsafeReferences ||
-				descr->inOutFlags[n] != asTM_INOUTREF || args[n]->type.isTemporary )
+				descr->inOutFlags[realParamIdx] != asTM_INOUTREF || args[realParamIdx]->type.isTemporary )
 			{
 				// Store the argument for later processing
 				asSDeferredParam outParam;
 				outParam.argNode = args[n]->exprNode;
 				outParam.argType = args[n]->type;
-				outParam.argInOutFlags = descr->inOutFlags[n];
+				outParam.argInOutFlags = descr->inOutFlags[realParamIdx];
 				outParam.origExpr = args[n]->origExpr;
 
 				ctx->deferredParams.PushLast(outParam);
@@ -13996,7 +14537,13 @@ asUINT asCCompiler::MatchArgument(asCArray<int> &funcs, asCArray<asSOverloadCand
 		asCScriptFunction *desc = builder->GetFunctionDescription(funcs[n]);
 
 		// Does the function have arguments enough?
-		if( (int)desc->parameterTypes.GetLength() <= paramNum )
+		asUINT paramCount = desc->parameterTypes.GetLength();
+		if (desc->IsVariadic())
+		{
+			asASSERT(paramCount >= 1);
+			paramCount -= 1;
+		}
+		if( (int)paramCount <= paramNum && !desc->IsVariadic())
 			continue;
 
 		int cost = MatchArgument(desc, argExpr, paramNum, allowObjectConstruct);
@@ -14009,6 +14556,11 @@ asUINT asCCompiler::MatchArgument(asCArray<int> &funcs, asCArray<asSOverloadCand
 
 int asCCompiler::MatchArgument(asCScriptFunction *desc, const asCExprContext *argExpr, int paramNum, bool allowObjectConstruct)
 {
+	if (desc->IsVariadic() && paramNum >= (int)desc->parameterTypes.GetLength() - 1)
+	{
+		paramNum = (int)desc->parameterTypes.GetLength() - 1;
+	}
+
 	// void expressions can match any out parameter, but nothing else
 	if( argExpr->IsVoidExpression() )
 	{
@@ -14544,6 +15096,8 @@ int asCCompiler::MakeFunctionCall(asCExprContext *ctx, int funcId, asCObjectType
 	if( objectType )
 		Dereference(ctx, true);
 
+	asCScriptFunction* descr = builder->GetFunctionDescription(funcId);
+
 	// Store the expression node for error reporting
 	if( ctx->exprNode == 0 )
 		ctx->exprNode = node;
@@ -14552,6 +15106,11 @@ int asCCompiler::MakeFunctionCall(asCExprContext *ctx, int funcId, asCObjectType
 	objBC.AddCode(&ctx->bc);
 
 	int r = PrepareFunctionCall(funcId, &ctx->bc, args);
+	if (descr->IsVariadic())
+	{
+		// Argument count
+		ctx->bc.InstrDWORD(asBC_PshC4, (asDWORD)args.GetLength());
+	}
 	if (r < 0)
 		return r;
 
