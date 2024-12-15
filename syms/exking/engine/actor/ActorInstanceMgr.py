@@ -39,3 +39,9 @@ EXKING("_ZN6engine5actor16ActorInstanceMgr22requestCreateActorSyncEPv", {
     TOTK_121: 0x012a8b44,
 })
 
+# namespace engine::actor::ActorInstanceMgr { static uintptr_t sInstance; }
+EXKING("_ZN6engine5actor16ActorInstanceMgrL9sInstanceE", {
+    TOTK_100: 0x046479e0,
+    TOTK_110: 0x04725040,
+    TOTK_121: 0x04722920,
+}, SymbolType.DATA)

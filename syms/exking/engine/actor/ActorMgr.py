@@ -35,6 +35,9 @@ EXKING("_ZN6engine5actor8ActorMgr19removeActorRelationERS1_RNS0_9ActorBaseES4_",
     TOTK_121: 0x008eee60,
 })
 
-# actormgr sinstance
-# 110 7104724988
-# 121 7104722268
+# namespace engine::actor::ActorMgr { static uintptr_t sInstance; }
+EXKING("_ZN6engine5actor8ActorMgrL9sInstanceE", {
+    TOTK_100: 0x04647330,
+    TOTK_110: 0x04724988,
+    TOTK_121: 0x04722268,
+}, SymbolType.DATA)

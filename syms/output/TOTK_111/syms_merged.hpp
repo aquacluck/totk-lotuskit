@@ -180,6 +180,13 @@ class createActorAndConnectSyncImpl {
 };
 }
 
+namespace sym::engine::actor::ActorInstanceMgr {
+class sInstance {
+    public:
+    inline static constexpr ptrdiff_t offset = 0x00000000;
+};
+}
+
 namespace sym::engine::actor::BaseProcCreateAndDeleteThread {
 class calc_create {
     public:
@@ -205,6 +212,13 @@ namespace sym::engine::actor::ActorMgr {
 class registerActorRelation {
     public:
     inline static constexpr ptrdiff_t offset = 0x00dc13f0;
+};
+}
+
+namespace sym::engine::actor::ActorMgr {
+class sInstance {
+    public:
+    inline static constexpr ptrdiff_t offset = 0x00000000;
 };
 }
 
