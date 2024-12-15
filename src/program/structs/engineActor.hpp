@@ -101,13 +101,9 @@ public:
     void* mLinkData;
     u32 mRefCount; // atomic
     CreateWatcherRef mWatcher;
-#ifdef TOTK_100
-    sead::FixedRingBuffer<u16, 29> mDependencyRing;
-#else
-    sead::FixedRingBuffer<u16, 33> mDependencyRing;
-#endif
+    sead::FixedRingBuffer<u16, TOTK_VERSION == 100 ? 29 : 33> mDependencyRing;
 };
-static_assert(sizeof(BaseProc) == 0x218);
+static_assert(sizeof(BaseProc) == (TOTK_VERSION == 100 ? 0x210 : 0x218));
 
 class ActorTransceiver : public transceiver::Transceiver {
 public:
@@ -211,7 +207,7 @@ public:
     u8 _4b0;
     u8 _4b1;
 };
-static_assert(sizeof(ActorBase) == 0x4b8);
+static_assert(sizeof(ActorBase) == (TOTK_VERSION == 100 ? 0x4b0 : 0x4b8));
 
 class ActorMgr {
 public:
