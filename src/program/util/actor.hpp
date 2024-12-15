@@ -4,5 +4,6 @@
 
 namespace lotuskit::util::actor {
     void createSimple(const std::string &actorName);
+    void createSimpleXYZ(const std::string &actorName, float x, float y, float z);
 
 } // ns

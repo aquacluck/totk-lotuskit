@@ -10,12 +10,16 @@ namespace lotuskit::util::actor {
                              engine::actor::ActorFile*, sead::Function*, bool, engine::actor::ActorMgr::Result*, engine::actor::PreActor**);
 
     void createSimple(const std::string &actorName) {
+        createSimpleXYZ(actorName, 30, 1520, 1500); // near fuse
+    }
+
+    void createSimpleXYZ(const std::string &actorName, float x, float y, float z) {
         bb::InitInfo<32> initInfo;
         //initInfo.setParam(sead::SafeString{"EquipmentUser_Bow"}, sead::SafeString{"Weapon_Bow_032"});
         //initInfo.setParam(sead::SafeString{"EquipmentUser_Shield"}, sead::SafeString{"Weapon_Shield_018"});
         //initInfo.setParam(sead::SafeString{"EquipmentUser_Weapon"}, sead::SafeString{"Weapon_Sword_124"});
         engine::actor::ActorMgr::CreateArg createArg;
-        createArg.position = {30.f, 1520.f, 1500.f}; // fuse
+        createArg.position = {x, y, z};
         createArg.scale = { 1.f, 1.f, 1.f };
         createArg.blackboard_info = &initInfo;
         createArg.transform_flags.set(engine::actor::ActorMgr::CreateArg::TransformFlags::UsePosition);
