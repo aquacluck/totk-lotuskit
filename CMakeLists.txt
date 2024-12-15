@@ -19,7 +19,7 @@ set(CMAKE_CXX_STANDARD 23)
 
 # angelscript sources
 include_directories(${PROJECT_SOURCE_DIR}/angelscript/include)
-add_compile_definitions(AS_NO_EXCEPTIONS=1 AS_USE_NAMESPACE=1 AS_64BIT_PTR=1 __SWITCH__=1) # implied: AS_NO_THREADS=1
+add_compile_definitions(AS_NO_EXCEPTIONS=1 AS_USE_NAMESPACE=1 AS_64BIT_PTR=1 AS_USE_STLNAMES=1 __SWITCH__=1) # implied: AS_NO_THREADS=1
 file(GLOB_RECURSE AS_SOURCES_ASM ${PROJECT_SOURCE_DIR}/angelscript/source/*.S)
 file(GLOB_RECURSE AS_SOURCES_H ${PROJECT_SOURCE_DIR}/angelscript/source/*.h)
 file(GLOB_RECURSE AS_SOURCES_CXX ${PROJECT_SOURCE_DIR}/angelscript/source/*.cpp)
