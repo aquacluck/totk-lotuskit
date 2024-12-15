@@ -38,19 +38,6 @@
             config: {
                 frontend: {
                     ws_is_connected: signal(false),
-                    //console_log_ns_passlist: signal(false),
-                    console_log_ns_faillist: signal(["ACTOR_PLAYER", "ACTOR_SLOT_1", "ACTOR_SLOT_2", "ACTOR_SLOT_3", "VFRMGR"]),
-                },
-
-                // our state ^ is freely writable, but the below need to command+receive their mutations
-                proxy: {
-                    backend_is_connected: signal(false),
-                },
-                backend: {
-                    //do_keybind: signal(true),
-                    //do_player_log: signal(true), // XXX try and generalize more of this to an actor subscription, when comfortable w actor+physics+etc systems
-                    //do_vfrmgr_log: signal(false),
-                    //svcOutputDebugString_log_ns_passlist: signal([]),
                 },
             },
         };
@@ -74,19 +61,21 @@
             WSTransport.consume_ws_msg(JSON.parse(e.data));
         }
 
-        static connect() {
+        static connect(ws_location) {
             if (WSTransport.signals.config.frontend.ws_is_connected.value) {
                 console.log("ws closing to reopen");
                 WSTransport.signals.config.frontend.ws_is_connected.value = false;
-                WSTransport.websock.close(); // XXX proxy doesnt really know how to close, so this will eventually timeout instead
+            }
+            if (WSTransport.websock) {
+                WSTransport.websock.close(); // XXX mod doesnt really know how to close (or reopen TODO), so this will eventually timeout instead
                 WSTransport.websock.removeEventListener("open", WSTransport._ws_on_open);
                 WSTransport.websock.removeEventListener("close", WSTransport._ws_on_close);
                 WSTransport.websock.removeEventListener("message", WSTransport._ws_on_message);
                 WSTransport.websock = undefined;
             }
 
-            //const ws_location = "ws://" + window.location.host;
-            const ws_location = "ws://127.0.0.1:7072"; // TODO input with localStorage default+recents in ConnectionToolset
+            // TODO input with localStorage default+recents in ConnectionToolset
+            ws_location = ws_location || "ws://127.0.0.1:7072";
             console.log("ws open try", ws_location);
             WSTransport.websock = new WebSocket(ws_location);
             WSTransport.websock.addEventListener("open", WSTransport._ws_on_open);
@@ -137,9 +126,6 @@
                 if ("physics_ang_vel" in payload) { WSTransport.signals.actor[aselector].physics_ang_vel.value = payload.physics_ang_vel; }
                 if ("inertia" in payload) { WSTransport.signals.actor[aselector].inertia.value = payload.inertia; }
 
-            }
-            else if (ns == "BACKEND_CONFIG") {
-                if ("backend_is_connected" in payload) { WSTransport.signals.config.proxy.backend_is_connected.value = payload.backend_is_connected; }
             }
             */
         }
@@ -224,7 +210,7 @@
 
     // main ui
 
-    class HexdumpSlot extends Component {
+    class HexDumpSlot extends Component {
         constructor() {
             super();
             this.slotLabelRef = createRef();
@@ -522,16 +508,40 @@
         }
     };
 
-    function ConnectionToolset() {
-        const ws = WSTransport.signals.config.frontend.ws_is_connected.value ? "✅" : "❌";
-        const backend = WSTransport.signals.config.proxy.backend_is_connected.value ? "✅" : "❌"; // FIXME can be desynced upon ws reconnect
-        return html`
-            <section class="toolset_connection">
-                <button class="ws pushbutton" onClick=${() => WSTransport.connect()}>${ws} ws</button>
-                <div class="backend">${backend} backend</div>
-            </section>
-        `;
-    }
+    class ConnectionToolset extends Component {
+        constructor() {
+            super();
+            this.ws_location_ref = createRef();
+            this.state = {is_polling: false};
+        }
+
+        do_connect() {
+            const ws_location = this.ws_location_ref.value || "ws://127.0.0.1:7072";
+            WSTransport.connect(ws_location);
+        }
+
+        do_poll() {
+            if (WSTransport.signals.config.frontend.ws_is_connected.value) { this.setState({is_polling: false}); return; }
+            this.do_connect();
+            this.setState({is_polling: true});
+            setTimeout(this.do_poll.bind(this), 5000);
+        }
+
+        render(props, state) {
+            const flag = WSTransport.signals.config.frontend.ws_is_connected.value ? "✅" :
+                         state.is_polling ? "⌛" : "❌";
+            return html`
+                <section class="toolset_connection">
+                    <div class="ws">
+                        Mod Socket ${flag}
+                        <input placeholder="ws://127.0.0.1:7072" size="20" ref=${this.ws_location_ref} />
+                        <button class="pushbutton" onClick=${ () => this.do_connect() }>connect</button>
+                        <button class="pushbutton" onClick=${ () => this.do_poll() }>poll</button>
+                    </div>
+                </section>
+            `;
+        }
+    };
 
     // init
 
@@ -541,11 +551,11 @@
             ${WSTransport.signals.actor._XXX_tracked_aselectors.value.map((asel, asel_i) => html`<${ActorInspector} aselector_named=${asel} _XXX_aselector_i=${asel_i} />`)}
             <section class="toolset_memutils_controller">
                 <div class="hexdump">
-                    Hexdump
-                    <${HexdumpSlot} slot_i=0 />
-                    <${HexdumpSlot} slot_i=1 />
-                    <${HexdumpSlot} slot_i=2 />
-                    <${HexdumpSlot} slot_i=3 />
+                    HexDump
+                    <${HexDumpSlot} slot_i=0 />
+                    <${HexDumpSlot} slot_i=1 />
+                    <${HexDumpSlot} slot_i=2 />
+                    <${HexDumpSlot} slot_i=3 />
                 </div>
                 <${MemSearch} />
                 <${QuickDumps} />
