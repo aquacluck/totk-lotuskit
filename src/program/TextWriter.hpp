@@ -80,7 +80,7 @@ namespace lotuskit {
             // set outputText
             char buf[2000]; // TODO std::format etc with proper allocator?
             nn::util::SNPrintf(buf, sizeof(buf), fmt, std::forward<decltype(args)>(args)...);
-            newNode->outputText = (char*)currentDrawFrame->heap->alloc(strlen(buf));
+            newNode->outputText = (char*)currentDrawFrame->heap->alloc(strlen(buf)+1);
             std::memcpy(newNode->outputText, buf, strlen(buf)+1);
         }
         inline static void appendCallback(size_t drawList_i, TextWriterDrawCallback fn) {
@@ -96,7 +96,7 @@ namespace lotuskit {
             // set outputText
             char buf[2000]; // TODO std::format etc with proper allocator?
             nn::util::SNPrintf(buf, sizeof(buf), fmt, std::forward<decltype(args)>(args)...);
-            newNode->outputText = (char*)debugDrawerInternalHeap->alloc(strlen(buf));
+            newNode->outputText = (char*)debugDrawerInternalHeap->alloc(strlen(buf)+1);
             std::memcpy(newNode->outputText, buf, strlen(buf)+1);
 
             TextWriterToastNode* cmpNode;
