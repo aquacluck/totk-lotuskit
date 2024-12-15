@@ -516,7 +516,7 @@
         }
 
         do_connect() {
-            const ws_location = this.ws_location_ref.value || "ws://127.0.0.1:7072";
+            const ws_location = this.ws_location_ref.current.value || "ws://127.0.0.1:7072";
             WSTransport.connect(ws_location);
         }
 
