@@ -7,6 +7,7 @@
 #include "HexDump.hpp"
 #include "Logger.hpp"
 #include "TextWriter.hpp"
+#include "util/actor.hpp"
 using json = nlohmann::json;
 using Logger = lotuskit::Logger;
 #include <math/seadVector.h>
@@ -138,6 +139,8 @@ namespace lotuskit::script::globals {
     float actor_pos_get_y(::engine::actor::ActorBase* actor) { return actor->mPosition.y; }
     float actor_pos_get_z(::engine::actor::ActorBase* actor) { return actor->mPosition.z; }
 
+    void trashCreateActor() { lotuskit::util::actor::testCreate(); } // XXX
+
     void registerGlobals(AngelScript::asIScriptEngine* engine) {
         s32 asErrno = engine->RegisterGlobalFunction("void yield()", AngelScript::asFUNCTION(sys::suspendCtx), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
 
@@ -145,6 +148,7 @@ namespace lotuskit::script::globals {
         //engine->RegisterGlobalFunction("void logText(string, string)", AngelScript::asFUNCTION(Logger::logText), AngelScript::asCALL_CDECL);
         //s32 asErrno = engine->RegisterGlobalFunction("void trashPrintInt(int)", AngelScript::asFUNCTION(trashPrintInt), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
         //asErrno = engine->RegisterGlobalFunction("void trashPrint(const string &in)", AngelScript::asFUNCTION(trashPrint), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void trashCreateActor()", AngelScript::asFUNCTION(trashCreateActor), AngelScript::asCALL_CDECL); assert(asErrno >= 0); // XXX
 
         engine->SetDefaultNamespace("sys");
         asErrno = engine->RegisterGlobalFunction("void heapInfo()", AngelScript::asFUNCTION(sys::heapInfo), AngelScript::asCALL_CDECL); assert(asErrno >= 0);

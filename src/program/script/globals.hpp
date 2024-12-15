@@ -28,6 +28,8 @@ namespace lotuskit::script::globals {
     //    Logger::logJson(json::object({ {"oink", num} }), "/script/trashPrintInt");
     //}
 
+    void trashCreateActor(); // XXX
+
     void registerGlobals(AngelScript::asIScriptEngine* engine);
 
 } // ns

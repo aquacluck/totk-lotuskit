@@ -56,6 +56,7 @@ enum class CalcPriority : u32 {
 
 class ActorBase;
 class ActorFile;
+class ActorInstanceMgr;
 class PreActor;
 
 struct CreateWatcher {
