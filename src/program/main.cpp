@@ -8,6 +8,7 @@
 #include "structs/engineActor.hpp"
 #include "Config.hpp"
 #include "Logger.hpp"
+#include "ActorWatcher.hpp"
 #include "HexDump.hpp"
 #include "TextWriter.hpp"
 #include "server/WebSocket.hpp"
@@ -57,6 +58,7 @@ HOOK_DEFINE_TRAMPOLINE(ActorRelationAddHook) {
         if (!strcmp(parent.mName.cstr(), "Player") && lotuskit::script::globals::ResidentActors::Player != &parent) {
             lotuskit::script::globals::ResidentActors::Player = &parent;
             Logger::logJson(json::object({ {"Player", (u64)(&parent)} }), "/hook/sym/ActorMgr_registerActorRelation");
+            lotuskit::ActorWatcher::assignSlot(0, &parent);
         }
         if (!strcmp(parent.mName.cstr(), "PlayerCamera") && lotuskit::script::globals::ResidentActors::PlayerCamera != &parent) {
             lotuskit::script::globals::ResidentActors::PlayerCamera = &parent;
@@ -109,7 +111,7 @@ HOOK_DEFINE_TRAMPOLINE(WorldManagerModuleBaseProcHook) {
         //Logger::logJson(json::object({{"kee", "vee"}, {"k2", 420}}));
         // TODO source+display high level configs (socket, svclog, etc)?
 
-        if (true) { //if (g_ModCommand_ActorWatcher[0].actor == nullptr) {
+        if (lotuskit::ActorWatcher::slots[0].actor == nullptr) {
             lotuskit::TextWriter::printf(0, "[totk-lotuskit:%d] awaiting Player, main_offset=%p\n", TOTK_VERSION, exl::util::GetMainModuleInfo().m_Total.m_Start);
         }
 
@@ -125,6 +127,7 @@ HOOK_DEFINE_TRAMPOLINE(WorldManagerModuleBaseProcHook) {
         lotuskit::tas::InputDisplay::draw();
 
         lotuskit::server::WebSocket::calc(); // noblock recv, but blocking processing if enabled
+        lotuskit::ActorWatcher::calc();
         lotuskit::HexDump::calc();
 
         Orig(self, param_2, param_3, param_4, wmmodule, param_6);
