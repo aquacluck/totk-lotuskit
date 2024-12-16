@@ -71,7 +71,13 @@ namespace lotuskit {
                 }
 
                 if (slot.isCalc && slot.actor != nullptr) {
-                    // TODO Logger::logJson(actorstuff)
+                    char ns[16] = "/ActorWatcher/i";
+                    ns[14] = '0' + i; // replace i
+                    Logger::logJson(json::object({
+                        {"actorName", slot.actor->mName.cstr()},
+                        {"actorPtr", (u64)slot.actor},
+                        {"pos", json::array({ slot.actor->mPosition.x, slot.actor->mPosition.y, slot.actor->mPosition.z })}
+                    }), ns, false, false); // noblock, no debug log
                 }
 
                 if (slot.isDraw && slot.actor != nullptr) {

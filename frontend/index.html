@@ -13,28 +13,7 @@
     class WSTransport {
         static websock = undefined;
         static ns_subscriptions = {}; // {ns_json_pointer: [cbfunc, ...]}
-        static _new_actor_signal_group() {
-            return {
-                pos32: signal([0.0, 0.0, 0.0]),
-                pos64: signal([0.0, 0.0, 0.0]),
-                rot: signal([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
-                rot_physics: signal([0.0, 0.0, 0.0, 0.0]),
-                vel_frame: signal([0.0, 0.0, 0.0]), // per-frame calculated velocity, unused
-                physics_vel: signal([0.0, 0.0, 0.0]),
-                physics_ang_vel: signal([0.0, 0.0, 0.0]),
-                inertia: signal([0.0, 0.0, 0.0, 0.0]),
-            };
-        };
         static signals = {
-            // TODO allow components to call into here, to create new signal groups on the fly, to observe+route changes from incoming logs (eg subscribe to currently selected actors)
-            // XXX dont pass signals into props/etc, they appear to leak? values are fine
-            actor: {
-                Player: this._new_actor_signal_group(),
-                ACTOR_SLOT_1: this._new_actor_signal_group(),
-                ACTOR_SLOT_2: this._new_actor_signal_group(),
-                ACTOR_SLOT_3: this._new_actor_signal_group(),
-                _XXX_tracked_aselectors: signal(["Player", "ACTOR_SLOT_1", "ACTOR_SLOT_2", "ACTOR_SLOT_3"]), // client side only, mod side holds this separately for now until selector format/references/etc are better planned. we just juggle some hardcoded names here for now
-            },
             config: {
                 frontend: {
                     ws_is_connected: signal(false),
@@ -98,36 +77,6 @@
             } else if ("err" in payload) {
                 console.error(payload["err"]);
             }
-
-            /*// dead
-            const [uniq_id, ns, payload] = dgram_arr;
-
-            // Filter out noisy/instrumentation/etc logs
-            const faillist = WSTransport.signals.config.frontend.console_log_ns_faillist.value;
-            if (!faillist || faillist.indexOf(ns) == -1) {
-                console.log(ns, payload);
-            }
-
-            // Publish updates into ui components
-            // TODO is a special player ns useful? should we keep it to split common actor info away from any Player-specifics?
-            let aselector = "";
-            if (ns == "ACTOR_PLAYER") { aselector = "Player"; }
-            else if (ns == "ACTOR_SLOT_1") { aselector = "ACTOR_SLOT_1"; }
-            else if (ns == "ACTOR_SLOT_2") { aselector = "ACTOR_SLOT_2"; }
-            else if (ns == "ACTOR_SLOT_3") { aselector = "ACTOR_SLOT_3"; }
-            if (aselector) {
-                // XXX just iterate over these?
-                if ("pos32"     in payload) { WSTransport.signals.actor[aselector].pos32.value     = payload.pos32; }
-                if ("pos64"     in payload) { WSTransport.signals.actor[aselector].pos64.value     = payload.pos64; }
-                if ("rot"       in payload) { WSTransport.signals.actor[aselector].rot.value       = payload.rot; }
-                if ("rot_physics" in payload) { WSTransport.signals.actor[aselector].rot_physics.value = payload.rot_physics; }
-                //if ("vel_frame" in payload) { WSTransport.signals.actor[aselector].vel_frame.value = payload.vel_frame; }
-                if ("physics_vel" in payload) { WSTransport.signals.actor[aselector].physics_vel.value = payload.physics_vel; }
-                if ("physics_ang_vel" in payload) { WSTransport.signals.actor[aselector].physics_ang_vel.value = payload.physics_ang_vel; }
-                if ("inertia" in payload) { WSTransport.signals.actor[aselector].inertia.value = payload.inertia; }
-
-            }
-            */
         }
 
         static subscribe_ns(ns, cbfunc) {
@@ -138,14 +87,6 @@
                 WSTransport.ns_subscriptions[ns] = [cbfunc];
             }
         }
-
-        /*// dead
-        static make_uniq_id() {
-            var id = Math.floor(Math.random() * 0xffffffff);
-            id = id.toString(16).padStart(8, '0');
-            return "0x"+id;
-        }
-        */
     };
 
 
@@ -173,6 +114,8 @@
 
     // ui util
 
+    function makeLegibleFloat(value) { return parseFloat(value.toFixed(6)); }
+
     function CompassSpinny({value}) {
         const [rz, rx] = value;
         const rad = Math.atan2(rz, rx);
@@ -194,17 +137,17 @@
     function ReadoutVec3({label, value, vecComponentPattern}) {
         const v = value;
         const c = vecComponentPattern || "";
-        return html`<span label=${label} class="readout readout_vec3 vec_components_${c}"><span>${v[0]}</span> <span>${v[1]}</span> <span>${v[2]}</span></span>`;
+        return html`<span label=${label} class="readout readout_vec3 vec_components_${c}"><span>${makeLegibleFloat(v[0])}</span> <span>${makeLegibleFloat(v[1])}</span> <span>${makeLegibleFloat(v[2])}</span></span>`;
     }
     function ReadoutVec2({label, value, vecComponentPattern}) {
         const v = value;
         const c = vecComponentPattern || "";
-        return html`<span label=${label} class="readout readout_vec2 vec_components_${c}"><span>${v[0]}</span> <span>${v[1]}</span></span>`;
+        return html`<span label=${label} class="readout readout_vec2 vec_components_${c}"><span>${makeLegibleFloat(v[0])}</span> <span>${makeLegibleFloat(v[1])}</span></span>`;
     }
     function ReadoutQuat({label, value, vecComponentPattern}) {
         const v = value;
         const c = vecComponentPattern || "";
-        return html`<span label=${label} class="readout readout_quat vec_components_${c}"><span>${v[0]}</span> <span>${v[1]}</span> <span>${v[2]}</span> <span>${v[3]}</span></span>`;
+        return html`<span label=${label} class="readout readout_quat vec_components_${c}"><span>${makeLegibleFloat(v[0])}</span> <span>${makeLegibleFloat(v[1])}</span> <span>${makeLegibleFloat(v[2])}</span> <span>${makeLegibleFloat(v[3])}</span></span>`;
     }
 
 
@@ -344,18 +287,26 @@
         }
     };
 
-    class ActorInspector extends Component {
+    class ActorWatcher extends Component {
         constructor() {
             super();
-            this.state = {idk: 420};
+            this.state = {
+                actorName: "[none]",
+                actorPtr: 0,
+                pos: [0.0, 0.0, 0.0],
+            };
             this.bumper_increment_ref = createRef();
             this.savestate_textbox_ref = createRef();
-            this._XXX_aselector_finder_relation_parent_i = createRef();
+        }
+
+        componentDidMount() {
+            WSTransport.subscribe_ns(`/ActorWatcher/${this.props.slot_i}`, payload => this.setState(payload));
         }
 
         do_paste_coords(aselector_named, dest) {
+            //TODO
             console.log("command_savestate_paste_simple", aselector_named, dest);
-            fetch(`/backend/savestate/paste_simple?uniq_id=${WSTransport.make_uniq_id()} ${aselector_named} pos32 ${dest.pos32[0]} ${dest.pos32[1]} ${dest.pos32[2]} pos64 ${dest.pos64[0]} ${dest.pos64[1]} ${dest.pos64[2]}`, {method: "post"});
+            //fetch(`/backend/savestate/paste_simple?uniq_id=${WSTransport.make_uniq_id()} ${aselector_named} pos32 ${dest.pos32[0]} ${dest.pos32[1]} ${dest.pos32[2]} pos64 ${dest.pos64[0]} ${dest.pos64[1]} ${dest.pos64[2]}`, {method: "post"});
         }
 
         do_relative_move_calc(actor_signals, unit_vec, delta) {
@@ -424,30 +375,16 @@
             this.savestate_textbox_ref.current.value = `${v[0]}, ${v[1]}, ${v[2]}`;
         }
 
-        do_subscribe_slot(_XXX_aselector_i, subscribe_options) {
-            // TODO add+remove actor selector slots on demand instead of all this? otoh keeping these "static" makes it ez to reason 1:1::js:cpp
-            const action = subscribe_options.action;
-            let action_arg = 0x0;
-            if (action == "null") {
-            } else if (action == "spawn") {
-            } else if (action == "next_relation_of_i") {
-                action_arg = parseInt(this._XXX_aselector_finder_relation_parent_i.current.value || 0);
-            }
-            fetch(`/backend/actor/select_slot?uniq_id=${WSTransport.make_uniq_id()} ${_XXX_aselector_i} ${subscribe_options.action} ${action_arg}`, {method: "post"});
-        }
-
-        render({aselector_named, _XXX_aselector_i}, state) {
-            // TODO actor selector: spawn one of these toolsets scoped to some actor, direct the mod to publish its data, cleanup when actor is destroyed.
-            // TODO more generally: we get a handle to the actor from the mod (be it name/index/pointer/whatever) which is used to ^ request+identify subscriptions, and used as a handle for savestate pasting etc.
-            //                      symbolic handles too -- eg names/singletons like Player, relative traversals such as RelationOf(Player, "Weapon_Lsword_020"), static create-if-missing named test actors, ...
-
-            //if (WSTransport.signals.actor._XXX_tracked_aselectors[_XXX_aselector_i] != aselector_named) { debugger; } // assert
-            const asig = WSTransport.signals.actor[aselector_named];
-            const compass_rot = [asig.rot.value[0], asig.rot.value[2]];
+        render(props, {actorName, actorPtr, pos}) {
+            //return html`<section class="toolset_actor_watcher"></section>`;
+            //const asig = WSTransport.signals.actor[aselector_named];
+            //const compass_rot = [asig.rot.value[0], asig.rot.value[2]];
+            const ptr = "0x" + actorPtr.toString(16).padStart(16, "0");
+            const dummy = [0, 0, 0, 0]; // XXX
 
             return html`
-                <section class="toolset_actor_inspector">
-                    <div class="actor_selector_current">Actor: ${aselector_named}</div>
+                <section class="toolset_actor_watcher">
+                    <div class="actor_selector_current">${actorName}(${ptr})</div>
                     <div class="actor_selector_options">
                         Select:
                         <button onClick=${ () => this.do_subscribe_slot(_XXX_aselector_i, {action: "null"}) } class="pushbutton">null</button>
@@ -456,32 +393,33 @@
                         <input type="number" placeholder="0" size="2" min="0" max="3" ref=${this._XXX_aselector_finder_relation_parent_i} size=2 />
                     </div>
                     <div class="actor_pos32_ui">
-                        <${ReadoutVec3} label="pos32 (ui)\xa0" value=${VecUtil.engine_to_ui(asig.pos32.value)} vecComponentPattern=${VecComponentPatterns.XZY} />
+                        <${ReadoutVec3} label="pos32 (ui)\xa0" value=${VecUtil.engine_to_ui(pos)} vecComponentPattern=${VecComponentPatterns.XZY} />
                     </div>
                     <div class="actor_pos32">
-                        <${ReadoutVec3} label="pos32\xa0\xa0\xa0\xa0\xa0\xa0" value=${asig.pos32.value} vecComponentPattern=${VecComponentPatterns.XYZ} />
+                        <${ReadoutVec3} label="pos32\xa0\xa0\xa0\xa0\xa0\xa0" value=${pos} vecComponentPattern=${VecComponentPatterns.XYZ} />
                     </div>
+
+                    <!--
                     <div class="actor_pos64_ui">
-                        <${ReadoutVec3} label="pos64 (ui)\xa0" value=${VecUtil.engine_to_ui(asig.pos64.value)} vecComponentPattern=${VecComponentPatterns.XZY} />
+                        <${ReadoutVec3} label="pos64 (ui)\xa0" value=${VecUtil.engine_to_ui(dummy)} vecComponentPattern=${VecComponentPatterns.XZY} />
                     </div>
                     <div class="actor_pos64">
-                        <${ReadoutVec3} label="pos64\xa0\xa0\xa0\xa0\xa0\xa0" value=${asig.pos64.value} vecComponentPattern=${VecComponentPatterns.XYZ} />
+                        <${ReadoutVec3} label="pos64\xa0\xa0\xa0\xa0\xa0\xa0" value=${dummy} vecComponentPattern=${VecComponentPatterns.XYZ} />
                     </div>
                     <div class="actor_vel_frame">
-                        <${ReadoutVec3} label="vel physics" value=${asig.physics_vel.value} vecComponentPattern=${VecComponentPatterns.XYZ} />
-                        <br />
-                        <!--<${ReadoutVec3} label="vel rta\xa0\xa0\xa0\xa0" value=${asig.vel_frame.value} vecComponentPattern=${VecComponentPatterns.XYZ} />-->
-                        <${ReadoutQuat} label="inertia" value=${asig.inertia.value} /> <!-- inverse inertia, idk why 4 maybe just f16 alignment -->
+                        <${ReadoutVec3} label="vel physics" value=${dummy} vecComponentPattern=${VecComponentPatterns.XYZ} /><br />
+                        <${ReadoutQuat} label="inertia" value=${dummy} />
                     </div>
                     <div class="actor_compass">
-                        <${ReadoutVec2} label="rot\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0" value=${compass_rot} vecComponentPattern=${VecComponentPatterns.ZX} />
-                        <${CompassSpinny} value=${compass_rot} />
+                        <${ReadoutVec2} label="rot\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0" value=${dummy} vecComponentPattern=${VecComponentPatterns.ZX} />
+                        <${CompassSpinny} value=${dummy} />
                         <br />
-                        <${ReadoutQuat} label="rot_physics" value=${asig.rot_physics.value} />
-                        <${CompassSpinnyPhysics} value=${asig.rot_physics.value} />
+                        <${ReadoutQuat} label="rot_physics" value=${dummy} />
+                        <${CompassSpinnyPhysics} value=${dummy} />
                         <br />
-                        <${ReadoutVec3} label="ang vel\xa0\xa0\xa0\xa0" value=${asig.physics_ang_vel.value} />
+                        <${ReadoutVec3} label="ang vel\xa0\xa0\xa0\xa0" value=${dummy} />
                     </div>
+                    -->
 
                     <div class="bumper_pushbuttons">
                         <span>Move by <input type="number" placeholder="10" size="4" min="0" max="10000" step="any" ref=${this.bumper_increment_ref} />m:</span>
@@ -611,7 +549,10 @@
     function MainToolbox() {
         return html`
         <div class="toolbox_main">
-            ${WSTransport.signals.actor._XXX_tracked_aselectors.value.map((asel, asel_i) => html`<${ActorInspector} aselector_named=${asel} _XXX_aselector_i=${asel_i} />`)}
+            <${ActorWatcher} slot_i=0 />
+            <${ActorWatcher} slot_i=1 />
+            <${ActorWatcher} slot_i=2 />
+            <${ActorWatcher} slot_i=3 />
             <section class="toolset_memutils_controller">
                 <div class="hexdump">
                     HexDump<span title="crashes on console (when the req info is written to slot? only from script?)">⚠️</span>

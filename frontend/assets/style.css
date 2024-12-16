@@ -124,10 +124,10 @@ textarea {
 .toolbox_main { position: relative; }
 .toolbox_main > .toolset_connection { right:0px; bottom:0px; }
 .toolbox_main > .toolset_memutils_controller { right:0px; top:0px; }
-.toolbox_main > .toolset_actor_inspector:nth-of-type(1) { left: 0px; top:   0px; }
-.toolbox_main > .toolset_actor_inspector:nth-of-type(2) { left: 0px; top: 400px; }
-.toolbox_main > .toolset_actor_inspector:nth-of-type(3) { left: 0px; top: 800px; }
-.toolbox_main > .toolset_actor_inspector:nth-of-type(4) { left: 0px; top:1200px; }
+.toolbox_main > .toolset_actor_watcher:nth-of-type(1) { left: 0px; top:   0px; }
+.toolbox_main > .toolset_actor_watcher:nth-of-type(2) { left: 0px; top: 400px; }
+.toolbox_main > .toolset_actor_watcher:nth-of-type(3) { left: 0px; top: 800px; }
+.toolbox_main > .toolset_actor_watcher:nth-of-type(4) { left: 0px; top:1200px; }
 
 
 .toolset_memutils_controller {
@@ -164,7 +164,7 @@ textarea {
 .toolset_connection > .ws { grid-area: ws; }
 
 
-.toolset_actor_inspector {
+.toolset_actor_watcher {
     position: absolute;
     width: 60%;
     height: 330px;
@@ -188,15 +188,15 @@ textarea {
     '.                      .                        .'; /* empty rows get thrown out */
 
 }
-.toolset_actor_inspector > .actor_selector_current { grid-area: actor_selector_current; }
-.toolset_actor_inspector > .actor_selector_options { grid-area: actor_selector_options; }
-.toolset_actor_inspector > .actor_pos32 { grid-area: actor_pos32; }
-.toolset_actor_inspector > .actor_pos32_ui { grid-area: actor_pos32_ui; }
-.toolset_actor_inspector > .actor_pos64 { grid-area: actor_pos64; }
-.toolset_actor_inspector > .actor_pos64_ui { grid-area: actor_pos64_ui; }
-.toolset_actor_inspector > .actor_vel_frame { grid-area: actor_vel_frame; }
-.toolset_actor_inspector > .actor_compass { grid-area: actor_compass; margin-bottom: 12px; }
-.toolset_actor_inspector > .savestate_slot_actions { grid-area: savestate_slot_actions; }
-.toolset_actor_inspector > .bumper_pushbuttons { grid-area: bumper_pushbuttons; }
+.toolset_actor_watcher > .actor_selector_current { grid-area: actor_selector_current; }
+.toolset_actor_watcher > .actor_selector_options { grid-area: actor_selector_options; }
+.toolset_actor_watcher > .actor_pos32 { grid-area: actor_pos32; }
+.toolset_actor_watcher > .actor_pos32_ui { grid-area: actor_pos32_ui; }
+.toolset_actor_watcher > .actor_pos64 { grid-area: actor_pos64; }
+.toolset_actor_watcher > .actor_pos64_ui { grid-area: actor_pos64_ui; }
+.toolset_actor_watcher > .actor_vel_frame { grid-area: actor_vel_frame; }
+.toolset_actor_watcher > .actor_compass { grid-area: actor_compass; margin-bottom: 12px; }
+.toolset_actor_watcher > .savestate_slot_actions { grid-area: savestate_slot_actions; }
+.toolset_actor_watcher > .bumper_pushbuttons { grid-area: bumper_pushbuttons; }
 
 

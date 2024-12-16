@@ -6,7 +6,7 @@ using json = nlohmann::json;
 
 namespace lotuskit {
     // TODO filters/flags/??? for log outputs (svcOutputDebugString, ws, perhaps textwriter)
-    void Logger::logJson(json obj, const std::string& ns, bool doBlocking) {
+    void Logger::logJson(json obj, const std::string& ns, bool doBlocking, bool doDebugLog) {
         sead::ThreadMgr* mgr = *exl::util::pointer_path::FollowSafe<sead::ThreadMgr*, sym::sead::ThreadMgr::sInstance::offset>();
         sead::Thread* thread = mgr->getCurrentThread(); // XXX what happens if we invoke this from a non-sead thread?
 
@@ -20,16 +20,20 @@ namespace lotuskit {
         std::string out = obj.dump();
 
         if (doBlocking) {
-            svcOutputDebugString(out.c_str(), out.size());
+            if (doDebugLog) {
+                svcOutputDebugString(out.c_str(), out.size());
+            }
             lotuskit::server::WebSocket::sendTextBlocking(out.c_str());
         } else {
-            svcOutputDebugString(out.c_str(), out.size());
+            if (doDebugLog) {
+                svcOutputDebugString(out.c_str(), out.size());
+            }
             lotuskit::server::WebSocket::sendTextNoblock(out.c_str());
         }
     }
 
-    void Logger::logText(const std::string& msg, const std::string& ns, bool doBlocking) {
-        return Logger::logJson(json::object({ {"msg", msg} }), ns, doBlocking);
+    void Logger::logText(const std::string& msg, const std::string& ns, bool doBlocking, bool doDebugLog) {
+        return Logger::logJson(json::object({ {"msg", msg} }), ns, doBlocking, doDebugLog);
     }
 
     /*
