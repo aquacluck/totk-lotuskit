@@ -244,7 +244,7 @@
                     ${slot_i}${"\xa0"}
                     <input placeholder="any label, max 32" ref=${this.slotLabelRef} />
                     <!-- TODO <select>absolute, main, ...</select> -->
-                    <input placeholder="target ptr (hex)" size="20" ref=${this.slotTargetPtrRef} />
+                    <input placeholder="target ptr" size="20" ref=${this.slotTargetPtrRef} />
                     <!--<input placeholder="0x20" size="6" ref=${this.dumpLen} />-->
                     <input placeholder="0x20" size="6" ref=${this.drawLen} />
                     <button onClick=${ () => this.do_absolute(slot_i) } class="pushbutton">dump</button>
@@ -271,9 +271,9 @@
             // TODO region/scope picker
             return html`
                 <div class="memsearch">
-                    Memory search <br/>
-                    <input placeholder="target ptr (hex)" size="20" ref=${this.needle_ptr_ref} />
-                    <button onClick=${ () => this.do_search("sead::HeapMgr::sRootHeaps") } class="pushbutton">heap</button>
+                    Memory search<span title="crashes on console">⚠️</span><br/>
+                    <input placeholder="target ptr" size="20" ref=${this.needle_ptr_ref} />
+                    <button title="sys::memSearch(input)" onClick=${ () => this.do_search("sead::HeapMgr::sRootHeaps") } class="pushbutton">heap</button>
                 </div>
             `;
         }
@@ -288,9 +288,9 @@
             return html`
                 <div class="quickdumps">
                     Quick dumps <br/>
-                    <button onClick=${ () => this.do_heapInfo() } class="pushbutton">heapInfo</button>
-                    <button onClick=${ () => this.do_threadInfo() } class="pushbutton">threadInfo</button>
-                    <button onClick=${ () => this.do_hookLimits() } class="pushbutton">hookLimits</button>
+                    <button title="sys::heapInfo()" onClick=${ () => this.do_heapInfo() } class="pushbutton">heaps</button>
+                    <button title="sys::threadInfo()" onClick=${ () => this.do_threadInfo() } class="pushbutton">threads</button>
+                    <button title="sys::hookLimits()" onClick=${ () => this.do_hookLimits() } class="pushbutton">hooks</button>
                 </div>
             `;
         }
@@ -335,9 +335,9 @@
                     <button title="Run the script below" onClick=${ () => this.do_exec() } class="pushbutton">exec</button>
                     <label title="Automatically wrap input into void main() {...} entry point" for="execscript_use_implicit_main">implicit main:</label>
                     <input type="checkbox" id="execscript_use_implicit_main" ref=${this.use_implicit_main_ref} checked />
-                    <button title='Toggle "record" into output field' onClick=${ () => this.do_toggle_record() } class="pushbutton">tas dump</button>
+                    <button title="tas::toggleDump()" onClick=${ () => this.do_toggle_record() } class="pushbutton">tas dump</button>
                     <br/>
-                    <textarea placeholder="// 1 frame @ 30fps = 2 @ 60fps:\ntas::input(2, KEY_A|KEY_B, 0, -32767, 0, 0);\n\nsys::heapInfo();\nsys::threadInfo();\nsys::hookLimits();\nsys::memSearch(0x08504000);\nHexDump::assignSlotAbsolute(0, sys::mainOffset(), 0x20, 0x20);" ref=${this.script_text_ref}></textarea>
+                    <textarea class="as_source" placeholder='// 1 frame @ 30fps = 2 @ 60fps:\ntas::input(2, KEY_A|KEY_B, 0, -32767, 0, 0);\n\nactor::createAndWatch(1, "GameRomHorse" /*,x,y,z*/ );\nHexDump::assignSlotAbsolute(0, sys::mainOffset(), 0x20, 0x20);' ref=${this.script_text_ref}></textarea>
                     <textarea placeholder="[tas output]" ref=${this.output_text_ref}></textarea>
                 </div>
             `;
@@ -535,8 +535,8 @@
                     <div class="ws">
                         Mod Socket ${flag}
                         <input placeholder="ws://127.0.0.1:7072" size="20" ref=${this.ws_location_ref} />
-                        <button class="pushbutton" onClick=${ () => this.do_connect() }>connect</button>
-                        <button class="pushbutton" onClick=${ () => this.do_poll() }>poll</button>
+                        <button title="once" class="pushbutton" onClick=${ () => this.do_connect() }>connect</button>
+                        <button title="until success" class="pushbutton" onClick=${ () => this.do_poll() }>poll</button>
                     </div>
                 </section>
             `;
@@ -551,7 +551,7 @@
             ${WSTransport.signals.actor._XXX_tracked_aselectors.value.map((asel, asel_i) => html`<${ActorInspector} aselector_named=${asel} _XXX_aselector_i=${asel_i} />`)}
             <section class="toolset_memutils_controller">
                 <div class="hexdump">
-                    HexDump
+                    HexDump<span title="crashes on console (when the req info is written to slot? only from script?)">⚠️</span>
                     <${HexDumpSlot} slot_i=0 />
                     <${HexDumpSlot} slot_i=1 />
                     <${HexDumpSlot} slot_i=2 />

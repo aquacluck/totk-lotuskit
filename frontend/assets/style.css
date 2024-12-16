@@ -20,12 +20,16 @@
     font-display: swap;
 }
 
-
 body { margin: 0; }
+
+/* Attempt to make white less harsh on OLED etc -- sadly windows firefox does not support HDR in 2025 🤡
+ * Even the recent nvidia shit is postprocessing which does not trigger this query. Works in chrome tho */
+@media (dynamic-range: standard) { :root { --color-text: #eee; } }
+@media (dynamic-range: high)     { :root { --color-text: #ccc; } }
 
 body, input, button, textarea {
     background-color: #000;
-    color: #eee;
+    color: var(--color-text);
     font-family: "Source Code Pro", monospace;
     font-weight: 500;
 }
@@ -103,6 +107,10 @@ textarea {
     margin-left: 8px;
     :nth-child(1) { color: var(--vec-tint-0); }
     :nth-child(2) { color: var(--vec-tint-1); }
+}
+
+.execscript .as_source {
+    min-height: 150px;
 }
 
 
