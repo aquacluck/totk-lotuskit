@@ -27,14 +27,14 @@ body { margin: 0; }
 @media (dynamic-range: standard) { :root { --color-text: #eee; } }
 @media (dynamic-range: high)     { :root { --color-text: #ccc; } }
 
-body, input, button, textarea {
+body, input, button, select, textarea {
     background-color: #000;
     color: var(--color-text);
     font-family: "Source Code Pro", monospace;
     font-weight: 500;
 }
 
-input, button, textarea {
+input, button, select, textarea {
              border: 2px solid;
              border-color: #666 #222 #222 #666;
   &:hover  { border-color: #666 #333 #333 #666; }
@@ -62,6 +62,8 @@ textarea {
     height: 100%;
     display: block;
 }
+
+.size_small .size_small_hidden { display: none; }
 
 :root {
     --vec-red:   hsl(  0 40% 80%);
@@ -120,8 +122,8 @@ textarea {
 /* TODO basic draggable window, settings/toggles bar */
 
 .toolbox_main { position: relative; }
-.toolbox_main > .toolset_connection { right:0px; top:0px; }
-.toolbox_main > .toolset_memutils_controller { right:0px; top:64px; }
+.toolbox_main > .toolset_connection { right:0px; bottom:0px; }
+.toolbox_main > .toolset_memutils_controller { right:0px; top:0px; }
 .toolbox_main > .toolset_actor_inspector:nth-of-type(1) { left: 0px; top:   0px; }
 .toolbox_main > .toolset_actor_inspector:nth-of-type(2) { left: 0px; top: 400px; }
 .toolbox_main > .toolset_actor_inspector:nth-of-type(3) { left: 0px; top: 800px; }
@@ -149,8 +151,7 @@ textarea {
 
 
 .toolset_connection {
-    position: absolute;
-    height: 32px;
+    position: fixed;
     padding: 8px;
     border: 1px solid #444;
 

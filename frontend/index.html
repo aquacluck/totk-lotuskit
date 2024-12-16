@@ -512,31 +512,94 @@
         constructor() {
             super();
             this.ws_location_ref = createRef();
-            this.state = {is_polling: false};
+            let recents = window.sessionStorage.getItem("ws_location_recents") || "ws://127.0.0.1:7072,ws://10.0.0.3:7072";
+            recents = recents.split(",");
+            this.state = {
+                is_polling: false,
+                ui_size: "medium",
+                ws_location_recents: recents,
+                retry_mode: "once",
+            };
         }
 
-        do_connect() {
+        do_connect_submit() {
             const ws_location = this.ws_location_ref.current.value || "ws://127.0.0.1:7072";
-            WSTransport.connect(ws_location);
+
+            let recents = window.sessionStorage.getItem("ws_location_recents") || "ws://127.0.0.1:7072,ws://10.0.0.3:7072";
+            recents = recents.split(",");
+            if (recents.indexOf(ws_location) == -1) {
+                recents.unshift(ws_location); // prepend
+                window.sessionStorage.setItem("ws_location_recents", recents);
+            }
+
+            if (this.state.retry_mode == "once") {
+                return WSTransport.connect(ws_location);
+            } else if (this.state.retry_mode == "poll_once") {
+                return this.do_poll_once();
+            } else if (this.state.retry_mode == "poll_forever") {
+                return this.do_poll_forever();
+            }
         }
 
-        do_poll() {
-            if (WSTransport.signals.config.frontend.ws_is_connected.value) { this.setState({is_polling: false}); return; }
-            this.do_connect();
+        do_poll_once() {
+            // cancel polling on success
+            if (WSTransport.signals.config.frontend.ws_is_connected.value) {
+                this.setState({is_polling: false});
+                return;
+            }
+            WSTransport.connect(this.ws_location_ref.current.value || "ws://127.0.0.1:7072");
             this.setState({is_polling: true});
-            setTimeout(this.do_poll.bind(this), 5000);
+            window.setTimeout(this.do_poll_once.bind(this), 5000);
+        }
+
+        do_poll_forever() {
+            // indicate success, but keep timer going to watch for disconnect
+            if (WSTransport.signals.config.frontend.ws_is_connected.value) {
+                this.setState({is_polling: false});
+            } else {
+                WSTransport.connect(this.ws_location_ref.current.value || "ws://127.0.0.1:7072");
+                this.setState({is_polling: true});
+            }
+            window.setTimeout(this.do_poll_forever.bind(this), 5000);
+        }
+
+        do_recent_select = (e) => {
+            const ws_location = e.currentTarget.value;
+            this.ws_location_ref.current.value = ws_location;
+        }
+
+        do_retry_mode_select = (e) => {
+            const retry_mode = e.currentTarget.value;
+            this.setState({retry_mode: retry_mode});
+        }
+
+        toggle_size() {
+            this.setState({ui_size: this.state.ui_size == "medium" ? "small" : "medium"});
         }
 
         render(props, state) {
             const flag = WSTransport.signals.config.frontend.ws_is_connected.value ? "✅" :
                          state.is_polling ? "⌛" : "❌";
+            const recents = state.ws_location_recents.map(x => html`<option>${x}</option>`);
             return html`
-                <section class="toolset_connection">
+                <section class="toolset_connection size_${state.ui_size}">
                     <div class="ws">
-                        Mod Socket ${flag}
+                        <button title="Expand/Collapse" onClick=${ () => this.toggle_size() }>${ state.ui_size == "medium" ? "[-]" : "[+]" }</button>
+                        <span class="size_small_hidden">Mod Socket</span>${flag}
                         <input placeholder="ws://127.0.0.1:7072" size="20" ref=${this.ws_location_ref} />
-                        <button title="once" class="pushbutton" onClick=${ () => this.do_connect() }>connect</button>
-                        <button title="until success" class="pushbutton" onClick=${ () => this.do_poll() }>poll</button>
+                        <button title="connect ws" onClick=${ () => this.do_connect_submit() }>go</button>
+                        <div class="size_small_hidden">
+                            <select onChange=${this.do_recent_select}>
+                                <option>[Session Recents]</option>
+                                ${recents}
+                            </select>
+                            <select onChange=${this.do_retry_mode_select}>
+                                <option disabled>[Connect/Retry Mode]</option>
+                                <option value="once">Try once</option>
+                                <option value="poll_once" title="Must 'go' again after disconnect">Poll until success</option>
+                                <option value="poll_forever" title="After first 'go', will always retry even after disconnect">Poll forever</option>
+                            </select>
+                        </div>
                     </div>
                 </section>
             `;
