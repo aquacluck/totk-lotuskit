@@ -9,10 +9,11 @@ namespace lotuskit {
         bool isCalc; // observe actor, to eg TODO watch/search and report to the frontend without drawing
         bool isDraw; // textwriter output
         bool isPendingSelection;
-        u8 selectionType; // 0 = unused, 1 = next spawn, 2 = next relation to parent_i
+        u8 selectionType; // 0 = unused, 1 = next spawn, 2 = next relation to parent_i, 3 = preactor
         engine::actor::ActorBase* actorSelectorParentRelation;
         engine::actor::ActorBase* actor;
-        // TODO preactor
+        engine::actor::PreActor* preactor;
+        //engine::actor::CreateWatcherRef createWatcher; // using this in requestCreateActorAsync gets populated with CreateWatcher::status=2, but actor doesnt spawn... something else to set?
         // TODO Player hknpMotion?
 
         void clear() {
@@ -22,7 +23,8 @@ namespace lotuskit {
             this->selectionType = 0;
             this->actorSelectorParentRelation = nullptr;
             this->actor = nullptr;
-            //this->preactor = nullptr;
+            this->preactor = nullptr;
+            //this->createWatcher.watcher = nullptr;
             //this->trackedMotion = nullptr;
         }
     };
@@ -41,10 +43,32 @@ namespace lotuskit {
             slot.isDraw = true;
             slot.actor = actor;
         }
+        inline static void assignSlotPreActor(size_t i, engine::actor::PreActor* preactor) {
+            auto& slot = slots[i];
+            slot.clear();
+            slot.isCalc = true;
+            slot.isDraw = true;
+            slot.preactor = preactor;
+            slot.selectionType = 3; // preactor
+            slot.isPendingSelection = true;
+        }
 
         inline static void calc() {
             for (u8 i=0; i < MAX_WATCHER_SLOTS; i++) {
                 auto& slot = slots[i];
+
+                if (slot.isCalc && slot.isPendingSelection && slot.preactor != nullptr && slot.selectionType == 3) {
+                    // Resolve pending actor selection via preactors
+                    if (slot.preactor->mActor != nullptr) {
+                        slot.actor = slot.preactor->mActor;
+                        slot.isPendingSelection = false;
+                    } else {
+                        lotuskit::TextWriter::printf(
+                            0, "ActorWatcher[%d] awaiting PreActor(%p) \n\n",
+                            i, slot.preactor
+                        );
+                    }
+                }
 
                 if (slot.isCalc && slot.actor != nullptr) {
                     // TODO Logger::logJson(actorstuff)

@@ -263,6 +263,26 @@ public:
     */
 };
 
+class PreActor {
+public:
+    u64 field0_0x0;
+    u32 mActorHash;
+    u32 mPresenceFlagHash;
+    float mExtraCreateRadius;
+    u32 mPresenceFlags; // | 1 is DeleteAfterClearedSageOfFire, | 8 is spawn, | 0x10 is drop, | 0x20 is IsTreasureBoxOpen, | 0x40 is IsTreasureBoxUnlock. | 0x80 is IsAppearKorok
+    void* pSettings; //struct ActorSettings *mpSettings;
+#ifdef TOTK_100
+    u64 _idkman[8]; // XXX 0x40 extra somewhere before mActor, no idea where it goes or if it throws off later records
+#endif
+    engine::actor::ActorBase* mActor;
+    void* _7; // struct ActorParamMutexInfo *field7_0x28;
+    u64 field8_0x30;
+    u64 field9_0x38;
+    sead::Vector3f mPosition;
+    sead::Matrix33f mRotation;
+    sead::Vector3f mScale;
+};
+
 } // namespace actor
 
 } // namespace engine

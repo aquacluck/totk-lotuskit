@@ -204,6 +204,7 @@ namespace lotuskit::script::globals {
 
         // actor system
         engine->SetDefaultNamespace(""); // root
+        //asErrno = engine->RegisterObjectType("PreActor", 0, AngelScript::asOBJ_REF | AngelScript::asOBJ_NOCOUNT); assert(asErrno >= 0);
         asErrno = engine->RegisterObjectType("ActorBase", 0, AngelScript::asOBJ_REF | AngelScript::asOBJ_NOCOUNT); assert(asErrno >= 0);
         asErrno = engine->RegisterObjectMethod("ActorBase", "float get_pos_x() property", AngelScript::asFUNCTION(actor_pos_get_x), AngelScript::asCALL_CDECL_OBJLAST); assert(asErrno >= 0);
         asErrno = engine->RegisterObjectMethod("ActorBase", "float get_pos_y() property", AngelScript::asFUNCTION(actor_pos_get_y), AngelScript::asCALL_CDECL_OBJLAST); assert(asErrno >= 0);
@@ -217,7 +218,13 @@ namespace lotuskit::script::globals {
         engine->SetDefaultNamespace("actor");
         asErrno = engine->RegisterGlobalFunction("void createSimple(string &in)", AngelScript::asFUNCTION(lotuskit::util::actor::createSimple), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
         asErrno = engine->RegisterGlobalFunction("void createSimple(string &in, float, float, float)", AngelScript::asFUNCTION(lotuskit::util::actor::createSimpleXYZ), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
-    }
+        asErrno = engine->RegisterGlobalFunction("void createAndWatch(uint, string &in)", AngelScript::asFUNCTION(lotuskit::util::actor::createAndWatch), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void createAndWatch(uint, string &in, float, float, float)", AngelScript::asFUNCTION(lotuskit::util::actor::createAndWatchXYZ), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
 
+        //engine->SetDefaultNamespace("ActorWatcher");
+        //asErrno = engine->RegisterGlobalFunction("void assignSlot(uint, ActorBase@)", AngelScript::asFUNCTION(lotuskit::ActorWatcher::assignSlot), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        //asErrno = engine->RegisterGlobalFunction("void assignSlotPreActor(uint, PreActor@)", AngelScript::asFUNCTION(lotuskit::ActorWatcher::assignSlotPreActor), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+
+    }
 
 } // ns
