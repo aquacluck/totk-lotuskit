@@ -293,7 +293,8 @@
             this.state = {
                 actorName: "[none]",
                 actorPtr: 0,
-                pos: [0.0, 0.0, 0.0],
+                pos: [0, 0, 0],
+                vel: [0, 0, 0],
             };
             this.bumper_increment_ref = createRef();
             this.savestate_textbox_ref = createRef();
@@ -375,7 +376,7 @@
             this.savestate_textbox_ref.current.value = `${v[0]}, ${v[1]}, ${v[2]}`;
         }
 
-        render(props, {actorName, actorPtr, pos}) {
+        render(props, {actorName, actorPtr, pos, vel}) {
             //return html`<section class="toolset_actor_watcher"></section>`;
             //const asig = WSTransport.signals.actor[aselector_named];
             //const compass_rot = [asig.rot.value[0], asig.rot.value[2]];
@@ -392,11 +393,14 @@
                         <button onClick=${ () => this.do_subscribe_slot(_XXX_aselector_i, {action: "next_relation_of_i"}) } class="pushbutton">on rel</button>
                         <input type="number" placeholder="0" size="2" min="0" max="3" ref=${this._XXX_aselector_finder_relation_parent_i} size=2 />
                     </div>
+                    <div class="actor_pos32">
+                        <${ReadoutVec3} label="pos32\xa0\xa0\xa0\xa0\xa0\xa0" value=${pos} vecComponentPattern=${VecComponentPatterns.XYZ} />
+                    </div>
                     <div class="actor_pos32_ui">
                         <${ReadoutVec3} label="pos32 (ui)\xa0" value=${VecUtil.engine_to_ui(pos)} vecComponentPattern=${VecComponentPatterns.XZY} />
                     </div>
-                    <div class="actor_pos32">
-                        <${ReadoutVec3} label="pos32\xa0\xa0\xa0\xa0\xa0\xa0" value=${pos} vecComponentPattern=${VecComponentPatterns.XYZ} />
+                    <div class="actor_vel_frame">
+                        <${ReadoutVec3} label="vel" value=${vel} vecComponentPattern=${VecComponentPatterns.XYZ} /><br />
                     </div>
 
                     <!--
@@ -405,10 +409,6 @@
                     </div>
                     <div class="actor_pos64">
                         <${ReadoutVec3} label="pos64\xa0\xa0\xa0\xa0\xa0\xa0" value=${dummy} vecComponentPattern=${VecComponentPatterns.XYZ} />
-                    </div>
-                    <div class="actor_vel_frame">
-                        <${ReadoutVec3} label="vel physics" value=${dummy} vecComponentPattern=${VecComponentPatterns.XYZ} /><br />
-                        <${ReadoutQuat} label="inertia" value=${dummy} />
                     </div>
                     <div class="actor_compass">
                         <${ReadoutVec2} label="rot\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0" value=${dummy} vecComponentPattern=${VecComponentPatterns.ZX} />

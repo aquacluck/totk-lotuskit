@@ -177,11 +177,11 @@ textarea {
     grid-template-columns: 1fr 1fr 1fr;
     grid-template-areas:
     'actor_selector_current actor_selector_options   actor_selector_options'
-    'actor_pos32_ui         actor_pos32_ui           .'
     'actor_pos32            actor_pos32              .'
-    'actor_pos64_ui         actor_pos64_ui           .'
-    'actor_pos64            actor_pos64              .'
+    'actor_pos32_ui         actor_pos32_ui           .'
     'actor_vel_frame        actor_vel_frame          .'
+    'actor_pos64            actor_pos64              .'
+    'actor_pos64_ui         actor_pos64_ui           .'
     'actor_compass          actor_compass            .'
     'bumper_pushbuttons     savestate_slot_actions   .'
     '.                      .                        .'
