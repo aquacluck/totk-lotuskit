@@ -46,11 +46,18 @@ namespace lotuskit {
             slot.dumpSrc = dumpLen >= 0 ? dumpSrc : dumpSrc + dumpLen; // negative lengths aim behind ptr
         }
 
-        inline static void textwriter_printf_raw(size_t drawList_i, u8* backingSrc, u8* src) {
-            lotuskit::TextWriter::printf(drawList_i,
-                "%p | %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x\r\n",
-                backingSrc, src[0], src[1], src[2], src[3], src[4], src[5], src[6], src[7], src[8], src[9], src[10], src[11], src[12], src[13], src[14], src[15]
-            );
+        inline static void textwriter_printf_raw(size_t drawList_i, void* backingSrc_, void* src_, u32 lines=1) {
+            u8* backingSrc = (u8*)backingSrc_;
+            u8* src = (u8*)src_;
+
+            while (lines--) {
+                lotuskit::TextWriter::printf(drawList_i,
+                    "%p | %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x\r\n",
+                    backingSrc, src[0], src[1], src[2], src[3], src[4], src[5], src[6], src[7], src[8], src[9], src[10], src[11], src[12], src[13], src[14], src[15]
+                );
+                backingSrc += 0x10;
+                src += 0x10;
+            }
         }
 
         inline static void calc() {

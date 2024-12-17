@@ -32,6 +32,7 @@ def run_symbol_def_imports():
     #import zstd.lib.zstd # nop
 
 
+    import exking.engine.actor.ActorBase
     import exking.engine.actor.ActorInstanceMgr
     import exking.engine.actor.ActorMgr
     import exking.engine.actor.BaseProcCreateAndDeleteThread

@@ -222,6 +222,27 @@ class sInstance {
 };
 }
 
+namespace sym::engine::actor::ActorBase {
+class forceSetMatrix {
+    public:
+    inline static constexpr ptrdiff_t offset = 0x006ba86c;
+};
+}
+
+namespace sym::engine::actor::ActorBase {
+class updatePositionAndRotation {
+    public:
+    inline static constexpr ptrdiff_t offset = 0x00823fd8;
+};
+}
+
+namespace sym::engine::actor::ActorBase {
+class setPositionAndRotationDirect {
+    public:
+    inline static constexpr ptrdiff_t offset = 0x00860020;
+};
+}
+
 namespace sym::engine::module::VFRMgr {
 class sInstance {
     public:
