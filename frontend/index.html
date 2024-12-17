@@ -53,17 +53,12 @@
                 WSTransport.websock = undefined;
             }
 
-            // TODO input with localStorage default+recents in ConnectionToolset
             ws_location = ws_location || "ws://127.0.0.1:7072";
             console.log("ws open try", ws_location);
             WSTransport.websock = new WebSocket(ws_location);
             WSTransport.websock.addEventListener("open", WSTransport._ws_on_open);
             WSTransport.websock.addEventListener("close", WSTransport._ws_on_close);
             WSTransport.websock.addEventListener("message", WSTransport._ws_on_message);
-
-            //window.addEventListener("beforeunload", function() {
-            //    WSTransport.websock.close();
-            //});
         }
 
         static consume_ws_msg(payload) {
@@ -259,8 +254,6 @@
         }
 
         do_toggle_record() {
-            // TODO opt-in req id to await specific calls (eg to learn what new ns to subscribe)?
-            // TODO use ns to build signal structure?
             WSTransport.send({execScriptString: wrap_implicit_main("tas::toggleDump();")});
         }
 
@@ -577,10 +570,11 @@
         render(html`<${MainToolbox} />`, toolbox);
     });
 
-
+    window.addEventListener("beforeunload", function() {
+        if (WSTransport.websock) { WSTransport.websock.close(); }
+    });
 
     /*
-
     function send_cmd_savestate_persist() {
         console.log("command_savestate_persist");
         // FIXME url
