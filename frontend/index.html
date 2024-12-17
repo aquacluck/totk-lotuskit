@@ -304,6 +304,10 @@
             WSTransport.subscribe_ns(`/ActorWatcher/${this.props.slot_i}`, payload => this.setState(payload));
         }
 
+        clear_slot(slot_i) {
+            WSTransport.send({execScriptString: wrap_implicit_main(`ActorWatcher::clearSlot(${slot_i});`)});
+        }
+
         do_paste_coords(aselector_named, dest) {
             //TODO
             console.log("command_savestate_paste_simple", aselector_named, dest);
@@ -369,10 +373,8 @@
             this.do_paste_coords(aselector_named, {pos32: [...v], pos64: [...v]});
         }
 
-        dump_pos_to_savestate_textbox(aselector_named) {
-            // XXX are we losing any precision in all these conversions?
-            const actor_signals = WSTransport.signals.actor[aselector_named];
-            let v = [...actor_signals.pos64.value]; // copy XXX leaky?
+        dump_pos_to_savestate_textbox() {
+            let v = this.state.pos.map(x => makeLegibleFloat(x));
             this.savestate_textbox_ref.current.value = `${v[0]}, ${v[1]}, ${v[2]}`;
         }
 
@@ -388,10 +390,9 @@
                     <div class="actor_selector_current">${actorName}(${ptr})</div>
                     <div class="actor_selector_options">
                         Select:
-                        <button onClick=${ () => this.do_subscribe_slot(_XXX_aselector_i, {action: "null"}) } class="pushbutton">null</button>
-                        <button onClick=${ () => this.do_subscribe_slot(_XXX_aselector_i, {action: "spawn"}) } class="pushbutton">spawn</button>
-                        <button onClick=${ () => this.do_subscribe_slot(_XXX_aselector_i, {action: "next_relation_of_i"}) } class="pushbutton">on rel</button>
-                        <input type="number" placeholder="0" size="2" min="0" max="3" ref=${this._XXX_aselector_finder_relation_parent_i} size=2 />
+                        <button onClick=${ () => this.clear_slot(this.props.slot_i) } class="pushbutton">null</button>
+                        <!-- TODO on any next spawn, on specific actor's next relation, ... -->
+                        <!--<input type="number" placeholder="0" size="2" min="0" max="3" size=2 />-->
                     </div>
                     <div class="actor_pos32">
                         <${ReadoutVec3} label="pos32\xa0\xa0\xa0\xa0\xa0\xa0" value=${pos} vecComponentPattern=${VecComponentPatterns.XYZ} />
@@ -436,7 +437,7 @@
 
                     <div class="savestate_slot_actions">
                         Position:
-                        <button class="pushbutton" onClick=${() => this.dump_pos_to_savestate_textbox(aselector_named) }>dump</button>
+                        <button class="pushbutton" onClick=${() => this.dump_pos_to_savestate_textbox() }>dump</button>
                         <button class="pushbutton" onClick=${() => this.do_absolute_move(aselector_named)}>assign</button>
                         <br />
                         <input ref=${this.savestate_textbox_ref} size=40 />

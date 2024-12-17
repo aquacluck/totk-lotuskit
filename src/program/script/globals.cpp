@@ -4,6 +4,7 @@
 #include "lib/json.hpp"
 #include "tas/Playback.hpp"
 #include "tas/Record.hpp"
+#include "ActorWatcher.hpp"
 #include "HexDump.hpp"
 #include "Logger.hpp"
 #include "TextWriter.hpp"
@@ -154,12 +155,12 @@ namespace lotuskit::script::globals {
         asErrno = engine->RegisterGlobalFunction("void threadInfo()", AngelScript::asFUNCTION(sys::threadInfo), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
         asErrno = engine->RegisterGlobalFunction("void suspendCtx()", AngelScript::asFUNCTION(sys::suspendCtx), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
         asErrno = engine->RegisterGlobalFunction("uint64 mainOffset()", AngelScript::asFUNCTION(sys::mainOffset), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
-        asErrno = engine->RegisterGlobalFunction("uint32 totkVersion()", AngelScript::asFUNCTION(sys::totkVersion), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("uint totkVersion()", AngelScript::asFUNCTION(sys::totkVersion), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
 
         engine->SetDefaultNamespace("HexDump");
-        asErrno = engine->RegisterGlobalFunction("void clearSlot(uint32)", AngelScript::asFUNCTION(lotuskit::HexDump::clearSlot), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
-        asErrno = engine->RegisterGlobalFunction("void pauseSlot(uint32)", AngelScript::asFUNCTION(lotuskit::HexDump::pauseSlot), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
-        asErrno = engine->RegisterGlobalFunction("void assignSlotAbsolute(uint32, uint64, uint32, uint32)", AngelScript::asFUNCTION(lotuskit::HexDump::assignSlotAbsolute), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void clearSlot(uint)", AngelScript::asFUNCTION(lotuskit::HexDump::clearSlot), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void pauseSlot(uint)", AngelScript::asFUNCTION(lotuskit::HexDump::pauseSlot), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void assignSlotAbsolute(uint, uint64, uint, uint)", AngelScript::asFUNCTION(lotuskit::HexDump::assignSlotAbsolute), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
 
         engine->SetDefaultNamespace("tas");
         asErrno = engine->RegisterGlobalFunction(
@@ -221,8 +222,12 @@ namespace lotuskit::script::globals {
         asErrno = engine->RegisterGlobalFunction("void createAndWatch(uint, string &in)", AngelScript::asFUNCTION(lotuskit::util::actor::createAndWatch), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
         asErrno = engine->RegisterGlobalFunction("void createAndWatch(uint, string &in, float, float, float)", AngelScript::asFUNCTION(lotuskit::util::actor::createAndWatchXYZ), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
 
-        //engine->SetDefaultNamespace("ActorWatcher");
-        //asErrno = engine->RegisterGlobalFunction("void assignSlot(uint, ActorBase@)", AngelScript::asFUNCTION(lotuskit::ActorWatcher::assignSlot), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        engine->SetDefaultNamespace("ActorWatcher");
+        asErrno = engine->RegisterGlobalFunction("void clearSlot(uint)", AngelScript::asFUNCTION(lotuskit::ActorWatcher::clearSlot), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void pauseSlot(uint)", AngelScript::asFUNCTION(lotuskit::ActorWatcher::pauseSlot), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void assignSlot(uint, ActorBase@)", AngelScript::asFUNCTION(lotuskit::ActorWatcher::assignSlot), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void assignSlot(uint, uint64)", AngelScript::asFUNCTION(lotuskit::ActorWatcher::assignSlot), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void assignSlotPreActor(uint, uint64)", AngelScript::asFUNCTION(lotuskit::ActorWatcher::assignSlotPreActor), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
         //asErrno = engine->RegisterGlobalFunction("void assignSlotPreActor(uint, PreActor@)", AngelScript::asFUNCTION(lotuskit::ActorWatcher::assignSlotPreActor), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
 
     }
