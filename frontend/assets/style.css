@@ -123,7 +123,7 @@ textarea {
 
 .toolbox_main { position: relative; }
 .toolbox_main > .toolset_connection { right:0px; bottom:0px; }
-.toolbox_main > .toolset_memutils_controller { right:0px; top:0px; }
+.toolbox_main > .toolset_memutils_controller { right:18px; top:0px; }
 .toolbox_main > .toolset_actor_watcher:nth-of-type(1) { left: 0px; top:   0px; }
 .toolbox_main > .toolset_actor_watcher:nth-of-type(2) { left: 0px; top: 400px; }
 .toolbox_main > .toolset_actor_watcher:nth-of-type(3) { left: 0px; top: 800px; }
