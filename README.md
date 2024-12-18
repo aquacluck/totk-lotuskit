@@ -2,10 +2,24 @@
 - Download the [latest build](https://github.com/aquacluck/totk-lotuskit/releases) for your game version. This is replaced with every commit, so you might want to hang on to the zip in case I break it in the future!
 - Extract the zip and edit the configs in the `romfs` folder. Install the mod by copying the `romfs` and `exefs` folders into your switch sd's `/atmosphere/contents/0100f2c0115b6000/` folder.
 - Run the game.
-- Depending on your settings in `romfs/totk_lotuskit/config.json`, the game may hang at bootup and wait for your frontend, or remain offline (still logging to the debug console in emulators), or ~~TODO you may connect later~~.
-- If running on console: Be sure the server bindIP config matches the network you want to serve, i.e. enter the switch's own wifi address to serve wifi clients, or set enter the switch's own ethernet address to listen there. Don't leave this as localhost, here localhost means binding to loopback on the console and ignoring all your requests from the outside.
+- Depending on your settings in `romfs/totk_lotuskit/config.json`, the game may hang at bootup and wait for your frontend, or remain offline (still logging to the debug console in emulators), or ~~TODO you may connect later~~
 - Run `frontend/run.py` (you'll need a python installation) and open the web frontend at [http://127.0.0.1:7073](http://127.0.0.1:7073)
 - Connect to an emulator with localhost (default), or enter your switch console ip+port in the bottom right to connect to the mod.
+
+## You should know
+- **This is not a stable product!** Don't expect to leave the mod running during extended play without problems. Don't run the mod on your irreplaceable casual save file.
+- Opening up a game/emulator process for arbitrary manipulation over the network is inherently risky, be sure you understand the risks and keep the device on safe networks.
+- WebSocket connection to the mod must be established at bootup (for now) or not at all. There is no way to reconnect to a game. Yeah it sucks.
+- Everything you do in the frontend is accomplished by running AngelScript snippets, and usually you can hover on buttons/etc for clarification about scripting or other quirks.
+- Check out `registerGlobals()` in `src/program/script/globals.cpp` for a complete list of script bindings available!
+- Polling options in the frontend are not perfectly reliable.
+- Bug: Don't leave ActorWatchers targeting dead/dying actors while you go through loading screens (especially title+shrine loads), this will eventually crash. Run `ActorWatcher::clearSlot(i)` or target a resident actor like Player to avoid this.
+- Bug: Spooky Recall red text
+- The mod version must match your game version, be sure to switch them together. Separate builds simplify certain version interop problems like differing structs or register usage.
+- By default the frontend is served on 7073 because it looks sort of like "TOTK". The mod's WebSocket server is on 7072 because it's like 2 is the sequel.
+- TOTK versions 1.0.0 and 1.2.1 are primarily supported. I'll also build for 1.1.0, but the testing workload is too much while the project is in flux, so these builds are untested+unsupported for now.
+- When troubleshooting be sure to check any emulator logs as well as ws traffic and console in browser devtools. Things like scripting syntax errors will show up there.
+- When reporting mid-game freezing/crashing problems, I'll need a lot of detail! Console vs emulator, version, how long was the play session, where it happened, any recent loads or approaching any major landmarks, any crash dump/log, etc... Modding the game is very fragile, there are countless ways to fail, it's hard to narrow down and I'm not very good at C++ or reverse engineering :)
 
 ## Building the mod from source
 - Manual preprocessing for certain work/changes:
