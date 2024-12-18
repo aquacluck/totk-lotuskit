@@ -53,7 +53,25 @@ namespace lotuskit::server {
             if (frame[1] < 0x7e) { return 2 + frame[1]; }
             if (frame[1] == 0x7e) { return 4 + frame[2]*0x100 + frame[3]; }
             if (frame[1] == 0x7f) { return 10 + frame[6]*0x1000000 + frame[7]*0x10000 + frame[8]*0x100 + frame[9]; }
+            const char* warn = "[ws::getSerializedFrameSize] oh no its sending 0 ";
+            svcOutputDebugString(warn, strlen(warn)); // also doesn't seem to happen
             return 0;
+        }
+
+        inline const char* enforceAndWarnTextLimits(const char* payloadSus) {
+            // this doesn't seem to be a case we run into yet, but i forget what happens
+            static const char spaceStr[2] = " ";
+            if (payloadSus == nullptr) {
+                const char* warn = "[ws::enforceAndWarnTextLimits] promoting nullptr to \" \"";
+                svcOutputDebugString(warn, strlen(warn));
+                return spaceStr;
+            }
+            if (*payloadSus == '\0') {
+                const char* warn = "[ws::enforceAndWarnTextLimits] promoting \"\" to \" \"";
+                svcOutputDebugString(warn, strlen(warn));
+                return spaceStr;
+            }
+            return payloadSus;
         }
     } // ns
 
@@ -66,22 +84,26 @@ namespace lotuskit::server {
         u8* sendQueueTail = sendQueueBuf;
 
         void init() {
-            sendQueueBuf[0] = 0x00;
+            std::memset(sendQueueBuf, 0, SEND_QUEUE_SIZE);
             nn::os::InitializeMutex(&enqueueMutex, true, 0);
         }
 
         inline u8* getNextFrameForEnqueue(u32 fLen) {
-            if (sendQueueHead + fLen <= sendQueueBufEnd) {
+            if (sendQueueHead + fLen <= sendQueueBufEnd - 0x10) {
                 return sendQueueHead; // not near the end, it fits
             }
             // it won't fit at the end, wrap to beginning
-            if (sendQueueBufEnd - sendQueueHead > 0) {
-                *sendQueueHead = 0x00; // null frameType to indicate no more frames past this point
+            auto sendQueueBufRemainder = sendQueueBufEnd - sendQueueHead;
+            if (sendQueueBufRemainder > 0) {
+                // zero everything we're not using -- "terminating" null frameType will indicate no more frames for the send impl
+                std::memset(sendQueueHead, 0, sendQueueBufRemainder);
             }
             return sendQueueBuf;
         }
 
-        inline void enqueueText(const char* payload) {
+        inline void enqueueText(const char* payloadSus) {
+            const char* payload = WebSocketImpl::SendFrame::enforceAndWarnTextLimits(payloadSus);
+
             nn::os::LockMutex(&enqueueMutex);
 
             u32 pLen = strlen(payload);
@@ -149,20 +171,31 @@ namespace lotuskit::server {
         if (!isWsEstablished) { return; }
         while (WebSocketImpl::SendQueue::sendQueueTail != WebSocketImpl::SendQueue::sendQueueHead) {
             u32 fLen = WebSocketImpl::SendFrame::getSerializedFrameSize(WebSocketImpl::SendQueue::sendQueueTail);
-            nn::socket::Send(clientSocketFd, WebSocketImpl::SendQueue::sendQueueTail, fLen, 0); // blocking
+
+            // a null frame may terminate the queue if the last element left some remainder. Don't send it, just let dequeueFrame consume it.
+            // FIXME better queue impl? its leaking. this still might drop 1 char messages? oh well
+            if (fLen > 3) {
+                //lotuskit::TextWriter::printf(0, "\n[ws::send] fLen %d at %p (sendq %p - %p): \n", fLen, WebSocketImpl::SendQueue::sendQueueTail, WebSocketImpl::SendQueue::sendQueueBuf, WebSocketImpl::SendQueue::sendQueueBufEnd);
+                //lotuskit::HexDump::textwriter_printf_raw(0, WebSocketImpl::SendQueue::sendQueueTail, WebSocketImpl::SendQueue::sendQueueTail, 20); // 0x200 after
+                nn::socket::Send(clientSocketFd, WebSocketImpl::SendQueue::sendQueueTail, fLen, 0); // blocking
+            }
+
             WebSocketImpl::SendQueue::dequeueFrame(fLen);
         }
     }
 
-    void WebSocket::sendTextNoblock(const char* payload) {
+    void WebSocket::sendTextNoblock(const char* payloadSus) {
         if (!isWsEstablished) { return; }
-        WebSocketImpl::SendQueue::enqueueText(payload); // (it can still block on the mutex, TODO look into lock free wizard shit)
+        WebSocketImpl::SendQueue::enqueueText(payloadSus); // (it can still block on the mutex, TODO look into lock free wizard shit)
     }
 
-    void WebSocket::sendTextBlocking(const char* payload) {
+    void WebSocket::sendTextBlocking(const char* payloadSus) {
         if (!isWsEstablished) { return; }
+        const char* payload = WebSocketImpl::SendFrame::enforceAndWarnTextLimits(payloadSus);
+
         // TODO fd mutex? I'm unclear how all this behaves + where this giant socketPool fits into things...
         // (Is it copying my data into there? Does it do any locking of its own? If it's blocking, shouldn't it use the pointer we call send with, instead of copying?)
+        // but ig it still needs to tcp encapsulate, too bad
 
         // plaintext json only. its tempting to use some fancy binary format but:
         // - i like being able to read the wire in devtools network tab
@@ -175,6 +208,14 @@ namespace lotuskit::server {
         u32 pLen = strlen(payload);
         u8 hLen = WebSocketImpl::SendFrame::headerLenFromPayloadLen(pLen);
         u32 fLen = hLen + pLen; // frame is header + payload
+
+        // XXX this func is not well exercised
+        const char* warn = "[ws::sendTextBlocking] uhh";
+        svcOutputDebugString(warn, strlen(warn));
+        if (fLen < 4) {
+            return; // XXX also untested, but refusing to send empty frames should be fine?
+        }
+
         char buf[fLen];
         WebSocketImpl::SendFrame::serializeHeader((u8*)buf, 0x81, hLen, pLen);
         std::memcpy(&buf[hLen], payload, pLen);
