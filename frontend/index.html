@@ -301,69 +301,30 @@
             WSTransport.send({execScriptString: wrap_implicit_main(`ActorWatcher::clearSlot(${slot_i});`)});
         }
 
-        do_paste_coords(aselector_named, dest) {
-            //TODO
-            console.log("command_savestate_paste_simple", aselector_named, dest);
-            //fetch(`/backend/savestate/paste_simple?uniq_id=${WSTransport.make_uniq_id()} ${aselector_named} pos32 ${dest.pos32[0]} ${dest.pos32[1]} ${dest.pos32[2]} pos64 ${dest.pos64[0]} ${dest.pos64[1]} ${dest.pos64[2]}`, {method: "post"});
+        do_paste_coords(slot_i, pos) {
+            WSTransport.send({execScriptString: wrap_implicit_main(`ActorWatcher::get(${slot_i}).setPos(${pos[0]}, ${pos[1]}, ${pos[2]});`)});
         }
 
-        do_relative_move_calc(actor_signals, unit_vec, delta) {
-            // XXX accessing signals in here may leak?
-            // TODO extract to VecUtil?
-            // engine unit vector, relative
-            let pos64 = [...actor_signals.pos64.value]; // copy
-            let pos32 = [...actor_signals.pos32.value]; // copy
-            const rot = actor_signals.rot.value;
-
-            if (unit_vec[1] != 0) { // up/down
-                pos64[1] += unit_vec[1] * delta;
-                pos32[1] += unit_vec[1] * delta;
-                return {pos32, pos64};
-            }
-
-            // move in cardinal offsets wrt nearest cardinal direction
-            var dim_pos, dim_input, sign;
-            if (Math.abs(rot[0]) > Math.abs(rot[2])) {
-                // actor facing north-south
-                sign = rot[0] > 0 ? -1 : 1;
-                if (unit_vec[0] != 0) { // lateral
-                    dim_input = 0;
-                    dim_pos = 0; // east-west
-                } else { // forward/backward
-                    sign *= -1;
-                    dim_input = 2;
-                    dim_pos = 2; // north-south
-                }
-            } else {
-                //actor facing east-west
-                sign = rot[2] > 0 ? 1 : -1;
-                if (unit_vec[0] != 0) { // lateral
-                    dim_input = 0;
-                    dim_pos = 2; // north-south
-                } else { // forward/backward
-                    dim_input = 2;
-                    dim_pos = 0; // east-west
-                }
-            }
-
-            pos64[dim_pos] += unit_vec[dim_input] * delta * sign;
-            pos32[dim_pos] += unit_vec[dim_input] * delta * sign;
-
-            return {pos32, pos64};
-        }
-
-        do_relative_move(aselector_named, unit_vec) {
-            const actor_signals = WSTransport.signals.actor[aselector_named];
+        do_relative_move(slot_i, aaDirection) {
             const delta = parseInt(this.bumper_increment_ref.current.value) || 10.0;
-            this.do_paste_coords(aselector_named, this.do_relative_move_calc(actor_signals, unit_vec, delta));
+            let pos = [...this.state.pos]; // copy
+            switch(aaDirection) {
+                case "u": pos[1] += delta; break;
+                case "d": pos[1] -= delta; break;
+                case "e": pos[0] += delta; break;
+                case "w": pos[0] -= delta; break;
+                case "s": pos[2] += delta; break;
+                case "n": pos[2] -= delta; break;
+            }
+            this.do_paste_coords(slot_i, pos);
         }
 
-        do_absolute_move(aselector_named) {
-            let v = this.savestate_textbox_ref.current.value;
-            v = v.replaceAll(",", "").split(" ").filter(x => x !== "").map(x => parseFloat(x));
+        do_absolute_move(slot_i) {
+            let pos = this.savestate_textbox_ref.current.value;
+            pos = pos.replaceAll(",", "").split(" ").filter(x => x !== "").map(x => parseFloat(x));
             // TODO accept+convert ui coords with a flag
-            // FIXME generally ignoring physics height offset, pos32 is not accurately restored
-            this.do_paste_coords(aselector_named, {pos32: [...v], pos64: [...v]});
+            // XXX generally ignoring physics coords + height offset?
+            this.do_paste_coords(slot_i, pos);
         }
 
         dump_pos_to_savestate_textbox() {
@@ -372,9 +333,6 @@
         }
 
         render(props, {actorName, actorPtr, pos, vel}) {
-            //return html`<section class="toolset_actor_watcher"></section>`;
-            //const asig = WSTransport.signals.actor[aselector_named];
-            //const compass_rot = [asig.rot.value[0], asig.rot.value[2]];
             const ptr = "0x" + actorPtr.toString(16).padStart(16, "0");
             const dummy = [0, 0, 0, 0]; // XXX
 
@@ -419,19 +377,19 @@
                         <span>Move by <input type="number" placeholder="10" size="4" min="0" max="10000" step="any" ref=${this.bumper_increment_ref} />m:</span>
                         <br />
                         <br />
-                        <button onClick=${ () => this.do_relative_move(aselector_named, [-1, 0, 0]) } class="pushbutton pushbutton_left_lateral">\xa0\xa0left\xa0\xa0</button>
-                        <button onClick=${ () => this.do_relative_move(aselector_named, [0, 1, 0]) }  class="pushbutton pushbutton_up_vertical">\xa0up\xa0</button>
-                        <button onClick=${ () => this.do_relative_move(aselector_named, [1, 0, 0]) }  class="pushbutton pushbutton_right_lateral">\xa0right\xa0</button>
+                        <button onClick=${ () => this.do_relative_move(this.props.slot_i, "u") } class="pushbutton">\xa0up\xa0</button>
+                        <button onClick=${ () => this.do_relative_move(this.props.slot_i, "n") } class="pushbutton">north</button>
+                        <button onClick=${ () => this.do_relative_move(this.props.slot_i, "d") } class="pushbutton">down</button>
                         <br />
-                        <button onClick=${ () => this.do_relative_move(aselector_named, [0, 0, -1]) } class="pushbutton pushbutton_left_behind">backward</button>
-                        <button onClick=${ () => this.do_relative_move(aselector_named, [0, -1, 0]) } class="pushbutton pushbutton_down_vertical">down</button>
-                        <button onClick=${ () => this.do_relative_move(aselector_named, [0, 0, 1]) }  class="pushbutton pushbutton_right_forward">forward</button>
+                        <button onClick=${ () => this.do_relative_move(this.props.slot_i, "w") } class="pushbutton">west</button>
+                        <button onClick=${ () => this.do_relative_move(this.props.slot_i, "s") } class="pushbutton">south</button>
+                        <button onClick=${ () => this.do_relative_move(this.props.slot_i, "e") } class="pushbutton">east</button>
                     </div>
 
                     <div class="savestate_slot_actions">
                         Position:
                         <button class="pushbutton" onClick=${() => this.dump_pos_to_savestate_textbox() }>dump</button>
-                        <button class="pushbutton" onClick=${() => this.do_absolute_move(aselector_named)}>assign</button>
+                        <button class="pushbutton" onClick=${() => this.do_absolute_move(this.props.slot_i)}>assign</button>
                         <br />
                         <input ref=${this.savestate_textbox_ref} size=40 />
                     </div>
