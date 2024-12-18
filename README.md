@@ -14,7 +14,7 @@
 - Check out `registerGlobals` in `src/program/script/globals.cpp` for a complete list of script bindings available!
 - Bug: Polling options in the frontend aren't perfect -- if the browser tries to connect right as the mod is opening its socket, the frontend can get stuck unable to connect.
 - Bug: Don't leave ActorWatchers targeting dead/dying actors while you go through loading screens (especially title+shrine loads), this will eventually crash. Clear the watcher or target a resident actor like Player to avoid this.
-- Bug: The script size is very limited and crashes on overflow
+- Bug: Script size is limited to ~8KB and crashes on overflow
 - Bug: Spooky Recall red text
 - The mod version must match your game version, be sure to switch them together. Separate builds simplify certain version interop problems like differing structs or register usage.
 - By default the frontend is served on 7073 because it looks sort of like "TOTK". The mod's WebSocket server is on 7072 because it's like 2 is the sequel.

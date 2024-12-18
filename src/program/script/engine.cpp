@@ -91,11 +91,11 @@ namespace lotuskit::script::engine {
     }
 
     void execFuncInNewCtx(AngelScript::asIScriptEngine* engine, AngelScript::asIScriptModule* mod, const char* entryPoint) {
-        char buf[500];
 
         // Find the function that is to be called (mod+entryPoint -> funcptr)
         AngelScript::asIScriptFunction *asEntryPoint = mod->GetFunctionByDecl(entryPoint);
         if (asEntryPoint == nullptr) {
+            char buf[0x1000];
             nn::util::SNPrintf(buf, sizeof(buf), "[angelscript] missing entry point %s", entryPoint);
             Logger::logText(buf, "/script/engine");
             return;
@@ -111,6 +111,7 @@ namespace lotuskit::script::engine {
 
         } else if (asErrno == AngelScript::asEXECUTION_EXCEPTION) {
             // TODO exceptions
+            char buf[0x1000];
             nn::util::SNPrintf(buf, sizeof(buf), "[angelscript] uncaught: %s", asCtx->GetExceptionString());
             Logger::logText(buf, "/script/engine");
             asCtx->Release();
