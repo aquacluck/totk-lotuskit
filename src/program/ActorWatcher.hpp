@@ -52,6 +52,10 @@ namespace lotuskit {
             slot.selectionType = 3; // preactor
             slot.isPendingSelection = true;
         }
+        inline static engine::actor::ActorBase* getSlotActor(size_t i) {
+            // FIXME don't return/draw destroyed actors
+            return slots[i].actor;
+        }
 
         inline static void calc() {
             for (u8 i=0; i < MAX_WATCHER_SLOTS; i++) {
@@ -97,4 +101,4 @@ namespace lotuskit {
         }
 
     };
-}
+} // ns

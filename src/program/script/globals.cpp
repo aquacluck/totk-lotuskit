@@ -232,6 +232,15 @@ namespace lotuskit::script::globals {
         asErrno = engine->RegisterGlobalFunction("void assignSlot(uint, uint64)", AngelScript::asFUNCTION(lotuskit::ActorWatcher::assignSlot), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
         asErrno = engine->RegisterGlobalFunction("void assignSlotPreActor(uint, uint64)", AngelScript::asFUNCTION(lotuskit::ActorWatcher::assignSlotPreActor), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
         //asErrno = engine->RegisterGlobalFunction("void assignSlotPreActor(uint, PreActor@)", AngelScript::asFUNCTION(lotuskit::ActorWatcher::assignSlotPreActor), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        // FIXME Using another handle in setPos args chained after getSlotActor(i) crashes!
+        // ActorWatcher::getSlotActor(0).setPos(Player.pos_x, 1520, 1515);
+        // Storing to a named handle first is fine, so prefer global property access until this is figured out. could it be uint vs size_t?
+        asErrno = engine->RegisterGlobalFunction("ActorBase@ getSlotActor(uint)", AngelScript::asFUNCTION(lotuskit::ActorWatcher::getSlotActor), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        // TODO loop these calls for MAX_WATCHER_SLOTS?
+        asErrno = engine->RegisterGlobalProperty("ActorBase@ actor0", &(lotuskit::ActorWatcher::slots[0].actor)); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalProperty("ActorBase@ actor1", &(lotuskit::ActorWatcher::slots[1].actor)); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalProperty("ActorBase@ actor2", &(lotuskit::ActorWatcher::slots[2].actor)); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalProperty("ActorBase@ actor3", &(lotuskit::ActorWatcher::slots[3].actor)); assert(asErrno >= 0);
 
     }
 

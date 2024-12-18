@@ -11,9 +11,10 @@
 - Opening up a game/emulator process for arbitrary manipulation over the network is inherently risky, be sure you understand the risks and keep the device on safe networks.
 - WebSocket connection to the mod must be established at bootup (for now) or not at all. There is no way to reconnect to a game. Yeah it sucks.
 - Everything you do in the frontend is accomplished by running AngelScript snippets, and usually you can hover on buttons/etc for clarification about scripting or other quirks.
-- Check out `registerGlobals()` in `src/program/script/globals.cpp` for a complete list of script bindings available!
+- Check out `registerGlobals` in `src/program/script/globals.cpp` for a complete list of script bindings available!
 - Polling options in the frontend are not perfectly reliable.
-- Bug: Don't leave ActorWatchers targeting dead/dying actors while you go through loading screens (especially title+shrine loads), this will eventually crash. Run `ActorWatcher::clearSlot(i)` or target a resident actor like Player to avoid this.
+- Bug: Don't leave ActorWatchers targeting dead/dying actors while you go through loading screens (especially title+shrine loads), this will eventually crash. Run `ActorWatcher::clearSlot(i);` or target a resident actor like Player to avoid this.
+- Bug: Using named handles in calls chained after a handle getter will crash. Instead of `ActorWatcher::getSlotActor(1).setPos(Player.pos_x, 2, 3);` do `ActorWatcher::actor1.setPos(Player.pos_x, 2, 3);`
 - Bug: Spooky Recall red text
 - The mod version must match your game version, be sure to switch them together. Separate builds simplify certain version interop problems like differing structs or register usage.
 - By default the frontend is served on 7073 because it looks sort of like "TOTK". The mod's WebSocket server is on 7072 because it's like 2 is the sequel.
