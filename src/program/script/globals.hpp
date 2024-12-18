@@ -19,17 +19,6 @@ namespace lotuskit::script::globals {
         void suspendCtx();
     } // ns
 
-    // ns Logger
-    //void trashPrint(auto &msg) {
-    //    const char* str = msg.c_str();
-    //    svcOutputDebugString(str, strlen(str));
-    //}
-    //void trashPrintInt(int num) {
-    //    Logger::logJson(json::object({ {"oink", num} }), "/script/trashPrintInt");
-    //}
-
-    void trashCreateActor(); // XXX
-
     void registerGlobals(AngelScript::asIScriptEngine* engine);
 
 } // ns

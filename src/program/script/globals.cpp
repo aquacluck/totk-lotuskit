@@ -15,6 +15,7 @@ using Logger = lotuskit::Logger;
 #include "heap/seadHeapMgr.h"
 #include "thread/seadThread.h"
 #include "syms_merged.hpp"
+#include <string>
 
 
 namespace lotuskit::script::globals {
@@ -134,7 +135,13 @@ namespace lotuskit::script::globals {
             AngelScript::asIScriptContext *ctx = AngelScript::asGetActiveContext();
             if (ctx != nullptr) { ctx->Suspend(); }
         }
+        void debugLog(const std::string& msg) {
+            svcOutputDebugString(msg.c_str(), msg.size());
+        }
     } // ns
+
+    void textwriter_as_print(size_t drawList_i, const std::string& msg) { lotuskit::TextWriter::printf(drawList_i, msg.c_str()); }
+    void textwriter_as_toast(u64 ttl30, const std::string& msg) { lotuskit::TextWriter::toastf(ttl30, msg.c_str()); }
 
     float actor_pos_get_x(::engine::actor::ActorBase* actor) { return actor->mPosition.x; }
     float actor_pos_get_y(::engine::actor::ActorBase* actor) { return actor->mPosition.y; }
@@ -162,11 +169,6 @@ namespace lotuskit::script::globals {
             asErrno = engine->RegisterGlobalFunction("void yield()", AngelScript::asFUNCTION(sys::suspendCtx), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
         /// }
 
-        //engine->SetDefaultNamespace("Logger");
-        //engine->RegisterGlobalFunction("void logText(string, string)", AngelScript::asFUNCTION(Logger::logText), AngelScript::asCALL_CDECL);
-        //s32 asErrno = engine->RegisterGlobalFunction("void trashPrintInt(int)", AngelScript::asFUNCTION(trashPrintInt), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
-        //asErrno = engine->RegisterGlobalFunction("void trashPrint(const string &in)", AngelScript::asFUNCTION(trashPrint), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
-
         engine->SetDefaultNamespace("sys"); /// {
             asErrno = engine->RegisterGlobalFunction("void heapInfo()", AngelScript::asFUNCTION(sys::heapInfo), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
             asErrno = engine->RegisterGlobalFunction("void hookLimits()", AngelScript::asFUNCTION(sys::hookLimits), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
@@ -175,12 +177,23 @@ namespace lotuskit::script::globals {
             asErrno = engine->RegisterGlobalFunction("void suspendCtx()", AngelScript::asFUNCTION(sys::suspendCtx), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
             asErrno = engine->RegisterGlobalFunction("ptr_t mainOffset()", AngelScript::asFUNCTION(sys::mainOffset), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
             asErrno = engine->RegisterGlobalFunction("u32 totkVersion()", AngelScript::asFUNCTION(sys::totkVersion), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+            asErrno = engine->RegisterGlobalFunction("void debugLog(const string &in)", AngelScript::asFUNCTION(sys::debugLog), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        /// }
+
+        engine->SetDefaultNamespace("Logger"); /// {
+            engine->RegisterGlobalFunction("void logText(const string &in, const string &in = \"/Logger\", bool = false, bool = true )", AngelScript::asFUNCTION(Logger::logText), AngelScript::asCALL_CDECL);
         /// }
 
         engine->SetDefaultNamespace("HexDump"); /// {
             asErrno = engine->RegisterGlobalFunction("void clearSlot(index_t)", AngelScript::asFUNCTION(lotuskit::HexDump::clearSlot), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
             asErrno = engine->RegisterGlobalFunction("void pauseSlot(index_t)", AngelScript::asFUNCTION(lotuskit::HexDump::pauseSlot), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
             asErrno = engine->RegisterGlobalFunction("void assignSlotAbsolute(index_t, ptr_t, u32, u32)", AngelScript::asFUNCTION(lotuskit::HexDump::assignSlotAbsolute), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        /// }
+
+        engine->SetDefaultNamespace("TextWriter"); /// {
+            // TODO do AS variadic stuff to hopefully just forward the args to normal snprintf/whatever -- format("{} {}", 1, 2) also exists for now
+            asErrno = engine->RegisterGlobalFunction("void print(index_t, const string &in)", AngelScript::asFUNCTION(textwriter_as_print), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+            asErrno = engine->RegisterGlobalFunction("void toast(u32, const string &in)", AngelScript::asFUNCTION(textwriter_as_toast), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
         /// }
 
         engine->SetDefaultNamespace("tas"); /// {
