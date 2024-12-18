@@ -141,59 +141,82 @@ namespace lotuskit::script::globals {
     float actor_pos_get_z(::engine::actor::ActorBase* actor) { return actor->mPosition.z; }
 
     void registerGlobals(AngelScript::asIScriptEngine* engine) {
-        s32 asErrno = engine->RegisterGlobalFunction("void yield()", AngelScript::asFUNCTION(sys::suspendCtx), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        s32 asErrno;
+
+        engine->SetDefaultNamespace(""); /// root {
+            asErrno = engine->RegisterTypedef("u8", "uint8"); assert(asErrno >= 0);
+            asErrno = engine->RegisterTypedef("u16", "uint16"); assert(asErrno >= 0);
+            asErrno = engine->RegisterTypedef("u32", "uint"); assert(asErrno >= 0);
+            asErrno = engine->RegisterTypedef("u64", "uint64"); assert(asErrno >= 0);
+            asErrno = engine->RegisterTypedef("s8", "int8"); assert(asErrno >= 0);
+            asErrno = engine->RegisterTypedef("s16", "int16"); assert(asErrno >= 0);
+            asErrno = engine->RegisterTypedef("s32", "int"); assert(asErrno >= 0);
+            asErrno = engine->RegisterTypedef("s64", "int64"); assert(asErrno >= 0);
+            asErrno = engine->RegisterTypedef("ptrdiff_t", "int64"); assert(asErrno >= 0);
+            asErrno = engine->RegisterTypedef("ptr_t", "uint64"); assert(asErrno >= 0); // AS has no raw pointers, but we often need to deal with their values
+            asErrno = engine->RegisterTypedef("size_t", "uint64"); assert(asErrno >= 0);
+            asErrno = engine->RegisterTypedef("index_t", "uint64"); assert(asErrno >= 0); // more appropriately named size_t
+            asErrno = engine->RegisterTypedef("f16", "uint16"); assert(asErrno >= 0); // AS has no half floats, just to preserve context/compat
+            asErrno = engine->RegisterTypedef("f16_fake", "uint16"); assert(asErrno >= 0);
+
+            asErrno = engine->RegisterGlobalFunction("void yield()", AngelScript::asFUNCTION(sys::suspendCtx), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        /// }
 
         //engine->SetDefaultNamespace("Logger");
         //engine->RegisterGlobalFunction("void logText(string, string)", AngelScript::asFUNCTION(Logger::logText), AngelScript::asCALL_CDECL);
         //s32 asErrno = engine->RegisterGlobalFunction("void trashPrintInt(int)", AngelScript::asFUNCTION(trashPrintInt), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
         //asErrno = engine->RegisterGlobalFunction("void trashPrint(const string &in)", AngelScript::asFUNCTION(trashPrint), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
 
-        engine->SetDefaultNamespace("sys");
-        asErrno = engine->RegisterGlobalFunction("void heapInfo()", AngelScript::asFUNCTION(sys::heapInfo), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
-        asErrno = engine->RegisterGlobalFunction("void hookLimits()", AngelScript::asFUNCTION(sys::hookLimits), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
-        asErrno = engine->RegisterGlobalFunction("void memSearch(uint64)", AngelScript::asFUNCTION(sys::memSearch), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
-        asErrno = engine->RegisterGlobalFunction("void threadInfo()", AngelScript::asFUNCTION(sys::threadInfo), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
-        asErrno = engine->RegisterGlobalFunction("void suspendCtx()", AngelScript::asFUNCTION(sys::suspendCtx), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
-        asErrno = engine->RegisterGlobalFunction("uint64 mainOffset()", AngelScript::asFUNCTION(sys::mainOffset), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
-        asErrno = engine->RegisterGlobalFunction("uint totkVersion()", AngelScript::asFUNCTION(sys::totkVersion), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        engine->SetDefaultNamespace("sys"); /// {
+            asErrno = engine->RegisterGlobalFunction("void heapInfo()", AngelScript::asFUNCTION(sys::heapInfo), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+            asErrno = engine->RegisterGlobalFunction("void hookLimits()", AngelScript::asFUNCTION(sys::hookLimits), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+            asErrno = engine->RegisterGlobalFunction("void memSearch(ptr_t)", AngelScript::asFUNCTION(sys::memSearch), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+            asErrno = engine->RegisterGlobalFunction("void threadInfo()", AngelScript::asFUNCTION(sys::threadInfo), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+            asErrno = engine->RegisterGlobalFunction("void suspendCtx()", AngelScript::asFUNCTION(sys::suspendCtx), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+            asErrno = engine->RegisterGlobalFunction("ptr_t mainOffset()", AngelScript::asFUNCTION(sys::mainOffset), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+            asErrno = engine->RegisterGlobalFunction("u32 totkVersion()", AngelScript::asFUNCTION(sys::totkVersion), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        /// }
 
-        engine->SetDefaultNamespace("HexDump");
-        asErrno = engine->RegisterGlobalFunction("void clearSlot(uint)", AngelScript::asFUNCTION(lotuskit::HexDump::clearSlot), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
-        asErrno = engine->RegisterGlobalFunction("void pauseSlot(uint)", AngelScript::asFUNCTION(lotuskit::HexDump::pauseSlot), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
-        asErrno = engine->RegisterGlobalFunction("void assignSlotAbsolute(uint, uint64, uint, uint)", AngelScript::asFUNCTION(lotuskit::HexDump::assignSlotAbsolute), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        engine->SetDefaultNamespace("HexDump"); /// {
+            asErrno = engine->RegisterGlobalFunction("void clearSlot(index_t)", AngelScript::asFUNCTION(lotuskit::HexDump::clearSlot), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+            asErrno = engine->RegisterGlobalFunction("void pauseSlot(index_t)", AngelScript::asFUNCTION(lotuskit::HexDump::pauseSlot), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+            asErrno = engine->RegisterGlobalFunction("void assignSlotAbsolute(index_t, ptr_t, u32, u32)", AngelScript::asFUNCTION(lotuskit::HexDump::assignSlotAbsolute), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        /// }
 
-        engine->SetDefaultNamespace("tas");
-        asErrno = engine->RegisterGlobalFunction(
-            "void input(uint duration60=2, uint64 nextButtons=0, int nextLStickX=0, int nextLStickY=0, int nextRStickX=0, int nextRStickY=0)",
-            AngelScript::asFUNCTION(lotuskit::tas::Playback::setCurrentInput),
-            AngelScript::asCALL_CDECL
-        ); assert( asErrno >= 0 );
-        asErrno = engine->RegisterGlobalFunction(
-            "void toggleDump()",
-            AngelScript::asFUNCTION(lotuskit::tas::Record::trashToggleDump),
-            AngelScript::asCALL_CDECL
-        ); assert( asErrno >= 0 );
+        engine->SetDefaultNamespace("tas"); /// {
+            asErrno = engine->RegisterGlobalFunction(
+                "void input(u32 duration60=2, u64 nextButtons=0, s32 nextLStickX=0, s32 nextLStickY=0, s32 nextRStickX=0, s32 nextRStickY=0)",
+                AngelScript::asFUNCTION(lotuskit::tas::Playback::setCurrentInput),
+                AngelScript::asCALL_CDECL
+            ); assert( asErrno >= 0 );
+            asErrno = engine->RegisterGlobalFunction(
+                "void toggleDump()",
+                AngelScript::asFUNCTION(lotuskit::tas::Record::trashToggleDump),
+                AngelScript::asCALL_CDECL
+            ); assert( asErrno >= 0 );
+        /// }
 
         // define nx-TAS buttons: KEY_ZL;KEY_X -> KEY_ZL|KEY_X
-        engine->SetDefaultNamespace(""); // root
-        asErrno = engine->RegisterEnum("nxTASButton"); assert(asErrno >= 0);
-        asErrno = engine->RegisterEnumValue("nxTASButton", "NONE", 0); assert(asErrno >= 0);
-        asErrno = engine->RegisterEnumValue("nxTASButton", "KEY_A", (1 << 0)); assert(asErrno >= 0);
-        asErrno = engine->RegisterEnumValue("nxTASButton", "KEY_B", (1 << 1)); assert(asErrno >= 0);
-        asErrno = engine->RegisterEnumValue("nxTASButton", "KEY_X", (1 << 2)); assert(asErrno >= 0);
-        asErrno = engine->RegisterEnumValue("nxTASButton", "KEY_Y", (1 << 3)); assert(asErrno >= 0);
-        asErrno = engine->RegisterEnumValue("nxTASButton", "KEY_L", (1 << 6)); assert(asErrno >= 0);
-        asErrno = engine->RegisterEnumValue("nxTASButton", "KEY_R", (1 << 7)); assert(asErrno >= 0);
-        asErrno = engine->RegisterEnumValue("nxTASButton", "KEY_ZL", (1 << 8)); assert(asErrno >= 0);
-        asErrno = engine->RegisterEnumValue("nxTASButton", "KEY_ZR", (1 << 9)); assert(asErrno >= 0);
-        asErrno = engine->RegisterEnumValue("nxTASButton", "KEY_PLUS", (1 << 10)); assert(asErrno >= 0);
-        asErrno = engine->RegisterEnumValue("nxTASButton", "KEY_MINUS", (1 << 11)); assert(asErrno >= 0);
-        asErrno = engine->RegisterEnumValue("nxTASButton", "KEY_DLEFT", (1 << 12)); assert(asErrno >= 0);
-        asErrno = engine->RegisterEnumValue("nxTASButton", "KEY_DUP", (1 << 13)); assert(asErrno >= 0);
-        asErrno = engine->RegisterEnumValue("nxTASButton", "KEY_DRIGHT", (1 << 14)); assert(asErrno >= 0);
-        asErrno = engine->RegisterEnumValue("nxTASButton", "KEY_DDOWN", (1 << 15)); assert(asErrno >= 0);
-        asErrno = engine->RegisterEnumValue("nxTASButton", "KEY_LSTICK", (1 << 4)); assert(asErrno >= 0);
-        asErrno = engine->RegisterEnumValue("nxTASButton", "KEY_RSTICK", (1 << 5)); assert(asErrno >= 0);
+        engine->SetDefaultNamespace(""); /// root {
+            asErrno = engine->RegisterEnum("nxTASButton"); assert(asErrno >= 0);
+            asErrno = engine->RegisterEnumValue("nxTASButton", "NONE", 0); assert(asErrno >= 0);
+            asErrno = engine->RegisterEnumValue("nxTASButton", "KEY_A", (1 << 0)); assert(asErrno >= 0);
+            asErrno = engine->RegisterEnumValue("nxTASButton", "KEY_B", (1 << 1)); assert(asErrno >= 0);
+            asErrno = engine->RegisterEnumValue("nxTASButton", "KEY_X", (1 << 2)); assert(asErrno >= 0);
+            asErrno = engine->RegisterEnumValue("nxTASButton", "KEY_Y", (1 << 3)); assert(asErrno >= 0);
+            asErrno = engine->RegisterEnumValue("nxTASButton", "KEY_L", (1 << 6)); assert(asErrno >= 0);
+            asErrno = engine->RegisterEnumValue("nxTASButton", "KEY_R", (1 << 7)); assert(asErrno >= 0);
+            asErrno = engine->RegisterEnumValue("nxTASButton", "KEY_ZL", (1 << 8)); assert(asErrno >= 0);
+            asErrno = engine->RegisterEnumValue("nxTASButton", "KEY_ZR", (1 << 9)); assert(asErrno >= 0);
+            asErrno = engine->RegisterEnumValue("nxTASButton", "KEY_PLUS", (1 << 10)); assert(asErrno >= 0);
+            asErrno = engine->RegisterEnumValue("nxTASButton", "KEY_MINUS", (1 << 11)); assert(asErrno >= 0);
+            asErrno = engine->RegisterEnumValue("nxTASButton", "KEY_DLEFT", (1 << 12)); assert(asErrno >= 0);
+            asErrno = engine->RegisterEnumValue("nxTASButton", "KEY_DUP", (1 << 13)); assert(asErrno >= 0);
+            asErrno = engine->RegisterEnumValue("nxTASButton", "KEY_DRIGHT", (1 << 14)); assert(asErrno >= 0);
+            asErrno = engine->RegisterEnumValue("nxTASButton", "KEY_DDOWN", (1 << 15)); assert(asErrno >= 0);
+            asErrno = engine->RegisterEnumValue("nxTASButton", "KEY_LSTICK", (1 << 4)); assert(asErrno >= 0);
+            asErrno = engine->RegisterEnumValue("nxTASButton", "KEY_RSTICK", (1 << 5)); assert(asErrno >= 0);
+        /// }
 
         /* //no worky
         engine->SetDefaultNamespace("sead");
@@ -204,43 +227,46 @@ namespace lotuskit::script::globals {
         */
 
         // actor system
-        engine->SetDefaultNamespace(""); // root
-        //asErrno = engine->RegisterObjectType("PreActor", 0, AngelScript::asOBJ_REF | AngelScript::asOBJ_NOCOUNT); assert(asErrno >= 0);
-        asErrno = engine->RegisterObjectType("ActorBase", 0, AngelScript::asOBJ_REF | AngelScript::asOBJ_NOCOUNT); assert(asErrno >= 0);
-        asErrno = engine->RegisterObjectMethod("ActorBase", "float get_pos_x() property", AngelScript::asFUNCTION(actor_pos_get_x), AngelScript::asCALL_CDECL_OBJFIRST); assert(asErrno >= 0);
-        asErrno = engine->RegisterObjectMethod("ActorBase", "float get_pos_y() property", AngelScript::asFUNCTION(actor_pos_get_y), AngelScript::asCALL_CDECL_OBJFIRST); assert(asErrno >= 0);
-        asErrno = engine->RegisterObjectMethod("ActorBase", "float get_pos_z() property", AngelScript::asFUNCTION(actor_pos_get_z), AngelScript::asCALL_CDECL_OBJFIRST); assert(asErrno >= 0);
-        asErrno = engine->RegisterObjectMethod("ActorBase", "void setPos(float, float, float)", AngelScript::asFUNCTION(lotuskit::util::actor::setPosXYZ), AngelScript::asCALL_CDECL_OBJFIRST); assert(asErrno >= 0);
-        asErrno = engine->RegisterObjectMethod("ActorBase", "void setRot(float, float, float, float, float, float, float, float, float)", AngelScript::asFUNCTION(lotuskit::util::actor::setRot9), AngelScript::asCALL_CDECL_OBJFIRST); assert(asErrno >= 0);
-        asErrno = engine->RegisterObjectMethod("ActorBase", "void setPosRot(float, float, float, float, float, float, float, float, float, float, float, float)", AngelScript::asFUNCTION(lotuskit::util::actor::setPosRot39), AngelScript::asCALL_CDECL_OBJFIRST); assert(asErrno >= 0);
-        //asErrno = engine->RegisterObjectProperty("ActorBase", "sead::Vector3f &pos", asOFFSET(::engine::actor::ActorBase, mPosition)); assert(asErrno >= 0);
-        //engine->SetDefaultNamespace("ResidentActors");
-        asErrno = engine->RegisterGlobalProperty("ActorBase@ Player", &ResidentActors::Player); assert(asErrno >= 0);
-        asErrno = engine->RegisterGlobalProperty("ActorBase@ PlayerCamera", &ResidentActors::PlayerCamera); assert(asErrno >= 0);
-        asErrno = engine->RegisterGlobalProperty("ActorBase@ EventCamera", &ResidentActors::EventCamera); assert(asErrno >= 0);
 
-        engine->SetDefaultNamespace("actor");
-        asErrno = engine->RegisterGlobalFunction("void createSimple(string &in)", AngelScript::asFUNCTION(lotuskit::util::actor::createSimple), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
-        asErrno = engine->RegisterGlobalFunction("void createSimple(string &in, float, float, float)", AngelScript::asFUNCTION(lotuskit::util::actor::createSimpleXYZ), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
-        asErrno = engine->RegisterGlobalFunction("void createAndWatch(uint, string &in)", AngelScript::asFUNCTION(lotuskit::util::actor::createAndWatch), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
-        asErrno = engine->RegisterGlobalFunction("void createAndWatch(uint, string &in, float, float, float)", AngelScript::asFUNCTION(lotuskit::util::actor::createAndWatchXYZ), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        engine->SetDefaultNamespace(""); /// root {
+            //asErrno = engine->RegisterObjectType("PreActor", 0, AngelScript::asOBJ_REF | AngelScript::asOBJ_NOCOUNT); assert(asErrno >= 0);
+            asErrno = engine->RegisterObjectType("ActorBase", 0, AngelScript::asOBJ_REF | AngelScript::asOBJ_NOCOUNT); assert(asErrno >= 0);
+            asErrno = engine->RegisterObjectMethod("ActorBase", "float get_pos_x() property", AngelScript::asFUNCTION(actor_pos_get_x), AngelScript::asCALL_CDECL_OBJFIRST); assert(asErrno >= 0);
+            asErrno = engine->RegisterObjectMethod("ActorBase", "float get_pos_y() property", AngelScript::asFUNCTION(actor_pos_get_y), AngelScript::asCALL_CDECL_OBJFIRST); assert(asErrno >= 0);
+            asErrno = engine->RegisterObjectMethod("ActorBase", "float get_pos_z() property", AngelScript::asFUNCTION(actor_pos_get_z), AngelScript::asCALL_CDECL_OBJFIRST); assert(asErrno >= 0);
+            asErrno = engine->RegisterObjectMethod("ActorBase", "void setPos(float, float, float)", AngelScript::asFUNCTION(lotuskit::util::actor::setPosXYZ), AngelScript::asCALL_CDECL_OBJFIRST); assert(asErrno >= 0);
+            asErrno = engine->RegisterObjectMethod("ActorBase", "void setRot(float, float, float, float, float, float, float, float, float)", AngelScript::asFUNCTION(lotuskit::util::actor::setRot9), AngelScript::asCALL_CDECL_OBJFIRST); assert(asErrno >= 0);
+            asErrno = engine->RegisterObjectMethod("ActorBase", "void setPosRot(float, float, float, float, float, float, float, float, float, float, float, float)", AngelScript::asFUNCTION(lotuskit::util::actor::setPosRot39), AngelScript::asCALL_CDECL_OBJFIRST); assert(asErrno >= 0);
+            //asErrno = engine->RegisterObjectProperty("ActorBase", "sead::Vector3f &pos", asOFFSET(::engine::actor::ActorBase, mPosition)); assert(asErrno >= 0);
+            //engine->SetDefaultNamespace("ResidentActors");
+            asErrno = engine->RegisterGlobalProperty("ActorBase@ Player", &ResidentActors::Player); assert(asErrno >= 0);
+            asErrno = engine->RegisterGlobalProperty("ActorBase@ PlayerCamera", &ResidentActors::PlayerCamera); assert(asErrno >= 0);
+            asErrno = engine->RegisterGlobalProperty("ActorBase@ EventCamera", &ResidentActors::EventCamera); assert(asErrno >= 0);
+        /// }
 
-        engine->SetDefaultNamespace("ActorWatcher");
-        asErrno = engine->RegisterGlobalFunction("void clearSlot(uint)", AngelScript::asFUNCTION(lotuskit::ActorWatcher::clearSlot), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
-        asErrno = engine->RegisterGlobalFunction("void pauseSlot(uint)", AngelScript::asFUNCTION(lotuskit::ActorWatcher::pauseSlot), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
-        asErrno = engine->RegisterGlobalFunction("void assignSlot(uint, ActorBase@)", AngelScript::asFUNCTION(lotuskit::ActorWatcher::assignSlot), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
-        asErrno = engine->RegisterGlobalFunction("void assignSlot(uint, uint64)", AngelScript::asFUNCTION(lotuskit::ActorWatcher::assignSlot), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
-        asErrno = engine->RegisterGlobalFunction("void assignSlotPreActor(uint, uint64)", AngelScript::asFUNCTION(lotuskit::ActorWatcher::assignSlotPreActor), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
-        //asErrno = engine->RegisterGlobalFunction("void assignSlotPreActor(uint, PreActor@)", AngelScript::asFUNCTION(lotuskit::ActorWatcher::assignSlotPreActor), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
-        // FIXME Using another handle in setPos args chained after getSlotActor(i) crashes!
-        // ActorWatcher::getSlotActor(0).setPos(Player.pos_x, 1520, 1515);
-        // Storing to a named handle first is fine, so prefer global property access until this is figured out. could it be uint vs size_t?
-        asErrno = engine->RegisterGlobalFunction("ActorBase@ getSlotActor(uint)", AngelScript::asFUNCTION(lotuskit::ActorWatcher::getSlotActor), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
-        // TODO loop these calls for MAX_WATCHER_SLOTS?
-        asErrno = engine->RegisterGlobalProperty("ActorBase@ actor0", &(lotuskit::ActorWatcher::slots[0].actor)); assert(asErrno >= 0);
-        asErrno = engine->RegisterGlobalProperty("ActorBase@ actor1", &(lotuskit::ActorWatcher::slots[1].actor)); assert(asErrno >= 0);
-        asErrno = engine->RegisterGlobalProperty("ActorBase@ actor2", &(lotuskit::ActorWatcher::slots[2].actor)); assert(asErrno >= 0);
-        asErrno = engine->RegisterGlobalProperty("ActorBase@ actor3", &(lotuskit::ActorWatcher::slots[3].actor)); assert(asErrno >= 0);
+        engine->SetDefaultNamespace("actor"); /// {
+            asErrno = engine->RegisterGlobalFunction("void createSimple(string &in)", AngelScript::asFUNCTION(lotuskit::util::actor::createSimple), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+            asErrno = engine->RegisterGlobalFunction("void createSimple(string &in, float, float, float)", AngelScript::asFUNCTION(lotuskit::util::actor::createSimpleXYZ), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+            asErrno = engine->RegisterGlobalFunction("void createAndWatch(index_t, string &in)", AngelScript::asFUNCTION(lotuskit::util::actor::createAndWatch), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+            asErrno = engine->RegisterGlobalFunction("void createAndWatch(index_t, string &in, float, float, float)", AngelScript::asFUNCTION(lotuskit::util::actor::createAndWatchXYZ), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        /// }
+
+        engine->SetDefaultNamespace("ActorWatcher"); /// {
+            // slot mgmt
+            asErrno = engine->RegisterGlobalFunction("void clearSlot(index_t)", AngelScript::asFUNCTION(lotuskit::ActorWatcher::clearSlot), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+            asErrno = engine->RegisterGlobalFunction("void pauseSlot(index_t)", AngelScript::asFUNCTION(lotuskit::ActorWatcher::pauseSlot), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+            asErrno = engine->RegisterGlobalFunction("void assignSlot(index_t, ActorBase@)", AngelScript::asFUNCTION(lotuskit::ActorWatcher::assignSlot), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+            asErrno = engine->RegisterGlobalFunction("void assignSlot(index_t, ptr_t)", AngelScript::asFUNCTION(lotuskit::ActorWatcher::assignSlot), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+            asErrno = engine->RegisterGlobalFunction("void assignSlotPreActor(index_t, ptr_t)", AngelScript::asFUNCTION(lotuskit::ActorWatcher::assignSlotPreActor), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+            //asErrno = engine->RegisterGlobalFunction("void assignSlotPreActor(index_t, PreActor@)", AngelScript::asFUNCTION(lotuskit::ActorWatcher::assignSlotPreActor), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+            // slot access
+            asErrno = engine->RegisterGlobalFunction("ActorBase@ get(index_t)", AngelScript::asFUNCTION(lotuskit::ActorWatcher::getSlotActor), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+            asErrno = engine->RegisterGlobalFunction("ActorBase@ getSlotActor(index_t)", AngelScript::asFUNCTION(lotuskit::ActorWatcher::getSlotActor), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+            asErrno = engine->RegisterGlobalProperty("ActorBase@ actor0", &(lotuskit::ActorWatcher::slots[0].actor)); assert(asErrno >= 0); // TODO loop these calls for MAX_WATCHER_SLOTS?
+            asErrno = engine->RegisterGlobalProperty("ActorBase@ actor1", &(lotuskit::ActorWatcher::slots[1].actor)); assert(asErrno >= 0);
+            asErrno = engine->RegisterGlobalProperty("ActorBase@ actor2", &(lotuskit::ActorWatcher::slots[2].actor)); assert(asErrno >= 0);
+            asErrno = engine->RegisterGlobalProperty("ActorBase@ actor3", &(lotuskit::ActorWatcher::slots[3].actor)); assert(asErrno >= 0);
+        /// }
 
     }
 

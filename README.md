@@ -14,7 +14,7 @@
 - Check out `registerGlobals` in `src/program/script/globals.cpp` for a complete list of script bindings available!
 - Polling options in the frontend are not perfectly reliable.
 - Bug: Don't leave ActorWatchers targeting dead/dying actors while you go through loading screens (especially title+shrine loads), this will eventually crash. Run `ActorWatcher::clearSlot(i);` or target a resident actor like Player to avoid this.
-- Bug: Using named handles in calls chained after a handle getter will crash. Instead of `ActorWatcher::getSlotActor(1).setPos(Player.pos_x, 2, 3);` do `ActorWatcher::actor1.setPos(Player.pos_x, 2, 3);`
+- Bug: The script size is very limited and crashes on overflow
 - Bug: Spooky Recall red text
 - The mod version must match your game version, be sure to switch them together. Separate builds simplify certain version interop problems like differing structs or register usage.
 - By default the frontend is served on 7073 because it looks sort of like "TOTK". The mod's WebSocket server is on 7072 because it's like 2 is the sequel.

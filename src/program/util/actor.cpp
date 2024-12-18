@@ -58,7 +58,7 @@ namespace lotuskit::util::actor {
         svcOutputDebugString(buf, strlen(buf));
     }
 
-    void createAndWatch(u8 slotIndex, const std::string &actorName) {
+    void createAndWatch(size_t slotIndex, const std::string &actorName) {
         if (lotuskit::script::globals::ResidentActors::Player == nullptr) {
             return createAndWatchXYZ(slotIndex, actorName, 0, 0, 0);
         }
@@ -66,7 +66,7 @@ namespace lotuskit::util::actor {
         createAndWatchXYZ(slotIndex, actorName, pos.x + 10.f, pos.y + 5.f, pos.z + 10.f);
     }
 
-    void createAndWatchXYZ(u8 slotIndex, const std::string &actorName, float x, float y, float z) {
+    void createAndWatchXYZ(size_t slotIndex, const std::string &actorName, float x, float y, float z) {
         bb::InitInfo<32> initInfo;
         //initInfo.setParam(sead::SafeString{"EquipmentUser_Bow"}, sead::SafeString{"Weapon_Bow_032"});
         //initInfo.setParam(sead::SafeString{"EquipmentUser_Shield"}, sead::SafeString{"Weapon_Shield_018"});
