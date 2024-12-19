@@ -284,14 +284,18 @@
     class ActorWatcher extends Component {
         constructor() {
             super();
-            this.state = {
+            this.reset_state();
+            this.bumper_increment_ref = createRef();
+            this.savestate_textbox_ref = createRef();
+        }
+
+        reset_state() {
+            this.setState({
                 actorName: "[none]",
                 actorPtr: 0,
                 pos: [0, 0, 0],
                 vel: [0, 0, 0],
-            };
-            this.bumper_increment_ref = createRef();
-            this.savestate_textbox_ref = createRef();
+            });
         }
 
         componentDidMount() {
@@ -299,6 +303,9 @@
         }
 
         clear_slot(slot_i) {
+            //FIXME ws log+subscribe a clear event for this instead
+            // mod is always sending updates, so this'll get repopulated if cleared immediately
+            window.setTimeout(this.reset_state.bind(this), 500);
             WSTransport.send({execScriptString: wrap_implicit_main(`ActorWatcher::clearSlot(${slot_i});`)});
         }
 
