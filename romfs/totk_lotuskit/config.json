@@ -4,8 +4,21 @@
     },
 
     "server": { "WebSocket": {
-        "listenOnBootup": true, // the game will not boot until ws connection is made
-        "bindIp": "127.0.0.1",
+        // the game will not boot until ws connection is made
+        "listenOnBootup": true,
+
+        // listen on any interface (wifi, eth, ...)
+        "bindIp": "0.0.0.0",
+
+        // listen only on the interface with this ip:
+        // this could be wifi or eth
+        //"bindIp": "192.168.0.69",
+
+        // listen only on the loopback interface:
+        // emulated mod will only accept connections from its host device
+        //"bindIp": "127.0.0.1",
+
+        // websocket port
         "bindPort": 7072
     }},
 

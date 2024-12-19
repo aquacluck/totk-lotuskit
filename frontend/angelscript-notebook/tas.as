@@ -76,6 +76,10 @@ KEY_RSTICK
 /* So if you're doing expensive work while still trying for high input
 /* accuracy, consider that this work may extend the previous state.
 /* (see [sys.as] for more info on yields and scheduling)
+/*
+/* Note that socket io and script execution are not offloaded to
+/* threads. Writes may be deferred, and reads poll instead of block,
+/* but the work is still done in the "main" WorldManagerModule hook.
 /**********************************************************/
 
 
