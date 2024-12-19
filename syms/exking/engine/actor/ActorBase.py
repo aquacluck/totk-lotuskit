@@ -11,12 +11,13 @@ namespace engine::actor::ActorBase {
 
 EXKING("_ZN6engine5actor9ActorBase28setPositionAndRotationDirectEPv", {
     TOTK_100: 0x007f13c0,
-    #TOTK_110:
+    TOTK_110: 0x00a2e240,
     TOTK_121: 0x00860020,
 })
+
 EXKING("_ZN6engine5actor9ActorBase25updatePositionAndRotationEPv", {
     TOTK_100: 0x007b76b8,
-    #TOTK_110:
+    TOTK_110: 0x009f1924,
     TOTK_121: 0x00823fd8,
 })
 

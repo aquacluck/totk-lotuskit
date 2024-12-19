@@ -13,6 +13,7 @@
 - WebSocket connection to the mod must be established at bootup (for now) or not at all. There is no way to reconnect to a game. Yeah it sucks.
 - Everything you do in the frontend is accomplished by running AngelScript snippets, and usually you can hover on buttons/etc for clarification about scripting or other quirks.
 - Check out `registerGlobals` in `src/program/script/globals.cpp` for a complete list of script bindings available!
+- Bug: Playing on console crashes after... 5 minutes? Not sure why yet
 - Bug: Polling options in the frontend aren't perfect -- if the browser tries to connect right as the mod is opening its socket, the frontend can get stuck unable to connect.
 - Bug: Don't leave ActorWatchers targeting dead/dying actors while you go through loading screens (especially title+shrine loads), this will eventually crash. Clear the watcher or target a resident actor like Player to avoid this.
 - Bug: Script size is limited to ~8KB and crashes on overflow

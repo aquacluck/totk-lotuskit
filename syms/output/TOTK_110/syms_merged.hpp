@@ -232,14 +232,14 @@ class forceSetMatrix {
 namespace sym::engine::actor::ActorBase {
 class updatePositionAndRotation {
     public:
-    inline static constexpr ptrdiff_t offset = 0x00000000;
+    inline static constexpr ptrdiff_t offset = 0x009f1924;
 };
 }
 
 namespace sym::engine::actor::ActorBase {
 class setPositionAndRotationDirect {
     public:
-    inline static constexpr ptrdiff_t offset = 0x00000000;
+    inline static constexpr ptrdiff_t offset = 0x00a2e240;
 };
 }
 
