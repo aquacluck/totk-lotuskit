@@ -1,7 +1,7 @@
 // spawned near Player by default
 actor::createSimple("GameRomHorse");
 
-// spawn at coordinates (engine coordinates, not display)
+// spawn at coordinates (engine coordinates, not ui)
 actor::createSimple("GameRomHorse", 123, 456.0, 789.5);
 
 // assign to ActorWatcher slot 1 on creation
@@ -37,8 +37,8 @@ EventCamera.setPosRot(
     1,0,0, 0,1,0, 0,0,1 // Matrix33f
 );
 
-ptr_t somewhere = 0x3331337; // pointers are fake
 // watch an ActorBase by absolute address
+ptr_t somewhere = 0x3331337; // (pointers are fake)
 ActorWatcher::assignSlot(1, somewhere);
 // watch a PreActor, follow its created ActorBase
 ActorWatcher::assignSlotPreActor(1, somewhere);

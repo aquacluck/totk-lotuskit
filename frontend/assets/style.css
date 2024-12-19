@@ -173,8 +173,10 @@ textarea {
     left: 0px;
     filter: drop-shadow(0px 10px 10px #115588);
     textarea {
-        min-width: 600px;
-        min-height: 400px;
+        min-width: 200px;
+        width: 600px;
+        min-height: 100px;
+        height: 400px;
     }
 }
 

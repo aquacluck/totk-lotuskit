@@ -378,13 +378,13 @@
                         <span>Move by <input type="number" placeholder="10" size="4" min="0" max="10000" step="any" ref=${this.bumper_increment_ref} />m:</span>
                         <br />
                         <br />
-                        <button onClick=${ () => this.do_relative_move(this.props.slot_i, "u") } class="pushbutton">\xa0up\xa0</button>
-                        <button onClick=${ () => this.do_relative_move(this.props.slot_i, "n") } class="pushbutton">north</button>
-                        <button onClick=${ () => this.do_relative_move(this.props.slot_i, "d") } class="pushbutton">down</button>
+                        <button title="y-" style="color: var(--vec-green);" onClick=${ () => this.do_relative_move(this.props.slot_i, "d") } class="pushbutton">down</button>
+                        <button title="z-" style="color: var(--vec-blue);"  onClick=${ () => this.do_relative_move(this.props.slot_i, "n") } class="pushbutton">north</button>
+                        <button title="y+" style="color: var(--vec-green);" onClick=${ () => this.do_relative_move(this.props.slot_i, "u") } class="pushbutton">\xa0up\xa0</button>
                         <br />
-                        <button onClick=${ () => this.do_relative_move(this.props.slot_i, "w") } class="pushbutton">west</button>
-                        <button onClick=${ () => this.do_relative_move(this.props.slot_i, "s") } class="pushbutton">south</button>
-                        <button onClick=${ () => this.do_relative_move(this.props.slot_i, "e") } class="pushbutton">east</button>
+                        <button title="x-" style="color: var(--vec-red);"   onClick=${ () => this.do_relative_move(this.props.slot_i, "w") } class="pushbutton">west</button>
+                        <button title="z+" style="color: var(--vec-blue);"  onClick=${ () => this.do_relative_move(this.props.slot_i, "s") } class="pushbutton">south</button>
+                        <button title="x+" style="color: var(--vec-red);"   onClick=${ () => this.do_relative_move(this.props.slot_i, "e") } class="pushbutton">east</button>
                     </div>
 
                     <div class="savestate_slot_actions">
@@ -468,7 +468,7 @@
 
             const dialog = !(state.dialog_contents) ? "" : html`
                 <dialog onKeyDown=${this.do_dialog_keydown} open>
-                    ${state.dialog_filename}<br />
+                    📖${state.dialog_filename}<br />
                     <textarea autofocus contenteditable="plaintext-only">${state.dialog_contents}</textarea>
                 </dialog>`;
 
@@ -558,15 +558,23 @@
         }
 
         render(props, state) {
+            const recents = state.ws_location_recents.map(x => html`<option>${x}</option>`);
             const flag = WSTransport.signals.config.frontend.ws_is_connected.value ? "✅" :
                          state.is_polling ? "⌛" : "❌";
-            const recents = state.ws_location_recents.map(x => html`<option>${x}</option>`);
+
+            // easy to misclick and kill the connection in this arrangement, just don't allow it.
+            // this also makes collapsing the panel feel like "locking" the connection
+            let inertStyle = "";
+            if (state.ui_size == "small" && (WSTransport.signals.config.frontend.ws_is_connected.value || state.is_polling)) {
+                inertStyle = "pointer-events: none; background: #666; color: #aaa;";
+            }
+
             return html`
                 <div class="ws size_${state.ui_size}">
                     <button title="Expand/Collapse" onClick=${ () => this.toggle_size() }>${ state.ui_size == "medium" ? "[-]" : "[+]" }</button>
                     <span class="size_small_hidden">Mod Socket</span>${flag}
-                    <input placeholder="ws://127.0.0.1:7072" size="20" ref=${this.ws_location_ref} />
-                    <button class="cta_green" title="connect ws" onClick=${ () => this.do_connect_submit() }>go</button>
+                    <input class="size_small_hidden" placeholder="ws://127.0.0.1:7072" size="20" ref=${this.ws_location_ref} />
+                    <button class="cta_green" title="connect ws" style=${inertStyle} onClick=${ () => this.do_connect_submit() }>go</button>
                     <div class="size_small_hidden">
                         <select onChange=${this.do_recent_select}>
                             <option>[Session Recents]</option>

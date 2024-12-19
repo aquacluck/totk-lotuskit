@@ -8,8 +8,7 @@ tas::input(2, KEY_DDOWN|KEY_B, 0,0, -16401,0);
 
 // not "recording", just logging the inputs --
 // for now saving+organizing them is entirely your job.
-// and be careful about refreshing the page
-// (but i plan to add basic file support and fix refresh sometime)
+// (but i plan to add basic file support sometime)
 tas::toggleDump();
 
 
