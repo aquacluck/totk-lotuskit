@@ -91,6 +91,7 @@ namespace lotuskit {
             TextWriterToastNode* newNode = (TextWriterToastNode*)debugDrawerInternalHeap->alloc(sizeof(TextWriterToastNode));
             newNode->outputText = nullptr;
             newNode->fn = nullptr;
+            // FIXME just store ttl30 and count down frames??? why did i do this?
             newNode->expirySystemTick = ttl30 * 1000000 + svcGetSystemTick(); // FIXME approximate conversion, doesnt matter much
 
             // set outputText

@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <link rel="stylesheet" type="text/css" href="assets/style.css" />
+    <title>totk-lotuskit</title>
 <script type="module">
     import { createRef, h, render, Component } from '/assets/js-vendor/preact@10.23.1.mjs';
     import htm from '/assets/js-vendor/htm@3.1.1.mjs';
@@ -268,12 +269,12 @@
             return html`
                 <div class="execscript">
                     <br/>AngelScript
-                    <button title="Run the script below" onClick=${ () => this.do_exec() } class="pushbutton">exec</button>
-                    <label title="Automatically wrap input into void main() {...} entry point" for="execscript_use_implicit_main">implicit main:</label>
+                    <button title="Run the script below" onClick=${ () => this.do_exec() } class="pushbutton cta_blue" style="margin-right:16px;">exec</button>
+                    <label title="Automatically wrap input into void main() {...} entry point" for="execscript_use_implicit_main">main:</label>
                     <input type="checkbox" id="execscript_use_implicit_main" ref=${this.use_implicit_main_ref} checked />
                     <button title="tas::toggleDump()" onClick=${ () => this.do_toggle_record() } class="pushbutton">tas dump</button>
                     <br/>
-                    <textarea class="as_source" placeholder='// 1 frame @ 30fps = 2 @ 60fps:\ntas::input(2, KEY_A|KEY_B, 0, -32767, 0, 0);\n\nactor::createAndWatch(1, "GameRomHorse");\nactor::createAndWatch(1, "SpObj_LiftGeneratorWing_A_01", \n    Player.pos_x, Player.pos_y - 5, Player.pos_z\n);\nHexDump::assignSlotAbsolute(0, sys::mainOffset(), 0x20, 0x20);' ref=${this.script_text_ref}></textarea>
+                    <textarea class="as_source" placeholder='// check the blue AS📖 button for help \n\n// 1 frame @ 30fps = 2 @ 60fps:\ntas::input(2, KEY_A|KEY_B, 0, -32767, 0, 0);\n\nactor::createAndWatch( \n    1, "SpObj_LiftGeneratorWing_A_01", \n    Player.pos_x, Player.pos_y - 5, Player.pos_z\n);' ref=${this.script_text_ref}></textarea>
                     <textarea placeholder="[tas output]" ref=${this.output_text_ref}></textarea>
                 </div>
             `;
@@ -398,7 +399,96 @@
         }
     };
 
-    class ConnectionToolset extends Component {
+    class AngelScriptNotebook extends Component {
+        constructor() {
+            super();
+            this.state = {
+                index_names: ["builtin", "user"],
+                index_builtin: [],
+                index_user: [],
+                selected_index: "builtin",
+                ui_size: "medium",
+                dialog_filename: "",
+                dialog_contents: "",
+            };
+            this.notebook_select_ref = createRef();
+            this.fetch_notebook_indexes();
+        }
+
+        fetch_notebook_indexes() {
+            this.state.index_names.forEach(n => {
+                fetch(`/angelscript-notebook/index-${n}.json`).then(resp => {
+                    const stateKey = `index_${n}`;
+                    if (resp.status != 200) {
+                        return this.setState({ [stateKey]: [] });
+                    }
+                    resp.json().then(json => {
+                        return this.setState({ [stateKey]: json });
+                    });
+                });
+            });
+        }
+
+        do_index_select = (e) => {
+            this.setState({selected_index: e.currentTarget.value});
+        }
+
+        do_dialog_keydown = (e) => {
+            if (e.key == "Escape" || e.keyCode == 27) {
+                // close
+                e.preventDefault();
+                this.setState({dialog_filename: "", dialog_contents: ""});
+            }
+        }
+
+        do_notebook_open() {
+            const as_filename = this.notebook_select_ref.current.value;
+
+            // toggle closed if this file already shown
+            if (this.state.dialog_contents && this.state.dialog_filename == as_filename) {
+                return this.setState({dialog_filename: "", dialog_contents: ""});
+            }
+
+            fetch(`/angelscript-notebook/${as_filename}`).then(resp => {
+                if (resp.status != 200) { return; }
+                resp.text().then(as_text => {
+                    //console.log(as_text);
+                    this.setState({dialog_filename: as_filename, dialog_contents: as_text})
+                });
+            });
+        }
+
+        toggle_size() {
+            this.setState({ui_size: this.state.ui_size == "medium" ? "small" : "medium"});
+        }
+
+        render(props, state) {
+            const index_names = state.index_names.map(x => html`<option>${x}</option>`);
+            const notebook_names = state[`index_${state.selected_index}`].map(x => html`<option>${x}</option>`);
+
+            const dialog = !(state.dialog_contents) ? "" : html`
+                <dialog onKeyDown=${this.do_dialog_keydown} open>
+                    ${state.dialog_filename}<br />
+                    <textarea autofocus contenteditable="plaintext-only">${state.dialog_contents}</textarea>
+                </dialog>`;
+
+            return html`
+                <div class="angelscript_notebook size_${state.ui_size}">
+                    <button title="Expand/Collapse" onClick=${ () => this.toggle_size() }>${ state.ui_size == "medium" ? "[-]" : "[+]" }</button>
+                    <button class="cta_blue" title="Open/Toggle AngelScript notebook" onClick=${ () => this.do_notebook_open() }>AS📖</button>
+                    <select class="size_small_hidden" onChange=${this.do_index_select}>
+                        ${index_names}
+                    </select>
+                    <select class="size_small_hidden" ref=${this.notebook_select_ref}>
+                        ${notebook_names}
+                    </select>
+                    ${dialog}
+                </div>
+            `;
+        }
+    };
+
+    class ModConnectionUI extends Component {
         constructor() {
             super();
             this.ws_location_ref = createRef();
@@ -472,26 +562,24 @@
                          state.is_polling ? "⌛" : "❌";
             const recents = state.ws_location_recents.map(x => html`<option>${x}</option>`);
             return html`
-                <section class="toolset_connection size_${state.ui_size}">
-                    <div class="ws">
-                        <button title="Expand/Collapse" onClick=${ () => this.toggle_size() }>${ state.ui_size == "medium" ? "[-]" : "[+]" }</button>
-                        <span class="size_small_hidden">Mod Socket</span>${flag}
-                        <input placeholder="ws://127.0.0.1:7072" size="20" ref=${this.ws_location_ref} />
-                        <button title="connect ws" onClick=${ () => this.do_connect_submit() }>go</button>
-                        <div class="size_small_hidden">
-                            <select onChange=${this.do_recent_select}>
-                                <option>[Session Recents]</option>
-                                ${recents}
-                            </select>
-                            <select onChange=${this.do_retry_mode_select}>
-                                <option disabled>[Connect/Retry Mode]</option>
-                                <option value="once">Try once</option>
-                                <option value="poll_once" title="Must 'go' again after disconnect">Poll until success</option>
-                                <option value="poll_forever" title="After first 'go', will always retry even after disconnect">Poll forever</option>
-                            </select>
-                        </div>
+                <div class="ws size_${state.ui_size}">
+                    <button title="Expand/Collapse" onClick=${ () => this.toggle_size() }>${ state.ui_size == "medium" ? "[-]" : "[+]" }</button>
+                    <span class="size_small_hidden">Mod Socket</span>${flag}
+                    <input placeholder="ws://127.0.0.1:7072" size="20" ref=${this.ws_location_ref} />
+                    <button class="cta_green" title="connect ws" onClick=${ () => this.do_connect_submit() }>go</button>
+                    <div class="size_small_hidden">
+                        <select onChange=${this.do_recent_select}>
+                            <option>[Session Recents]</option>
+                            ${recents}
+                        </select>
+                        <select onChange=${this.do_retry_mode_select}>
+                            <option disabled>[Connect/Retry Mode]</option>
+                            <option value="once">Try once</option>
+                            <option value="poll_once" title="Must 'go' again after disconnect">Poll until success</option>
+                            <option value="poll_forever" title="After first 'go', will always retry even after disconnect">Poll forever</option>
+                        </select>
                     </div>
-                </section>
+                </div>
             `;
         }
     };
@@ -517,7 +605,12 @@
                 <${QuickDumps} />
                 <${ExecScript} />
             </section>
-            <${ConnectionToolset} />
+            <section class="toolset_quickcorner">
+                <div class="qc">
+                    <${AngelScriptNotebook} />
+                    <${ModConnectionUI} />
+                </div>
+            </section>
         </div>
         `;
     }

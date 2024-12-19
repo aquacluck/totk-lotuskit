@@ -4,7 +4,8 @@
 - Run the game.
 - Depending on your settings in `romfs/totk_lotuskit/config.json`, the game may hang at bootup and wait for your frontend, or remain offline (still logging to the debug console in emulators), or ~~TODO you may connect later~~
 - Run `frontend/run.py` (you'll need a python installation) and open the web frontend at [http://127.0.0.1:7073](http://127.0.0.1:7073)
-- Connect to an emulator with localhost (default), or enter your switch console ip+port in the bottom right to connect to the mod.
+- Connect to an emulator with localhost (default), or enter your switch console ip+port in the bottom right to connect to the mod. Emulators are easier to get started with.
+- Fool around with things. You'll crash the game a lot and you'll be looking through some sort of code constantly, understand this going in and don't be frustrated :)
 
 ## You should know
 - **This is not a stable product!** Don't expect to leave the mod running during extended play without problems. Don't run the mod on your irreplaceable casual save file.

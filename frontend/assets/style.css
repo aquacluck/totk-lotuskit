@@ -27,14 +27,14 @@ body { margin: 0; }
 @media (dynamic-range: standard) { :root { --color-text: #eee; } }
 @media (dynamic-range: high)     { :root { --color-text: #ccc; } }
 
-body, input, button, select, textarea {
+body, input, button, select, textarea, dialog {
     background-color: #000;
     color: var(--color-text);
     font-family: "Source Code Pro", monospace;
     font-weight: 500;
 }
 
-input, button, select, textarea {
+input, button, select, textarea, dialog {
              border: 2px solid;
              border-color: #666 #222 #222 #666;
   &:hover  { border-color: #666 #333 #333 #666; }
@@ -55,6 +55,9 @@ button.pushbutton {
         pointer-events: none;
     }
 }
+
+button.cta_blue  { background-color: #115588; } /* evoke "script" or "blueprint" */
+button.cta_green { background-color: #117711; } /* evoke "overwhelmingly default/important", use sparingly */
 
 textarea {
     width: 100%;
@@ -122,7 +125,7 @@ textarea {
 /* TODO basic draggable window, settings/toggles bar */
 
 .toolbox_main { position: relative; }
-.toolbox_main > .toolset_connection { right:0px; bottom:0px; }
+.toolbox_main > .toolset_quickcorner { right:0px; bottom:0px; }
 .toolbox_main > .toolset_memutils_controller { right:18px; top:0px; }
 .toolbox_main > .toolset_actor_watcher:nth-of-type(1) { left: 0px; top:   0px; }
 .toolbox_main > .toolset_actor_watcher:nth-of-type(2) { left: 0px; top: 400px; }
@@ -150,19 +153,30 @@ textarea {
 .toolset_memutils_controller > .execscript { grid-area: execscript; }
 
 
-.toolset_connection {
+.toolset_quickcorner {
     position: fixed;
     padding: 8px;
-    border: 1px solid #444;
+    /*border: 1px solid #444;*/
 
     display: inline-grid;
     grid-template-rows: 1fr;
     grid-template-columns: 1fr;
-    grid-template-areas:
-    'ws'
+    grid-template-areas: 'qc';
+    /*'angelscript_notebook' 'ws';*/
 }
-.toolset_connection > .ws { grid-area: ws; }
-
+.toolset_quickcorner > .qc { grid-area: qc; }
+/*.toolset_quickcorner > .angelscript_notebook { grid-area: angelscript_notebook; }*/
+/*.toolset_quickcorner > .ws { grid-area: ws; }*/
+.toolset_quickcorner dialog {
+    position: fixed;
+    top: 0px;
+    left: 0px;
+    filter: drop-shadow(0px 10px 10px #115588);
+    textarea {
+        min-width: 600px;
+        min-height: 400px;
+    }
+}
 
 .toolset_actor_watcher {
     position: absolute;

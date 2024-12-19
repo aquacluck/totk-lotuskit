@@ -32,7 +32,7 @@ namespace lotuskit::util::actor {
             return createSimpleXYZ(actorName, 0, 0, 0);
         }
         auto pos = lotuskit::script::globals::ResidentActors::Player->mPosition;
-        createSimpleXYZ(actorName, pos.x + 10.f, pos.y + 5.f, pos.z + 10.f);
+        createSimpleXYZ(actorName, pos.x, pos.y + 1.f, pos.z - 4.f); // just north
     }
 
     void createSimpleXYZ(const std::string &actorName, float x, float y, float z) {
@@ -63,7 +63,7 @@ namespace lotuskit::util::actor {
             return createAndWatchXYZ(slotIndex, actorName, 0, 0, 0);
         }
         auto pos = lotuskit::script::globals::ResidentActors::Player->mPosition;
-        createAndWatchXYZ(slotIndex, actorName, pos.x + 10.f, pos.y + 5.f, pos.z + 10.f);
+        createAndWatchXYZ(slotIndex, actorName, pos.x, pos.y + 1.f, pos.z - 4.f); // just north
     }
 
     void createAndWatchXYZ(size_t slotIndex, const std::string &actorName, float x, float y, float z) {
