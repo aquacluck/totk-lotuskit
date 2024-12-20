@@ -444,7 +444,7 @@ namespace lotuskit::server {
             // XXX just ignore it? we'll see...
         }
 
-        const char* bindIp = config.value("bindIp", "127.0.0.1").c_str();
+        const char* bindIp = config.value("bindIp", "0.0.0.0").c_str();
         const u16 bindPort = config.value("bindPort", 7072);
         listenAndWaitForFrontend(bindIp, bindPort); // blocking
 
