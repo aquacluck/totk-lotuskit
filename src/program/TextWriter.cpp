@@ -1,10 +1,6 @@
 #include "TextWriter.hpp"
 
 namespace lotuskit {
-    namespace TextWriterHooks {
-        GraphicsModuleCreateArg GetCreateArg::create_arg = {0};
-    } // ns
-
     TextWriterDrawFrame TextWriter::drawFrames[2] = {};
 
     TextWriterDrawNode* TextWriter::appendNewDrawNode(size_t drawList_i) {

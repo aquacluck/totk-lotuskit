@@ -133,59 +133,32 @@ namespace lotuskit {
 
     namespace TextWriterHooks {
         struct GraphicsModuleCreateArg {
-            char _whatever[0xb4c];
-            int value0;
-            char _whatever2[0x10];
-            int value1;
+            u8 _whatever[0xb4c];
+            s32 value0;
+            u8 _whatever2[0x10];
+            s32 value1;
         };
+        using InitDebugDrawers = void(sead::Heap*, GraphicsModuleCreateArg&);
 
-        // used for DebugDrawEnsureFont
-        HOOK_DEFINE_INLINE(GetCreateArg) {
+        HOOK_DEFINE_INLINE(BootupInitDebugDrawersHook) {
             static const ptrdiff_t s_offset = sym::agl::create_arg::offset; // hacks
-            static GraphicsModuleCreateArg create_arg;
             static void Callback(exl::hook::InlineCtx* ctx) {
-                create_arg.value0 = reinterpret_cast<GraphicsModuleCreateArg*>(ctx->X[1])->value0;
-                create_arg.value1 = reinterpret_cast<GraphicsModuleCreateArg*>(ctx->X[1])->value1; // nvnBufferBuilderSetStorage?
+                GraphicsModuleCreateArg arg = {0};
+                arg.value0 = reinterpret_cast<GraphicsModuleCreateArg*>(ctx->X[1])->value0;
+                arg.value1 = reinterpret_cast<GraphicsModuleCreateArg*>(ctx->X[1])->value1; // nvnBufferBuilderSetStorage?
+
+                auto func = reinterpret_cast<InitDebugDrawers*>(exl::util::modules::GetTargetOffset(sym::agl::init_debug_drawers::offset));
+                func(TextWriter::debugDrawerInternalHeap, arg);
             }
         };
 
-        HOOK_DEFINE_INLINE(DebugDrawEnsureFont) {
+        HOOK_DEFINE_INLINE(DebugDrawLayerMaskHook) {
             static const ptrdiff_t s_offset = sym::agl::lyr::RenderDisplay::drawLayer_::ensure_font::offset; // hacks
-
-            inline static nn::os::MutexType* fontMutex = nullptr;
-            inline static void** sDefaultFont = nullptr;
-
-            static void Setup(void) {
-                fontMutex = new nn::os::MutexType();
-                nn::os::InitializeMutex(fontMutex, true, 0);
-
-                sDefaultFont = exl::util::pointer_path::FollowSafe<void*, sym::agl::default_font::offset>(); // hacks
-            }
-
             static void Callback(exl::hook::InlineCtx* ctx) {
                 // ignore other layers
                 auto* layer = (agl::lyr::Layer*)(ctx->X[21]);
                 if (strncmp("Tool 2D", layer->mLayerName.cstr(), 0x20) != 0) {
                     return;
-                }
-
-                // init font if needed
-                if (*sDefaultFont == nullptr) {
-                    nn::os::LockMutex(fontMutex);
-                    if (*sDefaultFont == nullptr) {
-                        Logger::logText("init default font", "/TextWriter");
-
-                        void(*InitDebugDrawers)(sead::Heap*, GraphicsModuleCreateArg&) = nullptr;
-                        void** tmp = (void**)(&InitDebugDrawers);
-                        *tmp = exl::util::pointer_path::FollowSafe<void*, sym::agl::init_debug_drawers::offset>(); // hacks
-                        InitDebugDrawers(TextWriter::debugDrawerInternalHeap, GetCreateArg::create_arg);
-
-                        if (*sDefaultFont == nullptr) {
-                            Logger::logText("init default font fail", "/TextWriter");
-                            return;
-                        }
-                    }
-                    nn::os::UnlockMutex(fontMutex);
                 }
 
                 // allow layer to draw
@@ -199,7 +172,6 @@ namespace lotuskit {
             static void Callback(agl::lyr::Layer* layer, const agl::lyr::RenderInfo& info) {
                 // draw onto the given layer, always Tool 2D -- we would be given many layers if they weren't ignored above
 
-                // XXX do we really need to do this every time? weird its a static. maybe we can hold onto one instead
                 auto* sead_draw_ctx = dynamic_cast<sead::DrawContext*>(info.draw_ctx);
                 sead::TextWriter::setupGraphics(sead_draw_ctx);
                 sead::TextWriter _writer(sead_draw_ctx, info.viewport);

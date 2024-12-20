@@ -171,9 +171,8 @@ HOOK_DEFINE_INLINE(nnMainHook) {
             lotuskit::util::romfs::fileExists("content:/Lib/sead/primitive_renderer/primitive_drawer_nvn_shader.bin")
         );
         if (do_textwriter) {
-            lotuskit::TextWriterHooks::GetCreateArg::Install();
-            lotuskit::TextWriterHooks::DebugDrawEnsureFont::Setup();
-            lotuskit::TextWriterHooks::DebugDrawEnsureFont::Install();
+            lotuskit::TextWriterHooks::BootupInitDebugDrawersHook::Install();
+            lotuskit::TextWriterHooks::DebugDrawLayerMaskHook::Install();
             lotuskit::TextWriterHooks::DebugDrawHook::Install();
         }
 
