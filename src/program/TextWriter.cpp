@@ -67,11 +67,10 @@ namespace lotuskit {
         textPos.x = 1280.0 - 500.0; // mid right ish
         textPos.y = 128.0;
 
-        u64 nowSystemTick = svcGetSystemTick();
         for (size_t i=0; i < TextWriter::MAX_TOASTS; i++) {
             TextWriterToastNode* node = toasts[i].load();
             if (node == nullptr) { continue; }
-            if (nowSystemTick > node->expirySystemTick) {
+            if (node->ttlFrames-- <= 0) {
                 toasts[i].store(nullptr);
                 if (node->outputText != nullptr) {
                     debugDrawerInternalHeap->free(node->outputText);

@@ -40,7 +40,7 @@ namespace lotuskit {
     struct TextWriterToastNode {
         char* outputText;
         TextWriterDrawCallback fn;
-        u64 expirySystemTick;
+        u64 ttlFrames;
     };
 
     class TextWriterExt: public sead::TextWriter {
@@ -87,12 +87,11 @@ namespace lotuskit {
             TextWriterDrawNode* newNode = appendNewDrawNode(drawList_i);
             newNode->fn = fn;
         }
-        inline static void toastf(u64 ttl30, const char* fmt, auto&&... args) {
+        inline static void toastf(u64 ttlFrames, const char* fmt, auto&&... args) {
             TextWriterToastNode* newNode = (TextWriterToastNode*)debugDrawerInternalHeap->alloc(sizeof(TextWriterToastNode));
             newNode->outputText = nullptr;
             newNode->fn = nullptr;
-            // FIXME just store ttl30 and count down frames??? why did i do this?
-            newNode->expirySystemTick = ttl30 * 1000000 + svcGetSystemTick(); // FIXME approximate conversion, doesnt matter much
+            newNode->ttlFrames = ttlFrames;
 
             // set outputText
             char buf[2000]; // TODO std::format etc with proper allocator?
