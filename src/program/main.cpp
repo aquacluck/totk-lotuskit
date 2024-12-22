@@ -1,8 +1,8 @@
 #include <string.h>
 #include "lib.hpp"
-#include "nn/hid.h"
-#include "nn/util.h"
-#include "heap/seadHeap.h"
+#include <nn/hid.h>
+#include <nn/util.h>
+#include <heap/seadHeap.h>
 #include "syms_merged.hpp"
 
 #include "structs/engineActor.hpp"
@@ -11,6 +11,7 @@
 #include "ActorWatcher.hpp"
 #include "HexDump.hpp"
 #include "TextWriter.hpp"
+#include "PrimitiveDrawer.hpp"
 #include "server/WebSocket.hpp"
 #include "script/engine.hpp"
 #include "script/globals.hpp"
@@ -159,7 +160,7 @@ HOOK_DEFINE_INLINE(nnMainHook) {
         ActorRelationAddHook::Install();
         MainGetNpadStates::Install();
 
-        // hooks for textwriter overlay
+        // hooks for textwriter+primitivedrawer overlay
         bool do_textwriter = (
             lotuskit::util::romfs::fileExists("content:/Lib/sead/nvn_font/nvn_font.ntx") &&
             lotuskit::util::romfs::fileExists("content:/Lib/sead/nvn_font/nvn_font_jis1.ntx") &&
@@ -174,6 +175,8 @@ HOOK_DEFINE_INLINE(nnMainHook) {
             lotuskit::TextWriterHooks::BootupInitDebugDrawersHook::Install();
             lotuskit::TextWriterHooks::DebugDrawLayerMaskHook::Install();
             lotuskit::TextWriterHooks::DebugDrawHook::Install();
+            lotuskit::TextWriterHooks::AglRendererDrawHook::Install();
+            lotuskit::PrimitiveImpl::setupStatic();
         }
 
         //InputHelper::initKBM();

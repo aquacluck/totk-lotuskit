@@ -1538,7 +1538,7 @@ public:
 
 class VertexAttribState {
 protected:
-    char reserved[4];
+    char reserved[8];
 
 public:
     VertexAttribState& SetDefaults();
@@ -1562,7 +1562,7 @@ public:
 
 class Program {
 protected:
-    char reserved[192];
+    char reserved[128];
 
     Program(const Program&) = delete;
     const Program& operator=(const Program&) = delete;

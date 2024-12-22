@@ -14,6 +14,7 @@ public:
     void checkDerivedRuntimeTypeInfo(void*) const override;
     void* getRuntimeTypeInfo() const override;
 };
+//static_assert(sizeof(ActorLink) == 0x18); // XXX is this different from engine::actor::ActorLink?
 
 struct EventRequestArg {
     EventRequestArg(const sead::SafeString& event) {

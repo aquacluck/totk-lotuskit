@@ -4,7 +4,7 @@
 
 namespace sead {
 
-class DirectCamera;
+class Camera;
 class Projection;
 class Viewport;
 
@@ -29,7 +29,7 @@ struct RenderInfo {
     Layer* layer;
     int _30;
     int _34;
-    sead::DirectCamera* camera;
+    sead::Camera* camera;
     sead::Projection* projection;
     sead::Viewport* viewport;
     u8 _50;

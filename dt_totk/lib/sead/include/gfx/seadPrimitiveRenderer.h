@@ -140,10 +140,11 @@ class PrimitiveRendererBase
 public:
     virtual void prepareFromBinaryImpl(Heap* heap, const void* bin_data, u32 bin_size) = 0;
     virtual void prepareImpl(Heap* heap, const SafeString& path) = 0;
+    virtual void m3() = 0;
     virtual void setCameraImpl(const Camera& camera) = 0;
     virtual void setProjectionImpl(const Projection& projection) = 0;
-    virtual void beginImpl() = 0;
-    virtual void endImpl() = 0;
+    virtual void beginImpl(DrawContext*, const Matrix34f&, const Matrix44f&) = 0;
+    virtual void endImpl(DrawContext*) = 0;
     virtual void drawQuadImpl(const Matrix34f& model_mtx, const Color4f& colorL,
                               const Color4f& colorR) = 0;
     virtual void drawQuadImpl(const Matrix34f& model_mtx, const Texture& texture,
@@ -223,6 +224,8 @@ public:
     void drawCylinder32(const Vector3f&, float, float, const Color4f&);
 
     void drawAxis(const Vector3f&, float);
+
+    PrimitiveDrawer* getPrimitiveDrawer() { return &mDrawer; }
 
 private:
     void doPrepare_(Heap* heap);

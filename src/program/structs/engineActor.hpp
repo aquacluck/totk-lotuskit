@@ -2,6 +2,7 @@
 
 #include "structs/bbBlackboard.hpp"
 
+#include <cstddef>
 #include <container/seadPtrArray.h>
 #include <container/seadRingBuffer.h>
 #include <math/seadBoundBox.h>
@@ -99,7 +100,7 @@ public:
     void* _190;
     void* _198;
     void* _1a0;
-    void* mLinkData;
+    void* mLinkData; // XXX BaseProcLinkData?
     u32 mRefCount; // atomic
     CreateWatcherRef mWatcher;
     sead::FixedRingBuffer<u16, TOTK_VERSION == 100 ? 29 : 33> mDependencyRing;
@@ -122,7 +123,7 @@ public:
     virtual ~ActorBaseLink() { ActorLinkDtor(this); };
 
 private:
-    void* mLinkData;
+    void* mLinkData; // XXX BaseProcLinkData?
     BaseProc::BaseProcId mID = BaseProc::cInvalidId;
     u8 _14;
     u8 _15;
@@ -177,10 +178,10 @@ public:
     sead::Vector3f mPosition;
     sead::Matrix33f mRotation;
     sead::Vector3f mScale;
-    sead::Vector3f mLastPosition;
-    sead::Matrix33f mLastRotation;
-    sead::Vector3f mLastLinearVelocity;
-    sead::Vector3f mLastAngularVelocity;
+    sead::Vector3f mLastPosition; // XXX "next"?
+    sead::Matrix33f mLastRotation; // XXX "next"?
+    sead::Vector3f mLastLinearVelocity; // XXX still "last"?
+    sead::Vector3f mLastAngularVelocity; // XXX still "last"?
     float _338;
     float _33c;
     float _340;
@@ -207,8 +208,14 @@ public:
     LoadCache mTLS;
     u8 _4b0;
     u8 _4b1;
+
+    sead::Matrix34f getTransform() const {
+        return sead::Matrix34f(mRotation, mPosition);
+    }
+
 };
-static_assert(sizeof(ActorBase) == (TOTK_VERSION == 100 ? 0x4b0 : 0x4b8));
+static_assert(sizeof(ActorBase) == (TOTK_VERSION == 100 ? 0x4b0 : 0x4b8)); // XXX
+static_assert(offsetof(ActorBase, mAABB) == (TOTK_VERSION == 100 ? 0x348 : 0x350)); // XXX
 
 class ActorMgr {
 public:

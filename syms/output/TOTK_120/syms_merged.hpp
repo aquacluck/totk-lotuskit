@@ -1,4 +1,5 @@
 #pragma once
+#include <cstddef>
 
 
 
@@ -23,6 +24,13 @@ namespace sym::agl::lyr::Layer {
 class drawDebugInfo_ {
     public:
     inline static constexpr ptrdiff_t offset = 0x007d2ae4;
+};
+}
+
+namespace sym::agl::lyr::Renderer {
+class draw {
+    public:
+    inline static constexpr ptrdiff_t offset = 0x00000000;
 };
 }
 
@@ -98,6 +106,132 @@ class dtor {
 
 namespace sym::sead::GlobalRandom {
 class sInstance {
+    public:
+    inline static constexpr ptrdiff_t offset = 0x00000000;
+};
+}
+
+namespace sym::sead::PrimitiveDrawer {
+class drawDisk32 {
+    public:
+    inline static constexpr ptrdiff_t offset = 0x00000000;
+};
+}
+
+namespace sym::sead::PrimitiveDrawer {
+class setDrawCtx {
+    public:
+    inline static constexpr ptrdiff_t offset = 0x00000000;
+};
+}
+
+namespace sym::sead::PrimitiveDrawer {
+class setModelMtx {
+    public:
+    inline static constexpr ptrdiff_t offset = 0x00000000;
+};
+}
+
+namespace sym::sead::PrimitiveDrawer {
+class drawCircle32 {
+    public:
+    inline static constexpr ptrdiff_t offset = 0x00000000;
+};
+}
+
+namespace sym::sead::PrimitiveDrawer {
+class drawWireCube {
+    public:
+    inline static constexpr ptrdiff_t offset = 0x00000000;
+};
+}
+
+namespace sym::sead::PrimitiveDrawer {
+class drawSphere4x8 {
+    public:
+    inline static constexpr ptrdiff_t offset = 0x00000000;
+};
+}
+
+namespace sym::sead::PrimitiveDrawer {
+class setProjection {
+    public:
+    inline static constexpr ptrdiff_t offset = 0x00000000;
+};
+}
+
+namespace sym::sead::PrimitiveDrawer {
+class drawCylinder16 {
+    public:
+    inline static constexpr ptrdiff_t offset = 0x00000000;
+};
+}
+
+namespace sym::sead::PrimitiveDrawer {
+class drawCylinder32 {
+    public:
+    inline static constexpr ptrdiff_t offset = 0x00000000;
+};
+}
+
+namespace sym::sead::PrimitiveDrawer {
+class drawSphere8x16 {
+    public:
+    inline static constexpr ptrdiff_t offset = 0x00000000;
+};
+}
+
+namespace sym::sead::PrimitiveDrawer {
+class end {
+    public:
+    inline static constexpr ptrdiff_t offset = 0x00000000;
+};
+}
+
+namespace sym::sead::PrimitiveDrawer {
+class begin {
+    public:
+    inline static constexpr ptrdiff_t offset = 0x00000000;
+};
+}
+
+namespace sym::sead::PrimitiveDrawer {
+class drawBox {
+    public:
+    inline static constexpr ptrdiff_t offset = 0x00000000;
+};
+}
+
+namespace sym::sead::PrimitiveDrawer {
+class drawLine {
+    public:
+    inline static constexpr ptrdiff_t offset = 0x00000000;
+};
+}
+
+namespace sym::sead::PrimitiveDrawer {
+class drawQuad {
+    public:
+    inline static constexpr ptrdiff_t offset = 0x00000000;
+};
+}
+
+namespace sym::sead::PrimitiveDrawer {
+class drawQuad2 {
+    public:
+    inline static constexpr ptrdiff_t offset = 0x00000000;
+};
+}
+
+namespace sym::sead::PrimitiveDrawer {
+class setCamera {
+    public:
+    inline static constexpr ptrdiff_t offset = 0x00000000;
+};
+}
+
+namespace sym::sead::PrimitiveRenderer {
+class instance {
     public:
     inline static constexpr ptrdiff_t offset = 0x00000000;
 };

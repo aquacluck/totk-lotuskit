@@ -1,11 +1,11 @@
 #include "TextWriter.hpp"
 
 namespace lotuskit {
-    TextWriterDrawFrame TextWriter::drawFrames[2] = {};
+    DebugDrawFrame TextWriter::drawFrames[2] = {};
 
     TextWriterDrawNode* TextWriter::appendNewDrawNode(size_t drawList_i) {
         // alloc
-        TextWriterDrawFrame* frame = currentDrawFrame;
+        DebugDrawFrame* frame = currentDrawFrame;
         TextWriterDrawNode* newNode = (TextWriterDrawNode*)frame->heap->alloc(sizeof(TextWriterDrawNode));
         newNode->outputText = nullptr;
         newNode->fn = nullptr;
@@ -27,11 +27,9 @@ namespace lotuskit {
     }
 
     void TextWriter::drawFrame(TextWriterExt* writer) {
-        TextWriterDrawFrame* frame = currentDrawFrame;
-        currentDrawFrame = currentDrawFrame == drawFrames ? &(drawFrames[1]) : drawFrames; // swap any further calls to the other buffer
-        // XXX is it possible an enqueue callsite allocs then gets stalled long enough to write freed ptrs to an emptied TextWriterDrawFrame list?
+        DebugDrawFrame* frame = currentDrawFrame;
 
-        for (size_t i=0; i < TextWriterDrawFrame::MAX_DRAWLISTS; i++) {
+        for (size_t i=0; i < DebugDrawFrame::MAX_DRAWLISTS; i++) {
             TextWriterDrawNode* node = frame->drawLists[i].load();
             if (node == nullptr) { continue; }
 
@@ -43,7 +41,7 @@ namespace lotuskit {
             textPos.y = 2.0;
 
             do {
-                if (node->fn) {
+                if (node->fn != nullptr) {
                     node->fn(writer, &textPos);
                 }
                 if (node->outputText != nullptr) {
@@ -53,10 +51,7 @@ namespace lotuskit {
 
             } while (node != nullptr);
 
-            frame->drawLists[i].store(nullptr);
         }
-
-        frame->heap->freeAll();
     }
 
     void TextWriter::drawToasts(TextWriterExt* writer) {
@@ -75,15 +70,55 @@ namespace lotuskit {
                 if (node->outputText != nullptr) {
                     debugDrawerInternalHeap->free(node->outputText);
                 }
+                //if (node->primCallType != 0 && node->primCallArgs != nullptr) {
+                //    debugDrawerInternalHeap->free(node->primCallArgs);
+                //}
                 debugDrawerInternalHeap->free(node);
                 continue;
             }
-            if (node->fn) {
+            if (node->fn != nullptr) {
                 node->fn(writer, &textPos);
             }
             if (node->outputText != nullptr) {
                 writer->pprintf(textPos, node->outputText);
             }
+            //if (node->primCallType != 0) {
+            //    PrimitiveImpl::dispatch(node->primCallType, node->primCallArgs);
+            //}
+        }
+    }
+
+    TextWriterToastNode* TextWriter::appendNewToastNode(u64 ttlFrames) {
+        TextWriterToastNode* newNode = (TextWriterToastNode*)debugDrawerInternalHeap->alloc(sizeof(TextWriterToastNode));
+        newNode->outputText = nullptr;
+        newNode->fn = nullptr;
+        //newNode->primCallType = 0;
+        //newNode->primCallArgs = nullptr;
+        newNode->ttlFrames = ttlFrames;
+
+        TextWriterToastNode* cmpNode;
+        for(size_t i=0; i < MAX_TOASTS; i++) {
+            //if (toasts[i] == nullptr) { toasts[i] = newNode; }
+            cmpNode = nullptr; // ensure null at time of write
+            if (toasts[i].compare_exchange_weak(cmpNode, newNode)) { return newNode; } // success -- inserted
+        }
+
+        // fail
+        Logger::logText("[ERROR] toast overflow", "/TextWriter");
+        return nullptr;
+    }
+
+    void TextWriter::swapFrame() {
+        DebugDrawFrame* frame = currentDrawFrame;
+
+        // swap any further calls to the other buffer
+        currentDrawFrame = currentDrawFrame == drawFrames ? &(drawFrames[1]) : drawFrames;
+
+        frame->heap->freeAll();
+        for (size_t i=0; i < DebugDrawFrame::MAX_DRAWLISTS; i++) {
+            // ensure lists are empty even if the contents were not actually drawn
+            frame->drawLists[i].store(nullptr);
+            frame->drawLists3d[i].store(nullptr);
         }
     }
 

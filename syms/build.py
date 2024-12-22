@@ -22,6 +22,7 @@ def run_symbol_def_imports():
     import agl.agl_hacks
     import agl.lyr.aglLayer
 
+    import sead.gfx.seadPrimitiveRenderer
     import sead.gfx.seadTextWriter
     import sead.random.seadGlobalRandom
     import sead.random.seadRandom
@@ -51,7 +52,7 @@ class TrashCommands:
         version_str = GameVersion.to_str(version)
         pathlib.Path(f"output/{version_str}").mkdir(parents=True, exist_ok=True)
         with open(f"output/{version_str}/syms_merged.hpp", "w") as hppfile, open(f"output/{version_str}/syms_merged.ld", "w") as ldfile:
-            hppfile.write(f'#pragma once\n\n') #hppfile.write(f'#pragma once\n#include "lib/json.hpp"\nusing json = nlohmann::json;\n\n')
+            hppfile.write(f'#pragma once\n#include <cstddef>\n\n') #hppfile.write(f'#pragma once\n#include "lib/json.hpp"\nusing json = nlohmann::json;\n\n')
             ldfile.write(f"__game_version = {version}; /* {version_str} */")
 
             for mod in NSOModule.ALL_MODULES:

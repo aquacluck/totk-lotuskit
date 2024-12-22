@@ -26,8 +26,24 @@ public:
     virtual void doUpdateDeviceMatrix(Matrix44f*, const Matrix44f&, Graphics::DevicePosture) const;
     virtual void doScreenPosToCameraPosTo(Vector3f*, const Vector3f&) const = 0;
 
-    void updateMatrixImpl_() const;
-    const Matrix44f& getDeviceProjectionMatrix() const;
+    void updateMatrixImpl_() const {
+        if (mDirty) {
+            doUpdateMatrix(const_cast<Matrix44f*>(&mMatrix));
+            mDirty = false;
+
+            mDeviceDirty = true;
+            doUpdateDeviceMatrix(const_cast<Matrix44f*>(&mDeviceMatrix), mMatrix, mDevicePosture);
+            mDeviceDirty = false;
+        }
+        else if (mDeviceDirty) {
+            doUpdateDeviceMatrix(const_cast<Matrix44f*>(&mDeviceMatrix), mMatrix, mDevicePosture);
+            mDeviceDirty = false;
+        }
+    }
+    const Matrix44f& getDeviceProjectionMatrix() const {
+        updateMatrixImpl_();
+        return mDeviceMatrix;
+    }
 
 private:
     mutable bool mDirty;

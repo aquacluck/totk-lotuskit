@@ -44,3 +44,8 @@ ActorWatcher::assignSlot(1, somewhere);
 ActorWatcher::assignSlotPreActor(1, somewhere);
 ActorWatcher::clearSlot(1);
 
+// PrimitiveDrawer settings
+ActorWatcher::doDrawAABB(0, true);
+ActorWatcher::doDrawPos(0, false);
+ActorWatcher::doDrawVel(0, false);
+

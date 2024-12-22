@@ -12,6 +12,7 @@ EXKING("_ZN3aglL10create_argE", {
 }, SymbolType.INSTRUCTION)
 
 # namespace agl::lyr::RenderDisplay::drawLayer_ { static uintptr_t ensure_font; }
+# FIXME this does not ensure a font anymore, layer mask
 EXKING("_ZN3agl3lyr13RenderDisplay10drawLayer_L11ensure_fontE", {
     TOTK_100: 0x00857f28,
     TOTK_110: 0x0083f5b8,
@@ -20,6 +21,13 @@ EXKING("_ZN3agl3lyr13RenderDisplay10drawLayer_L11ensure_fontE", {
     TOTK_120: 0x007d1fb0,
     TOTK_121: 0x00818340,
 }, SymbolType.INSTRUCTION)
+
+# namespace agl::lyr::Renderer { static uintptr_t draw; } XXX trampoline only
+EXKING("_ZN3agl3lyr8RendererL4drawE", {
+    TOTK_100: 0x00b983b4,
+    TOTK_110: 0x00be8138,
+    TOTK_121: 0x00bc81ac,
+})
 
 # namespace agl { static uintptr_t default_font; }
 EXKING("_ZN3aglL12default_fontE", {
