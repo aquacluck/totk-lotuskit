@@ -6,37 +6,18 @@ on:
     - main
   workflow_dispatch:
 
-env:
-  DEVKITPRO: /opt/devkitpro
-  DEVKITARM: /opt/devkitpro/devkitARM
-  DEVKITPPC: /opt/devkitpro/devkitPPC
-  LANG: en_US.UTF-8
-
 jobs:
   Compile:
     runs-on: ubuntu-24.04
-    container: archlinux/archlinux:base-devel
+    container: devkitpro/devkita64:latest # debian + dkp-pacman image
 
     steps:
     - name: install github releaser
       run: |
-        sudo pacman -Syu --noconfirm
-        sudo pacman -S git zip wget --noconfirm # thats right, git is not in base-devel
         wget -q https://github.com/cli/cli/releases/download/v2.54.0/gh_2.54.0_linux_amd64.tar.gz
         tar xf gh_2.54.0_linux_amd64.tar.gz
         mv ./gh_2.54.0_linux_amd64/bin/gh /__w/gh # idk
         rm -rf ./gh_2.54.0_linux_amd64 gh_2.54.0_linux_amd64.tar.gz
-
-    - name: install devkitpro
-      run: |
-        sudo pacman-key --init
-        sudo pacman-key --recv BC26F752D25B92CE272E0F44F7FD5492264BB9D0 --keyserver keyserver.ubuntu.com
-        sudo pacman-key --lsign BC26F752D25B92CE272E0F44F7FD5492264BB9D0
-        sudo pacman -U https://pkg.devkitpro.org/devkitpro-keyring.pkg.tar.zst --noconfirm
-        echo -e "[dkp-libs]\nServer = https://pkg.devkitpro.org/packages\n[dkp-linux]\nServer = https://pkg.devkitpro.org/packages/linux/\$arch/" >> /etc/pacman.conf
-        sudo pacman -Syu --noconfirm
-        sudo pacman -S switch-dev --noconfirm
-        echo /opt/devkitpro/tools/bin >> $GITHUB_PATH
 
     - name: Checkout repo
       uses: actions/checkout@v4
