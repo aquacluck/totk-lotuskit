@@ -284,18 +284,14 @@
     class ActorWatcher extends Component {
         constructor() {
             super();
-            this.reset_state();
-            this.bumper_increment_ref = createRef();
-            this.savestate_textbox_ref = createRef();
-        }
-
-        reset_state() {
             this.setState({
-                actorName: "[none]",
+                actorName: "[null]",
                 actorPtr: 0,
                 pos: [0, 0, 0],
                 vel: [0, 0, 0],
             });
+            this.bumper_increment_ref = createRef();
+            this.savestate_textbox_ref = createRef();
         }
 
         componentDidMount() {
@@ -303,9 +299,6 @@
         }
 
         clear_slot(slot_i) {
-            //FIXME ws log+subscribe a clear event for this instead
-            // mod is always sending updates, so this'll get repopulated if cleared immediately
-            window.setTimeout(this.reset_state.bind(this), 500);
             WSTransport.send({execScriptString: wrap_implicit_main(`ActorWatcher::clearSlot(${slot_i});`)});
         }
 
@@ -335,24 +328,58 @@
             this.do_paste_coords(slot_i, pos);
         }
 
+        do_send_toggle(slot_i, funcname, value) {
+            WSTransport.send({execScriptString: wrap_implicit_main(`ActorWatcher::${funcname}(${slot_i}, ${value});`)});
+        }
+
         dump_pos_to_savestate_textbox() {
             let v = this.state.pos.map(x => makeLegibleFloat(x));
             this.savestate_textbox_ref.current.value = `${v[0]}, ${v[1]}, ${v[2]}`;
         }
 
-        render(props, {actorName, actorPtr, pos, vel}) {
+        render(props, state) {
+            const {actorName, actorPtr, pos, vel} = state;
+            const i = this.props.slot_i;
             const ptr = "0x" + actorPtr.toString(16).padStart(16, "0");
             const dummy = [0, 0, 0, 0]; // XXX
 
             return html`
                 <section class="toolset_actor_watcher">
-                    <div class="actor_selector_current">${actorName}(${ptr})</div>
+                    <div class="actor_selector_current">
+                        ${actorName}(${ptr})
+                        <div class="actor_toggles">
+                            View:
+                            <label title="ActorWatcher::doWsLog(${i}, checked)" class="faketoggle doWsLog" for="aw${i}_doWsLog">
+                                <input type="checkbox" id="aw${i}_doWsLog" checked=${state.doWsLog} onChange=${ e => this.do_send_toggle(i, "doWsLog", e.target.checked) } />
+                                <span class="fakebutton pushbutton">ws</span>
+                            </label>
+                            <label title="ActorWatcher::doTextWriter(${i}, checked)" class="faketoggle doTextWriter" for="aw${i}_doTextWriter">
+                                <input type="checkbox" id="aw${i}_doTextWriter" checked=${state.doTextWriter} onChange=${ e => this.do_send_toggle(i, "doTextWriter", e.target.checked) } />
+                                <span class="fakebutton pushbutton">txt</span>
+                            </label>
+                            <label title="ActorWatcher::doDrawPos(${i}, checked)" class="faketoggle doDrawPos" for="aw${i}_doDrawPos">
+                                <input type="checkbox" id="aw${i}_doDrawPos" checked=${state.doDrawPos} onChange=${ e => this.do_send_toggle(i, "doDrawPos", e.target.checked) } />
+                                <span class="fakebutton pushbutton">pos</span>
+                            </label>
+                            <label title="ActorWatcher::doDrawAABB(${i}, checked)" class="faketoggle doDrawAABB" for="aw${i}_doDrawAABB">
+                                <input type="checkbox" id="aw${i}_doDrawAABB" checked=${state.doDrawAABB} onChange=${ e => this.do_send_toggle(i, "doDrawAABB", e.target.checked) } />
+                                <span class="fakebutton pushbutton">AABB</span>
+                            </label>
+                            <label title="ActorWatcher::doDrawVel(${i}, checked)" class="faketoggle doDrawVel" for="aw${i}_doDrawVel">
+                                <input type="checkbox" id="aw${i}_doDrawVel" checked=${state.doDrawVel} onChange=${ e => this.do_send_toggle(i, "doDrawVel", e.target.checked) } />
+                                <span class="fakebutton pushbutton">vel</span>
+                            </label>
+                        </div>
+                    </div>
+
                     <div class="actor_selector_options">
                         Select:
-                        <button onClick=${ () => this.clear_slot(this.props.slot_i) } class="pushbutton">null</button>
+                        <button title="ActorWatcher::clearSlot(${i})" onClick=${ () => this.clear_slot(i) } class="pushbutton selectNull">null</button>
                         <!-- TODO on any next spawn, on specific actor's next relation, ... -->
                         <!--<input type="number" placeholder="0" size="2" min="0" max="3" size=2 />-->
                     </div>
+
+
                     <div class="actor_pos32">
                         <${ReadoutVec3} label="pos32\xa0\xa0\xa0\xa0\xa0\xa0" value=${pos} vecComponentPattern=${VecComponentPatterns.XYZ} />
                     </div>
@@ -385,19 +412,19 @@
                         <span>Move by <input type="number" placeholder="10" size="4" min="0" max="10000" step="any" ref=${this.bumper_increment_ref} />m:</span>
                         <br />
                         <br />
-                        <button title="y-" style="color: var(--vec-green);" onClick=${ () => this.do_relative_move(this.props.slot_i, "d") } class="pushbutton">down</button>
-                        <button title="z-" style="color: var(--vec-blue);"  onClick=${ () => this.do_relative_move(this.props.slot_i, "n") } class="pushbutton">north</button>
-                        <button title="y+" style="color: var(--vec-green);" onClick=${ () => this.do_relative_move(this.props.slot_i, "u") } class="pushbutton">\xa0up\xa0</button>
+                        <button title="y-" style="color: var(--vec-green);" onClick=${ () => this.do_relative_move(i, "d") } class="pushbutton">down</button>
+                        <button title="z-" style="color: var(--vec-blue);"  onClick=${ () => this.do_relative_move(i, "n") } class="pushbutton">north</button>
+                        <button title="y+" style="color: var(--vec-green);" onClick=${ () => this.do_relative_move(i, "u") } class="pushbutton">\xa0up\xa0</button>
                         <br />
-                        <button title="x-" style="color: var(--vec-red);"   onClick=${ () => this.do_relative_move(this.props.slot_i, "w") } class="pushbutton">west</button>
-                        <button title="z+" style="color: var(--vec-blue);"  onClick=${ () => this.do_relative_move(this.props.slot_i, "s") } class="pushbutton">south</button>
-                        <button title="x+" style="color: var(--vec-red);"   onClick=${ () => this.do_relative_move(this.props.slot_i, "e") } class="pushbutton">east</button>
+                        <button title="x-" style="color: var(--vec-red);"   onClick=${ () => this.do_relative_move(i, "w") } class="pushbutton">west</button>
+                        <button title="z+" style="color: var(--vec-blue);"  onClick=${ () => this.do_relative_move(i, "s") } class="pushbutton">south</button>
+                        <button title="x+" style="color: var(--vec-red);"   onClick=${ () => this.do_relative_move(i, "e") } class="pushbutton">east</button>
                     </div>
 
                     <div class="savestate_slot_actions">
                         Position:
                         <button class="pushbutton" onClick=${() => this.dump_pos_to_savestate_textbox() }>dump</button>
-                        <button class="pushbutton" onClick=${() => this.do_absolute_move(this.props.slot_i)}>assign</button>
+                        <button class="pushbutton" onClick=${() => this.do_absolute_move(i)}>assign</button>
                         <br />
                         <input ref=${this.savestate_textbox_ref} size=40 />
                     </div>
