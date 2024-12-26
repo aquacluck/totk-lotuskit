@@ -250,8 +250,8 @@ textarea {
 }
 
 .toolset_actor_watcher .faketoggle.doWsLog :not(:checked) ~ .fakebutton {
-    color: #666;
-    border-color: #333 #333 #333 #333;
+    color: #222;
+    border-color: #222 #222 #222 #222;
     &:hover { color: inherit; }
 }
 .toolset_actor_watcher .faketoggle.doWsLog :checked ~ .fakebutton {
@@ -260,8 +260,8 @@ textarea {
 }
 
 .toolset_actor_watcher .faketoggle.doTextWriter :not(:checked) ~ .fakebutton {
-    color: #666;
-    border-color: #333 #333 #333 #333;
+    color: #222;
+    border-color: #222 #222 #222 #222;
     &:hover { color: inherit; }
 }
 .toolset_actor_watcher .faketoggle.doTextWriter :checked ~ .fakebutton {
@@ -273,46 +273,49 @@ textarea {
     color: hsl(var(--hue-recall) 15% 70%);
     &:hover {
         border-radius: 100%;
-        color: hsl(var(--hue-recall) 85% 70%);
+        color: hsl(var(--hue-recall) 45% 70%);
         border-color: hsl(var(--hue-recall) 30% 30%);
     }
 }
 .toolset_actor_watcher .faketoggle.doDrawPos :checked ~ .fakebutton {
-    background: hsl(var(--hue-recall) 85% 30%);
+    background: hsl(var(--hue-recall) 45% 30%);
+    border-color: #222 #666 #666 #222;
     border-radius: 100%;
 }
 
 .toolset_actor_watcher .faketoggle.doDrawAABB :not(:checked) ~ .fakebutton {
     color: hsl(var(--hue-recall) 15% 70%);
     &:hover {
-        color: hsl(var(--hue-recall) 85% 70%);
+        color: hsl(var(--hue-recall) 45% 70%);
         border-color: hsl(var(--hue-recall) 30% 30%);
     }
 }
 .toolset_actor_watcher .faketoggle.doDrawAABB :checked ~ .fakebutton {
-    border-color: hsl(var(--hue-recall) 85% 30%);
+    border-color: hsl(var(--hue-recall) 45% 30%);
 }
 
 .toolset_actor_watcher .faketoggle.doDrawVel :not(:checked) ~ .fakebutton {
     color: hsl(var(--hue-motion) 15% 70%);
     &:hover {
-        color: hsl(var(--hue-motion) 85% 70%);
+        color: hsl(var(--hue-motion) 45% 70%);
         border-color: hsl(var(--hue-motion) 30% 30%);
     }
 }
 .toolset_actor_watcher .faketoggle.doDrawVel :checked ~ .fakebutton {
-    background: hsl(var(--hue-motion) 85% 30%);
+    background: hsl(var(--hue-motion) 45% 30%);
+    border-color: #222 #666 #666 #222;
 }
 .toolset_actor_watcher .faketoggle.doDrawAngVel :not(:checked) ~ .fakebutton {
     color: hsl(var(--hue-motion) 15% 70%);
     &:hover {
         border-radius: 100%;
-        color: hsl(var(--hue-motion) 85% 70%);
+        color: hsl(var(--hue-motion) 45% 70%);
         border-color: hsl(var(--hue-motion) 30% 30%);
     }
 }
 .toolset_actor_watcher .faketoggle.doDrawAngVel :checked ~ .fakebutton {
-    background: hsl(var(--hue-motion) 85% 30%);
+    background: hsl(var(--hue-motion) 45% 30%);
+    border-color: #222 #666 #666 #222;
     border-radius: 100%;
 }
 
