@@ -176,6 +176,8 @@ namespace lotuskit {
 
                 if (slot.actor == nullptr) { continue; }
 
+                const auto rot = slot.actor->mRotation;
+
                 if (slot.doWsLog) {
                     char ns[16] = "/ActorWatcher/i";
                     ns[14] = '0' + i; // replace i
@@ -183,12 +185,12 @@ namespace lotuskit {
                         {"actorName", slot.actor->mName.cstr()},
                         {"actorPtr", (u64)slot.actor},
                         {"pos", json::array({ slot.actor->mPosition.x, slot.actor->mPosition.y, slot.actor->mPosition.z })},
-                        {"vel", json::array({ slot.actor->mLastLinearVelocity.x, slot.actor->mLastLinearVelocity.y, slot.actor->mLastLinearVelocity.z })}
+                        {"vel", json::array({ slot.actor->mLastLinearVelocity.x, slot.actor->mLastLinearVelocity.y, slot.actor->mLastLinearVelocity.z })},
+                        {"rot", json::array({ rot.m[0][0], rot.m[0][1], rot.m[0][2], rot.m[1][0], rot.m[1][1], rot.m[1][2], rot.m[2][0], rot.m[2][1], rot.m[2][2] })}
                     }), ns, false, false); // noblock, no debug log
                 }
 
                 if (slot.doTextWriter) {
-                    const auto rot = slot.actor->mRotation;
                     lotuskit::TextWriter::printf(
                         0, "%s(%p) \npos: %f, %f, %f \nrot: [%f, %f, %f, %f, %f, %f, %f, %f, %f] \nvel: %f, %f, %f \nangvel: %f %f %f \n\n",
                         slot.actor->mName.cstr(), slot.actor,

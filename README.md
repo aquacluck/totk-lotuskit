@@ -17,6 +17,7 @@
 - Bug: Polling options in the frontend aren't perfect -- if the browser tries to connect right as the mod is opening its socket, the frontend can get stuck unable to connect.
 - Bug: Don't leave ActorWatchers targeting dead/dying actors while you go through loading screens (especially title+shrine loads), this will eventually crash. Clear the watcher or target a resident actor like Player to avoid this.
 - Bug: Script size is limited to ~8KB and crashes on overflow
+- Bug: Actors may fail to spawn in some scripts with ifs/branches?
 - Bug: tas::input scripts sometimes (first time only? maybe playback injection doesnt wait for AS engine?) behave strangely and fail to clear the injected input. Usually you can then run a new input and everything is fine.
 - The mod version must match your game version, be sure to switch them together. Separate builds simplify certain version interop problems like differing structs or register usage.
 - By default the frontend is served on 7073 because it looks sort of like "TOTK". The mod's WebSocket server is on 7072 because it's like 2 is the sequel.

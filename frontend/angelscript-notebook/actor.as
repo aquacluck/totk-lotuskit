@@ -28,6 +28,11 @@ actor::createAndWatch(
     2, "SpObj_LiftGeneratorWing_A_01",
     Player.pos_x, Player.pos_y - 5, Player.pos_z
 );
+// or i do this a lot and it smacks Link hehe
+actor::createAndWatch(
+    1, "SpObj_LiftGeneratorWing_A_01",
+    Player.pos_x, Player.pos_y + 5, Player.pos_z
+);
 
 // set position/rotation all at once
 honse1.setPos(123, 456.0, 789.5);

@@ -289,9 +289,11 @@
                 actorPtr: 0,
                 pos: [0, 0, 0],
                 vel: [0, 0, 0],
+                rot: [0,0,0, 0,0,0, 0,0,0], // TODO is it even worth rendering this? so noisy
             });
             this.bumper_increment_ref = createRef();
-            this.savestate_textbox_ref = createRef();
+            this.savestate_textbox_pos_ref = createRef();
+            this.savestate_textbox_rot_ref = createRef();
         }
 
         componentDidMount() {
@@ -306,8 +308,15 @@
             WSTransport.send({execScriptString: wrap_implicit_main(`ActorWatcher::clearSlot(${slot_i});`)});
         }
 
-        do_paste_coords(slot_i, pos) {
-            WSTransport.send({execScriptString: wrap_implicit_main(`ActorWatcher::get(${slot_i}).setPos(${pos[0]}, ${pos[1]}, ${pos[2]});`)});
+        do_paste_coords(slot_i, pos, rot) {
+            let r = rot;
+            if (pos && r) {
+                WSTransport.send({execScriptString: wrap_implicit_main(`ActorWatcher::get(${slot_i}).setPosRot(${pos[0]}, ${pos[1]}, ${pos[2]}, ${r[0]}, ${r[1]}, ${r[2]}, ${r[3]}, ${r[4]}, ${r[5]}, ${r[6]}, ${r[7]}, ${r[8]});`)});
+            } else if (pos) {
+                WSTransport.send({execScriptString: wrap_implicit_main(`ActorWatcher::get(${slot_i}).setPos(${pos[0]}, ${pos[1]}, ${pos[2]});`)});
+            } else if (r) {
+                WSTransport.send({execScriptString: wrap_implicit_main(`ActorWatcher::get(${slot_i}).setRot(${r[0]}, ${r[1]}, ${r[2]}, ${r[3]}, ${r[4]}, ${r[5]}, ${r[6]}, ${r[7]}, ${r[8]});`)});
+            }
         }
 
         do_relative_move(slot_i, aaDirection) {
@@ -325,11 +334,14 @@
         }
 
         do_absolute_move(slot_i) {
-            let pos = this.savestate_textbox_ref.current.value;
+            let pos = this.savestate_textbox_pos_ref.current.value;
             pos = pos.replaceAll(",", "").split(" ").filter(x => x !== "").map(x => parseFloat(x));
+            let rot = this.savestate_textbox_rot_ref.current.value;
+            rot = rot.replaceAll(",", "").split(" ").filter(x => x !== "").map(x => parseFloat(x));
+
             // TODO accept+convert ui coords with a flag
             // XXX generally ignoring physics coords + height offset?
-            this.do_paste_coords(slot_i, pos);
+            this.do_paste_coords(slot_i, pos, rot);
         }
 
         do_send_toggle(slot_i, funcname, value) {
@@ -338,7 +350,9 @@
 
         dump_pos_to_savestate_textbox() {
             let v = this.state.pos.map(x => makeLegibleFloat(x));
-            this.savestate_textbox_ref.current.value = `${v[0]}, ${v[1]}, ${v[2]}`;
+            this.savestate_textbox_pos_ref.current.value = `${v[0]}, ${v[1]}, ${v[2]}`;
+            let r = this.state.rot.map(x => makeLegibleFloat(x));
+            this.savestate_textbox_rot_ref.current.value = `${r[0]}, ${r[1]}, ${r[2]}, ${r[3]}, ${r[4]}, ${r[5]}, ${r[6]}, ${r[7]}, ${r[8]}`;
         }
 
         render(props, state) {
@@ -431,11 +445,12 @@
                     </div>
 
                     <div class="savestate_slot_actions">
-                        Position:
+                        Coords:
                         <button class="pushbutton" onClick=${() => this.dump_pos_to_savestate_textbox() }>dump</button>
                         <button class="pushbutton" onClick=${() => this.do_absolute_move(i)}>assign</button>
                         <br />
-                        <input ref=${this.savestate_textbox_ref} size=40 />
+                        <input placeholder="x, y, z (engine)" ref=${this.savestate_textbox_pos_ref} size=40 />
+                        <input placeholder="1,0,0, 0,1,0, 0,0,1" ref=${this.savestate_textbox_rot_ref} size=40 />
                     </div>
                 </section>
             `;
@@ -676,29 +691,6 @@
         if (WSTransport.websock) { WSTransport.websock.close(); }
     });
 
-    /*
-    function send_cmd_savestate_persist() {
-        console.log("command_savestate_persist");
-        // FIXME url
-        fetch(`/backend/testwarp?uniq_id=${make_uniq_id()}`, {method: "post"}).then((resp) => {
-            console.log("command_savestate_persist", resp);
-        });
-    }
-    function send_cmd_savestate_restore() {
-        console.log("command_savestate_restore");
-        // FIXME url
-        fetch(`/backend/testwarp?uniq_id=${make_uniq_id()}`, {method: "post"}).then((resp) => {
-            console.log("command_savestate_restore", resp);
-        });
-    }
-
-    function send_cmd_savestate_actor_pos64_assign() {
-        console.log("command_savestate_actor_pos64_assign");
-        fetch(`/backend/savestate/paste_simple?uniq_id=${make_uniq_id()} Player pos64 -420.0 300.0 200.0`, {method: "post"}).then((resp) => {
-            console.log("command_savestate_actor_pos64_assign", resp);
-        });
-    }
-    */
 </script>
 </head>
 <body>
