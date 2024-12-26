@@ -51,6 +51,7 @@ ActorWatcher::assignSlotAwaitRecall(0);
 ActorWatcher::doDrawAABB(0, true);
 ActorWatcher::doDrawPos(0, false);
 ActorWatcher::doDrawVel(0, false);
+ActorWatcher::doDrawAngVel(0, false);
 ActorWatcher::doTextWriter(0, false);
 ActorWatcher::doWsLog(0, false);
 

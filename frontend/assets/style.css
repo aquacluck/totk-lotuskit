@@ -303,4 +303,17 @@ textarea {
 .toolset_actor_watcher .faketoggle.doDrawVel :checked ~ .fakebutton {
     background: hsl(var(--hue-motion) 85% 30%);
 }
+.toolset_actor_watcher .faketoggle.doDrawAngVel :not(:checked) ~ .fakebutton {
+    color: hsl(var(--hue-motion) 15% 70%);
+    &:hover {
+        border-radius: 100%;
+        color: hsl(var(--hue-motion) 85% 70%);
+        border-color: hsl(var(--hue-motion) 30% 30%);
+    }
+}
+.toolset_actor_watcher .faketoggle.doDrawAngVel :checked ~ .fakebutton {
+    background: hsl(var(--hue-motion) 85% 30%);
+    border-radius: 100%;
+}
+
 

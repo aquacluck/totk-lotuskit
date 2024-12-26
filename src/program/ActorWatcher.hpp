@@ -22,6 +22,7 @@ namespace lotuskit {
         bool doDrawAABB; // yellow wirecube
         bool doDrawPos; // yellow dot
         bool doDrawVel; // blue bars
+        bool doDrawAngVel; // blue disks
         bool doTextWriter;
         bool doWsLog; // (cannot suppress slot assign/clear messages, just target actor data)
 
@@ -32,6 +33,7 @@ namespace lotuskit {
             this->doDrawAABB = false;
             this->doDrawPos = false;
             this->doDrawVel = false;
+            this->doDrawAngVel = false;
             this->doTextWriter = true;
             this->doWsLog = true;
         }
@@ -55,6 +57,7 @@ namespace lotuskit {
                 {"doDrawAABB", this->doDrawAABB},
                 {"doDrawPos", this->doDrawPos},
                 {"doDrawVel", this->doDrawVel},
+                {"doDrawAngVel", this->doDrawAngVel},
                 {"doTextWriter", this->doTextWriter},
                 {"doWsLog", this->doWsLog}
             }), ns, false, false); // noblock, no debug log
@@ -121,6 +124,10 @@ namespace lotuskit {
         }
         inline static void doDrawVel(size_t i, bool val) {
             slots[i].doDrawVel = val;
+            slots[i].wsAnnounceConfig(i);
+        }
+        inline static void doDrawAngVel(size_t i, bool val) {
+            slots[i].doDrawAngVel = val;
             slots[i].wsAnnounceConfig(i);
         }
         inline static void doTextWriter(size_t i, bool val) {
@@ -212,7 +219,7 @@ namespace lotuskit {
                     lotuskit::PrimitiveDrawer::drawWireCube(0, sead::PrimitiveDrawer::CubeArg(*aabb, RecallYellow));
                 }
                 if (slot.doDrawVel) {
-                    const sead::Color4f MotionBlue{0.16f, 0.3f, 0.9f, 0.5f};
+                    const sead::Color4f MotionBlue{0.16f, 0.3f, 0.9f, 0.3f};
                     const float radius = 0.05;
                     sead::Vector3f vel = slot.actor->mLastLinearVelocity;
                     const float mag = vel.length();
@@ -241,6 +248,40 @@ namespace lotuskit {
                             vrot = {1,0,0, 0,0,-1, 0,1,0}; // facing down, up is z+ south
                             lotuskit::PrimitiveDrawer::setModelMtx(0, sead::Matrix34f(vrot, slot.actor->mPosition));
                             lotuskit::PrimitiveDrawer::drawCylinder32(0, sead::Vector3f(0, vz * 0.5f, 0), radius, vz, MotionBlue, MotionBlue);
+                        }
+                    }
+                }
+
+                if (slot.doDrawAngVel) {
+                    // similar calc as linear velocity, but no signedness, just a "spin speed" disk radius
+                    const sead::Color4f MotionBlue{0.16f, 0.3f, 0.9f, 0.3f};
+                    sead::Vector3f vel = slot.actor->mLastAngularVelocity;
+                    const float mag = vel.length();
+                    if (std::fabsf(mag) > 0.01) {
+                        sead::Matrix33f vrot;
+
+                        float vx = std::log2f(std::fabsf(vel.x)+2.0f);
+                        if (vx > 0) {
+                            vx = ((vx >= 1.0f) ? (vx - 1.0f) : vx);
+                            vrot = {0,0,1, 0,1,0, -1,0,0}; // facing level east, up is up
+                            lotuskit::PrimitiveDrawer::setModelMtx(0, sead::Matrix34f(vrot, slot.actor->mPosition));
+                            lotuskit::PrimitiveDrawer::drawDisk32(0, sead::Vector3f(0,0,0), vx*0.5f, MotionBlue, MotionBlue);
+                        }
+
+                        float vy = std::log2f(std::fabsf(vel.y)+2.0f);
+                        if (vy > 0) {
+                            vy = ((vy >= 1.0f) ? (vy - 1.0f) : vy);
+                            vrot = {0,1,0, 0,0,-1, -1,0,0}; // facing down, up is x+ east
+                            lotuskit::PrimitiveDrawer::setModelMtx(0, sead::Matrix34f(vrot, slot.actor->mPosition));
+                            lotuskit::PrimitiveDrawer::drawDisk32(0, sead::Vector3f(0,0,0), vy*0.5f, MotionBlue, MotionBlue);
+                        }
+
+                        float vz = std::log2f(std::fabsf(vel.z)+2.0f);
+                        if (vz > 0) {
+                            vz = ((vz >= 1.0f) ? (vz - 1.0f) : vz);
+                            vrot = {1,0,0, 0,1,0, 0,0,1}; // (identity) facing level south: up is up
+                            lotuskit::PrimitiveDrawer::setModelMtx(0, sead::Matrix34f(vrot, slot.actor->mPosition));
+                            lotuskit::PrimitiveDrawer::drawDisk32(0, sead::Vector3f(0,0,0), vz*0.5f, MotionBlue, MotionBlue);
                         }
                     }
 

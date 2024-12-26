@@ -373,6 +373,10 @@
                                 <input type="checkbox" id="aw${i}_doDrawVel" checked=${state.doDrawVel} onChange=${ e => this.do_send_toggle(i, "doDrawVel", e.target.checked) } />
                                 <span class="fakebutton pushbutton">vel</span>
                             </label>
+                            <label title="ActorWatcher::doDrawAngVel(${i}, checked)" class="faketoggle doDrawAngVel" for="aw${i}_doDrawAngVel">
+                                <input type="checkbox" id="aw${i}_doDrawAngVel" checked=${state.doDrawAngVel} onChange=${ e => this.do_send_toggle(i, "doDrawAngVel", e.target.checked) } />
+                                <span class="fakebutton pushbutton">angv</span>
+                            </label>
                         </div>
                     </div>
 
