@@ -298,6 +298,10 @@
             WSTransport.subscribe_ns(`/ActorWatcher/${this.props.slot_i}`, payload => this.setState(payload));
         }
 
+        assignSlotAwaitRecall(slot_i) {
+            WSTransport.send({execScriptString: wrap_implicit_main(`ActorWatcher::assignSlotAwaitRecall(${slot_i});`)});
+        }
+
         clear_slot(slot_i) {
             WSTransport.send({execScriptString: wrap_implicit_main(`ActorWatcher::clearSlot(${slot_i});`)});
         }
@@ -375,6 +379,7 @@
                     <div class="actor_selector_options">
                         Select:
                         <button title="ActorWatcher::clearSlot(${i})" onClick=${ () => this.clear_slot(i) } class="pushbutton selectNull">null</button>
+                        <button title="ActorWatcher::assignSlotAwaitRecall(${i})" onClick=${ () => this.assignSlotAwaitRecall(i) } class="pushbutton selectRecall"><img src="assets/img/Obj_ReverseRecorder.png" /></button>
                         <!-- TODO on any next spawn, on specific actor's next relation, ... -->
                         <!--<input type="number" placeholder="0" size="2" min="0" max="3" size=2 />-->
                     </div>

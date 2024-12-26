@@ -11,7 +11,7 @@ namespace lotuskit {
         // state (freely cleared+mutated by the mod)
         bool isCalc; // enable this slot to run
         bool isPendingSelection;
-        u8 selectionType; // 0 = unused, 1 = next spawn, 2 = next relation to parent_i, 3 = preactor
+        u8 selectionType; // 0 = unused, 1 = next spawn, 2 = next relation to parent_i, 3 = preactor, 4 = recall hover
         engine::actor::ActorBase* actorSelectorParentRelation;
         engine::actor::ActorBase* actor;
         engine::actor::PreActor* preactor;
@@ -86,6 +86,15 @@ namespace lotuskit {
             slot.wsAnnounceState(i);
             slot.wsAnnounceConfig(i);
         }
+        inline static void assignSlotAwaitRecall(size_t i) {
+            auto& slot = slots[i];
+            slot.clear();
+            slot.isCalc = true;
+            slot.selectionType = 4; // recall
+            slot.isPendingSelection = true;
+            slot.wsAnnounceState(i);
+            slot.wsAnnounceConfig(i);
+        }
         inline static void assignSlotPreActor(size_t i, engine::actor::PreActor* preactor) {
             auto& slot = slots[i];
             slot.clear();
@@ -123,6 +132,19 @@ namespace lotuskit {
             slots[i].wsAnnounceConfig(i);
         }
 
+        inline static void resolveRecallHighlight(engine::actor::ActorBase *actor) {
+            //if (actor == nullptr) { return; }
+            for (u8 i=0; i < MAX_WATCHER_SLOTS; i++) {
+                auto& slot = slots[i];
+                if (!slot.isCalc) { continue; }
+                if (slot.isPendingSelection && slot.selectionType == 4) {
+                    ActorWatcher::assignSlot(i, actor);
+                    // if multiple slots are watching recall, next frame will fill next slot ig?
+                    return;
+                }
+            }
+        }
+
         inline static void calc() {
             for (u8 i=0; i < MAX_WATCHER_SLOTS; i++) {
                 auto& slot = slots[i];
@@ -140,6 +162,9 @@ namespace lotuskit {
                             i, slot.preactor
                         );
                     }
+                }
+                if (slot.isPendingSelection && slot.selectionType == 4 && slot.doTextWriter) {
+                    lotuskit::TextWriter::printf(0, "ActorWatcher[%d] awaiting Recall \n\n", i);
                 }
 
                 if (slot.actor == nullptr) { continue; }
@@ -170,6 +195,9 @@ namespace lotuskit {
                 // PrimitiveDrawer info
                 // TODO optional base color per actorwatcher for busy scenes?
                 const sead::Color4f RecallYellow{0.9f, 0.76f, 0.16f, 0.15f}; // for position+rotation
+                //const sead::Color4f Transparent{0,0,0,0};
+                //const sead::Color4f White{1,1,1,1};
+
                 sead::Matrix34f mtx = slot.actor->getTransform();
 
                 if (slot.doDrawAABB || slot.doDrawPos) {

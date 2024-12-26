@@ -62,6 +62,13 @@ class enterImpl_ {
 };
 }
 
+namespace sym::game::ai::execute::ExecutePlayerReverseRecorder::updateImpl_ {
+class state0 {
+    public:
+    inline static constexpr ptrdiff_t offset = 0x00000000;
+};
+}
+
 namespace sym::game::wm::WorldManagerModule {
 class baseProcExe {
     public:

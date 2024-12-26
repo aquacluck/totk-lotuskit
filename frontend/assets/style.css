@@ -228,6 +228,17 @@ textarea {
 .toolset_actor_watcher > .savestate_slot_actions { grid-area: savestate_slot_actions; }
 .toolset_actor_watcher > .bumper_pushbuttons { grid-area: bumper_pushbuttons; }
 
+.toolset_actor_watcher .actor_selector_options .selectRecall {
+    img {
+        /* TODO extract for any image-backed pushbutton? */
+        height: 100%;
+        width: 100%;
+        position: relative;
+        top: -6px;
+        margin-bottom: -18px;
+    }
+}
+
 .toolset_actor_watcher .actor_selector_options .selectNull {
     &:hover { background: hsl(var(--hue-delete) 55% 30%); }
 }

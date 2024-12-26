@@ -41,6 +41,7 @@ def run_symbol_def_imports():
     import exking.engine.module.VFRMgr
 
     import exking.game.ai.execute.ExecutePlayerWhistle
+    import exking.game.ai.execute.ExecutePlayerReverseRecorder
     import exking.game.wm.WorldManagerModule
 
     import havok.hk.hacks

@@ -15,6 +15,7 @@ _ZN3agl3lyr5Layer14drawDebugInfo_EPS1_RKNS0_10RenderInfoE = __main_start + 0x007
 _ZN3agl3lyr8RendererL4drawE      = __main_start + 0x00000000; /* agl::lyr::Renderer::draw */
 _ZN3aglL18init_debug_drawersE    = __main_start + 0x00ab1870; /* agl::init_debug_drawers */
 _ZN4game2ai7execute20ExecutePlayerWhistle10enterImpl_EPv = __main_start + 0x00000000; /* game::ai::execute::ExecutePlayerWhistle::enterImpl_(void*) */
+_ZN4game2ai7execute28ExecutePlayerReverseRecorder11updateImpl_L6state0E = __main_start + 0x00000000; /* game::ai::execute::ExecutePlayerReverseRecorder::updateImpl_::state0 */
 _ZN4game2wm18WorldManagerModule11baseProcExeEPvS2_ = __main_start + 0x00aef4b4; /* game::wm::WorldManagerModule::baseProcExe(void*, void*) */
 _ZN4sead10TextWriter13setupGraphicsEPNS_11DrawContextE = __main_start + 0x0187a8d4; /* sead::TextWriter::setupGraphics(sead::DrawContext*) */
 _ZN4sead10TextWriter20setCursorFromTopLeftERKNS_7Vector2IfEE = __main_start + 0x00000000; /* sead::TextWriter::setCursorFromTopLeft(sead::Vector2<float> const&) */

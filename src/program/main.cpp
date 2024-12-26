@@ -49,6 +49,14 @@ HOOK_DEFINE_TRAMPOLINE(OnWhistleHook) {
 };
 */
 
+HOOK_DEFINE_INLINE(OnRecallUpdateHighlightActorHook) {
+    static const ptrdiff_t s_offset = sym::game::ai::execute::ExecutePlayerReverseRecorder::updateImpl_::state0::offset;
+    static void Callback(exl::hook::InlineCtx* ctx) {
+        auto* highlightedActor = (engine::actor::ActorBase*)(ctx->X[8]);
+        lotuskit::ActorWatcher::resolveRecallHighlight(highlightedActor);
+    }
+};
+
 HOOK_DEFINE_TRAMPOLINE(ActorRelationAddHook) {
     static const ptrdiff_t s_offset = sym::engine::actor::ActorMgr::registerActorRelation::offset;
 
@@ -157,6 +165,7 @@ HOOK_DEFINE_INLINE(nnMainHook) {
         WorldManagerModuleBaseProcHook::Install(); // "main loop"
         StealHeap::Install(); // called once, a bit later during bootup
         //OnWhistleHook::Install();
+        OnRecallUpdateHighlightActorHook::Install();
         ActorRelationAddHook::Install();
         MainGetNpadStates::Install();
 

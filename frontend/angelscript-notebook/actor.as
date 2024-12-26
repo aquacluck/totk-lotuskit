@@ -44,6 +44,9 @@ ActorWatcher::assignSlot(1, somewhere);
 ActorWatcher::assignSlotPreActor(1, somewhere);
 ActorWatcher::clearSlot(1);
 
+// next recall hover event
+ActorWatcher::assignSlotAwaitRecall(0);
+
 // ActorWatcher config
 ActorWatcher::doDrawAABB(0, true);
 ActorWatcher::doDrawPos(0, false);
