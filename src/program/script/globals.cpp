@@ -166,6 +166,7 @@ namespace lotuskit::script::globals {
             asErrno = engine->RegisterTypedef("ptr_t", "uint64"); assert(asErrno >= 0); // AS has no raw pointers, but we often need to deal with their values
             asErrno = engine->RegisterTypedef("size_t", "uint64"); assert(asErrno >= 0);
             asErrno = engine->RegisterTypedef("index_t", "uint64"); assert(asErrno >= 0); // more appropriately named size_t
+            asErrno = engine->RegisterTypedef("flagset_t", "uint64"); assert(asErrno >= 0);
             asErrno = engine->RegisterTypedef("f16", "uint16"); assert(asErrno >= 0); // AS has no half floats, just to preserve context/compat
             asErrno = engine->RegisterTypedef("f16_fake", "uint16"); assert(asErrno >= 0);
 
@@ -282,12 +283,19 @@ namespace lotuskit::script::globals {
             asErrno = engine->RegisterGlobalFunction("void assignSlotAwaitRecall(index_t)", AngelScript::asFUNCTION(lotuskit::ActorWatcher::assignSlotAwaitRecall), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
 
             // config
+            asErrno = engine->RegisterGlobalFunction("void doTextWriter(index_t, bool)", AngelScript::asFUNCTION(lotuskit::ActorWatcher::doTextWriter), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+            asErrno = engine->RegisterGlobalFunction("void doWsLog(index_t, bool)", AngelScript::asFUNCTION(lotuskit::ActorWatcher::doWsLog), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+
             asErrno = engine->RegisterGlobalFunction("void doDrawAABB(index_t, bool)", AngelScript::asFUNCTION(lotuskit::ActorWatcher::doDrawAABB), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
             asErrno = engine->RegisterGlobalFunction("void doDrawPos(index_t, bool)", AngelScript::asFUNCTION(lotuskit::ActorWatcher::doDrawPos), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
             asErrno = engine->RegisterGlobalFunction("void doDrawVel(index_t, bool)", AngelScript::asFUNCTION(lotuskit::ActorWatcher::doDrawVel), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
             asErrno = engine->RegisterGlobalFunction("void doDrawAngVel(index_t, bool)", AngelScript::asFUNCTION(lotuskit::ActorWatcher::doDrawAngVel), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
-            asErrno = engine->RegisterGlobalFunction("void doTextWriter(index_t, bool)", AngelScript::asFUNCTION(lotuskit::ActorWatcher::doTextWriter), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
-            asErrno = engine->RegisterGlobalFunction("void doWsLog(index_t, bool)", AngelScript::asFUNCTION(lotuskit::ActorWatcher::doWsLog), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+
+            asErrno = engine->RegisterGlobalFunction("void doDrawModelPos(index_t, bool)", AngelScript::asFUNCTION(lotuskit::ActorWatcher::doDrawModelPos), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+
+            asErrno = engine->RegisterGlobalFunction("void doDrawRigidBodyPos(index_t, flagset_t)", AngelScript::asFUNCTION(lotuskit::ActorWatcher::doDrawRigidBodyPos), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+            asErrno = engine->RegisterGlobalFunction("void doDrawRigidBodyPosPast(index_t, flagset_t)", AngelScript::asFUNCTION(lotuskit::ActorWatcher::doDrawRigidBodyPosPast), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+            asErrno = engine->RegisterGlobalFunction("void doDrawRigidBodyPosFuture(index_t, flagset_t)", AngelScript::asFUNCTION(lotuskit::ActorWatcher::doDrawRigidBodyPosFuture), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
 
             // slot access
             asErrno = engine->RegisterGlobalFunction("ActorBase@ get(index_t)", AngelScript::asFUNCTION(lotuskit::ActorWatcher::getSlotActor), AngelScript::asCALL_CDECL); assert(asErrno >= 0);

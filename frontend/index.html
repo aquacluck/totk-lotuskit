@@ -344,8 +344,10 @@
             this.do_paste_coords(slot_i, pos, rot);
         }
 
-        do_send_toggle(slot_i, funcname, value) {
-            WSTransport.send({execScriptString: wrap_implicit_main(`ActorWatcher::${funcname}(${slot_i}, ${value});`)});
+        do_send_toggle(slot_i, funcname, rawValue, translateFalseValue, translateTrueValue) {
+            const v = ( rawValue && translateTrueValue  !== undefined) ? translateTrueValue  :
+                      (!rawValue && translateFalseValue !== undefined) ? translateFalseValue : rawValue;
+            WSTransport.send({execScriptString: wrap_implicit_main(`ActorWatcher::${funcname}(${slot_i}, ${v});`)});
         }
 
         dump_pos_to_savestate_textbox() {
@@ -390,6 +392,23 @@
                             <label title="ActorWatcher::doDrawAngVel(${i}, checked)" class="faketoggle doDrawAngVel" for="aw${i}_doDrawAngVel">
                                 <input type="checkbox" id="aw${i}_doDrawAngVel" checked=${state.doDrawAngVel} onChange=${ e => this.do_send_toggle(i, "doDrawAngVel", e.target.checked) } />
                                 <span class="fakebutton pushbutton">angv</span>
+                            </label>
+                            <label title="ActorWatcher::doDrawModelPos(${i}, checked)" class="faketoggle doDrawModelPos" for="aw${i}_doDrawModelPos">
+                                <input type="checkbox" id="aw${i}_doDrawModelPos" checked=${state.doDrawModelPos} onChange=${ e => this.do_send_toggle(i, "doDrawModelPos", e.target.checked) } />
+                                <span class="fakebutton pushbutton">pos</span>
+                            </label>
+
+                            <label title="ActorWatcher::doDrawRigidBodyPos(${i}, flagset_t)" class="faketoggle doDrawRigidBodyPos" for="aw${i}_doDrawRigidBodyPos">
+                                <input type="checkbox" id="aw${i}_doDrawRigidBodyPos" checked=${state.doDrawRigidBodyPos} onChange=${ e => this.do_send_toggle(i, "doDrawRigidBodyPos", e.target.checked, 0, 0xffffffffffffffffn) } />
+                                <span class="fakebutton pushbutton">pos</span>
+                            </label>
+                            <label title="ActorWatcher::doDrawRigidBodyPosPast(${i}, flagset_t)" class="faketoggle doDrawRigidBodyPosPast" for="aw${i}_doDrawRigidBodyPosPast">
+                                <input type="checkbox" id="aw${i}_doDrawRigidBodyPosPast" checked=${state.doDrawRigidBodyPosPast} onChange=${ e => this.do_send_toggle(i, "doDrawRigidBodyPosPast", e.target.checked, 0, 0xffffffffffffffffn) } />
+                                <span class="fakebutton pushbutton">pos-</span>
+                            </label>
+                            <label title="ActorWatcher::doDrawRigidBodyPosFuture(${i}, flagset_t)" class="faketoggle doDrawRigidBodyPosFuture" for="aw${i}_doDrawRigidBodyPosFuture">
+                                <input type="checkbox" id="aw${i}_doDrawRigidBodyPosFuture" checked=${state.doDrawRigidBodyPosFuture} onChange=${ e => this.do_send_toggle(i, "doDrawRigidBodyPosFuture", e.target.checked, 0, 0xffffffffffffffffn) } />
+                                <span class="fakebutton pushbutton">pos+</span>
                             </label>
                         </div>
                     </div>

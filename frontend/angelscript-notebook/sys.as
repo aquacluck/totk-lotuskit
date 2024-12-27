@@ -29,6 +29,7 @@ ptrdiff_t v9 = -0x10000; // just s64 for pointer math
 ptr_t     v10 = 0;   // there are no pointers! just u64 representations
 size_t    v11 = 420; // u64
 index_t   v12 = 420; // u64, we use slot concepts a lot, nice to annotate
+flagset_t v12a;      // u64, ^
 f16       v13;       // half floats dont exist in AngelScript! just u16.
 f16_fake  v14;       // maybe nice to be explicit about that --
                      // attempting math would fail in confusing ways

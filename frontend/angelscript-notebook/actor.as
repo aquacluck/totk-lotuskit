@@ -53,10 +53,16 @@ ActorWatcher::clearSlot(1);
 ActorWatcher::assignSlotAwaitRecall(0);
 
 // ActorWatcher config
+ActorWatcher::doTextWriter(0, false);
+ActorWatcher::doWsLog(0, false);
+
 ActorWatcher::doDrawAABB(0, true);
 ActorWatcher::doDrawPos(0, false);
 ActorWatcher::doDrawVel(0, false);
 ActorWatcher::doDrawAngVel(0, false);
-ActorWatcher::doTextWriter(0, false);
-ActorWatcher::doWsLog(0, false);
 
+ActorWatcher::doDrawModelPos(0, false);
+
+ActorWatcher::doDrawRigidBodyPos(0, 0xffffffffffffffff); // all
+ActorWatcher::doDrawRigidBodyPosPast(0, 0); // none
+ActorWatcher::doDrawRigidBodyPosFuture(0, 4+8); // flags -3 | -4

@@ -81,6 +81,7 @@ textarea {
     --hue-recall: 48.6; /* yellow */
     --hue-motion: 228.6; /* blue */
     --hue-delete: 0; /* red */
+    --hue-physical: 120; /* green */
 
     --vec-red:   hsl(  0 40% 80%);
     --vec-green: hsl(120 40% 80%);
@@ -315,6 +316,38 @@ textarea {
 }
 .toolset_actor_watcher .faketoggle.doDrawAngVel :checked ~ .fakebutton {
     background: hsl(var(--hue-motion) 45% 30%);
+    border-color: #222 #666 #666 #222;
+    border-radius: 100%;
+}
+
+.toolset_actor_watcher .faketoggle.doDrawModelPos :not(:checked) ~ .fakebutton {
+    color: hsl(0 0 70%);
+    &:hover {
+        border-radius: 100%;
+        color: hsl(0 0 70%);
+        border-color: hsl(0 0 30%);
+    }
+}
+.toolset_actor_watcher .faketoggle.doDrawModelPos :checked ~ .fakebutton {
+    background: hsl(0 0 30%);
+    border-color: #222 #666 #666 #222;
+    border-radius: 100%;
+}
+
+.toolset_actor_watcher .faketoggle.doDrawRigidBodyPos       :not(:checked) ~ .fakebutton,
+.toolset_actor_watcher .faketoggle.doDrawRigidBodyPosPast   :not(:checked) ~ .fakebutton,
+.toolset_actor_watcher .faketoggle.doDrawRigidBodyPosFuture :not(:checked) ~ .fakebutton {
+    color: hsl(var(--hue-physical) 15% 70%);
+    &:hover {
+        border-radius: 100%;
+        color: hsl(var(--hue-physical) 45% 70%);
+        border-color: hsl(var(--hue-physical) 30% 30%);
+    }
+}
+.toolset_actor_watcher .faketoggle.doDrawRigidBodyPos       :checked ~ .fakebutton,
+.toolset_actor_watcher .faketoggle.doDrawRigidBodyPosPast   :checked ~ .fakebutton,
+.toolset_actor_watcher .faketoggle.doDrawRigidBodyPosFuture :checked ~ .fakebutton {
+    background: hsl(var(--hue-physical) 45% 30%);
     border-color: #222 #666 #666 #222;
     border-radius: 100%;
 }

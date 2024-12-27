@@ -1,6 +1,7 @@
 #pragma once
 
 #include "structs/bbBlackboard.hpp"
+#include "structs/phive.hpp"
 
 #include <cstddef>
 #include <container/seadPtrArray.h>
@@ -37,7 +38,32 @@ namespace engine::transceiver {
 } // namespace transceiver
 
 namespace engine::component {
-    class IActorComponent;
+    //class IActorComponent; // XXX is this relevant as a category?
+    class Component {
+        public:
+        virtual ~Component(); // vtable i guess
+        sead::SafeString refPath;
+    };
+
+    class PhysicsComponent: public Component {
+        public:
+        u8 idkman[0x10];
+        phive::ControllerSet* controllerSet;
+    };
+    static_assert(offsetof(PhysicsComponent, controllerSet) == 0x20);
+
+    class Model { // XXX ns?
+        public:
+        char _00[0x1f8];
+        sead::Matrix34f modelMtx;
+    };
+    class ModelComponent : public Component {
+        public:
+        char _10[0x18];
+        Model* model;
+    };
+    static_assert(offsetof(ModelComponent, model) == 0x28);
+
 } // namespace component
 
 namespace engine::actor {
@@ -112,12 +138,12 @@ namespace engine::actor {
     static_assert(sizeof(ActorTransceiver) == 0x50);
 
     class ActorBaseLink {
-    public:
+        public:
         virtual void checkDerivedRuntimeTypeInfo(void*) const;
         virtual void* getRuntimeTypeInfo() const;
         virtual ~ActorBaseLink() { ActorLinkDtor(this); };
 
-    private:
+        private:
         void* mLinkData; // XXX BaseProcLinkData?
         BaseProc::BaseProcId mID = BaseProc::cInvalidId;
         u8 _14;
@@ -158,7 +184,7 @@ namespace engine::actor {
 
         //protected:
         sead::SafeString mActorName;
-        sead::PtrArray<component::IActorComponent> mComponents;
+        sead::PtrArray<engine::component::Component> mComponents;
         sead::Buffer<u8> mComponentIndexArray;
         sead::Buffer<u8> _240;
         u8 _250;
@@ -207,6 +233,15 @@ namespace engine::actor {
         sead::Matrix34f getTransform() const {
             return sead::Matrix34f(mRotation, mPosition);
         }
+
+        engine::component::PhysicsComponent* getPhysicsComponent() const {
+            return reinterpret_cast<engine::component::PhysicsComponent*>(mComponents[0xa]);
+        }
+
+        engine::component::ModelComponent* getModelComponent() const {
+            return reinterpret_cast<engine::component::ModelComponent*>(mComponents[2]);
+        }
+
     };
     static_assert(sizeof(ActorBase) == (TOTK_VERSION == 100 ? 0x4b0 : 0x4b8));
     static_assert(offsetof(ActorBase, mAABB) == (TOTK_VERSION == 100 ? 0x348 : 0x350));
