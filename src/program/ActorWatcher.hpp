@@ -351,8 +351,19 @@ namespace lotuskit {
 
                     // TODO multiple rigidbodies bitflagged? try chests, springs, pots, wheels?
                     // TODO extract rigidbody logging/drawing for use outside actors, draw global(?), ...
-                    // TODO ws log rigidbodies for frontend?
                     const auto rbody = physCmp->controllerSet->mainRigidBody;
+
+                    if (false) {
+                        // TODO ws log rigidbodies for frontend?
+                        const char* name = rbody->getName();
+                        sead::BoundBox3f aabb;
+                        rbody->getAABB(&aabb);
+                        lotuskit::TextWriter::printf(
+                            0, "RigidBody %s(%p) \naabb: [%f, %f] [%f, %f] [%f, %f] \n\n",
+                            name, rbody,
+                            aabb.getMin().x, aabb.getMax().x, aabb.getMin().y, aabb.getMax().y, aabb.getMin().z, aabb.getMax().z
+                        );
+                    }
 
                     if (slot.doDrawRigidBodyPos > 0) {
                         lotuskit::PrimitiveDrawer::setModelMtx(0, rbody->lastTransform);

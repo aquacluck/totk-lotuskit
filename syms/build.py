@@ -44,6 +44,8 @@ def run_symbol_def_imports():
     import exking.game.ai.execute.ExecutePlayerReverseRecorder
     import exking.game.wm.WorldManagerModule
 
+    import exking.phive.RigidBodyBase
+
     import havok.hk.hacks
 
 

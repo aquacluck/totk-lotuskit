@@ -286,6 +286,20 @@ class sInstance {
 };
 }
 
+namespace sym::phive::RigidBodyBase {
+class getAABB {
+    public:
+    inline static constexpr ptrdiff_t offset = 0x00b7d5d4;
+};
+}
+
+namespace sym::phive::RigidBodyBase {
+class getName {
+    public:
+    inline static constexpr ptrdiff_t offset = 0x02a911b8;
+};
+}
+
 namespace sym::engine::actor::ActorInstanceMgr {
 class requestCreateActorSync {
     public:
