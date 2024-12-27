@@ -63,6 +63,7 @@ ActorWatcher::doDrawAngVel(0, false);
 
 ActorWatcher::doDrawModelPos(0, false);
 
+ActorWatcher::doDrawRigidBodyAABB(0, 0xffffffffffffffff); // all
 ActorWatcher::doDrawRigidBodyPos(0, 0xffffffffffffffff); // all
 ActorWatcher::doDrawRigidBodyPosPast(0, 0); // none
 ActorWatcher::doDrawRigidBodyPosFuture(0, 4+8); // flags -3 | -4

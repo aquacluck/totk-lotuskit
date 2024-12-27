@@ -293,6 +293,7 @@ namespace lotuskit::script::globals {
 
             asErrno = engine->RegisterGlobalFunction("void doDrawModelPos(index_t, bool)", AngelScript::asFUNCTION(lotuskit::ActorWatcher::doDrawModelPos), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
 
+            asErrno = engine->RegisterGlobalFunction("void doDrawRigidBodyAABB(index_t, flagset_t)", AngelScript::asFUNCTION(lotuskit::ActorWatcher::doDrawRigidBodyAABB), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
             asErrno = engine->RegisterGlobalFunction("void doDrawRigidBodyPos(index_t, flagset_t)", AngelScript::asFUNCTION(lotuskit::ActorWatcher::doDrawRigidBodyPos), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
             asErrno = engine->RegisterGlobalFunction("void doDrawRigidBodyPosPast(index_t, flagset_t)", AngelScript::asFUNCTION(lotuskit::ActorWatcher::doDrawRigidBodyPosPast), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
             asErrno = engine->RegisterGlobalFunction("void doDrawRigidBodyPosFuture(index_t, flagset_t)", AngelScript::asFUNCTION(lotuskit::ActorWatcher::doDrawRigidBodyPosFuture), AngelScript::asCALL_CDECL); assert(asErrno >= 0);

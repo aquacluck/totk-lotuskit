@@ -27,10 +27,15 @@ namespace phive {
         sead::Matrix34f prevTransform;
 
         void getAABB(sead::BoundBox3f* dst) {
-            // local coords / size only -- does not contain world coords
             using impl_t = void (RigidBodyBase*, sead::BoundBox3f*);
             auto impl = reinterpret_cast<impl_t*>(exl::util::modules::GetTargetOffset(sym::phive::RigidBodyBase::getAABB::offset));
             return impl(this, dst); // TODO magic: get current func to macro+interpolate?  ^---------------------------^
+        }
+
+        void getBoundingBoxWorld(sead::BoundBox3f* dst) {
+            using impl_t = void (RigidBodyBase*, sead::BoundBox3f*);
+            auto impl = reinterpret_cast<impl_t*>(exl::util::modules::GetTargetOffset(sym::phive::RigidBodyBase::getBoundingBoxWorld::offset));
+            return impl(this, dst);
         }
 
         const char* getName() {
@@ -38,6 +43,7 @@ namespace phive {
             auto impl = reinterpret_cast<impl_t*>(exl::util::modules::GetTargetOffset(sym::phive::RigidBodyBase::getName::offset));
             return impl(this);
         }
+
     };
     static_assert(offsetof(RigidBodyBase, lastTransform) == 0x98);
 

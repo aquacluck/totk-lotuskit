@@ -30,6 +30,7 @@ namespace lotuskit {
                            //
         bool doDrawModelPos; // gray dot
 
+        u64 doDrawRigidBodyAABB; // green wirecube
         u64 doDrawRigidBodyPos; // green dot
         u64 doDrawRigidBodyPosPast; // faint green
         u64 doDrawRigidBodyPosFuture; // bold green
@@ -48,6 +49,7 @@ namespace lotuskit {
 
             this->doDrawModelPos = false;
 
+            this->doDrawRigidBodyAABB = 0;
             this->doDrawRigidBodyPos = 0;
             this->doDrawRigidBodyPosPast = 0;
             this->doDrawRigidBodyPosFuture = 0;
@@ -79,6 +81,7 @@ namespace lotuskit {
 
                 {"doDrawModelPos", this->doDrawModelPos},
 
+                {"doDrawRigidBodyAABB", this->doDrawRigidBodyAABB},
                 {"doDrawRigidBodyPos", this->doDrawRigidBodyPos},
                 {"doDrawRigidBodyPosPast", this->doDrawRigidBodyPosPast},
                 {"doDrawRigidBodyPosFuture", this->doDrawRigidBodyPosFuture}
@@ -163,6 +166,10 @@ namespace lotuskit {
         }
         inline static void doDrawModelPos(size_t i, bool val) {
             slots[i].doDrawModelPos = val;
+            slots[i].wsAnnounceConfig(i);
+        }
+        inline static void doDrawRigidBodyAABB(size_t i, u64 val) {
+            slots[i].doDrawRigidBodyAABB = val;
             slots[i].wsAnnounceConfig(i);
         }
         inline static void doDrawRigidBodyPos(size_t i, u64 val) {
@@ -356,28 +363,46 @@ namespace lotuskit {
                     if (false) {
                         // TODO ws log rigidbodies for frontend?
                         const char* name = rbody->getName();
+
                         sead::BoundBox3f aabb;
+                        sead::BoundBox3f wrld;
                         rbody->getAABB(&aabb);
+                        rbody->getBoundingBoxWorld(&wrld);
+
                         lotuskit::TextWriter::printf(
-                            0, "RigidBody %s(%p) \naabb: [%f, %f] [%f, %f] [%f, %f] \n\n",
+                            0, "RigidBody %s(%p) \naabb : [%f, %f] [%f, %f] [%f, %f] \nworld: [%f, %f] [%f, %f] [%f, %f] \n\n",
                             name, rbody,
-                            aabb.getMin().x, aabb.getMax().x, aabb.getMin().y, aabb.getMax().y, aabb.getMin().z, aabb.getMax().z
+                            aabb.getMin().x, aabb.getMax().x, aabb.getMin().y, aabb.getMax().y, aabb.getMin().z, aabb.getMax().z,
+                            wrld.getMin().x, wrld.getMax().x, wrld.getMin().y, wrld.getMax().y, wrld.getMin().z, wrld.getMax().z
                         );
                     }
 
-                    if (slot.doDrawRigidBodyPos > 0) {
+                    // any flag = all are turned on. TODO bitflag decider impl
+                    const bool doDrawRigidBodyAABB = slot.doDrawRigidBodyAABB > 0;
+                    const bool doDrawRigidBodyPos = slot.doDrawRigidBodyPos > 0;
+                    const bool doDrawRigidBodyPosPast = slot.doDrawRigidBodyPosPast > 0;
+                    const bool doDrawRigidBodyPosFuture = slot.doDrawRigidBodyPosFuture > 0;
+
+                    if (doDrawRigidBodyPos || doDrawRigidBodyAABB) {
                         lotuskit::PrimitiveDrawer::setModelMtx(0, rbody->lastTransform);
+                    }
+                    if (doDrawRigidBodyPos) {
                         lotuskit::PrimitiveDrawer::drawSphere8x16(0, sead::Vector3f(0,0,0), 0.1, PhysicalGreen, PhysicalGreen);
                     }
+                    if (doDrawRigidBodyAABB) {
+                        sead::BoundBox3f aabb;
+                        rbody->getAABB(&aabb);
+                        lotuskit::PrimitiveDrawer::drawWireCube(0, sead::PrimitiveDrawer::CubeArg(aabb, PhysicalGreen));
+                    }
 
-                    if (slot.doDrawRigidBodyPosPast > 0) {
+                    if (doDrawRigidBodyPosPast) {
                         lotuskit::PrimitiveDrawer::setModelMtx(0, rbody->prevTransform);
                         lotuskit::PrimitiveDrawer::drawSphere8x16(0, sead::Vector3f(0,0,0), 0.075, PhysicalGreenPast, VoidGrayPast);
                     }
 
                     // sometimes a "next" is available
                     const bool isChangeTransform = rbody->changeRequest && (rbody->changeRequest->flags >> 6 & 1) != 0;
-                    if (slot.doDrawRigidBodyPosFuture > 0 && isChangeTransform) {
+                    if (doDrawRigidBodyPosFuture && isChangeTransform) {
                         //sead::Matrix34f current = isChangeTransform ? rbody->changeRequest->nextTransform : rbody->lastTransform;
                         lotuskit::PrimitiveDrawer::setModelMtx(0, rbody->changeRequest->nextTransform);
                         lotuskit::PrimitiveDrawer::drawSphere8x16(0, sead::Vector3f(0,0,0), 0.075, PhysicalGreenFuture, PhysicalGreenFuture);

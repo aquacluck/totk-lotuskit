@@ -287,6 +287,13 @@ class sInstance {
 }
 
 namespace sym::phive::RigidBodyBase {
+class getBoundingBoxWorld {
+    public:
+    inline static constexpr ptrdiff_t offset = 0x00a3c1c4;
+};
+}
+
+namespace sym::phive::RigidBodyBase {
 class getAABB {
     public:
     inline static constexpr ptrdiff_t offset = 0x00b7d5d4;

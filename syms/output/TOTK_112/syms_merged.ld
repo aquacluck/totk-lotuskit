@@ -47,6 +47,7 @@ _ZN4sead7HeapMgr12sInstancePtrE  = __main_start + 0x00000000; /* sead::HeapMgr::
 _ZN4sead7HeapMgr15createRootHeap_Ev = __main_start + 0x00000000; /* sead::HeapMgr::createRootHeap_() */
 _ZN4sead9FrameHeap6createEmRKNS_14SafeStringBaseIcEEPNS_4HeapEiNS5_13HeapDirectionEb = __main_start + 0x00000000; /* sead::FrameHeap::create(unsigned long, sead::SafeStringBase<char> const&, sead::Heap*, int, sead::Heap::HeapDirection, bool) */
 _ZN4sead9ThreadMgr9sInstanceE    = __main_start + 0x00000000; /* sead::ThreadMgr::sInstance */
+_ZN5phive13RigidBodyBaseL19getBoundingBoxWorldE = __main_start + 0x00000000; /* phive::RigidBodyBase::getBoundingBoxWorld */
 _ZN5phive13RigidBodyBaseL7getAABBE = __main_start + 0x00000000; /* phive::RigidBodyBase::getAABB */
 _ZN5phive13RigidBodyBaseL7getNameE = __main_start + 0x00000000; /* phive::RigidBodyBase::getName */
 _ZN6engine5actor16ActorInstanceMgr22requestCreateActorSyncEPv = __main_start + 0x00000000; /* engine::actor::ActorInstanceMgr::requestCreateActorSync(void*) */

@@ -368,48 +368,62 @@
                     <div class="actor_selector_current">
                         ${actorName}(${ptr})
                         <div class="actor_toggles">
-                            View:
-                            <label title="ActorWatcher::doWsLog(${i}, checked)" class="faketoggle doWsLog" for="aw${i}_doWsLog">
-                                <input type="checkbox" id="aw${i}_doWsLog" checked=${state.doWsLog} onChange=${ e => this.do_send_toggle(i, "doWsLog", e.target.checked) } />
-                                <span class="fakebutton pushbutton">ws</span>
-                            </label>
-                            <label title="ActorWatcher::doTextWriter(${i}, checked)" class="faketoggle doTextWriter" for="aw${i}_doTextWriter">
-                                <input type="checkbox" id="aw${i}_doTextWriter" checked=${state.doTextWriter} onChange=${ e => this.do_send_toggle(i, "doTextWriter", e.target.checked) } />
-                                <span class="fakebutton pushbutton">txt</span>
-                            </label>
-                            <label title="ActorWatcher::doDrawPos(${i}, checked)" class="faketoggle doDrawPos" for="aw${i}_doDrawPos">
-                                <input type="checkbox" id="aw${i}_doDrawPos" checked=${state.doDrawPos} onChange=${ e => this.do_send_toggle(i, "doDrawPos", e.target.checked) } />
-                                <span class="fakebutton pushbutton">pos</span>
-                            </label>
-                            <label title="ActorWatcher::doDrawAABB(${i}, checked)" class="faketoggle doDrawAABB" for="aw${i}_doDrawAABB">
-                                <input type="checkbox" id="aw${i}_doDrawAABB" checked=${state.doDrawAABB} onChange=${ e => this.do_send_toggle(i, "doDrawAABB", e.target.checked) } />
-                                <span class="fakebutton pushbutton">AABB</span>
-                            </label>
-                            <label title="ActorWatcher::doDrawVel(${i}, checked)" class="faketoggle doDrawVel" for="aw${i}_doDrawVel">
-                                <input type="checkbox" id="aw${i}_doDrawVel" checked=${state.doDrawVel} onChange=${ e => this.do_send_toggle(i, "doDrawVel", e.target.checked) } />
-                                <span class="fakebutton pushbutton">vel</span>
-                            </label>
-                            <label title="ActorWatcher::doDrawAngVel(${i}, checked)" class="faketoggle doDrawAngVel" for="aw${i}_doDrawAngVel">
-                                <input type="checkbox" id="aw${i}_doDrawAngVel" checked=${state.doDrawAngVel} onChange=${ e => this.do_send_toggle(i, "doDrawAngVel", e.target.checked) } />
-                                <span class="fakebutton pushbutton">angv</span>
-                            </label>
-                            <label title="ActorWatcher::doDrawModelPos(${i}, checked)" class="faketoggle doDrawModelPos" for="aw${i}_doDrawModelPos">
-                                <input type="checkbox" id="aw${i}_doDrawModelPos" checked=${state.doDrawModelPos} onChange=${ e => this.do_send_toggle(i, "doDrawModelPos", e.target.checked) } />
-                                <span class="fakebutton pushbutton">pos</span>
-                            </label>
+                            <div>
+                                <label title="ActorWatcher::doWsLog(${i}, checked)" class="faketoggle doWsLog" for="aw${i}_doWsLog">
+                                    <input type="checkbox" id="aw${i}_doWsLog" checked=${state.doWsLog} onChange=${ e => this.do_send_toggle(i, "doWsLog", e.target.checked) } />
+                                    <span class="fakebutton pushbutton">ws</span>
+                                </label>
+                                <label title="ActorWatcher::doTextWriter(${i}, checked)" class="faketoggle doTextWriter" for="aw${i}_doTextWriter">
+                                    <input type="checkbox" id="aw${i}_doTextWriter" checked=${state.doTextWriter} onChange=${ e => this.do_send_toggle(i, "doTextWriter", e.target.checked) } />
+                                    <span class="fakebutton pushbutton">txt</span>
+                                </label>
+                                <label title="ActorWatcher::doDrawPos(${i}, checked)" class="faketoggle doDrawPos" for="aw${i}_doDrawPos">
+                                    <input type="checkbox" id="aw${i}_doDrawPos" checked=${state.doDrawPos} onChange=${ e => this.do_send_toggle(i, "doDrawPos", e.target.checked) } />
+                                    <span class="fakebutton pushbutton">pos</span>
+                                </label>
+                                <label title="ActorWatcher::doDrawAABB(${i}, checked)" class="faketoggle doDrawAABB" for="aw${i}_doDrawAABB">
+                                    <input type="checkbox" id="aw${i}_doDrawAABB" checked=${state.doDrawAABB} onChange=${ e => this.do_send_toggle(i, "doDrawAABB", e.target.checked) } />
+                                    <span class="fakebutton pushbutton">AABB</span>
+                                </label>
+                                <label title="ActorWatcher::doDrawVel(${i}, checked)" class="faketoggle doDrawVel" for="aw${i}_doDrawVel">
+                                    <input type="checkbox" id="aw${i}_doDrawVel" checked=${state.doDrawVel} onChange=${ e => this.do_send_toggle(i, "doDrawVel", e.target.checked) } />
+                                    <span class="fakebutton pushbutton">vel</span>
+                                </label>
+                                <label title="ActorWatcher::doDrawAngVel(${i}, checked)" class="faketoggle doDrawAngVel" for="aw${i}_doDrawAngVel">
+                                    <input type="checkbox" id="aw${i}_doDrawAngVel" checked=${state.doDrawAngVel} onChange=${ e => this.do_send_toggle(i, "doDrawAngVel", e.target.checked) } />
+                                    <span class="fakebutton pushbutton">angv</span>
+                                </label>
+                                <label title="ActorWatcher::doDrawModelPos(${i}, checked)" class="faketoggle doDrawModelPos" for="aw${i}_doDrawModelPos">
+                                    <input type="checkbox" id="aw${i}_doDrawModelPos" checked=${state.doDrawModelPos} onChange=${ e => this.do_send_toggle(i, "doDrawModelPos", e.target.checked) } />
+                                    <span class="fakebutton pushbutton">pos</span>
+                                </label>
+                            </div>
 
-                            <label title="ActorWatcher::doDrawRigidBodyPos(${i}, flagset_t)" class="faketoggle doDrawRigidBodyPos" for="aw${i}_doDrawRigidBodyPos">
-                                <input type="checkbox" id="aw${i}_doDrawRigidBodyPos" checked=${state.doDrawRigidBodyPos} onChange=${ e => this.do_send_toggle(i, "doDrawRigidBodyPos", e.target.checked, 0, 0xffffffffffffffffn) } />
-                                <span class="fakebutton pushbutton">pos</span>
-                            </label>
-                            <label title="ActorWatcher::doDrawRigidBodyPosPast(${i}, flagset_t)" class="faketoggle doDrawRigidBodyPosPast" for="aw${i}_doDrawRigidBodyPosPast">
-                                <input type="checkbox" id="aw${i}_doDrawRigidBodyPosPast" checked=${state.doDrawRigidBodyPosPast} onChange=${ e => this.do_send_toggle(i, "doDrawRigidBodyPosPast", e.target.checked, 0, 0xffffffffffffffffn) } />
-                                <span class="fakebutton pushbutton">pos-</span>
-                            </label>
-                            <label title="ActorWatcher::doDrawRigidBodyPosFuture(${i}, flagset_t)" class="faketoggle doDrawRigidBodyPosFuture" for="aw${i}_doDrawRigidBodyPosFuture">
-                                <input type="checkbox" id="aw${i}_doDrawRigidBodyPosFuture" checked=${state.doDrawRigidBodyPosFuture} onChange=${ e => this.do_send_toggle(i, "doDrawRigidBodyPosFuture", e.target.checked, 0, 0xffffffffffffffffn) } />
-                                <span class="fakebutton pushbutton">pos+</span>
-                            </label>
+                            <div class="row2">
+                                <label title="ActorWatcher::doDrawRigidBodyPos(${i}, flagset_t)" class="faketoggle doDrawRigidBodyPos" for="aw${i}_doDrawRigidBodyPos">
+                                    <input type="checkbox" id="aw${i}_doDrawRigidBodyPos" checked=${state.doDrawRigidBodyPos}
+                                           onChange=${ e => this.do_send_toggle(i, "doDrawRigidBodyPos", e.target.checked, 0, 0xffffffffffffffffn) } />
+                                    <span class="fakebutton pushbutton">pos</span>
+                                </label>
+
+                                <label title="ActorWatcher::doDrawRigidBodyPosPast(${i}, flagset_t)" class="faketoggle doDrawRigidBodyPosPast" for="aw${i}_doDrawRigidBodyPosPast">
+                                    <input type="checkbox" id="aw${i}_doDrawRigidBodyPosPast" checked=${state.doDrawRigidBodyPosPast}
+                                           onChange=${ e => this.do_send_toggle(i, "doDrawRigidBodyPosPast", e.target.checked, 0, 0xffffffffffffffffn) } />
+                                    <span class="fakebutton pushbutton">pos-</span>
+                                </label>
+
+                                <label title="ActorWatcher::doDrawRigidBodyPosFuture(${i}, flagset_t)" class="faketoggle doDrawRigidBodyPosFuture" for="aw${i}_doDrawRigidBodyPosFuture">
+                                    <input type="checkbox" id="aw${i}_doDrawRigidBodyPosFuture" checked=${state.doDrawRigidBodyPosFuture}
+                                           onChange=${ e => this.do_send_toggle(i, "doDrawRigidBodyPosFuture", e.target.checked, 0, 0xffffffffffffffffn) } />
+                                    <span class="fakebutton pushbutton">pos+</span>
+                                </label>
+
+                                <label title="ActorWatcher::doDrawRigidBodyAABB(${i}, flagset_t)" class="faketoggle doDrawRigidBodyAABB" for="aw${i}_doDrawRigidBodyAABB">
+                                    <input type="checkbox" id="aw${i}_doDrawRigidBodyAABB" checked=${state.doDrawRigidBodyAABB}
+                                           onChange=${ e => this.do_send_toggle(i, "doDrawRigidBodyAABB", e.target.checked, 0, 0xffffffffffffffffn) } />
+                                    <span class="fakebutton pushbutton">AABB</span>
+                                </label>
+                            </div>
                         </div>
                     </div>
 

@@ -248,6 +248,7 @@ textarea {
     margin-top: 8px;
     margin-bottom: 4px;
     .fakebutton { padding: 4px; }
+    .row2 { margin-top: 12px; margin-bottom: 8px; }
 }
 
 .toolset_actor_watcher .faketoggle.doWsLog :not(:checked) ~ .fakebutton {
@@ -350,6 +351,17 @@ textarea {
     background: hsl(var(--hue-physical) 45% 30%);
     border-color: #222 #666 #666 #222;
     border-radius: 100%;
+}
+
+.toolset_actor_watcher .faketoggle.doDrawRigidBodyAABB :not(:checked) ~ .fakebutton {
+    color: hsl(var(--hue-physical) 15% 70%);
+    &:hover {
+        color: hsl(var(--hue-physical) 45% 70%);
+        border-color: hsl(var(--hue-physical) 30% 30%);
+    }
+}
+.toolset_actor_watcher .faketoggle.doDrawRigidBodyAABB :checked ~ .fakebutton {
+    border-color: hsl(var(--hue-physical) 45% 30%);
 }
 
 
