@@ -6,6 +6,17 @@
 #include "TextWriter.hpp"
 #include "PrimitiveDrawer.hpp"
 
+//const sead::Color4f Transparent{0,0,0,0};
+//const sead::Color4f White{1,1,1,1};
+const sead::Color4f VoidGray = sead::Color4f(0.3, 0.3, 0.3, 0.15);
+const sead::Color4f VoidGrayPast = sead::Color4f(0.5, 0.5, 0.5, 0.1); // faint
+//const sead::Color4f VoidGrayFuture = sead::Color4f(0.1, 0.1, 0.1, 0.2); // darker+heavier
+const sead::Color4f RecallYellow{0.9f, 0.76f, 0.16f, 0.15f}; // for position+rotation
+const sead::Color4f MotionBlue{0.16f, 0.3f, 0.9f, 0.3f};
+const sead::Color4f PhysicalGreen = sead::Color4f(0.4, 0.9, 0.4, 0.15);
+const sead::Color4f PhysicalGreenPast = sead::Color4f(0.4, 0.9, 0.4, 0.1); // faint
+const sead::Color4f PhysicalGreenFuture = sead::Color4f(0.2, 1.0, 0.2, 0.2); // greener+heavier
+
 namespace lotuskit {
     class ActorWatcherEntry {
         public:
@@ -198,6 +209,33 @@ namespace lotuskit {
             }
         }
 
+        inline static void drawRigidBody(phive::RigidBodyBase* rbody, bool doDrawRigidBodyAABB, bool doDrawRigidBodyPos, bool doDrawRigidBodyPosPast, bool doDrawRigidBodyPosFuture) {
+            if (doDrawRigidBodyPos || doDrawRigidBodyAABB) {
+                lotuskit::PrimitiveDrawer::setModelMtx(0, rbody->lastTransform);
+            }
+            if (doDrawRigidBodyPos) {
+                lotuskit::PrimitiveDrawer::drawSphere8x16(0, sead::Vector3f(0,0,0), 0.1, PhysicalGreen, PhysicalGreen);
+            }
+            if (doDrawRigidBodyAABB) {
+                sead::BoundBox3f aabb;
+                rbody->getAABB(&aabb);
+                lotuskit::PrimitiveDrawer::drawWireCube(0, sead::PrimitiveDrawer::CubeArg(aabb, PhysicalGreen));
+            }
+
+            if (doDrawRigidBodyPosPast) {
+                lotuskit::PrimitiveDrawer::setModelMtx(0, rbody->prevTransform);
+                lotuskit::PrimitiveDrawer::drawSphere8x16(0, sead::Vector3f(0,0,0), 0.075, PhysicalGreenPast, VoidGrayPast);
+            }
+
+            // sometimes a "next" is available
+            const bool isChangeTransform = rbody->changeRequest && (rbody->changeRequest->flags >> 6 & 1) != 0;
+            if (doDrawRigidBodyPosFuture && isChangeTransform) {
+                //sead::Matrix34f current = isChangeTransform ? rbody->changeRequest->nextTransform : rbody->lastTransform;
+                lotuskit::PrimitiveDrawer::setModelMtx(0, rbody->changeRequest->nextTransform);
+                lotuskit::PrimitiveDrawer::drawSphere8x16(0, sead::Vector3f(0,0,0), 0.075, PhysicalGreenFuture, PhysicalGreenFuture);
+            }
+        }
+
         inline static void calc() {
             for (u8 i=0; i < MAX_WATCHER_SLOTS; i++) {
                 auto& slot = slots[i];
@@ -256,19 +294,6 @@ namespace lotuskit {
 
                 // PrimitiveDrawer info
 
-                // TODO optional base color per actorwatcher for busy scenes?
-                //const sead::Color4f Transparent{0,0,0,0};
-                //const sead::Color4f White{1,1,1,1};
-                const sead::Color4f VoidGray = sead::Color4f(0.3, 0.3, 0.3, 0.15);
-                const sead::Color4f VoidGrayPast = sead::Color4f(0.5, 0.5, 0.5, 0.1); // faint
-                //const sead::Color4f VoidGrayFuture = sead::Color4f(0.1, 0.1, 0.1, 0.2); // darker+heavier
-
-                const sead::Color4f RecallYellow{0.9f, 0.76f, 0.16f, 0.15f}; // for position+rotation
-                const sead::Color4f MotionBlue{0.16f, 0.3f, 0.9f, 0.3f};
-                const sead::Color4f PhysicalGreen = sead::Color4f(0.4, 0.9, 0.4, 0.15);
-                const sead::Color4f PhysicalGreenPast = sead::Color4f(0.4, 0.9, 0.4, 0.1); // faint
-                const sead::Color4f PhysicalGreenFuture = sead::Color4f(0.2, 1.0, 0.2, 0.2); // greener+heavier
-
                 sead::Matrix34f mtx = actor->getTransform();
 
                 if (slot.doDrawAABB || slot.doDrawPos) {
@@ -313,7 +338,7 @@ namespace lotuskit {
                             lotuskit::PrimitiveDrawer::drawCylinder32(0, sead::Vector3f(0, vz * 0.5f, 0), radius, vz, MotionBlue, MotionBlue);
                         }
                     }
-                }
+                } // vel
 
                 if (slot.doDrawAngVel) {
                     // similar calc as linear velocity, but no signedness, just a "spin speed" disk radius
@@ -346,24 +371,14 @@ namespace lotuskit {
                             lotuskit::PrimitiveDrawer::drawDisk32(0, sead::Vector3f(0,0,0), vz*0.5f, MotionBlue, MotionBlue);
                         }
                     }
-
-                    //sead::Color4f color2{0.45f, 0.1f, 0.87f, 0.1f};
-                    //lotuskit::PrimitiveDrawer::drawSphere8x16(0, sead::Vector3f(0.f, 0.f, 0.f), radius, color1, color2);
-                    //lotuskit::PrimitiveDrawer::drawDisk32(0, sead::Vector3f(0.f, 0.f, 0.f), 2.f, color1, color2);
-                    //lotuskit::PrimitiveDrawer::drawCylinder32(0, sead::Vector3f(0.f, height * 0.5f, 0.f), radius, height, color1, color1);
-                }
+                } // angvel
 
                 auto physCmp = actor->getPhysicsComponent();
                 if (physCmp && physCmp->controllerSet && physCmp->controllerSet->mainRigidBody) {
 
-                    // TODO multiple rigidbodies bitflagged? try chests, springs, pots, wheels?
-                    // TODO extract rigidbody logging/drawing for use outside actors, draw global(?), ...
-                    const auto rbody = physCmp->controllerSet->mainRigidBody;
-
                     if (false) {
                         // TODO ws log rigidbodies for frontend?
-                        const char* name = rbody->getName();
-
+                        const auto rbody = physCmp->controllerSet->mainRigidBody;
                         sead::BoundBox3f aabb;
                         sead::BoundBox3f wrld;
                         rbody->getAABB(&aabb);
@@ -371,52 +386,59 @@ namespace lotuskit {
 
                         lotuskit::TextWriter::printf(
                             0, "RigidBody %s(%p) \naabb : [%f, %f] [%f, %f] [%f, %f] \nworld: [%f, %f] [%f, %f] [%f, %f] \n\n",
-                            name, rbody,
+                            rbody->getName(), rbody,
                             aabb.getMin().x, aabb.getMax().x, aabb.getMin().y, aabb.getMax().y, aabb.getMin().z, aabb.getMax().z,
                             wrld.getMin().x, wrld.getMax().x, wrld.getMin().y, wrld.getMax().y, wrld.getMin().z, wrld.getMax().z
                         );
                     }
 
-                    if (false) {
-                        // const auto rbody = physCmp->controllerSet->mainRigidBody;
-                        lotuskit::TextWriter::printf(0, "RigidBody main  %p %s \n", rbody, rbody->getName());
-                        physCmp->controllerSet->visitRigidBodyEntities([](auto* thisfn, auto* rbodyVisiting, char* idk) {
-                            lotuskit::TextWriter::printf(0, "RigidBody visit %p %s \n", rbodyVisiting, rbodyVisiting->getName());
-                        });
-                    }
+                    // XXX not capturing, just using statics for now -- unsafe to run bitflag decider stuff concurrently
+                    //     (i dont think i can pass capturing lambdas for the hook callback? maybe if its a sead::Function or something idk)
+                    static u8 bitIndex;
+                    bitIndex = 0;
+                    static ActorWatcherEntry* _slot;
+                    _slot = &slot;
+                    static phive::RigidBodyBase* _rbodyMain;
+                    _rbodyMain = physCmp->controllerSet->mainRigidBody;
 
-                    // any flag = all are turned on. TODO bitflag decider impl
-                    const bool doDrawRigidBodyAABB = slot.doDrawRigidBodyAABB > 0;
-                    const bool doDrawRigidBodyPos = slot.doDrawRigidBodyPos > 0;
-                    const bool doDrawRigidBodyPosPast = slot.doDrawRigidBodyPosPast > 0;
-                    const bool doDrawRigidBodyPosFuture = slot.doDrawRigidBodyPosFuture > 0;
+                    //drawRigidBody(physCmp->controllerSet->mainRigidBody, true, false, false, false);
+                    physCmp->controllerSet->visitRigidBodyEntities([](auto* thisfn, auto* rbody, char* idk) {
+                        //drawRigidBody(rbody, true, false, false, false);
 
-                    if (doDrawRigidBodyPos || doDrawRigidBodyAABB) {
-                        lotuskit::PrimitiveDrawer::setModelMtx(0, rbody->lastTransform);
-                    }
-                    if (doDrawRigidBodyPos) {
-                        lotuskit::PrimitiveDrawer::drawSphere8x16(0, sead::Vector3f(0,0,0), 0.1, PhysicalGreen, PhysicalGreen);
-                    }
-                    if (doDrawRigidBodyAABB) {
-                        sead::BoundBox3f aabb;
-                        rbody->getAABB(&aabb);
-                        lotuskit::PrimitiveDrawer::drawWireCube(0, sead::PrimitiveDrawer::CubeArg(aabb, PhysicalGreen));
-                    }
+                        if (bitIndex == 0) {
+                            // main body is always first flag
+                            bool doDrawRigidBodyAABB = _slot->doDrawRigidBodyAABB & (1LL << (63-bitIndex));
+                            bool doDrawRigidBodyPos = _slot->doDrawRigidBodyPos & (1LL << (63-bitIndex));
+                            bool doDrawRigidBodyPosPast = _slot->doDrawRigidBodyPosPast & (1LL << (63-bitIndex));
+                            bool doDrawRigidBodyPosFuture = _slot->doDrawRigidBodyPosFuture & (1LL << (63-bitIndex));
 
-                    if (doDrawRigidBodyPosPast) {
-                        lotuskit::PrimitiveDrawer::setModelMtx(0, rbody->prevTransform);
-                        lotuskit::PrimitiveDrawer::drawSphere8x16(0, sead::Vector3f(0,0,0), 0.075, PhysicalGreenPast, VoidGrayPast);
-                    }
+                            // TODO textwriter config
+                            //lotuskit::TextWriter::printf(0, "RigidBody[%d:%s](%p) \n", bitIndex, _rbodyMain->getName(), _rbodyMain);
+                            drawRigidBody(_rbodyMain, doDrawRigidBodyAABB, doDrawRigidBodyPos, doDrawRigidBodyPosPast, doDrawRigidBodyPosFuture);
+                            bitIndex++;
+                            // no return: continue processing first visited body
+                        }
 
-                    // sometimes a "next" is available
-                    const bool isChangeTransform = rbody->changeRequest && (rbody->changeRequest->flags >> 6 & 1) != 0;
-                    if (doDrawRigidBodyPosFuture && isChangeTransform) {
-                        //sead::Matrix34f current = isChangeTransform ? rbody->changeRequest->nextTransform : rbody->lastTransform;
-                        lotuskit::PrimitiveDrawer::setModelMtx(0, rbody->changeRequest->nextTransform);
-                        lotuskit::PrimitiveDrawer::drawSphere8x16(0, sead::Vector3f(0,0,0), 0.075, PhysicalGreenFuture, PhysicalGreenFuture);
-                    }
+                        if (rbody == _rbodyMain) {
+                            // if main body reappears in the list just skip over its apparent index,
+                            // ignoring its flag value, but idk if list order is even consistent
+                            bitIndex++;
+                            return;
+                        }
 
-                } // main rigidbody
+                        bool doDrawRigidBodyAABB = _slot->doDrawRigidBodyAABB & (1LL << (63-bitIndex));
+                        bool doDrawRigidBodyPos = _slot->doDrawRigidBodyPos & (1LL << (63-bitIndex));
+                        bool doDrawRigidBodyPosPast = _slot->doDrawRigidBodyPosPast & (1LL << (63-bitIndex));
+                        bool doDrawRigidBodyPosFuture = _slot->doDrawRigidBodyPosFuture & (1LL << (63-bitIndex));
+
+                        // TODO textwriter config
+                        //lotuskit::TextWriter::printf(0, "RigidBody[%d:%s](%p) \n", bitIndex, rbody->getName(), rbody);
+                        drawRigidBody(rbody, doDrawRigidBodyAABB, doDrawRigidBodyPos, doDrawRigidBodyPosPast, doDrawRigidBodyPosFuture);
+                        bitIndex++;
+
+                    });
+
+                } // draw rigidbodys
 
                 if (slot.doDrawModelPos) {
                     auto modelCmp = actor->getModelComponent();
