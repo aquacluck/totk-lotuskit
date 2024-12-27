@@ -377,6 +377,14 @@ namespace lotuskit {
                         );
                     }
 
+                    if (false) {
+                        // const auto rbody = physCmp->controllerSet->mainRigidBody;
+                        lotuskit::TextWriter::printf(0, "RigidBody main  %p %s \n", rbody, rbody->getName());
+                        physCmp->controllerSet->visitRigidBodyEntities([](auto* thisfn, auto* rbodyVisiting, char* idk) {
+                            lotuskit::TextWriter::printf(0, "RigidBody visit %p %s \n", rbodyVisiting, rbodyVisiting->getName());
+                        });
+                    }
+
                     // any flag = all are turned on. TODO bitflag decider impl
                     const bool doDrawRigidBodyAABB = slot.doDrawRigidBodyAABB > 0;
                     const bool doDrawRigidBodyPos = slot.doDrawRigidBodyPos > 0;

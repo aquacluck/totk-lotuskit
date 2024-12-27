@@ -47,10 +47,19 @@ namespace phive {
     };
     static_assert(offsetof(RigidBodyBase, lastTransform) == 0x98);
 
-    class ControllerSet { // XXX RigidBodyController?
+    using ControllerSet_visitRigidBodyEntities_cb = void(*)(void*, RigidBodyBase*, char*);
+
+    class ControllerSet {
         public:
         char _00[0x150];
-        RigidBodyBase* mainRigidBody;
+        RigidBodyBase* mainRigidBody; // XXX RigidBodyEntity?
+
+        void visitRigidBodyEntities(ControllerSet_visitRigidBodyEntities_cb cb) {
+            using impl_t = void (ControllerSet*, ControllerSet_visitRigidBodyEntities_cb**);
+            auto impl = reinterpret_cast<impl_t*>(exl::util::modules::GetTargetOffset(sym::phive::ControllerSet::visitRigidBodyEntities::offset));
+            auto cb_ = &cb; // just accept a normal function pointer, this was nuts
+            return impl(this, &cb_);
+        }
     };
 
 } // ns

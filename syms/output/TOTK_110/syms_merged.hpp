@@ -286,6 +286,13 @@ class sInstance {
 };
 }
 
+namespace sym::phive::ControllerSet {
+class visitRigidBodyEntities {
+    public:
+    inline static constexpr ptrdiff_t offset = 0x007baa9c;
+};
+}
+
 namespace sym::phive::RigidBodyBase {
 class getBoundingBoxWorld {
     public:
