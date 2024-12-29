@@ -46,6 +46,7 @@ def run_symbol_def_imports():
 
     import exking.phive.ControllerSet
     import exking.phive.RigidBodyBase
+    import exking.phive.RigidBodyEntity
 
     import havok.hk.hacks
 

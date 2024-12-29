@@ -51,6 +51,7 @@ _ZN5phive13ControllerSetL22visitRigidBodyEntitiesE = __main_start + 0x008aa374; 
 _ZN5phive13RigidBodyBaseL19getBoundingBoxWorldE = __main_start + 0x00a3c1c4; /* phive::RigidBodyBase::getBoundingBoxWorld */
 _ZN5phive13RigidBodyBaseL7getAABBE = __main_start + 0x00b7d5d4; /* phive::RigidBodyBase::getAABB */
 _ZN5phive13RigidBodyBaseL7getNameE = __main_start + 0x02a911b8; /* phive::RigidBodyBase::getName */
+_ZN5phive15RigidBodyEntityL12getActorLinkE = __main_start + 0x00fce23c; /* phive::RigidBodyEntity::getActorLink */
 _ZN6engine5actor16ActorInstanceMgr22requestCreateActorSyncEPv = __main_start + 0x012a8b44; /* engine::actor::ActorInstanceMgr::requestCreateActorSync(void*) */
 _ZN6engine5actor16ActorInstanceMgr23requestCreateActorAsyncEPv = __main_start + 0x00ab92cc; /* engine::actor::ActorInstanceMgr::requestCreateActorAsync(void*) */
 _ZN6engine5actor16ActorInstanceMgr25createActorAndConnectSyncEPv = __main_start + 0x0117f4a4; /* engine::actor::ActorInstanceMgr::createActorAndConnectSync(void*) */

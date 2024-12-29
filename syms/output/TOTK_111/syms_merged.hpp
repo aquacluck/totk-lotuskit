@@ -314,6 +314,13 @@ class getName {
 };
 }
 
+namespace sym::phive::RigidBodyEntity {
+class getActorLink {
+    public:
+    inline static constexpr ptrdiff_t offset = 0x00000000;
+};
+}
+
 namespace sym::engine::actor::ActorInstanceMgr {
 class requestCreateActorSync {
     public:
