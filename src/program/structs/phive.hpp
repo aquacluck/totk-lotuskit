@@ -8,6 +8,9 @@
 #include "lib.hpp"
 #include "syms_merged.hpp"
 
+
+namespace engine::actor { class ActorBaseLink; }
+
 namespace phive {
 
     class ChangeRequest { // XXX RigidBodyChangeRequest?
@@ -25,6 +28,7 @@ namespace phive {
         char _68[0x30];
         sead::Matrix34f lastTransform;
         sead::Matrix34f prevTransform;
+        // XXX pad more members before RigidBodyEntity?
 
         void getAABB(sead::BoundBox3f* dst) {
             using impl_t = void (RigidBodyBase*, sead::BoundBox3f*);
@@ -47,12 +51,21 @@ namespace phive {
     };
     static_assert(offsetof(RigidBodyBase, lastTransform) == 0x98);
 
-    using ControllerSet_visitRigidBodyEntities_cb = void(*)(void*, RigidBodyBase*, char*);
+    class RigidBodyEntity: public RigidBodyBase {
+        public:
+        ::engine::actor::ActorBaseLink* getActorLink() {
+            using impl_t = ::engine::actor::ActorBaseLink* (RigidBodyEntity*);
+            auto impl = reinterpret_cast<impl_t*>(exl::util::modules::GetTargetOffset(sym::phive::RigidBodyEntity::getActorLink::offset));
+            return impl(this); // TODO default &game::actor::sDefaultActorLink?
+        }
+    };
+
+    using ControllerSet_visitRigidBodyEntities_cb = void(*)(void*, RigidBodyEntity*, char*);
 
     class ControllerSet {
         public:
         char _00[0x150];
-        RigidBodyBase* mainRigidBody; // XXX RigidBodyEntity?
+        RigidBodyEntity* mainRigidBody;
 
         void visitRigidBodyEntities(ControllerSet_visitRigidBodyEntities_cb cb) {
             using impl_t = void (ControllerSet*, ControllerSet_visitRigidBodyEntities_cb**);

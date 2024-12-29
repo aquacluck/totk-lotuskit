@@ -17,8 +17,8 @@ namespace engine::actor {
     class ActorBaseLink;
 } // namespace engine::actor
 
-using DtorFunc = void (engine::actor::ActorBaseLink*);
-extern DtorFunc* ActorLinkDtor;
+//using DtorFunc = void (engine::actor::ActorBaseLink*);
+//extern DtorFunc* ActorLinkDtor;
 
 namespace sead {
     class ListNode;
@@ -78,7 +78,8 @@ namespace engine::actor {
 
     class ActorBase;
     class ActorFile;
-    class ActorInstanceMgr; //XXX naming
+    class ActorMgr;
+    class BaseProcLinkData;
     class PreActor;
 
     struct CreateWatcher {
@@ -121,7 +122,7 @@ namespace engine::actor {
         void* _190;
         void* _198;
         void* _1a0;
-        void* mLinkData; // XXX BaseProcLinkData?
+        BaseProcLinkData* mLinkData;
         u32 mRefCount; // atomic
         CreateWatcherRef mWatcher;
         sead::FixedRingBuffer<u16, TOTK_VERSION == 100 ? 29 : 33> mDependencyRing;
@@ -137,19 +138,33 @@ namespace engine::actor {
     };
     static_assert(sizeof(ActorTransceiver) == 0x50);
 
-    class ActorBaseLink {
+    class BaseProcLink {
         public:
-        virtual void checkDerivedRuntimeTypeInfo(void*) const;
-        virtual void* getRuntimeTypeInfo() const;
-        virtual ~ActorBaseLink() { ActorLinkDtor(this); };
-
-        private:
-        void* mLinkData; // XXX BaseProcLinkData?
+        virtual ~BaseProcLink(); // vtable i guess
+        BaseProcLinkData* mLinkData;
         BaseProc::BaseProcId mID = BaseProc::cInvalidId;
         u8 _14;
         u8 _15;
         u8 mRefMask;
         u8 _17;
+    };
+
+    class BaseProcLinkData {
+        public:
+        char readCS[0x20];
+        char writeCS[0x20];
+        ActorBase* baseProc;
+        int baseProcId;
+        u64 refMask;
+        u8 _58;
+    };
+    static_assert(sizeof(BaseProcLinkData) == 0x60);
+
+    class ActorBaseLink: public BaseProcLink {
+        public:
+        virtual void checkDerivedRuntimeTypeInfo(void*) const;
+        virtual void* getRuntimeTypeInfo() const;
+        //virtual ~ActorBaseLink() { ActorLinkDtor(this); };
     };
     static_assert(sizeof(ActorBaseLink) == 0x18);
 
@@ -246,7 +261,7 @@ namespace engine::actor {
     static_assert(sizeof(ActorBase) == (TOTK_VERSION == 100 ? 0x4b0 : 0x4b8));
     static_assert(offsetof(ActorBase, mAABB) == (TOTK_VERSION == 100 ? 0x348 : 0x350));
 
-    class ActorMgr { //XXX naming
+    class BaseProcMgr {
         public:
         // just for create arg (does this actually belong here hmmmmm)
         struct CreateArg {

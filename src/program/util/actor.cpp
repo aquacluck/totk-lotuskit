@@ -6,9 +6,9 @@
 #include <prim/seadSafeString.h>
 
 namespace lotuskit::util::actor {
-    using CreateFunc = bool (engine::actor::ActorInstanceMgr*, const sead::SafeString&, const engine::actor::ActorMgr::CreateArg&,
+    using CreateFunc = bool (engine::actor::ActorMgr*, const sead::SafeString&, const engine::actor::BaseProcMgr::CreateArg&,
                              engine::actor::CreateWatcherRef*, engine::actor::CreatePriority, engine::actor::PreActor*,
-                             engine::actor::ActorFile*, sead::Function*, bool, engine::actor::ActorMgr::Result*, engine::actor::PreActor**);
+                             engine::actor::ActorFile*, sead::Function*, bool, engine::actor::BaseProcMgr::Result*, engine::actor::PreActor**);
     class ForceSetMatrixArg {
         public:
         float f[12];
@@ -40,18 +40,18 @@ namespace lotuskit::util::actor {
         //initInfo.setParam(sead::SafeString{"EquipmentUser_Bow"}, sead::SafeString{"Weapon_Bow_032"});
         //initInfo.setParam(sead::SafeString{"EquipmentUser_Shield"}, sead::SafeString{"Weapon_Shield_018"});
         //initInfo.setParam(sead::SafeString{"EquipmentUser_Weapon"}, sead::SafeString{"Weapon_Sword_124"});
-        engine::actor::ActorMgr::CreateArg createArg;
+        engine::actor::BaseProcMgr::CreateArg createArg;
         createArg.position = {x, y, z};
         createArg.scale = { 1.f, 1.f, 1.f };
         createArg.blackboard_info = &initInfo;
-        createArg.transform_flags.set(engine::actor::ActorMgr::CreateArg::TransformFlags::UsePosition);
-        createArg.transform_flags.set(engine::actor::ActorMgr::CreateArg::TransformFlags::UseScale);
+        createArg.transform_flags.set(engine::actor::BaseProcMgr::CreateArg::TransformFlags::UsePosition);
+        createArg.transform_flags.set(engine::actor::BaseProcMgr::CreateArg::TransformFlags::UseScale);
 
-        CreateFunc* requestCreateActorAsync = reinterpret_cast<CreateFunc*>(exl::util::modules::GetTargetOffset(sym::engine::actor::ActorInstanceMgr::requestCreateActorAsync::offset));
-        engine::actor::ActorInstanceMgr* actorInstanceMgr = *reinterpret_cast<engine::actor::ActorInstanceMgr**>(exl::util::modules::GetTargetOffset(sym::engine::actor::ActorInstanceMgr::sInstance::offset));
-        engine::actor::ActorMgr::Result result;
+        CreateFunc* requestCreateActorAsync = reinterpret_cast<CreateFunc*>(exl::util::modules::GetTargetOffset(sym::engine::actor::ActorMgr::requestCreateActorAsync::offset));
+        engine::actor::ActorMgr* actorMgr = *reinterpret_cast<engine::actor::ActorMgr**>(exl::util::modules::GetTargetOffset(sym::engine::actor::ActorMgr::sInstance::offset));
+        engine::actor::BaseProcMgr::Result result;
 
-        bool ret = requestCreateActorAsync(actorInstanceMgr, actorName.c_str(), createArg, nullptr, engine::actor::CreatePriority::High, nullptr, nullptr, nullptr, false, &result, nullptr);
+        bool ret = requestCreateActorAsync(actorMgr, actorName.c_str(), createArg, nullptr, engine::actor::CreatePriority::High, nullptr, nullptr, nullptr, false, &result, nullptr);
 
         char buf[200];
         nn::util::SNPrintf(buf, sizeof(buf), "actor::createSimple(%s, %f, %f, %f) -> %d, code %d", actorName.c_str(), x, y, z, ret?1:0, (u32)result);
@@ -71,21 +71,21 @@ namespace lotuskit::util::actor {
         //initInfo.setParam(sead::SafeString{"EquipmentUser_Bow"}, sead::SafeString{"Weapon_Bow_032"});
         //initInfo.setParam(sead::SafeString{"EquipmentUser_Shield"}, sead::SafeString{"Weapon_Shield_018"});
         //initInfo.setParam(sead::SafeString{"EquipmentUser_Weapon"}, sead::SafeString{"Weapon_Sword_124"});
-        engine::actor::ActorMgr::CreateArg createArg;
+        engine::actor::BaseProcMgr::CreateArg createArg;
         createArg.position = {x, y, z};
         createArg.scale = { 1.f, 1.f, 1.f };
         createArg.blackboard_info = &initInfo;
-        createArg.transform_flags.set(engine::actor::ActorMgr::CreateArg::TransformFlags::UsePosition);
-        createArg.transform_flags.set(engine::actor::ActorMgr::CreateArg::TransformFlags::UseScale);
+        createArg.transform_flags.set(engine::actor::BaseProcMgr::CreateArg::TransformFlags::UsePosition);
+        createArg.transform_flags.set(engine::actor::BaseProcMgr::CreateArg::TransformFlags::UseScale);
 
-        CreateFunc* requestCreateActorAsync = reinterpret_cast<CreateFunc*>(exl::util::modules::GetTargetOffset(sym::engine::actor::ActorInstanceMgr::requestCreateActorAsync::offset));
-        engine::actor::ActorInstanceMgr* actorInstanceMgr = *reinterpret_cast<engine::actor::ActorInstanceMgr**>(exl::util::modules::GetTargetOffset(sym::engine::actor::ActorInstanceMgr::sInstance::offset));
-        engine::actor::ActorMgr::Result result;
+        CreateFunc* requestCreateActorAsync = reinterpret_cast<CreateFunc*>(exl::util::modules::GetTargetOffset(sym::engine::actor::ActorMgr::requestCreateActorAsync::offset));
+        engine::actor::ActorMgr* actorMgr = *reinterpret_cast<engine::actor::ActorMgr**>(exl::util::modules::GetTargetOffset(sym::engine::actor::ActorMgr::sInstance::offset));
+        engine::actor::BaseProcMgr::Result result;
 
         engine::actor::PreActor* preactor = nullptr;
 
         //auto& slot = lotuskit::ActorWatcher::slots[slotIndex];
-        bool ret = requestCreateActorAsync(actorInstanceMgr, actorName.c_str(), createArg, nullptr /* &slot.createWatcher */, engine::actor::CreatePriority::High, nullptr, nullptr, nullptr, false, &result, &preactor);
+        bool ret = requestCreateActorAsync(actorMgr, actorName.c_str(), createArg, nullptr /* &slot.createWatcher */, engine::actor::CreatePriority::High, nullptr, nullptr, nullptr, false, &result, &preactor);
         //if (slot.createWatcher.watcher != nullptr) { watcherStatus = slot.createWatcher.watcher->status; }
 
         if (preactor != nullptr) {

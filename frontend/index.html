@@ -130,20 +130,20 @@
         return html`<span style="transform: rotate(${rad}rad);" class="compass_spinny"><span>\xa0</span><span>\xa0</span>→</span>`
     }
 
-    function ReadoutVec3({label, value, vecComponentPattern}) {
+    function ReadoutVec3({label, value, vecComponentPattern, title}) {
         const v = value;
         const c = vecComponentPattern || "";
-        return html`<span label=${label} class="readout readout_vec3 vec_components_${c}"><span>${makeLegibleFloat(v[0])}</span> <span>${makeLegibleFloat(v[1])}</span> <span>${makeLegibleFloat(v[2])}</span></span>`;
+        return html`<span label=${label} title=${title} class="readout readout_vec3 vec_components_${c}"><span>${makeLegibleFloat(v[0])}</span> <span>${makeLegibleFloat(v[1])}</span> <span>${makeLegibleFloat(v[2])}</span></span>`;
     }
-    function ReadoutVec2({label, value, vecComponentPattern}) {
+    function ReadoutVec2({label, value, vecComponentPattern, title}) {
         const v = value;
         const c = vecComponentPattern || "";
-        return html`<span label=${label} class="readout readout_vec2 vec_components_${c}"><span>${makeLegibleFloat(v[0])}</span> <span>${makeLegibleFloat(v[1])}</span></span>`;
+        return html`<span label=${label}  title=${title} class="readout readout_vec2 vec_components_${c}"><span>${makeLegibleFloat(v[0])}</span> <span>${makeLegibleFloat(v[1])}</span></span>`;
     }
-    function ReadoutQuat({label, value, vecComponentPattern}) {
+    function ReadoutQuat({label, value, vecComponentPattern, title}) {
         const v = value;
         const c = vecComponentPattern || "";
-        return html`<span label=${label} class="readout readout_quat vec_components_${c}"><span>${makeLegibleFloat(v[0])}</span> <span>${makeLegibleFloat(v[1])}</span> <span>${makeLegibleFloat(v[2])}</span> <span>${makeLegibleFloat(v[3])}</span></span>`;
+        return html`<span label=${label} title=${title} class="readout readout_quat vec_components_${c}"><span>${makeLegibleFloat(v[0])}</span> <span>${makeLegibleFloat(v[1])}</span> <span>${makeLegibleFloat(v[2])}</span> <span>${makeLegibleFloat(v[3])}</span></span>`;
     }
 
 
@@ -431,27 +431,27 @@
                         Select:
                         <button title="ActorWatcher::clearSlot(${i})" onClick=${ () => this.clear_slot(i) } class="pushbutton selectNull">null</button>
                         <button title="ActorWatcher::assignSlotAwaitRecall(${i})" onClick=${ () => this.assignSlotAwaitRecall(i) } class="pushbutton selectRecall"><img src="assets/img/Obj_ReverseRecorder.png" /></button>
-                        <!-- TODO on any next spawn, on specific actor's next relation, ... -->
+                        <!-- TODO on any next spawn, on specific actor's next dep, ... -->
                         <!--<input type="number" placeholder="0" size="2" min="0" max="3" size=2 />-->
                     </div>
 
 
                     <div class="actor_pos32">
-                        <${ReadoutVec3} label="pos32\xa0\xa0\xa0\xa0\xa0\xa0" value=${pos} vecComponentPattern=${VecComponentPatterns.XYZ} />
+                        <${ReadoutVec3} title="xyz" label="pos" value=${pos} vecComponentPattern=${VecComponentPatterns.XYZ} />
                     </div>
                     <div class="actor_pos32_ui">
-                        <${ReadoutVec3} label="pos32 (ui)\xa0" value=${VecUtil.engine_to_ui(pos)} vecComponentPattern=${VecComponentPatterns.XZY} />
+                        <${ReadoutVec3} title="x, -z, y-105.5" label="ui\xa0" value=${VecUtil.engine_to_ui(pos)} vecComponentPattern=${VecComponentPatterns.XZY} />
                     </div>
                     <div class="actor_vel_frame">
                         <${ReadoutVec3} label="vel" value=${vel} vecComponentPattern=${VecComponentPatterns.XYZ} /><br />
                     </div>
 
                     <!--
-                    <div class="actor_pos64_ui">
-                        <${ReadoutVec3} label="pos64 (ui)\xa0" value=${VecUtil.engine_to_ui(dummy)} vecComponentPattern=${VecComponentPatterns.XZY} />
-                    </div>
                     <div class="actor_pos64">
-                        <${ReadoutVec3} label="pos64\xa0\xa0\xa0\xa0\xa0\xa0" value=${dummy} vecComponentPattern=${VecComponentPatterns.XYZ} />
+                        <${ReadoutVec3} label="pos" value=${dummy} vecComponentPattern=${VecComponentPatterns.XYZ} />
+                    </div>
+                    <div class="actor_pos64_ui">
+                        <${ReadoutVec3} label="ui\xa0" value=${VecUtil.engine_to_ui(dummy)} vecComponentPattern=${VecComponentPatterns.XZY} />
                     </div>
                     <div class="actor_compass">
                         <${ReadoutVec2} label="rot\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0" value=${dummy} vecComponentPattern=${VecComponentPatterns.ZX} />

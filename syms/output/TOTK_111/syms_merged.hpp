@@ -321,42 +321,21 @@ class getActorLink {
 };
 }
 
-namespace sym::engine::actor::ActorInstanceMgr {
-class requestCreateActorSync {
+namespace sym::engine::actor::BaseProcMgr {
+class addDependency {
     public:
-    inline static constexpr ptrdiff_t offset = 0x00000000;
+    inline static constexpr ptrdiff_t offset = 0x00dc13f0;
 };
 }
 
-namespace sym::engine::actor::ActorInstanceMgr {
-class requestCreateActorAsync {
+namespace sym::engine::actor::BaseProcMgr {
+class removeDependency {
     public:
-    inline static constexpr ptrdiff_t offset = 0x00000000;
+    inline static constexpr ptrdiff_t offset = 0x008082d8;
 };
 }
 
-namespace sym::engine::actor::ActorInstanceMgr {
-class createActorAndConnectSync {
-    public:
-    inline static constexpr ptrdiff_t offset = 0x00000000;
-};
-}
-
-namespace sym::engine::actor::ActorInstanceMgr {
-class createActorAndConnectSync__2 {
-    public:
-    inline static constexpr ptrdiff_t offset = 0x00000000;
-};
-}
-
-namespace sym::engine::actor::ActorInstanceMgr {
-class createActorAndConnectSyncImpl {
-    public:
-    inline static constexpr ptrdiff_t offset = 0x00000000;
-};
-}
-
-namespace sym::engine::actor::ActorInstanceMgr {
+namespace sym::engine::actor::BaseProcMgr {
 class sInstance {
     public:
     inline static constexpr ptrdiff_t offset = 0x00000000;
@@ -378,16 +357,37 @@ class calc_delete {
 }
 
 namespace sym::engine::actor::ActorMgr {
-class removeActorRelation {
+class requestCreateActorSync {
     public:
-    inline static constexpr ptrdiff_t offset = 0x008082d8;
+    inline static constexpr ptrdiff_t offset = 0x00000000;
 };
 }
 
 namespace sym::engine::actor::ActorMgr {
-class registerActorRelation {
+class requestCreateActorAsync {
     public:
-    inline static constexpr ptrdiff_t offset = 0x00dc13f0;
+    inline static constexpr ptrdiff_t offset = 0x00000000;
+};
+}
+
+namespace sym::engine::actor::ActorMgr {
+class createActorAndConnectSync {
+    public:
+    inline static constexpr ptrdiff_t offset = 0x00000000;
+};
+}
+
+namespace sym::engine::actor::ActorMgr {
+class createActorAndConnectSync__2 {
+    public:
+    inline static constexpr ptrdiff_t offset = 0x00000000;
+};
+}
+
+namespace sym::engine::actor::ActorMgr {
+class createActorAndConnectSyncImpl {
+    public:
+    inline static constexpr ptrdiff_t offset = 0x00000000;
 };
 }
 

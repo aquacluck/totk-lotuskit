@@ -321,45 +321,24 @@ class getActorLink {
 };
 }
 
-namespace sym::engine::actor::ActorInstanceMgr {
-class requestCreateActorSync {
+namespace sym::engine::actor::BaseProcMgr {
+class addDependency {
     public:
-    inline static constexpr ptrdiff_t offset = 0x01278724;
+    inline static constexpr ptrdiff_t offset = 0x023c72a0;
 };
 }
 
-namespace sym::engine::actor::ActorInstanceMgr {
-class requestCreateActorAsync {
+namespace sym::engine::actor::BaseProcMgr {
+class removeDependency {
     public:
-    inline static constexpr ptrdiff_t offset = 0x00a5fdf8;
+    inline static constexpr ptrdiff_t offset = 0x00ab8610;
 };
 }
 
-namespace sym::engine::actor::ActorInstanceMgr {
-class createActorAndConnectSync {
-    public:
-    inline static constexpr ptrdiff_t offset = 0x010c6838;
-};
-}
-
-namespace sym::engine::actor::ActorInstanceMgr {
-class createActorAndConnectSync__2 {
-    public:
-    inline static constexpr ptrdiff_t offset = 0x013e2d68;
-};
-}
-
-namespace sym::engine::actor::ActorInstanceMgr {
-class createActorAndConnectSyncImpl {
-    public:
-    inline static constexpr ptrdiff_t offset = 0x01293710;
-};
-}
-
-namespace sym::engine::actor::ActorInstanceMgr {
+namespace sym::engine::actor::BaseProcMgr {
 class sInstance {
     public:
-    inline static constexpr ptrdiff_t offset = 0x046479e0;
+    inline static constexpr ptrdiff_t offset = 0x04647330;
 };
 }
 
@@ -378,23 +357,44 @@ class calc_delete {
 }
 
 namespace sym::engine::actor::ActorMgr {
-class removeActorRelation {
+class requestCreateActorSync {
     public:
-    inline static constexpr ptrdiff_t offset = 0x00ab8610;
+    inline static constexpr ptrdiff_t offset = 0x01278724;
 };
 }
 
 namespace sym::engine::actor::ActorMgr {
-class registerActorRelation {
+class requestCreateActorAsync {
     public:
-    inline static constexpr ptrdiff_t offset = 0x023c72a0;
+    inline static constexpr ptrdiff_t offset = 0x00a5fdf8;
+};
+}
+
+namespace sym::engine::actor::ActorMgr {
+class createActorAndConnectSync {
+    public:
+    inline static constexpr ptrdiff_t offset = 0x010c6838;
+};
+}
+
+namespace sym::engine::actor::ActorMgr {
+class createActorAndConnectSync__2 {
+    public:
+    inline static constexpr ptrdiff_t offset = 0x013e2d68;
+};
+}
+
+namespace sym::engine::actor::ActorMgr {
+class createActorAndConnectSyncImpl {
+    public:
+    inline static constexpr ptrdiff_t offset = 0x01293710;
 };
 }
 
 namespace sym::engine::actor::ActorMgr {
 class sInstance {
     public:
-    inline static constexpr ptrdiff_t offset = 0x04647330;
+    inline static constexpr ptrdiff_t offset = 0x046479e0;
 };
 }
 

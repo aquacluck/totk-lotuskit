@@ -23,8 +23,8 @@ namespace lotuskit {
         // state (freely cleared+mutated by the mod)
         bool isCalc; // enable this slot to run
         bool isPendingSelection;
-        u8 selectionType; // 0 = unused, 1 = next spawn (TODO?), 2 = next relation to parent_i (TODO?), 3 = preactor, 4 = recall hover
-        engine::actor::ActorBase* actorSelectorParentRelation;
+        u8 selectionType; // 0 = unused, 1 = next spawn (TODO?), 2 = next dep to a given slot/actor (TODO?), 3 = preactor, 4 = recall hover
+        engine::actor::ActorBase* actorSelectorBaseProcDep;
         engine::actor::ActorBase* actor;
         engine::actor::PreActor* preactor;
         //engine::actor::CreateWatcherRef createWatcher; // using this in requestCreateActorAsync gets populated with CreateWatcher::status=2, but actor doesnt spawn... something else to set?
@@ -71,7 +71,7 @@ namespace lotuskit {
             this->isCalc = false;
             this->isPendingSelection = false;
             this->selectionType = 0;
-            this->actorSelectorParentRelation = nullptr;
+            this->actorSelectorBaseProcDep = nullptr;
             this->actor = nullptr;
             this->preactor = nullptr;
             //this->createWatcher.watcher = nullptr;
@@ -209,7 +209,7 @@ namespace lotuskit {
             }
         }
 
-        inline static void drawRigidBody(phive::RigidBodyBase* rbody, bool doDrawRigidBodyAABB, bool doDrawRigidBodyPos, bool doDrawRigidBodyPosPast, bool doDrawRigidBodyPosFuture) {
+        inline static void drawRigidBody(phive::RigidBodyEntity* rbody, bool doDrawRigidBodyAABB, bool doDrawRigidBodyPos, bool doDrawRigidBodyPosPast, bool doDrawRigidBodyPosFuture) {
             if (doDrawRigidBodyPos || doDrawRigidBodyAABB) {
                 lotuskit::PrimitiveDrawer::setModelMtx(0, rbody->lastTransform);
             }
@@ -217,6 +217,9 @@ namespace lotuskit {
                 lotuskit::PrimitiveDrawer::drawSphere8x16(0, sead::Vector3f(0,0,0), 0.1, PhysicalGreen, PhysicalGreen);
             }
             if (doDrawRigidBodyAABB) {
+                //TODO TextWriter config
+                lotuskit::TextWriter::printf(0, "RigidBody %s(%p) \n", rbody->getName(), rbody);
+
                 sead::BoundBox3f aabb;
                 rbody->getAABB(&aabb);
                 lotuskit::PrimitiveDrawer::drawWireCube(0, sead::PrimitiveDrawer::CubeArg(aabb, PhysicalGreen));
@@ -398,7 +401,7 @@ namespace lotuskit {
                     bitIndex = 0;
                     static ActorWatcherEntry* _slot;
                     _slot = &slot;
-                    static phive::RigidBodyBase* _rbodyMain;
+                    static phive::RigidBodyEntity* _rbodyMain;
                     _rbodyMain = physCmp->controllerSet->mainRigidBody;
 
                     //drawRigidBody(physCmp->controllerSet->mainRigidBody, true, false, false, false);
@@ -406,14 +409,24 @@ namespace lotuskit {
                         //drawRigidBody(rbody, true, false, false, false);
 
                         if (bitIndex == 0) {
-                            // main body is always first flag
+                            // main body is always first flag -- character matter(?) main bodies on actors like Player
+                            // do not show up in visitRigidBodyEntities, so hacking this in is inevitable
                             bool doDrawRigidBodyAABB = _slot->doDrawRigidBodyAABB & (1LL << (63-bitIndex));
                             bool doDrawRigidBodyPos = _slot->doDrawRigidBodyPos & (1LL << (63-bitIndex));
                             bool doDrawRigidBodyPosPast = _slot->doDrawRigidBodyPosPast & (1LL << (63-bitIndex));
                             bool doDrawRigidBodyPosFuture = _slot->doDrawRigidBodyPosFuture & (1LL << (63-bitIndex));
-
                             // TODO textwriter config
-                            //lotuskit::TextWriter::printf(0, "RigidBody[%d:%s](%p) \n", bitIndex, _rbodyMain->getName(), _rbodyMain);
+
+                            /*// XXX actorlink testing
+                            engine::actor::ActorBaseLink* alink =  rbody->getActorLink();
+                            if (alink && alink->mID != engine::actor::BaseProc::cInvalidId) {
+                                lotuskit::TextWriter::printf(0, "alink %p(linkdata %p, baseprocid %d) \n", alink, alink->mLinkData, alink->mID);
+                                if (alink->mLinkData != nullptr) {
+                                    lotuskit::TextWriter::printf(0, "    data(actor %p, baseprocid %d) \n", alink->mLinkData->baseProc, alink->mLinkData->baseProcId);
+                                }
+                            }
+                            */
+
                             drawRigidBody(_rbodyMain, doDrawRigidBodyAABB, doDrawRigidBodyPos, doDrawRigidBodyPosPast, doDrawRigidBodyPosFuture);
                             bitIndex++;
                             // no return: continue processing first visited body
@@ -431,12 +444,11 @@ namespace lotuskit {
                         bool doDrawRigidBodyPosPast = _slot->doDrawRigidBodyPosPast & (1LL << (63-bitIndex));
                         bool doDrawRigidBodyPosFuture = _slot->doDrawRigidBodyPosFuture & (1LL << (63-bitIndex));
 
-                        // TODO textwriter config
-                        //lotuskit::TextWriter::printf(0, "RigidBody[%d:%s](%p) \n", bitIndex, rbody->getName(), rbody);
                         drawRigidBody(rbody, doDrawRigidBodyAABB, doDrawRigidBodyPos, doDrawRigidBodyPosPast, doDrawRigidBodyPosFuture);
                         bitIndex++;
 
                     });
+                    //lotuskit::TextWriter::printf(0, "\n");
 
                 } // draw rigidbodys
 

@@ -1,43 +1,47 @@
 from build_types import *
 begin_sym_file(__file__)
 
+# FIXME versions
+# FIXME placeholder type sigs, hook only
+'''
+namespace engine::actor::ActorMgr {
+    void* createActorAndConnectSync(void*) {}
+    void* createActorAndConnectSync__2(void*) {}
+    void* createActorAndConnectSyncImpl(void*) {}
+    void* requestCreateActorAsync(void*) {}
+    void* requestCreateActorSync(void*) {}
+}
+'''
 
-"""
-#include <cstdint>
-typedef uint32_t u32;
-namespace engine::actor {
-    class ActorBase{};
-    class ActorMgr { public:
-        u32 registerActorRelation(ActorMgr&, ActorBase&, ActorBase&) {}
-        u32 removeActorRelation(ActorMgr&, ActorBase&, ActorBase&) {}
-};}
-engine::actor::ActorMgr x = {};
-engine::actor::ActorBase y = {};
-auto _1 = x.registerActorRelation(x, y, y);
-auto _2 = x.removeActorRelation(x, y, y);
-"""
-
-EXKING("_ZN6engine5actor8ActorMgr21registerActorRelationERS1_RNS0_9ActorBaseES4_", {
-    TOTK_100: 0x023c72a0,
-    TOTK_110: 0x00dc9360,
-    TOTK_111: 0x00dc13f0,
-    TOTK_112: 0x00d9fc2c,
-    TOTK_120: 0x00dbe8c8,
-    TOTK_121: 0x00d8b0ec,
+EXKING("_ZN6engine5actor8ActorMgr25createActorAndConnectSyncEPv", {
+    TOTK_100: 0x010c6838,
+    TOTK_110: 0x01181d94,
+    TOTK_121: 0x0117f4a4,
 })
-
-EXKING("_ZN6engine5actor8ActorMgr19removeActorRelationERS1_RNS0_9ActorBaseES4_", {
-    TOTK_100: 0x00ab8610,
-    TOTK_110: 0x008a6c80,
-    TOTK_111: 0x008082d8,
-    TOTK_112: 0x008b6e90,
-    TOTK_120: 0x008b8b8c,
-    TOTK_121: 0x008eee60,
+EXKING("_ZN6engine5actor8ActorMgr28createActorAndConnectSync__2EPv", {
+    TOTK_100: 0x013e2d68,
+    TOTK_110: 0x014204a4,
+    TOTK_121: 0x0140cb58,
+})
+EXKING("_ZN6engine5actor8ActorMgr29createActorAndConnectSyncImplEPv", {
+    TOTK_100: 0x01293710,
+    TOTK_110: 0x012c3514,
+    TOTK_121: 0x012b13dc,
+})
+EXKING("_ZN6engine5actor8ActorMgr23requestCreateActorAsyncEPv", {
+    TOTK_100: 0x00a5fdf8,
+    TOTK_110: 0x00bde0ac,
+    TOTK_121: 0x00ab92cc,
+})
+EXKING("_ZN6engine5actor8ActorMgr22requestCreateActorSyncEPv", {
+    TOTK_100: 0x01278724,
+    TOTK_110: 0x012ba6c4,
+    TOTK_121: 0x012a8b44,
 })
 
 # namespace engine::actor::ActorMgr { static uintptr_t sInstance; }
 EXKING("_ZN6engine5actor8ActorMgrL9sInstanceE", {
-    TOTK_100: 0x04647330,
-    TOTK_110: 0x04724988,
-    TOTK_121: 0x04722268,
+    TOTK_100: 0x046479e0,
+    TOTK_110: 0x04725040,
+    TOTK_121: 0x04722920,
 }, SymbolType.DATA)

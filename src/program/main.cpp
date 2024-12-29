@@ -57,25 +57,25 @@ HOOK_DEFINE_INLINE(OnRecallUpdateHighlightActorHook) {
     }
 };
 
-HOOK_DEFINE_TRAMPOLINE(ActorRelationAddHook) {
-    static const ptrdiff_t s_offset = sym::engine::actor::ActorMgr::registerActorRelation::offset;
+HOOK_DEFINE_TRAMPOLINE(BaseProcMgr_addDependency) {
+    static const ptrdiff_t s_offset = sym::engine::actor::BaseProcMgr::addDependency::offset;
 
-    static u32 Callback(engine::actor::ActorMgr &actorMgr, engine::actor::ActorBase &parent, engine::actor::ActorBase &child) {
-        u32 result = Orig(actorMgr, parent, child);
+    static u32 Callback(engine::actor::BaseProcMgr &baseProcMgr, engine::actor::ActorBase &parent, engine::actor::ActorBase &child) {
+        u32 result = Orig(baseProcMgr, parent, child);
 
         // register ResidentActors for use everywhere
         if (!strcmp(parent.mName.cstr(), "Player") && lotuskit::script::globals::ResidentActors::Player != &parent) {
             lotuskit::script::globals::ResidentActors::Player = &parent;
-            Logger::logJson(json::object({ {"Player", (u64)(&parent)} }), "/hook/sym/ActorMgr_registerActorRelation");
+            Logger::logJson(json::object({ {"Player", (u64)(&parent)} }), "/hook/sym/BaseProcMgr_addDependency");
             lotuskit::ActorWatcher::assignSlot(0, &parent);
         }
         if (!strcmp(parent.mName.cstr(), "PlayerCamera") && lotuskit::script::globals::ResidentActors::PlayerCamera != &parent) {
             lotuskit::script::globals::ResidentActors::PlayerCamera = &parent;
-            Logger::logJson(json::object({ {"PlayerCamera", (u64)(&parent)} }), "/hook/sym/ActorMgr_registerActorRelation");
+            Logger::logJson(json::object({ {"PlayerCamera", (u64)(&parent)} }), "/hook/sym/BaseProcMgr_addDependency");
         }
         if (!strcmp(parent.mName.cstr(), "EventCamera") && lotuskit::script::globals::ResidentActors::EventCamera != &parent) {
             lotuskit::script::globals::ResidentActors::EventCamera = &parent;
-            Logger::logJson(json::object({ {"EventCamera", (u64)(&parent)} }), "/hook/sym/ActorMgr_registerActorRelation");
+            Logger::logJson(json::object({ {"EventCamera", (u64)(&parent)} }), "/hook/sym/BaseProcMgr_addDependency");
         }
 
         // TODO logging settings
@@ -89,7 +89,7 @@ HOOK_DEFINE_TRAMPOLINE(ActorRelationAddHook) {
                     {"name", child.mName.cstr()},
                     {"ringSize", child.mDependencyRing.mSize}
                 })}
-            }), "/hook/sym/ActorMgr_registerActorRelation");
+            }), "/hook/sym/BaseProcMgr_addDependency");
         }
 
         return result;
@@ -166,7 +166,7 @@ HOOK_DEFINE_INLINE(nnMainHook) {
         StealHeap::Install(); // called once, a bit later during bootup
         //OnWhistleHook::Install();
         OnRecallUpdateHighlightActorHook::Install();
-        ActorRelationAddHook::Install();
+        BaseProcMgr_addDependency::Install();
         MainGetNpadStates::Install();
 
         // hooks for textwriter+primitivedrawer overlay
