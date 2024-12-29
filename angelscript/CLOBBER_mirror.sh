@@ -22,9 +22,9 @@ if [[ "$KEEP_TMPGIT" != "1" ]]; then
     rm -rf tmpgit
 
     # temp repo, clone ~1.5s
-    # last base: Version 2.38.0 WIP - 2024/11/22 - "Fixed crash when passing function pointer without @ prefix to argument expecting asOBJ_ASHANDLE"
-    #            https://github.com/codecat/angelscript-mirror/commit/57ef77e4793ca14f448f485f52392ab0eefe968b
-    #            https://sourceforge.net/p/angelscript/code/2988/log/
+    # last base: Version 2.38.0 WIP - 2024/12/16 - "Fixed incorrect attempt to convert to null handle in ternary condition"
+    #            https://github.com/codecat/angelscript-mirror/commit/387b48653eb0840765bcbf24773de50ed632ad59
+    #            https://sourceforge.net/p/angelscript/code/2989/log/
     git clone --recursive --depth 1 https://github.com/codecat/angelscript-mirror tmpgit
     echo
     echo
