@@ -151,5 +151,11 @@ namespace exl::hook::nx64 {
         }
     };
 
+    // Allow program to view hook limits
+    extern const u64 HookMax;
+    extern volatile s32 s_HookEntryIndex;
+    extern const size_t InlinePoolCount;
+    extern size_t s_InlineEntryIndex;
+
     void InitializeInline();
 }

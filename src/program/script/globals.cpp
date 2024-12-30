@@ -1,3 +1,4 @@
+#include <lib.hpp>
 #include "script/globals.hpp"
 
 #include "nn/util.h"
@@ -76,18 +77,16 @@ namespace lotuskit::script::globals {
             return; // unreachable
         }
         void hookLimits() {
-            /* TODO
             Logger::logJson(json::object({
-                {"inlineUsed", exl::hook::nx64::InlineEntryIndex},
+                {"inlineUsed", exl::hook::nx64::s_InlineEntryIndex},
                 {"inlineMax", exl::hook::nx64::InlinePoolCount},
-                {"hookUsed", exl::hook::nx64::HookEntryIndex},
+                {"hookUsed", exl::hook::nx64::s_HookEntryIndex},
                 {"hookMax", exl::hook::nx64::HookMax}
             }), "/script/sys/hookLimits");
             lotuskit::TextWriter::toastf(
                 5*30, "[sys::hookLimits] inlineUsed: %d, inlineMax: %d, hookUsed: %d, hookMax: %d\n",
-                exl::hook::nx64::InlineEntryIndex, exl::hook::nx64::InlinePoolCount, exl::hook::nx64::HookEntryIndex, exl::hook::nx64::HookMax
+                exl::hook::nx64::s_InlineEntryIndex, exl::hook::nx64::InlinePoolCount, exl::hook::nx64::s_HookEntryIndex, exl::hook::nx64::HookMax
             );
-            */
         }
         void memSearch(u64 needle) {
             // TODO better ptr+hex conversions for AS calls + json?
