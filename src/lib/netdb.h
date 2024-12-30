@@ -1,6 +1,11 @@
 #pragma once
 // HACK for musl
 
+// socket types
+typedef uint16_t in_port_t;
+typedef uint16_t sa_family_t;
+typedef unsigned int socklen_t;
+
 struct pollfd
 {
     s32   fd;

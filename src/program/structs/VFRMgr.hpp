@@ -8,8 +8,8 @@ struct Counter {
     int mMaxTimerMultiplierCount;
     int mTimeMultiplierBaseIndex;
     int mTimeMultiplierIndex;
-    undefined4 field6_0x1c;
-    undefined8 field7_0x20;
+    u32 field6_0x1c;
+    u64 field7_0x20;
 };
 
 struct TimeSpeedMultiplier {

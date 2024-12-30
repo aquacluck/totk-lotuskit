@@ -4,6 +4,7 @@
 #include "Config.hpp"
 #include "lib/base64.hpp"
 #include "lib/sha1.hpp"
+#include "lib/socket_hack.hpp"
 #include "nn/nifm.h"
 #include "nn/os.h"
 #include "nn/socket.h"

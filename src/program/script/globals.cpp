@@ -76,6 +76,7 @@ namespace lotuskit::script::globals {
             return; // unreachable
         }
         void hookLimits() {
+            /* TODO
             Logger::logJson(json::object({
                 {"inlineUsed", exl::hook::nx64::InlineEntryIndex},
                 {"inlineMax", exl::hook::nx64::InlinePoolCount},
@@ -86,6 +87,7 @@ namespace lotuskit::script::globals {
                 5*30, "[sys::hookLimits] inlineUsed: %d, inlineMax: %d, hookUsed: %d, hookMax: %d\n",
                 exl::hook::nx64::InlineEntryIndex, exl::hook::nx64::InlinePoolCount, exl::hook::nx64::HookEntryIndex, exl::hook::nx64::HookMax
             );
+            */
         }
         void memSearch(u64 needle) {
             // TODO better ptr+hex conversions for AS calls + json?

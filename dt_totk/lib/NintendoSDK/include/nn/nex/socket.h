@@ -20,7 +20,7 @@ public:
 
 class SocketDriver : nn::nex::RootObject {
 public:
-    typedef in_addr_t InetAddress;
+    typedef uint32_t InetAddress;
 
     enum _SocketFlag : int32_t {
         Msg_None = 0,
