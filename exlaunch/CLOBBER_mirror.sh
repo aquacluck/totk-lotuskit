@@ -38,7 +38,7 @@ rm -r source/program
 
 
 ### Apply patches
-# gen: git diff --binary --cached include source > patches/0001-exl-init.patch # staged changes only, afaik required for patching in new files
+# gen: git diff --binary --cached source > patches/0001-exl-init.patch # staged changes only, afaik required for patching in new files
 echo
 echo "patching..."
 for patchfile in patches/*.patch; do

@@ -10,12 +10,8 @@ if (NOT SWITCH)
   message(FATAL_ERROR "Not targeting switch, make sure to specify -DCMAKE_TOOLCHAIN_FILE=cmake/toolchain.cmake")
 endif ()
 
-set(TITLE_ID 0100F2C0115B6000) # TOTK, all versions
-set(CONFIG_TITLE_ID 0x${TITLE_ID})
-add_compile_definitions(EXL_PROGRAM_ID=${CONFIG_TITLE_ID} EXL_LOAD_KIND=Module EXL_LOAD_KIND_ENUM=2)
-
-set(CMAKE_C_STANDARD 17)
-set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_C_STANDARD 23)
+set(CMAKE_CXX_STANDARD 26)
 
 # angelscript sources
 include_directories(${PROJECT_SOURCE_DIR}/angelscript/include)
@@ -24,8 +20,19 @@ file(GLOB_RECURSE AS_SOURCES_ASM ${PROJECT_SOURCE_DIR}/angelscript/source/*.S)
 file(GLOB_RECURSE AS_SOURCES_H ${PROJECT_SOURCE_DIR}/angelscript/source/*.h)
 file(GLOB_RECURSE AS_SOURCES_CXX ${PROJECT_SOURCE_DIR}/angelscript/source/*.cpp)
 
-# exlaunch/subsdk9 mod sources
+# exlaunch sources + module config
+set(TITLE_ID 0100F2C0115B6000) # TOTK, all versions
+set(CONFIG_TITLE_ID 0x${TITLE_ID})
+set(CMAKE_EXECUTABLE_SUFFIX ".elf")
+add_compile_definitions(EXL_PROGRAM_ID=${CONFIG_TITLE_ID} EXL_LOAD_KIND=Module EXL_LOAD_KIND_ENUM=2)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/module/subsdk9.json.template ${CMAKE_CURRENT_BINARY_DIR}/subsdk9.json)
+include_directories(${PROJECT_SOURCE_DIR}/exlaunch/source)
+include_directories(${PROJECT_SOURCE_DIR}/exlaunch/source/lib)
+file(GLOB_RECURSE EXL_SOURCES_ASM ${PROJECT_SOURCE_DIR}/exlaunch/source/*.s)
+file(GLOB_RECURSE EXL_SOURCES_H ${PROJECT_SOURCE_DIR}/exlaunch/source/*.h ${PROJECT_SOURCE_DIR}/exlaunch/source/*.hpp)
+file(GLOB_RECURSE EXL_SOURCES_CXX ${PROJECT_SOURCE_DIR}/exlaunch/source/*.cpp ${PROJECT_SOURCE_DIR}/exlaunch/source/*.c)
+
+# lotuskit mod sources
 include_directories(${PROJECT_SOURCE_DIR}/src)
 include_directories(${PROJECT_SOURCE_DIR}/src/lib)
 include_directories(${PROJECT_SOURCE_DIR}/src/program)
@@ -80,11 +87,8 @@ include_directories(${PROJECT_SOURCE_DIR}/dt_totk/lib/zstd/lib) # headers
 
 
 
-# exlaunch/subsdk9 mod flags
-set(CMAKE_EXECUTABLE_SUFFIX ".elf")
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-#set_source_files_properties(${SOURCES_CXX} PROPERTIES LANGUAGE CXX)
-add_executable(subsdk9 ${SOURCES_ASM} ${SOURCES_C} ${SOURCES_H} ${SOURCES_CXX} ${AS_SOURCES_ASM} ${AS_SOURCES_H} ${AS_SOURCES_CXX})
+# combine sources for subsdk9 build
+add_executable(subsdk9 ${EXL_SOURCES_ASM} ${EXL_SOURCES_H} ${EXL_SOURCES_CXX}   ${SOURCES_ASM} ${SOURCES_H} ${SOURCES_CXX}   ${AS_SOURCES_ASM} ${AS_SOURCES_H} ${AS_SOURCES_CXX})
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/module/subsdk9.specs.template ${CMAKE_CURRENT_BINARY_DIR}/subsdk9.specs)
 
 # Build nso & generate npdm

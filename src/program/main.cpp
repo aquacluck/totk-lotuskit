@@ -205,7 +205,6 @@ extern "C" void exl_main(void* x0, void* x1) {
     nnMainHook::Install();
 }
 
-extern "C" NORETURN void exl_exception_entry() {
-    /* TODO: exception handling */
-    EXL_ABORT(0x420);
-}
+// Note: this is only applicable in the context of applets/sysmodules
+extern "C" NORETURN void exl_exception_entry() { EXL_ABORT("unreachable abort"); }
+
