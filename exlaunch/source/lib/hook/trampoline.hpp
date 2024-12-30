@@ -52,6 +52,14 @@ namespace exl::hook::impl {
             
             OrigRef() = hook::Hook(ptr, Derived::Callback, true);
         }
+
+        static ALWAYS_INLINE void Install() {
+            _HOOK_STATIC_CALLBACK_ASSERT();
+
+            // TODO accept s_name: InstallAtReloc(s_name -> exl::reloc::LookupEntryBin -> ptr)
+            OrigRef() = hook::Hook(util::modules::GetTargetOffset(Derived::s_offset), Derived::Callback, true);
+        }
+
     };
 
 }
