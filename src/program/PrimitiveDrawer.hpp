@@ -3,9 +3,12 @@
 #include <nn/nn.h>
 #include <gfx/seadColor.h>
 #include <gfx/seadPrimitiveRenderer.h>
+#include <heap/seadFrameHeap.h>
+#include <heap/seadHeap.h>
 #include <lyr/aglLayer.h>
 #include <lyr/aglRenderInfo.h>
 #include <math/seadMatrix.h>
+#include <math/seadVector.hpp>
 #include <cstring>
 
 namespace sead {
@@ -21,7 +24,7 @@ namespace lotuskit {
         std::atomic<PrimitiveDrawerDrawNode*> next;
     };
 
-    // AS+scheduled+etc wrappers. See TextWriterHooks::DebugDrawHook for drawlist processing
+    // AS+scheduled+etc wrappers: Append shape to draw queue
     namespace PrimitiveDrawer {
         void setModelMtx(size_t drawList_i, sead::Matrix34f mtx);
         void setProjection(size_t drawList_i, sead::Projection* projection);
@@ -86,9 +89,38 @@ namespace lotuskit {
         struct Cylinder32 { sead::Vector3f pos; float radius; float height; sead::Color4f top; sead::Color4f btm; };
     } // ns
 
+    struct PrimitiveDrawerFrame {
+        static constexpr size_t MAX_DRAWLISTS = 2;
+        inline static std::atomic<PrimitiveDrawerDrawNode*> drawLists[MAX_DRAWLISTS] = {0};
+        inline static sead::FrameHeap* heap = nullptr; // draw state is wiped each frame
+        nn::os::MutexType drawLock;
+    };
+
+    /*
+    struct PrimitiveRendererToastNode {
+        u8 primCallType;
+        void* primCallArgs;
+        u64 ttlFrames;
+    };
+    */
+
+    // drawlist storage -- TODO name PrimitiveStatic to separate ^ ?
     namespace PrimitiveImpl {
+        extern PrimitiveDrawerFrame frame;
+        inline static sead::Heap* debugDrawerInternalHeap = nullptr;
+
+        //static constexpr size_t MAX_TOASTS = 0x20;
+        //inline static std::atomic<PrimitiveRendererToastNode*> toasts3d[MAX_TOASTS] = {0};
+
+        inline static void assignHeap(sead::Heap* heap) {
+            // assert only called once
+            debugDrawerInternalHeap = heap;
+            frame.heap = sead::FrameHeap::create(0x4000, "lotuskit::PrimitiveDrawer", heap, 8, sead::Heap::cHeapDirection_Forward, 0); // XXX what are args 4+6?
+            nn::os::InitializeMutex(&frame.drawLock, true, 0);
+        }
+
         PrimitiveDrawerDrawNode* appendNewDrawNode(size_t drawList_i);
-        void drawFrame();
+        void drawFrame(agl::lyr::Layer* layer, const agl::lyr::RenderInfo& info);
         void dispatch(u8 primCallType, void* node);
     } // ns
 

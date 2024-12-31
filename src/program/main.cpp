@@ -34,6 +34,7 @@ HOOK_DEFINE_INLINE(StealHeap) {
 #endif
         svcOutputDebugString("yoink", 5);
         lotuskit::TextWriter::assignHeap(stolenHeap);
+        lotuskit::PrimitiveImpl::assignHeap(stolenHeap);
         lotuskit::script::engine::assignHeap(stolenHeap);
         lotuskit::script::engine::createAndConfigureEngine();
     }
@@ -170,7 +171,7 @@ HOOK_DEFINE_INLINE(nnMainHook) {
         MainGetNpadStates::Install();
 
         // hooks for textwriter+primitivedrawer overlay
-        bool do_textwriter = (
+        bool do_debugdraw = (
             lotuskit::util::romfs::fileExists("content:/Lib/sead/nvn_font/nvn_font.ntx") &&
             lotuskit::util::romfs::fileExists("content:/Lib/sead/nvn_font/nvn_font_jis1.ntx") &&
             lotuskit::util::romfs::fileExists("content:/Lib/sead/nvn_font/nvn_font_jis1_mipmap.xtx") &&
@@ -180,11 +181,10 @@ HOOK_DEFINE_INLINE(nnMainHook) {
             lotuskit::util::romfs::fileExists("content:/Lib/sead/nvn_font/nvn_font_shader_jis1_mipmap.bin") &&
             lotuskit::util::romfs::fileExists("content:/Lib/sead/primitive_renderer/primitive_drawer_nvn_shader.bin")
         );
-        if (do_textwriter) {
-            lotuskit::TextWriterHooks::BootupInitDebugDrawersHook::Install();
-            lotuskit::TextWriterHooks::DebugDrawLayerMaskHook::Install();
-            lotuskit::TextWriterHooks::DebugDrawHook::Install();
-            lotuskit::TextWriterHooks::AglRendererDrawHook::Install();
+        if (do_debugdraw) {
+            lotuskit::DebugDrawHooks::BootupInitDebugDrawersHook::Install();
+            lotuskit::DebugDrawHooks::DebugDrawLayerMaskHook::Install();
+            lotuskit::DebugDrawHooks::DebugDrawHook::Install();
             lotuskit::PrimitiveImpl::setupStatic();
         }
 

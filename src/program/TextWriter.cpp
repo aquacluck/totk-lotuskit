@@ -1,21 +1,20 @@
 #include "TextWriter.hpp"
 
 namespace lotuskit {
-    DebugDrawFrame TextWriter::drawFrames[2] = {};
+    TextWriterFrame TextWriter::frame = {0};
 
     TextWriterDrawNode* TextWriter::appendNewDrawNode(size_t drawList_i) {
         // alloc
-        DebugDrawFrame* frame = currentDrawFrame;
-        TextWriterDrawNode* newNode = (TextWriterDrawNode*)frame->heap->alloc(sizeof(TextWriterDrawNode));
+        TextWriterDrawNode* newNode = (TextWriterDrawNode*)frame.heap->alloc(sizeof(TextWriterDrawNode));
         newNode->outputText = nullptr;
         newNode->fn = nullptr;
         newNode->next.store(nullptr);
 
         // append
         TextWriterDrawNode* cmpNode = nullptr; // ensure null at time of write
-        if (frame->drawLists[drawList_i].compare_exchange_weak(cmpNode, newNode)) { return newNode; } // success -- appended to empty list
+        if (frame.drawLists[drawList_i].compare_exchange_weak(cmpNode, newNode)) { return newNode; } // success -- appended to empty list
         // not null, enter the list
-        TextWriterDrawNode* node = frame->drawLists[drawList_i].load();
+        TextWriterDrawNode* node = frame.drawLists[drawList_i].load();
         while (true) {
             cmpNode = nullptr; // ensure null at time of write
             if (node->next.compare_exchange_weak(cmpNode, newNode)) { return newNode; } // success
@@ -27,10 +26,10 @@ namespace lotuskit {
     }
 
     void TextWriter::drawFrame(TextWriterExt* writer) {
-        DebugDrawFrame* frame = currentDrawFrame;
+        nn::os::LockMutex(&frame.drawLock); // FIXME useless locking
 
-        for (size_t i=0; i < DebugDrawFrame::MAX_DRAWLISTS; i++) {
-            TextWriterDrawNode* node = frame->drawLists[i].load();
+        for (size_t i=0; i < TextWriterFrame::MAX_DRAWLISTS; i++) {
+            TextWriterDrawNode* node = frame.drawLists[i].load();
             if (node == nullptr) { continue; }
 
             sead::Vector2f textPos; // screen is always represented as 1280x720, upscaled for 1080p
@@ -51,7 +50,11 @@ namespace lotuskit {
 
             } while (node != nullptr);
 
+            frame.drawLists[i].store(nullptr); // wipe for next frame
         }
+
+        frame.heap->freeAll();
+        nn::os::UnlockMutex(&frame.drawLock);
     }
 
     void TextWriter::drawToasts(TextWriterExt* writer) {
@@ -70,9 +73,6 @@ namespace lotuskit {
                 if (node->outputText != nullptr) {
                     debugDrawerInternalHeap->free(node->outputText);
                 }
-                //if (node->primCallType != 0 && node->primCallArgs != nullptr) {
-                //    debugDrawerInternalHeap->free(node->primCallArgs);
-                //}
                 debugDrawerInternalHeap->free(node);
                 continue;
             }
@@ -82,9 +82,6 @@ namespace lotuskit {
             if (node->outputText != nullptr) {
                 writer->pprintf(textPos, node->outputText);
             }
-            //if (node->primCallType != 0) {
-            //    PrimitiveImpl::dispatch(node->primCallType, node->primCallArgs);
-            //}
         }
     }
 
@@ -92,8 +89,6 @@ namespace lotuskit {
         TextWriterToastNode* newNode = (TextWriterToastNode*)debugDrawerInternalHeap->alloc(sizeof(TextWriterToastNode));
         newNode->outputText = nullptr;
         newNode->fn = nullptr;
-        //newNode->primCallType = 0;
-        //newNode->primCallArgs = nullptr;
         newNode->ttlFrames = ttlFrames;
 
         TextWriterToastNode* cmpNode;
@@ -106,20 +101,6 @@ namespace lotuskit {
         // fail
         Logger::logText("[ERROR] toast overflow", "/TextWriter");
         return nullptr;
-    }
-
-    void TextWriter::swapFrame() {
-        DebugDrawFrame* frame = currentDrawFrame;
-
-        // swap any further calls to the other buffer
-        currentDrawFrame = currentDrawFrame == drawFrames ? &(drawFrames[1]) : drawFrames;
-
-        frame->heap->freeAll();
-        for (size_t i=0; i < DebugDrawFrame::MAX_DRAWLISTS; i++) {
-            // ensure lists are empty even if the contents were not actually drawn
-            frame->drawLists[i].store(nullptr);
-            frame->drawLists3d[i].store(nullptr);
-        }
     }
 
 } // ns

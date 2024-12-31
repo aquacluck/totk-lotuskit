@@ -32,22 +32,16 @@ namespace lotuskit {
         std::atomic<TextWriterDrawNode*> next;
     };
 
-    struct DebugDrawFrame {
+    struct TextWriterFrame {
         static constexpr size_t MAX_DRAWLISTS = 8;
         inline static std::atomic<TextWriterDrawNode*> drawLists[MAX_DRAWLISTS] = {0}; // independent chains of calls (eg for different relative positionings)
-        inline static std::atomic<PrimitiveDrawerDrawNode*> drawLists3d[MAX_DRAWLISTS] = {0};
         inline static sead::FrameHeap* heap = nullptr; // draw state is wiped each frame
+        nn::os::MutexType drawLock;
     };
 
     struct TextWriterToastNode {
         char* outputText;
         TextWriterDrawCallback* fn;
-        u64 ttlFrames;
-    };
-
-    struct PrimitiveRendererToastNode {
-        u8 primCallType;
-        void* primCallArgs;
         u64 ttlFrames;
     };
 
@@ -88,7 +82,7 @@ namespace lotuskit {
             // set outputText
             char buf[2000]; // TODO std::format etc with proper allocator?
             nn::util::SNPrintf(buf, sizeof(buf), fmt, std::forward<decltype(args)>(args)...);
-            newNode->outputText = (char*)currentDrawFrame->heap->alloc(strlen(buf)+1);
+            newNode->outputText = (char*)frame.heap->alloc(strlen(buf)+1);
             std::memcpy(newNode->outputText, buf, strlen(buf)+1);
         }
         inline static void appendCallback(size_t drawList_i, TextWriterDrawCallback* fn) {
@@ -109,27 +103,23 @@ namespace lotuskit {
         // toast storage: repeated draw calls for some duration, not part of any drawlist
         static constexpr size_t MAX_TOASTS = 0x20; // best not to go crazy on these, there's no way to scroll besides staggered ttl anyways
         inline static std::atomic<TextWriterToastNode*> toasts[MAX_TOASTS] = {0};
-        inline static std::atomic<PrimitiveRendererToastNode*> toasts3d[MAX_TOASTS] = {0};
 
-        // buffer+swap+draw impl
-        static DebugDrawFrame drawFrames[2];
-        inline static DebugDrawFrame* currentDrawFrame = nullptr;
-        inline static sead::Heap* debugDrawerInternalHeap = nullptr; // idk what really happens in here yet
+        // buffer+draw impl
+        static TextWriterFrame frame;
+        inline static sead::Heap* debugDrawerInternalHeap = nullptr;
         inline static void assignHeap(sead::Heap* heap) {
+            // assert only called once
             debugDrawerInternalHeap = heap;
-            currentDrawFrame = drawFrames;
-            drawFrames[0].heap = sead::FrameHeap::create(0x4000, "lotuskit::DebugDrawFrame[0]", heap, 8, sead::Heap::cHeapDirection_Forward, 0); // XXX what are args 4+6?
-            drawFrames[1].heap = sead::FrameHeap::create(0x4000, "lotuskit::DebugDrawFrame[1]", heap, 8, sead::Heap::cHeapDirection_Forward, 0);
-            //debugDrawCallHeap->alloc(32); debugDrawCallHeap->freeAll();
+            frame.heap = sead::FrameHeap::create(0x4000, "lotuskit::TextWriter", heap, 8, sead::Heap::cHeapDirection_Forward, 0); // XXX what are args 4+6?
+            nn::os::InitializeMutex(&frame.drawLock, true, 0);
         }
         static TextWriterDrawNode* appendNewDrawNode(size_t drawList_i);
         static TextWriterToastNode* appendNewToastNode(u64 ttlFrames);
         static void drawFrame(TextWriterExt*);
         static void drawToasts(TextWriterExt*);
-        static void swapFrame();
     };
 
-    namespace TextWriterHooks {
+    namespace DebugDrawHooks {
         struct GraphicsModuleCreateArg {
             u8 _whatever[0xb4c];
             s32 value0;
@@ -146,7 +136,7 @@ namespace lotuskit {
                 arg.value1 = reinterpret_cast<GraphicsModuleCreateArg*>(ctx->X[1])->value1; // nvnBufferBuilderSetStorage?
 
                 auto func = reinterpret_cast<InitDebugDrawers*>(exl::util::modules::GetTargetOffset(sym::agl::init_debug_drawers::offset));
-                func(TextWriter::debugDrawerInternalHeap, arg);
+                func(TextWriter::debugDrawerInternalHeap, arg); // PrimitiveDrawer uses some of this too
             }
         };
 
@@ -163,20 +153,13 @@ namespace lotuskit {
         HOOK_DEFINE_TRAMPOLINE(DebugDrawHook) {
             static const ptrdiff_t s_offset = sym::agl::lyr::Layer::drawDebugInfo_::offset;
             static void Callback(agl::lyr::Layer* layer, const agl::lyr::RenderInfo& info) {
-                // draw onto the given layer
+                // draw onto the given layer: PrimitiveDrawer for 3D, TextWriter for 2D
                 auto* sead_draw_ctx = dynamic_cast<sead::DrawContext*>(info.draw_ctx);
 
                 if (strncmp("Main_3D_0", layer->mLayerName.cstr(), 0x20) == 0) {
                     // TextWriter is not drawn on this layer, but required for alpha colors to work?
                     sead::TextWriter::setupGraphics(sead_draw_ctx);
-
-                    lotuskit::PrimitiveImpl::setupRenderer(info);
-                    lotuskit::PrimitiveImpl::begin();
-
-                    lotuskit::PrimitiveImpl::drawFrame();
-                    //TODO PrimitiveImpl::drawToasts3d()
-
-                    lotuskit::PrimitiveImpl::end();
+                    lotuskit::PrimitiveImpl::drawFrame(layer, info);
                 }
 
                 if (strncmp("Tool 2D", layer->mLayerName.cstr(), 0x20) == 0) {
@@ -188,15 +171,6 @@ namespace lotuskit {
                     lotuskit::TextWriter::drawFrame(writer);
                     lotuskit::TextWriter::drawToasts(writer);
                 }
-            }
-        };
-
-        HOOK_DEFINE_TRAMPOLINE(AglRendererDrawHook) {
-            static const ptrdiff_t s_offset = sym::agl::lyr::Renderer::draw::offset; // hacks
-            static void Callback(void* p1, void* p2, u32 p3) {
-                Orig(p1, p2, p3);
-                // after DebugDrawHook draws all layers, wipe the frame's resources
-                lotuskit::TextWriter::swapFrame(); // handles PrimitiveDrawer too
             }
         };
 

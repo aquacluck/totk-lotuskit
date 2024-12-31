@@ -8,20 +8,20 @@
 
 namespace lotuskit {
     namespace PrimitiveImpl {
+        PrimitiveDrawerFrame frame = {0};
 
         PrimitiveDrawerDrawNode* appendNewDrawNode(size_t drawList_i) {
             // alloc
-            DebugDrawFrame* frame = lotuskit::TextWriter::currentDrawFrame;
-            PrimitiveDrawerDrawNode* newNode = (PrimitiveDrawerDrawNode*)frame->heap->alloc(sizeof(PrimitiveDrawerDrawNode));
+            PrimitiveDrawerDrawNode* newNode = (PrimitiveDrawerDrawNode*)frame.heap->alloc(sizeof(PrimitiveDrawerDrawNode));
             newNode->primCallType = 0;
             newNode->primCallArgs = nullptr;
             newNode->next.store(nullptr);
 
             // append
             PrimitiveDrawerDrawNode* cmpNode = nullptr; // ensure null at time of write
-            if (frame->drawLists3d[drawList_i].compare_exchange_weak(cmpNode, newNode)) { return newNode; } // success -- appended to empty list
+            if (frame.drawLists[drawList_i].compare_exchange_weak(cmpNode, newNode)) { return newNode; } // success -- appended to empty list
             // not null, enter the list
-            PrimitiveDrawerDrawNode* node = frame->drawLists3d[drawList_i].load();
+            PrimitiveDrawerDrawNode* node = frame.drawLists[drawList_i].load();
             while (true) {
                 cmpNode = nullptr; // ensure null at time of write
                 if (node->next.compare_exchange_weak(cmpNode, newNode)) { return newNode; } // success
@@ -34,17 +34,22 @@ namespace lotuskit {
 
         template <typename T>
         T* allocNodeArgs(PrimitiveDrawerDrawNode* node) {
-            DebugDrawFrame* frame = lotuskit::TextWriter::currentDrawFrame;
-            auto ret = (T*)frame->heap->alloc(sizeof(T));
+            auto ret = (T*)frame.heap->alloc(sizeof(T));
             node->primCallArgs = (void*)ret;
             return ret;
         }
 
-        void drawFrame() {
-            DebugDrawFrame* frame = lotuskit::TextWriter::currentDrawFrame;
+        void drawFrame(agl::lyr::Layer* layer, const agl::lyr::RenderInfo& info) {
+            nn::os::LockMutex(&frame.drawLock); // FIXME useless locking -- needs condition var or something:
+            // appends should inc then block if drawLock is set/held, but not acquire it
+            // appends should inc+dec an atomic counter freely as they enter+leave
+            // draws should acquire drawLock, wait for counter to reach 0, then proceed
 
-            for (size_t i=0; i < DebugDrawFrame::MAX_DRAWLISTS; i++) {
-                PrimitiveDrawerDrawNode* node = frame->drawLists3d[i].load();
+            lotuskit::PrimitiveImpl::setupRenderer(info);
+            lotuskit::PrimitiveImpl::begin();
+
+            for (size_t i=0; i < PrimitiveDrawerFrame::MAX_DRAWLISTS; i++) {
+                PrimitiveDrawerDrawNode* node = frame.drawLists[i].load();
                 if (node == nullptr) { continue; }
 
                 do {
@@ -55,7 +60,14 @@ namespace lotuskit {
 
                 } while (node != nullptr);
 
+                frame.drawLists[i].store(nullptr); // wipe for next frame
             }
+
+            //TODO PrimitiveImpl::drawToasts3d()
+            lotuskit::PrimitiveImpl::end();
+
+            frame.heap->freeAll();
+            nn::os::UnlockMutex(&frame.drawLock);
         }
 
         void dispatch(u8 primCallType, void* node) {
