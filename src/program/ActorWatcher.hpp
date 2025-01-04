@@ -285,12 +285,13 @@ namespace lotuskit {
                 }
 
                 if (slot.doTextWriter) {
+                    const auto& v = actor->mLastLinearVelocity;
                     lotuskit::TextWriter::printf(
-                        0, "%s(%p) \npos: %f, %f, %f \nrot: [%f, %f, %f, %f, %f, %f, %f, %f, %f] \nvel: %f, %f, %f \nangvel: %f %f %f \n\n",
+                        0, "%s(%p) \npos: %f, %f, %f \nrot: [%f, %f, %f, %f, %f, %f, %f, %f, %f] \nvel: %f, %f, %f, |xz|=%f \nangvel: %f %f %f \n\n",
                         actor->mName.cstr(), slot.actor,
                         actor->mPosition.x, actor->mPosition.y, actor->mPosition.z,
                         rot.m[0][0], rot.m[0][1], rot.m[0][2], rot.m[1][0], rot.m[1][1], rot.m[1][2], rot.m[2][0], rot.m[2][1], rot.m[2][2],
-                        actor->mLastLinearVelocity.x, actor->mLastLinearVelocity.y, actor->mLastLinearVelocity.z,
+                        v.x, v.y, v.z, std::sqrt(v.x*v.x + v.z*v.z),
                         actor->mLastAngularVelocity.x, actor->mLastAngularVelocity.y, actor->mLastAngularVelocity.z
                     );
                 }
