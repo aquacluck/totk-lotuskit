@@ -10,6 +10,7 @@
 #include "Logger.hpp"
 #include "TextWriter.hpp"
 #include "util/actor.hpp"
+#include "util/camera.hpp"
 using json = nlohmann::json;
 using Logger = lotuskit::Logger;
 #include <math/seadVector.h>
@@ -314,6 +315,14 @@ namespace lotuskit::script::globals {
         // RigidBodyBase+RigidBodyEntity methods
         asErrno = engine->RegisterObjectMethod("RigidBody", "void setVel(float, float, float)", AngelScript::asMETHOD(phive::RigidBodyBase, requestSetLinearVelocityXYZ), AngelScript::asCALL_THISCALL); assert(asErrno >= 0);
         asErrno = engine->RegisterObjectMethod("RigidBody", "void applyImpulse(float, float, float)", AngelScript::asMETHOD(phive::RigidBodyBase, applyLinearImpulseXYZ), AngelScript::asCALL_THISCALL); assert(asErrno >= 0);
+
+        engine->SetDefaultNamespace("camera"); /// {
+            // camera hacks
+            asErrno = engine->RegisterGlobalFunction("void toggleFreeze()", AngelScript::asFUNCTION(lotuskit::util::camera::toggleFreeze), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+            asErrno = engine->RegisterGlobalFunction("void freeze(float, float, float, double, double, double, double, double, double)", AngelScript::asFUNCTION(lotuskit::util::camera::freeze333), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+            asErrno = engine->RegisterGlobalFunction("void log()", AngelScript::asFUNCTION(lotuskit::util::camera::log), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+
+        /// }
 
     }
 

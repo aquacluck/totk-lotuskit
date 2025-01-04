@@ -76,6 +76,13 @@ class baseProcExe {
 };
 }
 
+namespace sym::game::component::GameCameraParam {
+class HACK_cameraCalc {
+    public:
+    inline static constexpr ptrdiff_t offset = 0x00c7de84;
+};
+}
+
 namespace sym::sead::TextWriter {
 class setupGraphics {
     public:
@@ -472,6 +479,13 @@ namespace sym::hkUNKNOWN {
 class UNKNOWN_applyMotion {
     public:
     inline static constexpr ptrdiff_t offset = 0x0022ed04;
+};
+}
+
+namespace sym::sead::LookAtCamera {
+class doUpdateMatrix {
+    public:
+    inline static constexpr ptrdiff_t offset = 0x00a15d40;
 };
 }
 

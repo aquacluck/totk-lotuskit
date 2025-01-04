@@ -43,6 +43,7 @@ def run_symbol_def_imports():
     import exking.game.ai.execute.ExecutePlayerWhistle
     import exking.game.ai.execute.ExecutePlayerReverseRecorder
     import exking.game.wm.WorldManagerModule
+    import exking.game.component.GameCameraParam
 
     import exking.phive.CharacterMatterRigidBodyEntity
     import exking.phive.ControllerSet

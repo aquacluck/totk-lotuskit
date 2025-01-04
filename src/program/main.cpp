@@ -18,6 +18,7 @@
 #include "tas/InputDisplay.hpp"
 #include "tas/Playback.hpp"
 #include "tas/Record.hpp"
+#include "util/camera.hpp"
 #include "util/romfs.hpp"
 using Logger = lotuskit::Logger;
 
@@ -169,6 +170,9 @@ HOOK_DEFINE_INLINE(nnMainHook) {
         OnRecallUpdateHighlightActorHook::Install();
         BaseProcMgr_addDependency::Install();
         MainGetNpadStates::Install();
+
+        //TODO check the branch we're overwriting -- ensure our "off" does the same thing
+        exl::patch::CodePatcher(sym::game::component::GameCameraParam::HACK_cameraCalc::offset).BranchLinkInst((void*)lotuskit::util::camera::disgustingCameraHook);
 
         // hooks for textwriter+primitivedrawer overlay
         bool do_debugdraw = (

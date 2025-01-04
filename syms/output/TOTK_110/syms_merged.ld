@@ -17,6 +17,7 @@ _ZN3aglL18init_debug_drawersE    = __main_start + 0x00adcef4; /* agl::init_debug
 _ZN4game2ai7execute20ExecutePlayerWhistle10enterImpl_EPv = __main_start + 0x01d9d014; /* game::ai::execute::ExecutePlayerWhistle::enterImpl_(void*) */
 _ZN4game2ai7execute28ExecutePlayerReverseRecorder11updateImpl_L6state0E = __main_start + 0x01d84040; /* game::ai::execute::ExecutePlayerReverseRecorder::updateImpl_::state0 */
 _ZN4game2wm18WorldManagerModule11baseProcExeEPvS2_ = __main_start + 0x00af225c; /* game::wm::WorldManagerModule::baseProcExe(void*, void*) */
+_ZN4game9component15GameCameraParamL15HACK_cameraCalcE = __main_start + 0x00cdb894; /* game::component::GameCameraParam::HACK_cameraCalc */
 _ZN4sead10TextWriter13setupGraphicsEPNS_11DrawContextE = __main_start + 0x0189917c; /* sead::TextWriter::setupGraphics(sead::DrawContext*) */
 _ZN4sead10TextWriter20setCursorFromTopLeftERKNS_7Vector2IfEE = __main_start + 0x010bfdb4; /* sead::TextWriter::setCursorFromTopLeft(sead::Vector2<float> const&) */
 _ZN4sead10TextWriter6printfEPKcz = __main_start + 0x018993e4; /* sead::TextWriter::printf(char const*, ...) */
@@ -67,6 +68,7 @@ _ZN6engine5actor9ActorBase25updatePositionAndRotationEPv = __main_start + 0x009f
 _ZN6engine5actor9ActorBase28setPositionAndRotationDirectEPv = __main_start + 0x00a2e240; /* engine::actor::ActorBase::setPositionAndRotationDirect(void*) */
 _ZN6engineL17MainGetNpadStatesE  = __main_start + 0x02a2c49c; /* engine::MainGetNpadStates */
 _ZN9hkUNKNOWN19UNKNOWN_applyMotionEPvS0_P10hknpMotionS2_ = __main_start + 0x0020d98c; /* hkUNKNOWN::UNKNOWN_applyMotion(void*, void*, hknpMotion*, hknpMotion*) */
+_ZNK4sead12LookAtCamera14doUpdateMatrixEPN4sead8Matrix34IfEE = __main_start + 0x00a8b40c; /* sead::LookAtCamera::doUpdateMatrix const(sead::Matrix34<float>*) */
 _ZNK4sead7HeapMgr15findContainHeapEPKv = __main_start + 0x007612b0; /* sead::HeapMgr::findContainHeap const(void const*) */
 
 /* ======== END EX-King (nso main) ================================ */
