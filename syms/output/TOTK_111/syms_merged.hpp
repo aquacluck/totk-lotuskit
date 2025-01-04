@@ -301,6 +301,13 @@ class getBoundingBoxWorld {
 }
 
 namespace sym::phive::RigidBodyBase {
+class requestSetLinearVelocity {
+    public:
+    inline static constexpr ptrdiff_t offset = 0x00000000;
+};
+}
+
+namespace sym::phive::RigidBodyBase {
 class getAABB {
     public:
     inline static constexpr ptrdiff_t offset = 0x00000000;
@@ -316,6 +323,13 @@ class getName {
 
 namespace sym::phive::RigidBodyEntity {
 class getActorLink {
+    public:
+    inline static constexpr ptrdiff_t offset = 0x00000000;
+};
+}
+
+namespace sym::phive::CharacterMatterRigidBodyEntity {
+class requestSetLinearVelocity {
     public:
     inline static constexpr ptrdiff_t offset = 0x00000000;
 };

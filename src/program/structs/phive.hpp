@@ -48,6 +48,17 @@ namespace phive {
             return impl(this);
         }
 
+        void requestSetLinearVelocity(sead::Vector3f* vel) {
+            using impl_t = void (RigidBodyBase*, sead::Vector3f*);
+            auto impl = reinterpret_cast<impl_t*>(exl::util::modules::GetTargetOffset(sym::phive::RigidBodyBase::requestSetLinearVelocity::offset));
+            return impl(this, vel);
+        }
+
+        void requestSetLinearVelocityXYZ(float x, float y, float z) {
+            auto vel = sead::Vector3f{x, y, z};
+            return this->requestSetLinearVelocity(&vel);
+        }
+
     };
     static_assert(offsetof(RigidBodyBase, lastTransform) == 0x98);
 
@@ -57,6 +68,21 @@ namespace phive {
             using impl_t = ::engine::actor::ActorBaseLink* (RigidBodyEntity*);
             auto impl = reinterpret_cast<impl_t*>(exl::util::modules::GetTargetOffset(sym::phive::RigidBodyEntity::getActorLink::offset));
             return impl(this); // TODO default &game::actor::sDefaultActorLink?
+        }
+    };
+
+    class CharacterMatterRigidBodyEntity: public RigidBodyEntity {
+        public:
+        // these behave the same as RigidBodyEntity::requestSetLinearVelocity on Player, usually no effect
+        void requestSetLinearVelocity(sead::Vector3f* vel) {
+            using impl_t = void (RigidBodyBase*, sead::Vector3f*);
+            auto impl = reinterpret_cast<impl_t*>(exl::util::modules::GetTargetOffset(sym::phive::CharacterMatterRigidBodyEntity::requestSetLinearVelocity::offset));
+            return impl(this, vel);
+        }
+
+        void requestSetLinearVelocityXYZ(float x, float y, float z) {
+            auto vel = sead::Vector3f{x, y, z};
+            return this->requestSetLinearVelocity(&vel);
         }
     };
 

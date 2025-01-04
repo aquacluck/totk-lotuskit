@@ -19,3 +19,10 @@ EXKING("_ZN5phive13RigidBodyBaseL7getNameE", {
     TOTK_110: 0x02a9750c,
     TOTK_121: 0x02a911b8,
 })
+
+EXKING("_ZN5phive13RigidBodyBaseL24requestSetLinearVelocityE", {
+    TOTK_100: 0x00751574,
+    TOTK_110: 0x007a4cfc,
+    TOTK_121: 0x00acc874,
+})
+

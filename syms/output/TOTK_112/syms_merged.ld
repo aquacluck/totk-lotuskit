@@ -49,9 +49,11 @@ _ZN4sead9FrameHeap6createEmRKNS_14SafeStringBaseIcEEPNS_4HeapEiNS5_13HeapDirecti
 _ZN4sead9ThreadMgr9sInstanceE    = __main_start + 0x00000000; /* sead::ThreadMgr::sInstance */
 _ZN5phive13ControllerSetL22visitRigidBodyEntitiesE = __main_start + 0x00000000; /* phive::ControllerSet::visitRigidBodyEntities */
 _ZN5phive13RigidBodyBaseL19getBoundingBoxWorldE = __main_start + 0x00000000; /* phive::RigidBodyBase::getBoundingBoxWorld */
+_ZN5phive13RigidBodyBaseL24requestSetLinearVelocityE = __main_start + 0x00000000; /* phive::RigidBodyBase::requestSetLinearVelocity */
 _ZN5phive13RigidBodyBaseL7getAABBE = __main_start + 0x00000000; /* phive::RigidBodyBase::getAABB */
 _ZN5phive13RigidBodyBaseL7getNameE = __main_start + 0x00000000; /* phive::RigidBodyBase::getName */
 _ZN5phive15RigidBodyEntityL12getActorLinkE = __main_start + 0x00000000; /* phive::RigidBodyEntity::getActorLink */
+_ZN5phive30CharacterMatterRigidBodyEntityL24requestSetLinearVelocityE = __main_start + 0x00000000; /* phive::CharacterMatterRigidBodyEntity::requestSetLinearVelocity */
 _ZN6engine5actor11BaseProcMgr13addDependencyERS1_RNS0_9ActorBaseES4_ = __main_start + 0x00d9fc2c; /* engine::actor::BaseProcMgr::addDependency(engine::actor::BaseProcMgr&, engine::actor::ActorBase&, engine::actor::ActorBase&) */
 _ZN6engine5actor11BaseProcMgr16removeDependencyERS1_RNS0_9ActorBaseES4_ = __main_start + 0x008b6e90; /* engine::actor::BaseProcMgr::removeDependency(engine::actor::BaseProcMgr&, engine::actor::ActorBase&, engine::actor::ActorBase&) */
 _ZN6engine5actor8ActorMgr22requestCreateActorSyncEPv = __main_start + 0x00000000; /* engine::actor::ActorMgr::requestCreateActorSync(void*) */

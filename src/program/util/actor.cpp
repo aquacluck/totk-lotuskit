@@ -114,4 +114,12 @@ namespace lotuskit::util::actor {
         forceSetMatrix(actor, &arg, usuallyZeroFlag);
     }
 
+    phive::RigidBodyEntity* getMainRigidBody(ActorBase* actor) {
+        auto physCmp = actor->getPhysicsComponent();
+        if (physCmp && physCmp->controllerSet && physCmp->controllerSet->mainRigidBody) {
+            return physCmp->controllerSet->mainRigidBody;
+        }
+        return nullptr;
+    }
+
 }

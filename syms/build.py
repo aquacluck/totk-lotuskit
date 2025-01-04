@@ -44,6 +44,7 @@ def run_symbol_def_imports():
     import exking.game.ai.execute.ExecutePlayerReverseRecorder
     import exking.game.wm.WorldManagerModule
 
+    import exking.phive.CharacterMatterRigidBodyEntity
     import exking.phive.ControllerSet
     import exking.phive.RigidBodyBase
     import exking.phive.RigidBodyEntity
