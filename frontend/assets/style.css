@@ -149,7 +149,7 @@ textarea {
 
 .toolset_memutils_controller {
     position: absolute;
-    height: 230px;
+    height: 324px;
     padding: 8px;
     border: 1px solid #444;
 
@@ -157,11 +157,13 @@ textarea {
     grid-template-rows: 1fr 1fr 1fr 1fr;
     grid-template-columns: 1fr 1fr;
     grid-template-areas:
+    'camera    camera'
     'hexdump   hexdump'
     'memsearch quickdumps'
     'execscript execscript'
     'execscript execscript';
 }
+.toolset_memutils_controller > .camera { grid-area: camera; }
 .toolset_memutils_controller > .hexdump { grid-area: hexdump; }
 .toolset_memutils_controller > .memsearch { grid-area: memsearch; }
 .toolset_memutils_controller > .execscript { grid-area: execscript; }

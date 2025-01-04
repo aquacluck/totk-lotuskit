@@ -34,7 +34,7 @@ namespace lotuskit::util::camera {
             {"up", json::array({ frozenUp.x, frozenUp.y, frozenUp.z })},
             {"pos", json::array({ frozenPos.x, frozenPos.y, frozenPos.z })},
             {"at", json::array({ frozenAt.x, frozenAt.y, frozenAt.z })}
-        }), "/util/camera/log", false, false); // noblock, no debug log
+        }), "/camera/log", false, false); // noblock, no debug log
     }
 
     inline void disgustingCameraHook(DisgustingLookAtCamera* thisPtr, sead::Matrix34f* dst) {

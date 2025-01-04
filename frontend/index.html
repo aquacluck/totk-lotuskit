@@ -149,6 +149,74 @@
 
     // main ui
 
+    class CameraHacks extends Component {
+        constructor() {
+            super();
+            this.pos = createRef();
+            this.at = createRef();
+            this.up = createRef();
+            WSTransport.subscribe_ns("/camera/log", this.recvCameraLog.bind(this))
+        }
+
+        recvCameraLog(payload) {
+            let v = payload["pos"].map(x => makeLegibleFloat(x));
+            this.pos.current.value = `${v[0]}, ${v[1]}, ${v[2]}`;
+
+            v = payload["at"].map(x => makeLegibleFloat(x));
+            this.at.current.value = `${v[0]}, ${v[1]}, ${v[2]}`;
+
+            v = payload["up"].map(x => makeLegibleFloat(x));
+            this.up.current.value = `${v[0]}, ${v[1]}, ${v[2]}`;
+        }
+
+        reqCameraLog() { WSTransport.send({execScriptString: wrap_implicit_main("camera::log();")}); }
+        reqToggleFreeze() { WSTransport.send({execScriptString: wrap_implicit_main("camera::toggleFreeze();")}); }
+        reqFreezeAtRefs() {
+            let pos = this.pos.current.value;
+            pos = pos.replaceAll(",", "").split(" ").filter(x => x !== "").map(x => parseFloat(x));
+
+            let at = this.at.current.value;
+            at = at.replaceAll(",", "").split(" ").filter(x => x !== "").map(x => parseFloat(x));
+
+            let up = this.up.current.value;
+            up = up.replaceAll(",", "").split(" ").filter(x => x !== "").map(x => parseFloat(x));
+
+            WSTransport.send({execScriptString: wrap_implicit_main(`camera::freeze(${up[0]}, ${up[1]}, ${up[2]}, ${pos[0]}, ${pos[1]}, ${pos[2]}, ${at[0]}, ${at[1]}, ${at[2]});`)});
+        }
+
+        reqAbove() {
+            let slot_i = 0;
+            let dist = 50.0;
+            // FIXME sometimes z-axis inputs get reversed? doesnt seem consistent
+            //const up = [0, 0.707161, -0.707161]
+            const up = [0, 0.73, -0.73];
+            //const up = [0.000135, 0.707161, -0.707053] // just standing aiming down
+            //-0.000103, 0.707161, -0.707053 // perfect throw-aim down, then ZL+rstick to max height... reversed z?
+            //0.003695, 0.707161, -0.707043 // perfect dive+rstick, hangs on device drop lol
+            WSTransport.send({execScriptString: wrap_implicit_main(`auto a = ActorWatcher::get(${slot_i}); camera::freeze(${up[0]}, ${up[1]}, ${up[2]}, a.pos_x, a.pos_y+${dist}, a.pos_z, a.pos_x, a.pos_y, a.pos_z);`)});
+        }
+
+        render(props, state) {
+            return html`
+                <div class="camera">
+                    Camera
+                    <div style="float:right;">
+                        pos: <input placeholder="x, y, z" ref=${this.pos} size=40 /><br />
+                        at\xa0: <input placeholder="x, y, z" ref=${this.at} size=40 /><br />
+                        up\xa0: <input placeholder="0, 0.707161, -0.707161" ref=${this.up} size=40 /><br />
+                    </div>
+                    <br />
+                    <button title="camera::log()" onClick=${() => this.reqCameraLog() } class="pushbutton">dump</button>
+                    <button title="camera::freeze(up, pos, at)" onClick=${() => this.reqFreezeAtRefs() } class="pushbutton">assign</button>
+                    <button title="camera::toggleFreeze()" onClick=${() => this.reqToggleFreeze() } class="pushbutton">freeze</button>
+                    <br />
+                    <button title="fixed north above target (bugged)" onClick=${() => this.reqAbove() } class="pushbutton">above</button>
+
+                </div>
+            `;
+        }
+    };
+
     class HexDumpSlot extends Component {
         constructor() {
             super();
@@ -693,6 +761,7 @@
             <${ActorWatcher} slot_i=2 />
             <${ActorWatcher} slot_i=3 />
             <section class="toolset_memutils_controller">
+                <${CameraHacks} />
                 <div class="hexdump">
                     HexDump
                     <${HexDumpSlot} slot_i=0 />
