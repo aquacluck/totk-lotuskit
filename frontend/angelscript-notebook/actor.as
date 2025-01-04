@@ -70,4 +70,5 @@ ActorWatcher::doDrawRigidBodyPosFuture(0, 4+8); // flags -3 | -4
 
 RigidBody@ rbody = ActorWatcher::get(1).getMainRigidBody();
 rbody.setVel(0, 20.0, 0); // doesnt work on Player
+rbody.applyImpulse(0, 5000.0, 0); // larger values, also no Player
 

@@ -48,6 +48,7 @@ _ZN4sead7HeapMgr15createRootHeap_Ev = __main_start + 0x00e7cdc4; /* sead::HeapMg
 _ZN4sead9FrameHeap6createEmRKNS_14SafeStringBaseIcEEPNS_4HeapEiNS5_13HeapDirectionEb = __main_start + 0x00ac2bfc; /* sead::FrameHeap::create(unsigned long, sead::SafeStringBase<char> const&, sead::Heap*, int, sead::Heap::HeapDirection, bool) */
 _ZN4sead9ThreadMgr9sInstanceE    = __main_start + 0x04716e00; /* sead::ThreadMgr::sInstance */
 _ZN5phive13ControllerSetL22visitRigidBodyEntitiesE = __main_start + 0x008aa374; /* phive::ControllerSet::visitRigidBodyEntities */
+_ZN5phive13RigidBodyBaseL18applyLinearImpulseE = __main_start + 0x00cf600c; /* phive::RigidBodyBase::applyLinearImpulse */
 _ZN5phive13RigidBodyBaseL19getBoundingBoxWorldE = __main_start + 0x00a3c1c4; /* phive::RigidBodyBase::getBoundingBoxWorld */
 _ZN5phive13RigidBodyBaseL24requestSetLinearVelocityE = __main_start + 0x00acc874; /* phive::RigidBodyBase::requestSetLinearVelocity */
 _ZN5phive13RigidBodyBaseL7getAABBE = __main_start + 0x00b7d5d4; /* phive::RigidBodyBase::getAABB */

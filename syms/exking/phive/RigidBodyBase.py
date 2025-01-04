@@ -26,3 +26,9 @@ EXKING("_ZN5phive13RigidBodyBaseL24requestSetLinearVelocityE", {
     TOTK_121: 0x00acc874,
 })
 
+EXKING("_ZN5phive13RigidBodyBaseL18applyLinearImpulseE", {
+    TOTK_100: 0x00c2bd7c,
+    TOTK_110: 0x00ccc234,
+    TOTK_121: 0x00cf600c,
+})
+

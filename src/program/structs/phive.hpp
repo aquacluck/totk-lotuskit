@@ -59,6 +59,17 @@ namespace phive {
             return this->requestSetLinearVelocity(&vel);
         }
 
+        void applyLinearImpulse(sead::Vector3f* val) {
+            using impl_t = void (RigidBodyBase*, sead::Vector3f*);
+            auto impl = reinterpret_cast<impl_t*>(exl::util::modules::GetTargetOffset(sym::phive::RigidBodyBase::applyLinearImpulse::offset));
+            return impl(this, val);
+        }
+
+        void applyLinearImpulseXYZ(float x, float y, float z) {
+            auto val = sead::Vector3f{x, y, z};
+            return this->applyLinearImpulse(&val);
+        }
+
     };
     static_assert(offsetof(RigidBodyBase, lastTransform) == 0x98);
 
@@ -71,9 +82,10 @@ namespace phive {
         }
     };
 
+    /*
     class CharacterMatterRigidBodyEntity: public RigidBodyEntity {
         public:
-        // these behave the same as RigidBodyEntity::requestSetLinearVelocity on Player, usually no effect
+        // XXX these behave the same as RigidBodyBase::requestSetLinearVelocity on Player, usually no effect
         void requestSetLinearVelocity(sead::Vector3f* vel) {
             using impl_t = void (RigidBodyBase*, sead::Vector3f*);
             auto impl = reinterpret_cast<impl_t*>(exl::util::modules::GetTargetOffset(sym::phive::CharacterMatterRigidBodyEntity::requestSetLinearVelocity::offset));
@@ -85,6 +97,7 @@ namespace phive {
             return this->requestSetLinearVelocity(&vel);
         }
     };
+    */
 
     using ControllerSet_visitRigidBodyEntities_cb = void(*)(void*, RigidBodyEntity*, char*);
 

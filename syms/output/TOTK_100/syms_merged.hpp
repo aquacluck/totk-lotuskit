@@ -294,6 +294,13 @@ class visitRigidBodyEntities {
 }
 
 namespace sym::phive::RigidBodyBase {
+class applyLinearImpulse {
+    public:
+    inline static constexpr ptrdiff_t offset = 0x00c2bd7c;
+};
+}
+
+namespace sym::phive::RigidBodyBase {
 class getBoundingBoxWorld {
     public:
     inline static constexpr ptrdiff_t offset = 0x009865d0;
