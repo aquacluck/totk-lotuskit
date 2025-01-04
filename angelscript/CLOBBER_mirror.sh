@@ -43,9 +43,11 @@ cp tmpgit/sdk/angelscript/source/as_callfunc_arm64.cpp source
 cp tmpgit/sdk/angelscript/source/as_compiler.cpp source
 cp tmpgit/sdk/angelscript/source/as_configgroup.cpp source
 cp tmpgit/sdk/angelscript/source/as_context.cpp source
-#TODO addons? scripthandle(ref), scriptmath, scriptmathcomplex
+#TODO addons? scripthandle(ref)
 cp tmpgit/sdk/add_on/scriptarray/*.h include
 cp tmpgit/sdk/add_on/scriptarray/*.cpp source
+cp tmpgit/sdk/add_on/scriptmath/*.h include
+cp tmpgit/sdk/add_on/scriptmath/*.cpp source
 cp tmpgit/sdk/add_on/scriptstdstring/*.h include
 cp tmpgit/sdk/add_on/scriptstdstring/*.cpp source
 

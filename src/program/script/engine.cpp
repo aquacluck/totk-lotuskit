@@ -7,6 +7,8 @@ using Logger = lotuskit::Logger;
 
 #include "angelscript.h"
 #include "scriptarray.h"
+#include "scriptmath.h"
+//#include "scriptmathcomplex.h"
 #include "scriptstdstring.h"
 
 namespace lotuskit::script::engine {
@@ -61,6 +63,8 @@ namespace lotuskit::script::engine {
 
         // addons
         AngelScript::RegisterScriptArray(engine, true);
+        AngelScript::RegisterScriptMath(engine);
+        //AngelScript::RegisterScriptMathComplex(engine);
         AngelScript::RegisterStdString(engine);
         AngelScript::RegisterStdStringUtils(engine);
     }
