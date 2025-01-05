@@ -83,5 +83,93 @@ KEY_RSTICK
 /**********************************************************/
 
 
+void example_qds1() {
+    // based on armindoemiya's qds instructions
+    // https://discord.com/channels/1086729144307564648/1109838351596527726/1325295759674835109
+    // assert inventory is weapon tab, cursor on equipped filler, target to left of cursor
+    // assert unpaused, standing, back against wall, not overloaded
+    tas::input(2, KEY_PLUS, 0,0, 0,0); // pause
+    tas::input(4, KEY_DLEFT, 0,0, 0,0); // wait + cursor left to target
+    tas::input(2, KEY_A, 0,0, 0,0);
+    tas::input(4, NONE, 0,0, 0,0);
+    tas::input(2, KEY_A, 0,0, 0,0); // swap to target
+    tas::input(6, NONE, 0,0, 0,0);
+    tas::input(2, KEY_A, 0,0, 0,0);
+    tas::input(2, NONE, 0,0, 0,0);
+    tas::input(2, KEY_DDOWN, 0,0, 0,0);
+    tas::input(2, KEY_A, 0,0, 0,0); // drop target
+    tas::input(6, NONE, 0,0, 0,0);
+    tas::input(2, KEY_PLUS, 0,0, 0,0); // unpause
+    tas::input(6, NONE, 0,0, 0,0);
+    tas::input(2, KEY_PLUS, 0,0, 0,0); // repause
+    tas::input(2, NONE, 0,0, 0,0);
+    // assert cursor is on equipped target
+    // assert available filler to left of cursor
+    tas::input(2, KEY_A, 0,0, 0,0);
+    tas::input(2, NONE, 0,0, 0,0);
+    tas::input(2, KEY_DDOWN, 0,0, 0,0);
+    tas::input(2, KEY_A, 0,0, 0,0); // drop target
+    tas::input(2, NONE, 0,0, 0,0);
+    tas::input(2, KEY_DLEFT, 0,0, 0,0);
+    tas::input(2, KEY_A, 0,0, 0,0);
+    tas::input(8, NONE, 0,0, 0,0);
+    tas::input(2, KEY_A, 0,0, 0,0); // equip filler to left
+    tas::input(6, NONE, 0,0, 0,0);
+    tas::input(2, KEY_A, 0,0, 0,0);
+    tas::input(4, NONE, 0,0, 0,0);
+    tas::input(2, KEY_A, 0,0, 0,0); // unequip
+    tas::input(4, NONE, 0,0, 0,0);
+    tas::input(2, KEY_PLUS, 0,0, 0,0); // unpause
+    tas::input(6, NONE, 0,32767, 0,0); // up turnaround
+    tas::input(2, KEY_PLUS, 0,0, 0,0); // repause
+    tas::input(2, NONE, 0,0, 0,0);
+    // assert cursor is on equipped target
+    // assert available filler to left of cursor
+    tas::input(2, KEY_A, 0,0, 0,0);
+    tas::input(2, NONE, 0,0, 0,0);
+    tas::input(2, KEY_DDOWN, 0,0, 0,0);
+    tas::input(2, KEY_A, 0,0, 0,0); // drop target
+    tas::input(2, NONE, 0,0, 0,0);
+    tas::input(2, KEY_DLEFT, 0,0, 0,0);
+    tas::input(2, KEY_A, 0,0, 0,0);
+    tas::input(8, NONE, 0,0, 0,0);
+    tas::input(2, KEY_A, 0,0, 0,0); // equip filler to left
+    tas::input(6, NONE, 0,0, 0,0);
+    tas::input(2, KEY_A, 0,0, 0,0);
+    tas::input(4, NONE, 0,0, 0,0);
+    tas::input(2, KEY_A, 0,0, 0,0); // unequip
+    tas::input(4, NONE, 0,0, 0,0);
+    tas::input(2, KEY_PLUS, 0,0, 0,0); // unpause
+    // manually turn around and take it, whatever
+}
+
+
+void example_cartslide1() {
+    //actor::createSimple("Weapon_Sword_124"); // royal bsword
+    // Weapon_Lsword_124 royal clay, SpObj_Cart_A_01, SpObj_Rocket_A_01
+    //example_qds1(); // prereqs
+
+    Player.setPosRot(-170, 437, -980, 1, 0, 0, 0, 1, 0, 0, 0, 1);
+    tas::input(30, NONE); // TODO fix camera
+    tas::input(30, KEY_ZL); // TODO fix camera
+
+    // assert cart in quickmenu cursor, recall rune
+    tas::input(12, KEY_DUP|KEY_ZL);
+    tas::input(2, KEY_X|KEY_DUP|KEY_ZL);
+    tas::input(38, KEY_ZL); // wait for drop
+
+    // recall cart
+    tas::input(2, KEY_L|KEY_ZL);
+    tas::input(16, KEY_ZL, 0,0, 0,32767); //XXX inverted camera
+    ActorWatcher::assignSlotAwaitRecall(1);
+    tas::input(4, KEY_ZL); //XXX need to stop/slow cursor to select?
+    tas::input(2, KEY_A|KEY_ZL); // begin recall
+    tas::input(120, KEY_ZL); // wait for drop/origin position
+    tas::input(2, KEY_X|KEY_ZL, 0,32767, 0,0); // jump on
+    tas::input(60, KEY_ZL);
+    tas::input(2, KEY_L|KEY_ZL); // end recall
+}
+
+
 // that is all :) ur doing great
 
