@@ -52,13 +52,14 @@ namespace lotuskit::tas {
         const char* r_down  = buttons & (1 << (u32)nn::hid::NpadButton::StickRDown)  ? "v" : " ";
 
         // All lit up:
-        //LX:-22222 RX:-22222
-        //LY:-22222 RY:-22222
-        //ZL L ^- +^  X R ZR
-        //    <L>^<R>Y A
-        //     v<v>v  B
+        //[tas::Playback] TOTK_XXX
+        //     LX:-22222 RX:-22222
+        //     LY:-22222 RY:-22222
+        //     ZL L ^- +^   X R ZR
+        //         <L>^<R> Y A
+        //          v<v>v   B
 
-        const char* inputs_fmt = "LX:%6d RX:%6d\nLY:%6d RY:%6d\n%s %s %s%s %s%s  %s %s %s\n    %s%s%s%s%s%s%s%s %s\n     %s%s%s%s%s  %s\n";
+        const char* inputs_fmt = "     LX:%6d RX:%6d\n     LY:%6d RY:%6d\n     %s %s %s%s %s%s   %s %s %s\n         %s%s%s%s%s%s%s %s %s\n          %s%s%s%s%s   %s\n";
         lotuskit::TextWriter::printf(1, inputs_fmt,
             LX, RX, LY, RY,
             zl, l, l_up, minus, plus, r_up, x, r, zr,

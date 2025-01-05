@@ -11,7 +11,10 @@ namespace lotuskit::tas {
 
     void Playback::calc() {
         if (!isPlaybackActive) { return; } // not doing playback
-        lotuskit::TextWriter::printf(1, "[tas] playback\n");
+
+        // TODO elapsed frame count? system tick? this frame's delta time? rta? igt?
+        // (however its impossible to predict or progress-bar a script's frame duration -- halting problem)
+        lotuskit::TextWriter::printf(1, "[tas::Playback] TOTK_%d\n", TOTK_VERSION);
 
         // is the current input still playing?
         VFRMgr* vfrMgr = *exl::util::pointer_path::FollowSafe<VFRMgr*, sym::engine::module::VFRMgr::sInstance::offset>();

@@ -16,9 +16,11 @@
 - Bug: Playing on console crashes after... 5 minutes? Not sure why yet
 - Bug: Polling options in the frontend aren't perfect -- if the browser tries to connect right as the mod is opening its socket, the frontend can get stuck unable to connect.
 - Bug: Don't leave ActorWatchers targeting dead/dying actors while you go through loading screens (especially title+shrine loads), this will eventually crash. Clear the watcher or target a resident actor like Player to avoid this.
+- Bug: ActorWatcher's RigidBody options can crash during eg shrine loads (and printing their names in general?)
 - Bug: Script size is limited to ~8KB and crashes on overflow
 - Bug: Actors may fail to spawn in some scripts with ifs/branches?
 - Bug: tas::input scripts sometimes (first time only? maybe playback injection doesnt wait for AS engine?) behave strangely and fail to clear the injected input. Usually you can then run a new input and everything is fine.
+- Bug: camera "above" button may choose bad angles resulting in inverted controls. This state is prone to crashing when taking out devices + more
 - The mod version must match your game version, be sure to switch them together. Separate builds simplify certain version interop problems like differing structs or register usage.
 - By default the frontend is served on 7073 because it looks sort of like "TOTK". The mod's WebSocket server is on 7072 because it's like 2 is the sequel.
 - TOTK versions 1.0.0 and 1.2.1 are primarily supported. I'll also build for 1.1.0, but the testing workload is too much while the project is in flux, so these builds are untested+unsupported for now.

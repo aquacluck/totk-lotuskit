@@ -21,7 +21,7 @@ namespace lotuskit::tas {
 
     void Record::calc() {
         if (!isRecordActive) { return; } // not doing record
-        lotuskit::TextWriter::printf(1, "[tas] dumping\n");
+        lotuskit::TextWriter::printf(1, "[tas::Record] ws dump\n");
 
         VFRMgr* vfrMgr = *exl::util::pointer_path::FollowSafe<VFRMgr*, sym::engine::module::VFRMgr::sInstance::offset>();
         u32 deltaFrame60 = (u32)(vfrMgr->mDeltaFrame * 2);

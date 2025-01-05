@@ -129,7 +129,7 @@ HOOK_DEFINE_TRAMPOLINE(WorldManagerModuleBaseProcHook) {
         // drawlist 0 near top-left (default)
         // drawlist 1 near top-right
         lotuskit::TextWriter::appendCallback(1, [](lotuskit::TextWriterExt* writer, sead::Vector2f* textPos) {
-            textPos->x = 1280.0 - 150.0;
+            textPos->x = 1280.0 - 155.0;
             textPos->y = 2.0;
         });
 
