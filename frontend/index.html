@@ -614,6 +614,7 @@
                 const type = html`<label>[${fz.obj.type.target}]</label>`; // always present+visible
                 const actor = fz[0].target ? html`<span dangerouslySetInnerHTML=${{ __html: fz[0].highlight() }}></span>` : actorName; // always present+visible
 
+                // HACK setting innerHTML violates vdom. not worth the effort: add state({copySuccess: actorName}), compare for 📋✅ in here, maybe setTimeout+debounce to reset
                 const copy = html`<button title="copy" onClick=${e => { navigator.clipboard.writeText(actorName); e.target.innerHTML = "✅"; }}>📋</button>`;
                 const spawn = html`<button title="actor::createSimple(string)" onClick=${() => this.do_spawn(actorName) }>new</button>`;
                 const objmap = html`<button title="find in objmap" onClick=${() => this.do_objmap(actorName) }>objmap</button>`;
@@ -652,7 +653,7 @@
                 // wrap or leave empty
                 philName &&= html`<div class="philName"><label>PhilName: </label>${philName}</div>`;
 
-                return html`<div class="fuzzysort_results_item">
+                return html`<div key=${actorName} class="fuzzysort_results_item">
                     <div class="actor">${type} ${actor} ${copy}${objmap}${spawn}</div>
                     ${model}
                     ${gameName}
@@ -663,6 +664,7 @@
 
             return html`
                 <dialog onKeyDown=${this.do_dialog_keydown} open>
+                    <button title="esc when focused to close" onClick=${() => this.setState({fuzzysort_query: "", fuzzysort_results: []})} class="pushbutton esc"></button>
                     Actors like "${state.fuzzysort_query}" (${state.fuzzysort_results.length}):<br />
                     <div class="fuzzysort_results">${items}</div>
                 </dialog>
@@ -751,6 +753,7 @@
 
             const dialog = !(state.dialog_contents) ? "" : html`
                 <dialog onKeyDown=${this.do_dialog_keydown} open>
+                    <button title="esc when focused to close" onClick=${() => this.setState({dialog_filename: "", dialog_contents: ""})} class="pushbutton esc"></button>
                     📖${state.dialog_filename}<br />
                     <textarea autofocus contenteditable="plaintext-only">${state.dialog_contents}</textarea>
                 </dialog>`;

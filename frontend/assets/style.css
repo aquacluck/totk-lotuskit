@@ -191,6 +191,17 @@ textarea {
     top: 0px;
     left: 0px;
     filter: drop-shadow(0px 10px 10px #115588);
+
+    &> .esc {
+        position: absolute;
+        top: 0px;
+        right: 0px;
+        color: hsl(var(--hue-delete) 55% 80%);
+        &:before { content: "[x]"; }
+        &:active:before { content: "esc"; }
+        &:hover { background: hsl(var(--hue-delete) 55% 30%); }
+    }
+
     textarea, .fuzzysort_results {
         min-width: 200px;
         width: 600px;
