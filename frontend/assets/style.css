@@ -141,6 +141,9 @@ textarea {
 .toolbox_main { position: relative; }
 .toolbox_main > .toolset_quickcorner { right:0px; bottom:0px; }
 .toolbox_main > .toolset_memutils_controller { right:18px; top:0px; }
+
+/* https://drafts.csswg.org/css-values-5/#tree-counting */
+/*.toolbox_main > .toolset_actor_watcher { left: 0px; top: calc(sibling-index() * 400px); } */
 .toolbox_main > .toolset_actor_watcher:nth-of-type(1) { left: 0px; top:   0px; }
 .toolbox_main > .toolset_actor_watcher:nth-of-type(2) { left: 0px; top: 400px; }
 .toolbox_main > .toolset_actor_watcher:nth-of-type(3) { left: 0px; top: 800px; }
@@ -188,11 +191,20 @@ textarea {
     top: 0px;
     left: 0px;
     filter: drop-shadow(0px 10px 10px #115588);
-    textarea {
+    textarea, .fuzzysort_results {
         min-width: 200px;
         width: 600px;
         min-height: 100px;
         height: 400px;
+        overflow: scroll;
+    }
+    .fuzzysort_results {
+        margin-top: 6px;
+    }
+    .fuzzysort_results_item {
+        color: #ccc;
+        label { color: #666; }
+        b { color: var(--vec-green); }
     }
 }
 

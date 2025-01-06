@@ -5,11 +5,15 @@
     <link rel="stylesheet" type="text/css" href="assets/style.css" />
     <title>totk-lotuskit</title>
 <script type="module">
-    import { createRef, h, render, Component } from '/assets/js-vendor/preact@10.23.1.mjs';
-    import htm from '/assets/js-vendor/htm@3.1.1.mjs';
-    import { signal } from "/assets/js-vendor/preact-signals@1.3.0.mjs";
+    import { createRef, h, render, Component } from "/assets/js-vendor/preact@10.23.1.mjs";
+    import htm from "/assets/js-vendor/htm@3.1.1.mjs";
     const html = htm.bind(h);
+    import { signal } from "/assets/js-vendor/preact-signals@1.3.0.mjs";
+    import fuzzysort from "/assets/js-vendor/fuzzysort@3.1.0.mjs";
 
+    // prepare actor search
+    import { Actor_MasterList_prepare_fuzzysort } from "/assets/data/Actor_MasterList.mjs";
+    const Actor_MasterList_fuzzysort = Actor_MasterList_prepare_fuzzysort(fuzzysort);
 
     class WSTransport {
         static websock = undefined;
@@ -558,6 +562,99 @@
         }
     };
 
+    class Actor_MasterList_Search extends Component {
+        constructor() {
+            super();
+            this.state = {
+                ui_size: "medium",
+                fuzzysort_query: "",
+                fuzzysort_results: [],
+            };
+            this.fuzzy_input_ref = createRef();
+        }
+
+        toggle_size() {
+            this.setState({ui_size: this.state.ui_size == "medium" ? "small" : "medium"});
+        }
+
+        do_search_change = (e) => {
+            const q = e.currentTarget.value.toString().trim();
+            if (!q || q.length < 3) { return this.setState({fuzzysort_query: "", fuzzysort_results: []}); }
+
+            const fuzzysort_results = fuzzysort.go(q, Actor_MasterList_fuzzysort, {
+                keys: ["actor", "model", "gameName", "name"], // exclude "type" column
+                threshold: 0.4, // uses "score", different from the negative "_score"! https://github.com/farzher/fuzzysort/issues/135
+            });
+            //console.log(q, fuzzysort_results);
+            this.setState({fuzzysort_query: q, fuzzysort_results: fuzzysort_results});
+        }
+
+        do_dialog_keydown = (e) => {
+            if (e.key == "Escape" || e.keyCode == 27) {
+                // close
+                e.preventDefault();
+                this.setState({fuzzysort_query: "", fuzzysort_results: []});
+            }
+        }
+
+        do_spawn(actorName) { WSTransport.send({execScriptString: wrap_implicit_main(`actor::createSimple("${actorName}");`)}); }
+        do_objmap(actorName) { window.open(`https://objmap-totk.zeldamods.org/#/map/z2,0,0?q=%5E${actorName}`, "_blank").focus(); }
+
+        render_fuzzysort_results_dialog(props, state) {
+            if (!state.fuzzysort_query) { return ""; }
+
+            const items = state.fuzzysort_results.map(fz => {
+                //console.log(fz.obj.actor.target, fz.score, fz);
+                const actorName = fz.obj.actor.target;
+                const type = html`<label>[${fz.obj.type.target}]</label>`; // always present+visible
+                const actor = fz[0].target ? html`<span dangerouslySetInnerHTML=${{ __html: fz[0].highlight() }}></span>` : actorName; // always present+visible
+
+                const copy = html`<button title="copy" onClick=${e => { navigator.clipboard.writeText(actorName); e.target.innerHTML = "✅"; }}>📋</button>`;
+                const spawn = html`<button title="actor::createSimple(string)" onClick=${() => this.do_spawn(actorName) }>new</button>`;
+                const objmap = html`<button title="find in objmap" onClick=${() => this.do_objmap(actorName) }>objmap</button>`;
+
+                // model field is verbose, only show it if it matches and "actor" didn't
+                let model = (fz[1].target && !fz[0].target) ? html`<span dangerouslySetInnerHTML=${{ __html: fz[1].highlight() }}></span>` : "";
+                model = !model ? "" : html`<div class="model"><label>Model: </label>${model}</div>`;
+
+                let gameName = fz[2].target ? html`<span dangerouslySetInnerHTML=${{ __html: fz[2].highlight() }}></span>` :
+                               fz.obj.gameName ? fz.obj.gameName.target : "";
+                gameName = !gameName ? "" : html`<div class="gameName"><label>GameName: </label>${gameName}</div>`;
+
+                let name = fz[3].target ? html`<span dangerouslySetInnerHTML=${{ __html: fz[3].highlight() }}></span>` :
+                           fz.obj.name ? fz.obj.name.target : "";
+                name = !name ? "" : html`<div class="name"><label>PhilName: </label>${name}</div>`;
+
+                return html`<div class="fuzzysort_results_item">
+                    <div class="actor">${type} ${actor} ${copy}${objmap}${spawn}</div>
+                    ${model}
+                    ${gameName}
+                    ${name}
+                    <hr />
+                </div>`;
+            });
+
+            return html`
+                <dialog onKeyDown=${this.do_dialog_keydown} open>
+                    Actors like "${state.fuzzysort_query}" (${state.fuzzysort_results.length}):<br />
+                    <div class="fuzzysort_results">${items}</div>
+                </dialog>
+            `;
+        }
+
+        render(props, state) {
+            const fuzzyWidth = state.ui_size == "medium" ? 20 : 4;
+            return html`
+                <div class="Actor_MasterList_Search size_${state.ui_size}">
+                    <button title="Expand/Collapse" onClick=${ () => this.toggle_size() }>${ state.ui_size == "medium" ? "[-]" : "[+]" }</button>
+                    <label class="size_small_hidden" for="Actor_MasterList_Search__fuzzy_input_ref">ActorDB </label>
+                    <input onInput=${this.do_search_change} placeholder="kokko" size=${fuzzyWidth} ref=${this.fuzzy_input_ref} id="Actor_MasterList_Search__fuzzy_input_ref" />
+                    ${this.render_fuzzysort_results_dialog(props, state)}
+                </div>
+            `;
+        }
+    };
+
     class AngelScriptNotebook extends Component {
         constructor() {
             super();
@@ -775,6 +872,7 @@
             </section>
             <section class="toolset_quickcorner">
                 <div class="qc">
+                    <${Actor_MasterList_Search} />
                     <${AngelScriptNotebook} />
                     <${ModConnectionUI} />
                 </div>

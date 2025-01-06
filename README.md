@@ -51,12 +51,14 @@
 - Watertoon's type+symbol+ainb documentation, and so much more
 - build + hooking + much more thanks to [exlaunch](https://github.com/shadowninja108/exlaunch) by shadow, licensed under GPL2
 - build + name thanks to [LunaKit](https://github.com/Amethyst-szs/smo-lunakit) by Amethyst, licensed under GPL2. Thanks [CraftyBoss](https://github.com/CraftyBoss), [Sanae](https://github.com/Sanae6), [exlaunch-cmake](https://github.com/EngineLessCC/exlaunch-cmake/), [oss-rtld](https://github.com/Thog/oss-rtld) for their contributions or references used in LunaKit.
+- Phil + TOTK Data Collection community for: actor list, recall+camera+lotus icons
 - lessons from inspecting MaxLastBreath's [UltraCam](https://github.com/MaxLastBreath/TOTK-mods/) binaries
 - socket bits+pieces+reference from the [Atmosphere project](https://github.com/Atmosphere-NX/Atmosphere) licensed under GPL2
 - socket+logging bits+pieces from the [Skyline project](https://github.com/skyline-dev/skyline) licensed under MIT
 - [AngelScript](https://www.angelcode.com/angelscript/) by Andreas Jönsson, under zlib license
 - [frontend font](https://github.com/adobe-fonts/source-code-pro) licensed under OFL
 - [preact](https://github.com/preactjs/preact) licensed under MIT and [htm](https://github.com/developit/htm) licensed under Apache2.0, sourced from [esm builds](https://esm.sh)
+- [fuzzysort](https://github.com/farzher/fuzzysort) licensed under MIT
 - https://github.com/whitequark/python-itanium_demangler
 - https://github.com/fruityloops1/zeldar
 - Nintendo for the good game
