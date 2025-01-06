@@ -1,8 +1,8 @@
 ## Getting started
 - Download the [latest build](https://github.com/aquacluck/totk-lotuskit/releases) for your game version. This is replaced with every commit, so you might want to hang on to the zip in case I break it in the future!
-- Extract the zip and edit the configs in the `romfs` folder. Install the mod by copying the `romfs` and `exefs` folders into your switch sd's `/atmosphere/contents/0100f2c0115b6000/` folder.
-- Run the game.
-- Depending on your settings in `romfs/totk_lotuskit/config.json`, the game may hang at bootup and wait for your frontend, or remain offline (still logging to the debug console in emulators), or ~~TODO you may connect later~~
+- Extract the zip and install the mod by copying the `romfs` and `exefs` folders into your switch sd's `/atmosphere/contents/0100f2c0115b6000/` folder.
+- Copy `romfs/totk_lotuskit/config.example.json` to `romfs/totk_lotuskit/config.json` and make any edits. Without this file the game will boot normally with all mod features disabled.
+- Run the game. Depending on your config, it may hang at bootup and wait for your frontend, or remain offline (still logging to the debug console in emulators), or ~~TODO you may connect later~~
 - Run `frontend/run.py` (you'll need a python installation) and open the web frontend at [http://127.0.0.1:7073](http://127.0.0.1:7073)
 - Connect to an emulator with localhost (default), or enter your switch console ip+port in the bottom right to connect to the mod. Emulators are easier to get started with.
 - Fool around with things. You'll crash the game a lot and you'll be looking through some sort of code constantly, understand this going in and don't be frustrated :)
@@ -12,7 +12,7 @@
 - Opening up a game/emulator process for arbitrary manipulation over the network is inherently risky, be sure you understand the risks and keep the device on safe networks.
 - WebSocket connection to the mod must be established at bootup (for now) or not at all. There is no way to reconnect to a game. Yeah it sucks.
 - Everything you do in the frontend is accomplished by running AngelScript snippets, and usually you can hover on buttons/etc for clarification about scripting or other quirks.
-- Check out `registerGlobals` in `src/program/script/globals.cpp` for a complete list of script bindings available!
+- Check the "AS📖" button in the bottom right for script docs, see `registerGlobals` in `src/program/script/globals.cpp` for a complete list of script bindings available, and see [AngelScript's docs](https://www.angelcode.com/angelscript/sdk/docs/manual/doc_script.html) for language details (it's mostly "interpreted C++" with `@handles` instead of `*pointers`)
 - Bug: Playing on console crashes after... 5 minutes? Not sure why yet
 - Bug: Polling options in the frontend aren't perfect -- if the browser tries to connect right as the mod is opening its socket, the frontend can get stuck unable to connect.
 - Bug: Don't leave ActorWatchers targeting dead/dying actors while you go through loading screens (especially title+shrine loads), this will eventually crash. Clear the watcher or target a resident actor like Player to avoid this.
@@ -26,19 +26,21 @@
 - TOTK versions 1.0.0 and 1.2.1 are primarily supported. I'll also build for 1.1.0, but the testing workload is too much while the project is in flux, so these builds are untested+unsupported for now.
 - When troubleshooting be sure to check any emulator logs as well as ws traffic and console in browser devtools. Things like scripting syntax errors will show up there.
 - When reporting mid-game freezing/crashing problems, I'll need a lot of detail! Console vs emulator, version, how long was the play session, where it happened, any recent loads or approaching any major landmarks, any crash dump/log, etc... Modding the game is very fragile, there are countless ways to fail, it's hard to narrow down and I'm not very good at C++ or reverse engineering :)
+- To update the mod, copy/drag the new `romfs` and `exefs` folders into their destination. It's always safe to overwrite with the new zip contents. [Check if the config format has changed in the example file](https://github.com/aquacluck/totk-lotuskit/commits/main/romfs/totk_lotuskit/config.example.json) and update your config if needed. Serve the updated frontend, refresh it in your browser if needed, etc.
 
 ## Building the mod from source
 - Manual preprocessing for certain work/changes:
     - Many headers are mirrored+patched from https://github.com/dt-12345/totk , see `dt_totk/CLOBBER_mirror.sh` to update or further patch them. tldr it rewrites the folder with upstream + local patches, which we commit into this repo.
     - angelscript source is similarly mirrored, and often receives nice new features
     - `syms/build.py` is a symbol map+metadata build pipeline, keep this in sync! A header file holding `sym::` prefixed symbols and a linker script symbol table for each game version will be generated.
-- Run `make` in a suitable build environment (such as [devkitPro](https://devkitpro.org/wiki/Getting_Started) or a [docker container](https://hub.docker.com/r/pixelkiri/devkitpro-alpine-switch/)) with cmake installed
+- Run `make` in a suitable build environment (such as [devkitPro](https://devkitpro.org/wiki/Getting_Started) or a [docker container](https://hub.docker.com/r/devkitpro/devkita64)) with cmake installed
 - Mod `exefs` files are at `build/main.npdm` and `build/subsdk9`, copy `romfs` configs from the repo
 
 ## Repo overview
 - `.github` automatically builds and [releases](https://github.com/aquacluck/totk-lotuskit/releases) each commit. You could reproduce the build with this or set it up in your own repo clone.
 - `angelscript` contains a patched mirror of the lib
 - `dt_totk` contains many patched C++ headers for libs used in the game
+- `exlaunch` contains a patched mirror
 - `frontend` is an optional web frontend copied into every release zip. A quickie python http server is provided, and you can serve this however you like, but non-http `file://` access will not work!
 - `romfs` is a skeleton/template for files which should be installed with the mod, copied into every release zip
 - `src/program` is the C++ mod source

@@ -113,6 +113,9 @@ class {identifier} {{
 
 
 if __name__ == "__main__":
+    # work in syms folder regardless of initial cwd
+    os.chdir(os.path.dirname(__file__))
+
     run_symbol_def_imports()
     [module.postprocess() for module in NSOModule.ALL_MODULES]
     for v in GameVersion.ALL_STR:
