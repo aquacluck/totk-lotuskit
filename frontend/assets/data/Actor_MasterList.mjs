@@ -15068,12 +15068,10 @@ const Actor_MasterList_raw = [
 function Actor_MasterList_prepare_fuzzysort(fuzzysort) {
     return Actor_MasterList_raw.map(a => {
         // a = {actor: "Accessory_Battery", model: "Item_Battery.Item_Battery", gameName: "Energy Cell", name: "Energy Cell", type: "Accessory"}
-        let out = {actor: fuzzysort.prepare(a.actor)};
-        if (a.actor) {    out.actor =    fuzzysort.prepare(a.actor); } // always
+        let out = {actor: fuzzysort.prepare(a.actor), type: fuzzysort.prepare(a.type)};
         if (a.model) {    out.model =    fuzzysort.prepare(a.model); }
         if (a.gameName) { out.gameName = fuzzysort.prepare(a.gameName); }
-        if (a.name) {     out.name =     fuzzysort.prepare(a.name); }
-        if (a.type) {     out.type =     fuzzysort.prepare(a.type); } // always
+        if (a.name) {     out.philName = fuzzysort.prepare(a.name); }
         return out;
     });
 }

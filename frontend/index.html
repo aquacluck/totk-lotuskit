@@ -582,7 +582,7 @@
             if (!q || q.length < 3) { return this.setState({fuzzysort_query: "", fuzzysort_results: []}); }
 
             const fuzzysort_results = fuzzysort.go(q, Actor_MasterList_fuzzysort, {
-                keys: ["actor", "model", "gameName", "name"], // exclude "type" column. "name" is referred to as PhilName
+                keys: ["actor", "model", "gameName", "philName"], // exclude "type" column
                 threshold: 0.4, // uses "score", different from the negative "_score"! https://github.com/farzher/fuzzysort/issues/135
             });
             //console.log(q, fuzzysort_results);
@@ -644,12 +644,12 @@
                     // display match
                     philName = html`<span dangerouslySetInnerHTML=${{ __html: fz[3].highlight() }}></span>`;
                 }
-                if (fz.obj.name) {
+                if (fz.obj.philName) {
                     // display even if it didn't match
-                    philName ||= fz.obj.name.target;
+                    philName ||= fz.obj.philName.target;
                 }
                 // hide gameName duplicates
-                philName &&= (fz.obj.gameName && fz.obj.name.target === fz.obj.gameName.target) ? "" : philName;
+                philName &&= (fz.obj.gameName && fz.obj.philName.target === fz.obj.gameName.target) ? "" : philName;
                 // wrap or leave empty
                 philName &&= html`<div class="philName"><label>PhilName: </label>${philName}</div>`;
 
@@ -666,7 +666,7 @@
                 <dialog onKeyDown=${this.do_dialog_keydown} open>
                     <button title="esc when focused to close" onClick=${() => this.setState({fuzzysort_query: "", fuzzysort_results: []})} class="pushbutton esc"></button>
                     Actors like "${state.fuzzysort_query}" (${state.fuzzysort_results.length}):<br />
-                    <div class="fuzzysort_results">${items}</div>
+                    <div class="fuzzysort_results content">${items}</div>
                 </dialog>
             `;
         }
@@ -755,7 +755,7 @@
                 <dialog onKeyDown=${this.do_dialog_keydown} open>
                     <button title="esc when focused to close" onClick=${() => this.setState({dialog_filename: "", dialog_contents: ""})} class="pushbutton esc"></button>
                     📖${state.dialog_filename}<br />
-                    <textarea autofocus contenteditable="plaintext-only">${state.dialog_contents}</textarea>
+                    <textarea autofocus class="content" contenteditable="plaintext-only">${state.dialog_contents}</textarea>
                 </dialog>`;
 
             return html`

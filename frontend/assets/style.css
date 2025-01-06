@@ -73,6 +73,8 @@ textarea {
     min-height: 60px;
     height: 100%;
     display: block;
+    scrollbar-color: var(--color-text) rgba(0,0,0,0);
+    /* scrollbar-width: thin; /* better for chrome, worse for firefox */
 }
 
 .size_small .size_small_hidden { display: none; }
@@ -132,11 +134,17 @@ textarea {
     min-height: 150px;
 }
 
+.fuzzysort_results_item {
+    color: #ccc;
+    label { color: #666; }
+    b { color: var(--vec-green); }
+}
+
 
 
 
 /* toolsets use css grid to render clusters of ui into standalone layers which are absolutely positioned as needed. */
-/* TODO basic draggable window, settings/toggles bar */
+/* TODO basic draggable windows/dialog, settings/toggles bar */
 
 .toolbox_main { position: relative; }
 .toolbox_main > .toolset_quickcorner { right:0px; bottom:0px; }
@@ -202,20 +210,16 @@ textarea {
         &:hover { background: hsl(var(--hue-delete) 55% 30%); }
     }
 
-    textarea, .fuzzysort_results {
+    &> .content {
         min-width: 200px;
-        width: 600px;
         min-height: 100px;
+        width: 600px;
         height: 400px;
+        resize: both;
         overflow: scroll;
-    }
-    .fuzzysort_results {
         margin-top: 6px;
-    }
-    .fuzzysort_results_item {
-        color: #ccc;
-        label { color: #666; }
-        b { color: var(--vec-green); }
+        scrollbar-color: var(--color-text) rgba(0,0,0,0);
+        /* scrollbar-width: thin; /* better for chrome, worse for firefox */
     }
 }
 
