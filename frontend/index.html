@@ -582,7 +582,7 @@
             if (!q || q.length < 3) { return this.setState({fuzzysort_query: "", fuzzysort_results: []}); }
 
             const fuzzysort_results = fuzzysort.go(q, Actor_MasterList_fuzzysort, {
-                keys: ["actor", "model", "gameName", "name"], // exclude "type" column
+                keys: ["actor", "model", "gameName", "name"], // exclude "type" column. "name" is referred to as PhilName
                 threshold: 0.4, // uses "score", different from the negative "_score"! https://github.com/farzher/fuzzysort/issues/135
             });
             //console.log(q, fuzzysort_results);
@@ -604,6 +604,11 @@
             if (!state.fuzzysort_query) { return ""; }
 
             const items = state.fuzzysort_results.map(fz => {
+                // fz.obj is the (prepared) underlying matched object, so fz.obj.actor.target is a const value like "Animal_Kokko_A"
+                // fz[n] map to the fuzzysort `keys` option, one for each column:
+                //     - fz[2].target will be empty or a match string for gameName
+                //     - fz[2].highlight() generates html bolding the matching parts for gameName
+
                 //console.log(fz.obj.actor.target, fz.score, fz);
                 const actorName = fz.obj.actor.target;
                 const type = html`<label>[${fz.obj.type.target}]</label>`; // always present+visible
@@ -613,23 +618,45 @@
                 const spawn = html`<button title="actor::createSimple(string)" onClick=${() => this.do_spawn(actorName) }>new</button>`;
                 const objmap = html`<button title="find in objmap" onClick=${() => this.do_objmap(actorName) }>objmap</button>`;
 
-                // model field is verbose, only show it if it matches and "actor" didn't
-                let model = (fz[1].target && !fz[0].target) ? html`<span dangerouslySetInnerHTML=${{ __html: fz[1].highlight() }}></span>` : "";
-                model = !model ? "" : html`<div class="model"><label>Model: </label>${model}</div>`;
+                let model = "";
+                if (fz[1].target && !fz[0].target) {
+                    // model field is verbose, only display if it matches and "actor" didn't
+                    model = html`<span dangerouslySetInnerHTML=${{ __html: fz[1].highlight() }}></span>`;
+                }
+                // wrap or leave empty
+                model &&= html`<div class="model"><label>Model: </label>${model}</div>`;
 
-                let gameName = fz[2].target ? html`<span dangerouslySetInnerHTML=${{ __html: fz[2].highlight() }}></span>` :
-                               fz.obj.gameName ? fz.obj.gameName.target : "";
-                gameName = !gameName ? "" : html`<div class="gameName"><label>GameName: </label>${gameName}</div>`;
+                let gameName = "";
+                if (fz[2].target) {
+                    // always display match
+                    gameName = html`<span dangerouslySetInnerHTML=${{ __html: fz[2].highlight() }}></span>`;
+                }
+                if (fz.obj.gameName) {
+                    // display even if it didn't match
+                    gameName ||= fz.obj.gameName.target;
+                }
+                // wrap or leave empty
+                gameName &&= html`<div class="gameName"><label>GameName: </label>${gameName}</div>`;
 
-                let name = fz[3].target ? html`<span dangerouslySetInnerHTML=${{ __html: fz[3].highlight() }}></span>` :
-                           fz.obj.name ? fz.obj.name.target : "";
-                name = !name ? "" : html`<div class="name"><label>PhilName: </label>${name}</div>`;
+                let philName = "";
+                if (fz[3].target) {
+                    // display match
+                    philName = html`<span dangerouslySetInnerHTML=${{ __html: fz[3].highlight() }}></span>`;
+                }
+                if (fz.obj.name) {
+                    // display even if it didn't match
+                    philName ||= fz.obj.name.target;
+                }
+                // hide gameName duplicates
+                philName &&= (fz.obj.gameName && fz.obj.name.target === fz.obj.gameName.target) ? "" : philName;
+                // wrap or leave empty
+                philName &&= html`<div class="philName"><label>PhilName: </label>${philName}</div>`;
 
                 return html`<div class="fuzzysort_results_item">
                     <div class="actor">${type} ${actor} ${copy}${objmap}${spawn}</div>
                     ${model}
                     ${gameName}
-                    ${name}
+                    ${philName}
                     <hr />
                 </div>`;
             });
