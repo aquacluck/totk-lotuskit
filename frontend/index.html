@@ -661,7 +661,10 @@
             };
         }
 
-        do_connect_submit() {
+        do_connect_submit = (e) => {
+            const isWsBusy = this.state.is_polling || WSTransport.signals.config.frontend.ws_is_connected.value;
+            if (isWsBusy && !e.ctrlKey) { return; } // prevent misclicks from killing active connections
+
             const ws_location = this.ws_location_ref.current.value || "ws://127.0.0.1:7072";
 
             let recents = window.sessionStorage.getItem("ws_location_recents") || "ws://127.0.0.1:7072,ws://10.0.0.3:7072";
@@ -721,19 +724,16 @@
             const flag = WSTransport.signals.config.frontend.ws_is_connected.value ? "✅" :
                          state.is_polling ? "⌛" : "❌";
 
-            // easy to misclick and kill the connection in this arrangement, just don't allow it.
-            // this also makes collapsing the panel feel like "locking" the connection
-            let inertStyle = "";
-            if (state.ui_size == "small" && (WSTransport.signals.config.frontend.ws_is_connected.value || state.is_polling)) {
-                inertStyle = "pointer-events: none; background: #666; color: #aaa;";
-            }
+            const isWsBusy = state.is_polling || WSTransport.signals.config.frontend.ws_is_connected.value;
+            const connectStyle = isWsBusy ? "background: #666; color: #aaa;" :  "";
+            const connectTitle = isWsBusy ? "ctrl+click to force close ws" : "connect ws";
 
             return html`
                 <div class="ws size_${state.ui_size}">
                     <button title="Expand/Collapse" onClick=${ () => this.toggle_size() }>${ state.ui_size == "medium" ? "[-]" : "[+]" }</button>
                     <span class="size_small_hidden">Mod Socket</span>${flag}
                     <input class="size_small_hidden" placeholder="ws://127.0.0.1:7072" size="20" ref=${this.ws_location_ref} />
-                    <button class="cta_green" title="connect ws" style=${inertStyle} onClick=${ () => this.do_connect_submit() }>go</button>
+                    <button class="cta_green" title=${connectTitle} style=${connectStyle} onClick=${this.do_connect_submit}>go</button>
                     <div class="size_small_hidden">
                         <select onChange=${this.do_recent_select}>
                             <option>[Session Recents]</option>
