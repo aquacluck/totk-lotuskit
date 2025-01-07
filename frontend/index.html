@@ -150,6 +150,60 @@
         return html`<span label=${label} title=${title} class="readout readout_quat vec_components_${c}"><span>${makeLegibleFloat(v[0])}</span> <span>${makeLegibleFloat(v[1])}</span> <span>${makeLegibleFloat(v[2])}</span> <span>${makeLegibleFloat(v[3])}</span></span>`;
     }
 
+    class SimpleWindow extends Component {
+        constructor() {
+            super();
+            this.dialogRef = createRef();
+            this.state = {
+                windowDragOrigin: null,
+                mouseDragOrigin: null,
+            };
+        }
+
+        do_dialog_keydown = (e) => {
+            if (e.key == "Escape" || e.keyCode == 27) {
+                e.preventDefault();
+                this.props.onClose(); // request close
+            }
+        }
+
+        do_drag_end = (e) => { this.setState({windowDragOrigin: null, mouseDragOrigin: null}); }
+        do_drag_begin = (e) => {
+            const dialog = this.dialogRef.current;
+            //const rect = dialog.getBoundingClientRect();
+            //console.log([rect.left, rect.top], [...window.lastMouseClientPos]);
+            //console.log(dialog.style.left || 0, dialog.style.top || 0);
+            this.setState({
+                //windowDragOrigin: [rect.left, rect.top],
+                windowDragOrigin: [parseInt(dialog.style.left) || 0, parseInt(dialog.style.top) || 0],
+                mouseDragOrigin: [...window.lastMouseClientPos],
+            });
+
+            let loop; // rAF until mouse up
+            loop = () => {
+                if (!this.state.windowDragOrigin) { return; } // break
+                // HACK the dialog is somehow getting positioned relative to quickcorner for x axis, or something? but only firefox. no idea why i needed 2 either
+                // FIXME it goes goofy too far right, or scrolling during drag
+                //const qcOffset = document.querySelector(".toolset_quickcorner").getBoundingClientRect().left;
+                //console.log('loopx',  this.state.windowDragOrigin[0],  window.lastMouseClientPos[0],  this.state.mouseDragOrigin[0], qcOffset);
+                dialog.style.left = (this.state.windowDragOrigin[0] + 2*(window.lastMouseClientPos[0] - this.state.mouseDragOrigin[0])) + "px";
+                dialog.style.top  = (this.state.windowDragOrigin[1] +    window.lastMouseClientPos[1] - this.state.mouseDragOrigin[1])  + "px";
+                window.requestAnimationFrame(loop);
+            };
+            window.requestAnimationFrame(loop);
+        }
+
+        render(props, state) {
+            return html`
+                <dialog ref=${this.dialogRef} onKeyDown=${this.do_dialog_keydown} open>
+                    <button onMouseDown=${this.do_drag_begin} onMouseUp=${this.do_drag_end} title="drag to move window" class="pushbutton move"></button>
+                    <button title="esc when focused to close" onClick=${props.onClose} class="pushbutton esc"></button>
+                    ${props.children}
+                </dialog>
+            `;
+        }
+    };
+
 
     // main ui
 
@@ -577,9 +631,13 @@
             this.setState({ui_size: this.state.ui_size == "medium" ? "small" : "medium"});
         }
 
+        do_search_clear = () => {
+            this.setState({fuzzysort_query: "", fuzzysort_results: []});
+        }
+
         do_search_change = (e) => {
             const q = e.currentTarget.value.toString().trim();
-            if (!q || q.length < 3) { return this.setState({fuzzysort_query: "", fuzzysort_results: []}); }
+            if (!q || q.length < 3) { return this.do_search_clear(); }
 
             const fuzzysort_results = fuzzysort.go(q, Actor_MasterList_fuzzysort, {
                 keys: ["actor", "model", "gameName", "philName"], // exclude "type" column
@@ -587,14 +645,6 @@
             });
             //console.log(q, fuzzysort_results);
             this.setState({fuzzysort_query: q, fuzzysort_results: fuzzysort_results});
-        }
-
-        do_dialog_keydown = (e) => {
-            if (e.key == "Escape" || e.keyCode == 27) {
-                // close
-                e.preventDefault();
-                this.setState({fuzzysort_query: "", fuzzysort_results: []});
-            }
         }
 
         do_spawn(actorName) { WSTransport.send({execScriptString: wrap_implicit_main(`actor::createSimple("${actorName}");`)}); }
@@ -663,11 +713,10 @@
             });
 
             return html`
-                <dialog onKeyDown=${this.do_dialog_keydown} open>
-                    <button title="esc when focused to close" onClick=${() => this.setState({fuzzysort_query: "", fuzzysort_results: []})} class="pushbutton esc"></button>
+                <${SimpleWindow} onClose=${this.do_search_clear}>
                     Actors like "${state.fuzzysort_query}" (${state.fuzzysort_results.length}):<br />
                     <div class="fuzzysort_results content">${items}</div>
-                </dialog>
+                </${SimpleWindow}>
             `;
         }
 
@@ -718,14 +767,6 @@
             this.setState({selected_index: e.currentTarget.value});
         }
 
-        do_dialog_keydown = (e) => {
-            if (e.key == "Escape" || e.keyCode == 27) {
-                // close
-                e.preventDefault();
-                this.setState({dialog_filename: "", dialog_contents: ""});
-            }
-        }
-
         do_notebook_open() {
             const as_filename = this.notebook_select_ref.current.value;
 
@@ -747,16 +788,19 @@
             this.setState({ui_size: this.state.ui_size == "medium" ? "small" : "medium"});
         }
 
+        do_dialog_clear = () => {
+            this.setState({dialog_filename: "", dialog_contents: ""});
+        }
+
         render(props, state) {
             const index_names = state.index_names.map(x => html`<option>${x}</option>`);
             const notebook_names = state[`index_${state.selected_index}`].map(x => html`<option>${x}</option>`);
-
             const dialog = !(state.dialog_contents) ? "" : html`
-                <dialog onKeyDown=${this.do_dialog_keydown} open>
-                    <button title="esc when focused to close" onClick=${() => this.setState({dialog_filename: "", dialog_contents: ""})} class="pushbutton esc"></button>
+                <${SimpleWindow} onClose=${this.do_dialog_clear}>
                     📖${state.dialog_filename}<br />
                     <textarea autofocus class="content" contenteditable="plaintext-only">${state.dialog_contents}</textarea>
-                </dialog>`;
+                </${SimpleWindow}>
+            `;
 
             return html`
                 <div class="angelscript_notebook size_${state.ui_size}">
@@ -913,17 +957,24 @@
 
     window.addEventListener("load", async function() {
         WSTransport.connect();
-        const toolbox = document.querySelector(".toolbox_main");
-        render(html`<${MainToolbox} />`, toolbox);
+        const root = document.querySelector(".root");
+        render(html`<${MainToolbox} />`, root);
     });
 
     window.addEventListener("beforeunload", function() {
         if (WSTransport.websock) { WSTransport.websock.close(); }
     });
 
+    // wild that we have webusb, webbluetooth, webgpu, all this crazy shit and no way to simply read the mouse position
+    window.lastMouseClientPos = [0, 0];
+    document.onmousemove = function(e) {
+        window.lastMouseClientPos[0] = e.pageX;
+        window.lastMouseClientPos[1] = e.pageY;
+    };
+
 </script>
 </head>
 <body>
-    <div class="toolbox_main"></div>
+    <div class="root"></div>
 </body>
 </html>

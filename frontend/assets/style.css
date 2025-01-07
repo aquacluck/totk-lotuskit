@@ -144,7 +144,6 @@ textarea {
 
 
 /* toolsets use css grid to render clusters of ui into standalone layers which are absolutely positioned as needed. */
-/* TODO basic draggable windows/dialog, settings/toggles bar */
 
 .toolbox_main { position: relative; }
 .toolbox_main > .toolset_quickcorner { right:0px; bottom:0px; }
@@ -194,7 +193,7 @@ textarea {
 .toolset_quickcorner > .qc { grid-area: qc; }
 /*.toolset_quickcorner > .angelscript_notebook { grid-area: angelscript_notebook; }*/
 /*.toolset_quickcorner > .ws { grid-area: ws; }*/
-.toolset_quickcorner dialog {
+dialog {
     position: fixed;
     top: 0px;
     left: 0px;
@@ -208,6 +207,16 @@ textarea {
         &:before { content: "[x]"; }
         &:active:before { content: "esc"; }
         &:hover { background: hsl(var(--hue-delete) 55% 30%); }
+    }
+
+    &> .move {
+        position: absolute;
+        top: 0px;
+        right: 35px;
+        cursor: grab;
+        &:before { content: "[move]"; }
+        &:active { cursor: grabbing; }
+        &:active:before { content: "[drag]"; }
     }
 
     &> .content {
