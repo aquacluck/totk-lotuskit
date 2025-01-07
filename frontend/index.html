@@ -171,12 +171,12 @@
         do_drag_begin = (e) => {
             const dialog = this.dialogRef.current;
             //const rect = dialog.getBoundingClientRect();
-            //console.log([rect.left, rect.top], [...window.lastMouseClientPos]);
+            //console.log([rect.left, rect.top], [...window.lastMouseClientPagePos]);
             //console.log(dialog.style.left || 0, dialog.style.top || 0);
             this.setState({
                 //windowDragOrigin: [rect.left, rect.top],
                 windowDragOrigin: [parseInt(dialog.style.left) || 0, parseInt(dialog.style.top) || 0],
-                mouseDragOrigin: [...window.lastMouseClientPos],
+                mouseDragOrigin: [...window.lastMouseClientPagePos], // copy
             });
 
             let loop; // rAF until mouse up
@@ -185,9 +185,9 @@
                 // HACK the dialog is somehow getting positioned relative to quickcorner for x axis, or something? but only firefox. no idea why i needed 2 either
                 // FIXME it goes goofy too far right, or scrolling during drag
                 //const qcOffset = document.querySelector(".toolset_quickcorner").getBoundingClientRect().left;
-                //console.log('loopx',  this.state.windowDragOrigin[0],  window.lastMouseClientPos[0],  this.state.mouseDragOrigin[0], qcOffset);
-                dialog.style.left = (this.state.windowDragOrigin[0] + 2*(window.lastMouseClientPos[0] - this.state.mouseDragOrigin[0])) + "px";
-                dialog.style.top  = (this.state.windowDragOrigin[1] +    window.lastMouseClientPos[1] - this.state.mouseDragOrigin[1])  + "px";
+                //console.log('loopx',  this.state.windowDragOrigin[0],  window.lastMouseClientPagePos[0],  this.state.mouseDragOrigin[0], qcOffset);
+                dialog.style.left = (this.state.windowDragOrigin[0] + 2*(window.lastMouseClientPagePos[0] - this.state.mouseDragOrigin[0])) + "px";
+                dialog.style.top  = (this.state.windowDragOrigin[1] +    window.lastMouseClientPagePos[1] - this.state.mouseDragOrigin[1])  + "px";
                 window.requestAnimationFrame(loop);
             };
             window.requestAnimationFrame(loop);
@@ -196,7 +196,7 @@
         render(props, state) {
             return html`
                 <dialog ref=${this.dialogRef} onKeyDown=${this.do_dialog_keydown} open>
-                    <button onMouseDown=${this.do_drag_begin} onMouseUp=${this.do_drag_end} title="drag to move window" class="pushbutton move"></button>
+                    <button title="drag to move window" onMouseDown=${this.do_drag_begin} onMouseUp=${this.do_drag_end} class="pushbutton move"></button>
                     <button title="esc when focused to close" onClick=${props.onClose} class="pushbutton esc"></button>
                     ${props.children}
                 </dialog>
@@ -591,7 +591,7 @@
                     -->
 
                     <div class="bumper_pushbuttons">
-                        <span>Move by <input type="number" placeholder="10" size="4" min="0" max="10000" step="any" ref=${this.bumper_increment_ref} />m:</span>
+                        <span>Move by <input style="width: 60px;" type="number" placeholder="10" size="4" min="0" max="10000" step="any" ref=${this.bumper_increment_ref} />m:</span>
                         <br />
                         <br />
                         <button title="y-" style="color: var(--vec-green);" onClick=${ () => this.do_relative_move(i, "d") } class="pushbutton">down</button>
@@ -661,11 +661,12 @@
 
                 //console.log(fz.obj.actor.target, fz.score, fz);
                 const actorName = fz.obj.actor.target;
-                const type = html`<label>[${fz.obj.type.target}]</label>`; // always present+visible
-                const actor = fz[0].target ? html`<span dangerouslySetInnerHTML=${{ __html: fz[0].highlight() }}></span>` : actorName; // always present+visible
+                // type+actor always present+visible
+                const type = html`<label>[${fz.obj.type.target}]</label>`;
+                const actor = fz[0].target ? html`<span class="copy_fake_target" dangerouslySetInnerHTML=${{ __html: fz[0].highlight() }}></span>` : html`<span class="copy_fake_target">${actorName}</span>`;
 
                 // HACK setting innerHTML violates vdom. not worth the effort: add state({copySuccess: actorName}), compare for 📋✅ in here, maybe setTimeout+debounce to reset
-                const copy = html`<button title="copy" onClick=${e => { navigator.clipboard.writeText(actorName); e.target.innerHTML = "✅"; }}>📋</button>`;
+                const copy = html`<button class="copy" title="copy" onClick=${e => { navigator.clipboard.writeText(actorName); e.target.innerHTML = "✅"; }}>📋</button>`;
                 const spawn = html`<button title="actor::createSimple(string)" onClick=${() => this.do_spawn(actorName) }>new</button>`;
                 const objmap = html`<button title="find in objmap" onClick=${() => this.do_objmap(actorName) }>objmap</button>`;
 
@@ -966,10 +967,10 @@
     });
 
     // wild that we have webusb, webbluetooth, webgpu, all this crazy shit and no way to simply read the mouse position
-    window.lastMouseClientPos = [0, 0];
+    window.lastMouseClientPagePos = [0, 0];
     document.onmousemove = function(e) {
-        window.lastMouseClientPos[0] = e.pageX;
-        window.lastMouseClientPos[1] = e.pageY;
+        window.lastMouseClientPagePos[0] = e.pageX;
+        window.lastMouseClientPagePos[1] = e.pageY;
     };
 
 </script>

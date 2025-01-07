@@ -79,6 +79,14 @@ textarea {
 
 .size_small .size_small_hidden { display: none; }
 
+.copy_fake_target:has(+ .copy:active) {
+    /* "fake" because we dont literally copy anything from this element, its just the logical source to hint */
+    color: #fff;
+    border: 1px #888;
+    border-style: dashed none dashed;
+    background: #222;
+}
+
 :root {
     --hue-recall: 48.6; /* yellow */
     --hue-motion: 228.6; /* blue */
