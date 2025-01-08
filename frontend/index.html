@@ -400,7 +400,7 @@
                     <input type="checkbox" id="execscript_use_implicit_main" ref=${this.use_implicit_main_ref} checked />
                     <button title="tas::toggleDump()" onClick=${ () => this.do_toggle_record() } class="pushbutton">tas dump</button>
                     <br/>
-                    <textarea class="as_source" placeholder='// check the blue AS📖 button for help \n\n// 1 frame @ 30fps = 2 @ 60fps:\ntas::input(2, KEY_A|KEY_B, 0, -32767, 0, 0);\n\nactor::createAndWatch( \n    1, "SpObj_LiftGeneratorWing_A_01", \n    Player.pos_x, Player.pos_y - 5, Player.pos_z\n);' ref=${this.script_text_ref}></textarea>
+                    <textarea class="as_source" placeholder='// check the blue AS📖 button for help \n\ntas::input(30, KEY_A|KEY_B, 32767, -32768, 0, 0);\n\nactor::createAndWatch( \n    1, "SpObj_LiftGeneratorWing_A_01", \n    Player.pos_x, Player.pos_y - 5, Player.pos_z\n);' ref=${this.script_text_ref}></textarea>
                     <textarea placeholder="[tas output]" ref=${this.output_text_ref}></textarea>
                 </div>
             `;

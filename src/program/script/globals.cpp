@@ -205,7 +205,7 @@ namespace lotuskit::script::globals {
         engine->SetDefaultNamespace("tas"); /// {
             // TODO tas::yieldInput(frameCount) -- consume time in tas scheduling but do not override input
             asErrno = engine->RegisterGlobalFunction(
-                "void input(u32 duration60=2, u64 nextButtons=0, s32 nextLStickX=0, s32 nextLStickY=0, s32 nextRStickX=0, s32 nextRStickY=0)",
+                "void input(u32 duration=1, u64 nextButtons=0, s32 nextLStickX=0, s32 nextLStickY=0, s32 nextRStickX=0, s32 nextRStickY=0)",
                 AngelScript::asFUNCTION(lotuskit::tas::Playback::setCurrentInput),
                 AngelScript::asCALL_CDECL
             ); assert( asErrno >= 0 );

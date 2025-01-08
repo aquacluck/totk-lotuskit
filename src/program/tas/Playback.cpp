@@ -1,4 +1,5 @@
 #include "nn/util.h"
+#include "tas/config.hpp"
 #include "tas/Playback.hpp"
 #include "syms_merged.hpp"
 #include "structs/VFRMgr.hpp"
@@ -15,18 +16,30 @@ namespace lotuskit::tas {
         // TODO elapsed frame count? system tick? this frame's delta time? rta? igt?
         // (however its impossible to predict or progress-bar a script's frame duration -- halting problem)
         lotuskit::TextWriter::printf(1, "[tas::Playback] TOTK_%d\n", TOTK_VERSION);
-
-        // is the current input still playing?
         VFRMgr* vfrMgr = *exl::util::pointer_path::FollowSafe<VFRMgr*, sym::engine::module::VFRMgr::sInstance::offset>();
-        // assert(mDeltaFrame == 1.0 or 1.5 @30fps)
-        currentInputTTL60 -= (u32)(vfrMgr->mDeltaFrame * 2);
-        if (currentInputTTL60 > 0) { return; } // keep using current input
-        if (currentInputTTL60 < 0) { currentInputTTL60 = 0; } // bound this to 0 so it cant underflow then start consuming time when another script is loaded
+
+        // int 2 or 3 = float 1.0 (@30fps) or 1.5 (@20fps)
+        // assert(mDeltaFrame == 1.0 || mDeltaFrame == 1.5); // precisely
+        const u32 deltaFrame60 = (u32)(vfrMgr->mDeltaFrame * 2);
+
+        // should the current input state still be scheduled?
+        if (currentInputTTL60 >= deltaFrame60) {
+            // deduct frames from schedule
+            currentInputTTL60 -= deltaFrame60;
+        } else {
+            // only 0/1/2 frames60 left on schedule and deltaFrame60 is larger
+            // XXX is erring on one side or the other better, until i properly figure this out?
+            //     ie playing out these closing frames and deferring or eating into subsequent inputs? sounds complicated in the dumb way
+            currentInputTTL60 = 0; // abandon/truncate the remainder of this scheduled input and resume script
+        }
+
+        if (currentInputTTL60 > 0) {
+            return; // keep using current scheduled input
+        }
 
         if (currentCtx == nullptr || currentCtx->GetState() != AngelScript::asEXECUTION_SUSPENDED) {
             Logger::logText("[ERROR] tas script ctx missing, cannot advance input", "/tas/Playback");
-            //isPlaybackActive = false; // XXX is it better to repeat the last input or drop out?
-            return;
+            return; //isPlaybackActive = false; // XXX is it better to repeat the last input or drop out? this has never happened yet
         }
 
         // resume script, eventually getting a setCurrentInput call
@@ -52,9 +65,20 @@ namespace lotuskit::tas {
         }
     }
 
-    void Playback::setCurrentInput(u32 duration60, u64 nextButtons, s32 nextLStickX, s32 nextLStickY, s32 nextRStickX, s32 nextRStickY) {
+    void Playback::setCurrentInput(u32 duration, u64 nextButtons, s32 nextLStickX, s32 nextLStickY, s32 nextRStickX, s32 nextRStickY) {
         // called by tas script to specify input for next n frames
-        if (duration60 == 0) { return; } // ignore
+        if (duration == 0) { return; } // ignore
+
+        // what is "n frames" expected to mean?
+        u32 duration60 = 0;
+        if (config::inputMode == config::InputDurationScalingStrategy::FPS60_1X) {
+            duration60 = duration;
+        } else if (config::inputMode == config::InputDurationScalingStrategy::FPS30_2X) {
+            duration60 = duration * 2;
+        } else if (config::inputMode == config::InputDurationScalingStrategy::FPS20_3X) {
+            duration60 = duration * 3;
+        } else return;
+        // assert duration60 > 0
 
         AngelScript::asIScriptContext *ctx = AngelScript::asGetActiveContext();
         if (ctx != nullptr) {
@@ -75,8 +99,10 @@ namespace lotuskit::tas {
             if (nextRStickY >  16400) { nextButtons |= (1 << (u32)nn::hid::NpadButton::StickRUp); }
             if (nextRStickY < -16400) { nextButtons |= (1 << (u32)nn::hid::NpadButton::StickRDown); }
 
-            *(u64*)&(currentInput.buttons) = nextButtons;
-            isPlaybackActive = true;
+            *(u64*)&(currentInput.buttons) = nextButtons; // These are expected to be
+            isPlaybackActive = true;                      // written/observable in order
+            // XXX and i'm not confident that's guaranteed, but it doesnt seem dangerous at least?
+            //     i do this sort of guard without locking a lot though, so i need to find out. std::memory_order or something?
 
             // yield execution from script back to game, to be resumed in n frames
             currentCtx = ctx;

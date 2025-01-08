@@ -5,7 +5,7 @@
 
 namespace lotuskit::tas {
     struct PlaybackInput {
-        // 24B payload TODO gyro
+        // 24B payload TODO gyro, merge with RecordInput?
         nn::hid::NpadButtonSet buttons; // u64
         nn::hid::AnalogStickState LStick; // s32 s32
         nn::hid::AnalogStickState RStick; // s32 s32
@@ -22,7 +22,7 @@ namespace lotuskit::tas {
         // current input
         static PlaybackInput currentInput;
         static inline bool isPlaybackActive = false;
-        static void setCurrentInput(u32 duration60=2, u64 nextButtons=0, s32 nextLStickX=0, s32 nextLStickY=0, s32 nextRStickX=0, s32 nextRStickY=0);
+        static void setCurrentInput(u32 duration=1, u64 nextButtons=0, s32 nextLStickX=0, s32 nextLStickY=0, s32 nextRStickX=0, s32 nextRStickY=0);
         inline static void applyCurrentInput(nn::hid::NpadBaseState* dst) {
             if (!isPlaybackActive) { return; }
             std::memcpy((void*)&(dst->mButtons), (void*)&(currentInput.buttons), 24);

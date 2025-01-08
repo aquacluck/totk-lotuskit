@@ -1,10 +1,11 @@
-// do nothing for 0.5 seconds or 15 ideal frames
+// do nothing for 1 second or 30 ideal frames
+// (when using default "fixed 30fps" scale)
 tas::input(30, NONE, 0,0, 0,0);
 
 // tap dpad down and B button for 1 ideal frame,
 // and hold rstick left just far enough to trigger input display
 // (chosen because abs(x) > 16400 is when nnsdk flags it as a button press)
-tas::input(2, KEY_DDOWN|KEY_B, 0,0, -16401,0);
+tas::input(1, KEY_DDOWN|KEY_B, 0,0, -16401,0);
 
 // not "recording", just logging the inputs --
 // for now saving+organizing them is entirely your job.
@@ -13,25 +14,28 @@ tas::toggleDump();
 
 
 /***********************************************************
-/* ATTENTIONPLS: tas::input() takes 2 * desired frames
+/* About tas::input time scaling:
 /*
-/* For now, tas scheduling counts in 30fps half-frames,
-/* which you can also think of as a fake 60fps
+/* Input durations are measured in 2 * desired 30fps frames
+/* internal to lotuskit, which you can also think of as a fake 60fps:
 /* 1 frame @ 30fps = 2 @ 60fps
 /*
 /* VFRMgr will toggle between 20fps and 30fps effective speed,
 /* so counting half-frames means we can still use whole numbers.
 /* 3 frames @ 60fps = 1 @ 20fps
 /*
-/* This might be a bad idea and this might change, I'm no tas wizard,
-/* but I don't want to mess around hardcoding framerates etc by default
-/* when true-to-life conditions might be desirable for research+practice+etc
+/* By default this behavior is hidden -- dump+playback both scale
+/* by 2 and drop remainders in inputMode FPS30_2X, so unless you
+/* encounter a lot of lag you can pretend it's straight 30fps.
+/*
+/* TODO AS access to set InputDurationScalingStrategy
+/* TODO implement VFRCopingStrategy::FPS30_PEGGED
 /**********************************************************/
 
 
 /*
 void tas::input(
-     u32 duration60=2, u64 nextButtons=0,
+     u32 duration=1, u64 nextButtons=0,
      s32 nextLStickX=0, s32 nextLStickY=0,
      s32 nextRStickX=0, s32 nextRStickY=0
 );
@@ -88,58 +92,58 @@ void example_qds1() {
     // https://discord.com/channels/1086729144307564648/1109838351596527726/1325295759674835109
     // assert inventory is weapon tab, cursor on equipped filler, target to left of cursor
     // assert unpaused, standing, back against wall, not overloaded
-    tas::input(2, KEY_PLUS, 0,0, 0,0); // pause
-    tas::input(4, KEY_DLEFT, 0,0, 0,0); // wait + cursor left to target
-    tas::input(2, KEY_A, 0,0, 0,0);
-    tas::input(4, NONE, 0,0, 0,0);
-    tas::input(2, KEY_A, 0,0, 0,0); // swap to target
-    tas::input(6, NONE, 0,0, 0,0);
-    tas::input(2, KEY_A, 0,0, 0,0);
+    tas::input(1, KEY_PLUS, 0,0, 0,0); // pause
+    tas::input(2, KEY_DLEFT, 0,0, 0,0); // wait + cursor left to target
+    tas::input(1, KEY_A, 0,0, 0,0);
     tas::input(2, NONE, 0,0, 0,0);
-    tas::input(2, KEY_DDOWN, 0,0, 0,0);
-    tas::input(2, KEY_A, 0,0, 0,0); // drop target
-    tas::input(6, NONE, 0,0, 0,0);
-    tas::input(2, KEY_PLUS, 0,0, 0,0); // unpause
-    tas::input(6, NONE, 0,0, 0,0);
-    tas::input(2, KEY_PLUS, 0,0, 0,0); // repause
-    tas::input(2, NONE, 0,0, 0,0);
+    tas::input(1, KEY_A, 0,0, 0,0); // swap to target
+    tas::input(3, NONE, 0,0, 0,0);
+    tas::input(1, KEY_A, 0,0, 0,0);
+    tas::input(1, NONE, 0,0, 0,0);
+    tas::input(1, KEY_DDOWN, 0,0, 0,0);
+    tas::input(1, KEY_A, 0,0, 0,0); // drop target
+    tas::input(3, NONE, 0,0, 0,0);
+    tas::input(1, KEY_PLUS, 0,0, 0,0); // unpause
+    tas::input(3, NONE, 0,0, 0,0);
+    tas::input(1, KEY_PLUS, 0,0, 0,0); // repause
+    tas::input(1, NONE, 0,0, 0,0);
     // assert cursor is on equipped target
     // assert available filler to left of cursor
-    tas::input(2, KEY_A, 0,0, 0,0);
-    tas::input(2, NONE, 0,0, 0,0);
-    tas::input(2, KEY_DDOWN, 0,0, 0,0);
-    tas::input(2, KEY_A, 0,0, 0,0); // drop target
-    tas::input(2, NONE, 0,0, 0,0);
-    tas::input(2, KEY_DLEFT, 0,0, 0,0);
-    tas::input(2, KEY_A, 0,0, 0,0);
-    tas::input(8, NONE, 0,0, 0,0);
-    tas::input(2, KEY_A, 0,0, 0,0); // equip filler to left
-    tas::input(6, NONE, 0,0, 0,0);
-    tas::input(2, KEY_A, 0,0, 0,0);
+    tas::input(1, KEY_A, 0,0, 0,0);
+    tas::input(1, NONE, 0,0, 0,0);
+    tas::input(1, KEY_DDOWN, 0,0, 0,0);
+    tas::input(1, KEY_A, 0,0, 0,0); // drop target
+    tas::input(1, NONE, 0,0, 0,0);
+    tas::input(1, KEY_DLEFT, 0,0, 0,0);
+    tas::input(1, KEY_A, 0,0, 0,0);
     tas::input(4, NONE, 0,0, 0,0);
-    tas::input(2, KEY_A, 0,0, 0,0); // unequip
-    tas::input(4, NONE, 0,0, 0,0);
-    tas::input(2, KEY_PLUS, 0,0, 0,0); // unpause
-    tas::input(6, NONE, 0,32767, 0,0); // up turnaround
-    tas::input(2, KEY_PLUS, 0,0, 0,0); // repause
+    tas::input(1, KEY_A, 0,0, 0,0); // equip filler to left
+    tas::input(3, NONE, 0,0, 0,0);
+    tas::input(1, KEY_A, 0,0, 0,0);
     tas::input(2, NONE, 0,0, 0,0);
+    tas::input(1, KEY_A, 0,0, 0,0); // unequip
+    tas::input(2, NONE, 0,0, 0,0);
+    tas::input(1, KEY_PLUS, 0,0, 0,0); // unpause
+    tas::input(3, NONE, 0,32767, 0,0); // up turnaround
+    tas::input(1, KEY_PLUS, 0,0, 0,0); // repause
+    tas::input(1, NONE, 0,0, 0,0);
     // assert cursor is on equipped target
     // assert available filler to left of cursor
-    tas::input(2, KEY_A, 0,0, 0,0);
-    tas::input(2, NONE, 0,0, 0,0);
-    tas::input(2, KEY_DDOWN, 0,0, 0,0);
-    tas::input(2, KEY_A, 0,0, 0,0); // drop target
-    tas::input(2, NONE, 0,0, 0,0);
-    tas::input(2, KEY_DLEFT, 0,0, 0,0);
-    tas::input(2, KEY_A, 0,0, 0,0);
-    tas::input(8, NONE, 0,0, 0,0);
-    tas::input(2, KEY_A, 0,0, 0,0); // equip filler to left
-    tas::input(6, NONE, 0,0, 0,0);
-    tas::input(2, KEY_A, 0,0, 0,0);
+    tas::input(1, KEY_A, 0,0, 0,0);
+    tas::input(1, NONE, 0,0, 0,0);
+    tas::input(1, KEY_DDOWN, 0,0, 0,0);
+    tas::input(1, KEY_A, 0,0, 0,0); // drop target
+    tas::input(1, NONE, 0,0, 0,0);
+    tas::input(1, KEY_DLEFT, 0,0, 0,0);
+    tas::input(1, KEY_A, 0,0, 0,0);
     tas::input(4, NONE, 0,0, 0,0);
-    tas::input(2, KEY_A, 0,0, 0,0); // unequip
-    tas::input(4, NONE, 0,0, 0,0);
-    tas::input(2, KEY_PLUS, 0,0, 0,0); // unpause
+    tas::input(1, KEY_A, 0,0, 0,0); // equip filler to left
+    tas::input(3, NONE, 0,0, 0,0);
+    tas::input(1, KEY_A, 0,0, 0,0);
+    tas::input(2, NONE, 0,0, 0,0);
+    tas::input(1, KEY_A, 0,0, 0,0); // unequip
+    tas::input(2, NONE, 0,0, 0,0);
+    tas::input(1, KEY_PLUS, 0,0, 0,0); // unpause
     // manually turn around and take it, whatever
 }
 
@@ -150,24 +154,24 @@ void example_cartslide1() {
     //example_qds1(); // prereqs
 
     Player.setPosRot(-170, 437, -980, 1, 0, 0, 0, 1, 0, 0, 0, 1);
-    tas::input(30, NONE); // TODO fix camera
-    tas::input(30, KEY_ZL); // TODO fix camera
+    tas::input(15, NONE); // TODO fix camera
+    tas::input(15, KEY_ZL); // TODO fix camera
 
     // assert cart in quickmenu cursor, recall rune
-    tas::input(12, KEY_DUP|KEY_ZL);
-    tas::input(2, KEY_X|KEY_DUP|KEY_ZL);
-    tas::input(38, KEY_ZL); // wait for drop
+    tas::input(6, KEY_DUP|KEY_ZL);
+    tas::input(1, KEY_X|KEY_DUP|KEY_ZL);
+    tas::input(14, KEY_ZL); // wait for drop
 
     // recall cart
-    tas::input(2, KEY_L|KEY_ZL);
-    tas::input(16, KEY_ZL, 0,0, 0,32767); //XXX inverted camera
+    tas::input(1, KEY_L|KEY_ZL);
+    tas::input(8, KEY_ZL, 0,0, 0,32767); //XXX inverted camera
     ActorWatcher::assignSlotAwaitRecall(1);
-    tas::input(4, KEY_ZL); //XXX need to stop/slow cursor to select?
-    tas::input(2, KEY_A|KEY_ZL); // begin recall
-    tas::input(120, KEY_ZL); // wait for drop/origin position
-    tas::input(2, KEY_X|KEY_ZL, 0,32767, 0,0); // jump on
-    tas::input(60, KEY_ZL);
-    tas::input(2, KEY_L|KEY_ZL); // end recall
+    tas::input(2, KEY_ZL); //XXX need to stop/slow cursor to select?
+    tas::input(1, KEY_A|KEY_ZL); // begin recall
+    tas::input(60, KEY_ZL); // wait for drop/origin position
+    tas::input(1, KEY_X|KEY_ZL, 0,32767, 0,0); // jump on
+    tas::input(30, KEY_ZL);
+    tas::input(1, KEY_L|KEY_ZL); // end recall
 }
 
 

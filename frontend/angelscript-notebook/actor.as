@@ -9,7 +9,7 @@ actor::createAndWatch(1, "GameRomHorse");
 
 // wait for actor to spawn before accessing
 // (see [tas.as] for more info on timing)
-tas::input(8, NONE, 0,0, 0,0);
+tas::input(4, NONE, 0,0, 0,0);
 
 // get a handle to the watched horse
 ActorBase@ honse1 = ActorWatcher::get(1);

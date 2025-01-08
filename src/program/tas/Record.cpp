@@ -1,5 +1,6 @@
 #include <string>
 #include "nn/util.h"
+#include "tas/config.hpp"
 #include "tas/Record.hpp"
 #include "syms_merged.hpp"
 #include "structs/VFRMgr.hpp"
@@ -34,14 +35,12 @@ namespace lotuskit::tas {
         }
 
         // move accumulator to tmp output
-        u32 outputDuration60 = accumulatedInput60; // + deltaFrame60 FIXME do this?
+        u32 outputDuration60 = accumulatedInput60; // XXX or + deltaFrame60 here instead of giving it to next input?
         RecordInput output = {0}; // lol
         std::memcpy((void*)&(output.buttons), (void*)&(accumulatorInput.buttons), 24);
 
         // reset accumulator to currentInput
-        //accumulatedInput60 = 0;
-        accumulatedInput60 = deltaFrame60; // FIXME or do this? or something else entirely?
-        // (eg could a separate thread provide reliable hires input timeline? how would we reconcile that w vfr?)
+        accumulatedInput60 = deltaFrame60; // XXX or 0 instead of carrying deltaFrame60 over?
         std::memcpy((void*)&(accumulatorInput.buttons), (void*)&(currentInput.buttons), 24);
 
         dumpCompletedInput(&output, outputDuration60);
@@ -50,6 +49,15 @@ namespace lotuskit::tas {
     void Record::dumpCompletedInput(RecordInput* output, u32 outputDuration60) {
         if (outputDuration60 == 0) { return; }
         u64 buttons = *(u64*)&(output->buttons);
+
+        u32 outputDurationLogicalFrames = 0;
+        if (config::inputMode == config::InputDurationScalingStrategy::FPS60_1X) {
+            outputDurationLogicalFrames = outputDuration60;
+        } else if (config::inputMode == config::InputDurationScalingStrategy::FPS30_2X) {
+            outputDurationLogicalFrames = outputDuration60 / 2; // XXX do we want floor/ceil/??? for odds
+        } else if (config::inputMode == config::InputDurationScalingStrategy::FPS20_3X) {
+            outputDurationLogicalFrames = outputDuration60 / 3; // XXX what if not divisible by 3?
+        } else return;
 
         // TODO option to queue to bg file writer thread, instead of wasting time with socket send?
         //constexpr bool useFormat_nxTASAll = false; // TODO option for pure nx-TAS output? tsv?
@@ -75,11 +83,11 @@ namespace lotuskit::tas {
             if (buttonsStr.size() == 0) { buttonsStr = " NONE"; }
 
             char buf[1000];
-            nn::util::SNPrintf(buf, sizeof(buf), "tas::input(%d, %s, %d, %d, %d, %d);\n", outputDuration60, buttonsStr.c_str()+1, output->LStick.mX, output->LStick.mY, output->RStick.mX, output->RStick.mY);
+            nn::util::SNPrintf(buf, sizeof(buf), "tas::input(%d, %s, %d, %d, %d, %d);\n", outputDurationLogicalFrames, buttonsStr.c_str()+1, output->LStick.mX, output->LStick.mY, output->RStick.mX, output->RStick.mY);
             Logger::logText(buf, "/tas/Record");
         } else {
             char buf[1000];
-            nn::util::SNPrintf(buf, sizeof(buf), "tas::input(%d, %lld, %d, %d, %d, %d);\n", outputDuration60, buttons, output->LStick.mX, output->LStick.mY, output->RStick.mX, output->RStick.mY);
+            nn::util::SNPrintf(buf, sizeof(buf), "tas::input(%d, %lld, %d, %d, %d, %d);\n", outputDurationLogicalFrames, buttons, output->LStick.mX, output->LStick.mY, output->RStick.mX, output->RStick.mY);
             Logger::logText(buf, "/tas/Record");
         }
     }
