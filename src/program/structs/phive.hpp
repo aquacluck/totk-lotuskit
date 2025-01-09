@@ -5,9 +5,7 @@
 #include <math/seadVector.h>
 #include <math/seadMatrix.h>
 
-#include "lib.hpp"
-#include "syms_merged.hpp"
-
+#include "exlaunch.hpp"
 
 namespace engine::actor { class ActorBaseLink; }
 
@@ -32,25 +30,25 @@ namespace phive {
 
         void getAABB(sead::BoundBox3f* dst) {
             using impl_t = void (RigidBodyBase*, sead::BoundBox3f*);
-            auto impl = reinterpret_cast<impl_t*>(exl::util::modules::GetTargetOffset(sym::phive::RigidBodyBase::getAABB::offset));
-            return impl(this, dst); // TODO magic: get current func to macro+interpolate?  ^---------------------------^
+            auto impl = EXL_SYM_RESOLVE<impl_t*>("phive::RigidBodyBase::getAABB");
+            return impl(this, dst); // TODO magic: get current func string to ^ pass?
         }
 
         void getBoundingBoxWorld(sead::BoundBox3f* dst) {
             using impl_t = void (RigidBodyBase*, sead::BoundBox3f*);
-            auto impl = reinterpret_cast<impl_t*>(exl::util::modules::GetTargetOffset(sym::phive::RigidBodyBase::getBoundingBoxWorld::offset));
+            auto impl = EXL_SYM_RESOLVE<impl_t*>("phive::RigidBodyBase::getBoundingBoxWorld");
             return impl(this, dst);
         }
 
         const char* getName() {
             using impl_t = const char* (RigidBodyBase*);
-            auto impl = reinterpret_cast<impl_t*>(exl::util::modules::GetTargetOffset(sym::phive::RigidBodyBase::getName::offset));
+            auto impl = EXL_SYM_RESOLVE<impl_t*>("phive::RigidBodyBase::getName");
             return impl(this);
         }
 
         void requestSetLinearVelocity(sead::Vector3f* vel) {
             using impl_t = void (RigidBodyBase*, sead::Vector3f*);
-            auto impl = reinterpret_cast<impl_t*>(exl::util::modules::GetTargetOffset(sym::phive::RigidBodyBase::requestSetLinearVelocity::offset));
+            auto impl = EXL_SYM_RESOLVE<impl_t*>("phive::RigidBodyBase::requestSetLinearVelocity");
             return impl(this, vel);
         }
 
@@ -61,7 +59,7 @@ namespace phive {
 
         void applyLinearImpulse(sead::Vector3f* val) {
             using impl_t = void (RigidBodyBase*, sead::Vector3f*);
-            auto impl = reinterpret_cast<impl_t*>(exl::util::modules::GetTargetOffset(sym::phive::RigidBodyBase::applyLinearImpulse::offset));
+            auto impl = EXL_SYM_RESOLVE<impl_t*>("phive::RigidBodyBase::applyLinearImpulse");
             return impl(this, val);
         }
 
@@ -72,7 +70,7 @@ namespace phive {
 
         void getNextLinearVelocity(sead::Vector3f* dst) {
             using impl_t = void (RigidBodyBase*, sead::Vector3f*);
-            auto impl = reinterpret_cast<impl_t*>(exl::util::modules::GetTargetOffset(sym::phive::RigidBodyBase::getNextLinearVelocity::offset));
+            auto impl = EXL_SYM_RESOLVE<impl_t*>("phive::RigidBodyBase::getNextLinearVelocity");
             return impl(this, dst);
         }
 
@@ -83,7 +81,7 @@ namespace phive {
         public:
         ::engine::actor::ActorBaseLink* getActorLink() {
             using impl_t = ::engine::actor::ActorBaseLink* (RigidBodyEntity*);
-            auto impl = reinterpret_cast<impl_t*>(exl::util::modules::GetTargetOffset(sym::phive::RigidBodyEntity::getActorLink::offset));
+            auto impl = EXL_SYM_RESOLVE<impl_t*>("phive::RigidBodyEntity::getActorLink");
             return impl(this); // TODO default &game::actor::sDefaultActorLink?
         }
     };
@@ -94,7 +92,7 @@ namespace phive {
         // XXX these behave the same as RigidBodyBase::requestSetLinearVelocity on Player, usually no effect
         void requestSetLinearVelocity(sead::Vector3f* vel) {
             using impl_t = void (RigidBodyBase*, sead::Vector3f*);
-            auto impl = reinterpret_cast<impl_t*>(exl::util::modules::GetTargetOffset(sym::phive::CharacterMatterRigidBodyEntity::requestSetLinearVelocity::offset));
+            auto impl = EXL_SYM_RESOLVE<impl_t*>("phive::CharacterMatterRigidBodyEntity::requestSetLinearVelocity");
             return impl(this, vel);
         }
 
@@ -114,7 +112,7 @@ namespace phive {
 
         void visitRigidBodyEntities(ControllerSet_visitRigidBodyEntities_cb cb) {
             using impl_t = void (ControllerSet*, ControllerSet_visitRigidBodyEntities_cb**);
-            auto impl = reinterpret_cast<impl_t*>(exl::util::modules::GetTargetOffset(sym::phive::ControllerSet::visitRigidBodyEntities::offset));
+            auto impl = EXL_SYM_RESOLVE<impl_t*>("phive::ControllerSet::visitRigidBodyEntities");
             auto cb_ = &cb; // just accept a normal function pointer, this was nuts
             return impl(this, &cb_);
         }

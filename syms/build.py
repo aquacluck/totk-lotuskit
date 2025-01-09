@@ -9,10 +9,6 @@ from build_types import *
 
 def run_symbol_def_imports():
     # these imports are registering symbols.
-    # symbol folder structure mirrors dt_totk include paths -- first folder component (sead, NintendoSDK, zstd) gets included by cmake.
-    # the folder structure is solely to make folders match up + make the output nicer to navigate
-    # vs namespaces are defined solely by mangled symbols (independent of folder structure)
-
     # TODO just crawl some top level folders, this is getting stupid already
 
     # TODO eventflow
@@ -31,7 +27,6 @@ def run_symbol_def_imports():
     import sead.thread.seadThread
 
     #import zstd.lib.zstd # nop
-
 
     import exking.engine.actor.ActorBase
     import exking.engine.actor.ActorMgr
@@ -58,58 +53,39 @@ class TrashCommands:
     def build_gameversion_syms(version: GameVersion, do_export_nullptr=True):
         version_str = GameVersion.to_str(version)
         pathlib.Path(f"output/{version_str}").mkdir(parents=True, exist_ok=True)
-        with open(f"output/{version_str}/syms_merged.hpp", "w") as hppfile, open(f"output/{version_str}/syms_merged.ld", "w") as ldfile:
-            hppfile.write(f'#pragma once\n#include <cstddef>\n\n') #hppfile.write(f'#pragma once\n#include "lib/json.hpp"\nusing json = nlohmann::json;\n\n')
+        with open(f"output/{version_str}/syms_exl_reloc.inc", "w") as hppfile, open(f"output/{version_str}/syms_merged.ld", "w") as ldfile:
             ldfile.write(f"__game_version = {version}; /* {version_str} */")
 
             for mod in NSOModule.ALL_MODULES:
                 if mod.module_start_sym == MagicWords.SKIP:
                     continue
 
-                hppfile.write(f"\n\n/* ======== BEGIN {mod.module_name} (nso {mod.nso_filename}, symbol {mod.module_start_sym}) =========== */\n\n")
+                hppfile.write(f"\n\n/* ======== BEGIN {mod.module_name} ({mod.nso_filename}) =========== */\n\n")
                 ldfile.write( f"\n\n/* ======== BEGIN {mod.module_name} (nso {mod.nso_filename}, symbol {mod.module_start_sym}) =========== */\n\n")
 
                 if mod.module_start_offset and mod.module_start_offset != MagicWords.SKIP:
                     ldfile.write(f"{mod.module_start_sym}_offset = {mod.module_start_offset[version]:#x};\n\n")
 
                 for sym in mod.sym_map.values():
-                    addr = sym.address[version]
-                    if addr == MagicWords.SKIP:
+                    offset = sym.address[version]
+                    if offset == MagicWords.SKIP:
                         continue
-                    if addr == 0 and do_export_nullptr is False:
+                    if offset == 0 and do_export_nullptr is False:
                         continue
 
-                    if addr <= 0xffffffff:
-                        addr_str = f"{addr:#010x}"
-                    else:
-                        addr_str = f"{addr:#018x}"
+                    offset_str = f"{offset:#010x}" if offset <= 0xffffffff else f"{offset:#018x}" # does this ever branch?
 
-                    if sym.symbol_type not in (SymbolType.DATA, SymbolType.INSTRUCTION):
-                        # only func ptrs are relevant for ld symbols?
-                        ldfile.write(f"{sym.mangled:32} = {mod.module_start_sym} + {addr_str}; /* {sym.name} */\n")
+                    if sym.is_mangled:
+                        # TODO demangle for hpp lookup? if the need arises
+                        ldfile.write(f"{sym.unique_name:32} = {mod.module_start_sym} + {offset_str};\n")
 
-                    # TODO module_start_offset for xmodule hooks?
                     # include everything in hpp -- {{ is escaped { for f-strings
-                    identifier = sym.subject_identifier or sym.mangled
-                    # TODO how to expose syms across cpp+as+js -- trivial to access in cpp, trivial to register to as, trivial to forward over ws for js ui
-                    '''
-                    inline static json stuff = {{
-                        {{"offset", {addr_str}}},
-                        {{"mangled", "{sym.mangled}"}},
-                        {{"demangled", "{sym.name}"}}
-                    }};
-                    '''
+                    hppfile.write(f'''{{ {mod.exl_util_module_index}, {offset_str}, "{sym.unique_name}" }},\n''')
 
-                    hppfile.write(f"""
-namespace sym::{'::'.join(sym.ns)} {{
-class {identifier} {{
-    public:
-    inline static constexpr ptrdiff_t offset = {addr_str};
-}};
-}}\n""")
+                hppfile.write(f"\n/* ======== END {mod.module_name} ({mod.nso_filename}) ============== */\n\n")
+                ldfile.write( f"\n/* ======== END {mod.module_name} (nso {mod.nso_filename}) ============== */\n\n")
 
-                hppfile.write(f"\n/* ======== END {mod.module_name} (nso {mod.nso_filename}) ================================ */\n\n")
-                ldfile.write( f"\n/* ======== END {mod.module_name} (nso {mod.nso_filename}) ================================ */\n\n")
+            hppfile.write(f'''{{ util::ModuleIndex::Main, 0x0, "__null_unused__" }}\n''') # fix trailing comma
 
 
 if __name__ == "__main__":

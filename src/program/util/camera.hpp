@@ -1,5 +1,5 @@
 #pragma once
-#include <lib.hpp>
+#include "exlaunch.hpp"
 #include <math/seadMatrix.h>
 #include <math/seadVector.h>
 #include <string>
@@ -50,7 +50,7 @@ namespace lotuskit::util::camera {
         }
 
         using impl_t = void (DisgustingLookAtCamera*, sead::Matrix34f*);
-        auto impl = reinterpret_cast<impl_t*>(exl::util::modules::GetTargetOffset(sym::sead::LookAtCamera::doUpdateMatrix::offset));
+        auto impl = EXL_SYM_RESOLVE<impl_t*>("sead::LookAtCamera::doUpdateMatrix");
         return impl(thisPtr, dst);
     }
 

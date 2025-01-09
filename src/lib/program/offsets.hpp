@@ -11,27 +11,15 @@ namespace exl::reloc {
     template<VersionType Version, impl::LookupEntry... Entries>
     using UserTableType = VersionedTable<Version, Entries...>;
 
-    using UserTableSet = TableSet<VersionType 
-        /*
-        // This feature allows you to specify symbols in your executable to resolve with module+offset pairs.
-        // They are packed up and sorted at compile time so they can be efficiently looked up.
-        // The `exl::reloc::GetLookupTable` API is provided if you want to look up entries in the table explicitly.
-        // Examples of tables:
+    using UserTableSet = TableSet<VersionType,
         UserTableType<VersionType::DEFAULT,
-        //    Module offset is relative to.     Offset within module.       Symbol name.
-            { util::ModuleIndex::Main,          0x6961,                     "example1" },
-            { util::ModuleIndex::Sdk,           0x6962,                     "example2" },
-            { util::ModuleIndex::Rtld,          0x6963,                     "example3" }
-        >,
 
-        // In addition, you can specify multiple tables and select the correct one at runtime. This allows you to
-        // support multiple versions/variations of a game in one executable. See version.hpp to see how to implement
-        // multiple supported versions.
-        UserTableType<VersionType::OTHER,
-        //    Module offset is relative to.     Offset within module.       Symbol name.
-            { util::ModuleIndex::Main,          0x4201,                     "example1" },
-            { util::ModuleIndex::Sdk,           0x4202,                     "example2" }
+// i want to keep the ability to trivially ifdef stuff across versions anyways, so i don't see much point in unifying mod builds.
+// the frontend can afford to be more unified, reloading its data assets when a different game version appears on the socket, etc.
+// all the hash+lookup plumbing is great and i wanna use it, i just don't need the versioning part. This file is version specific.
+
+#include "syms_exl_reloc.inc"
+
         >
-        */
     >;
 }

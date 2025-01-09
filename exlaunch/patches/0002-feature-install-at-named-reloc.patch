@@ -2,15 +2,16 @@ diff --git a/exlaunch/source/lib/hook/inline.hpp b/exlaunch/source/lib/hook/inli
 index 7091d28..dea1a3e 100644
 --- a/exlaunch/source/lib/hook/inline.hpp
 +++ b/exlaunch/source/lib/hook/inline.hpp
-@@ -27,5 +27,12 @@ namespace exl::hook::impl {
+@@ -27,5 +27,13 @@ namespace exl::hook::impl {
              hook::HookInline(ptr, Derived::Callback);
          }
  
 +        static ALWAYS_INLINE void Install() {
 +            _HOOK_STATIC_CALLBACK_ASSERT();
 +
-+            // TODO accept s_name: InstallAtReloc(s_name -> exl::reloc::LookupEntryBin -> ptr)
-+            hook::HookInline(util::modules::GetTargetOffset(Derived::s_offset), Derived::Callback);
++            const auto entry = exl::reloc::GetLookupTable().FindByName(Derived::s_name);
++            //auto mod = exl::util::GetModuleInfo(entry->m_ModuleIndex); // XXX cheat: always main module anyways for now
++            hook::HookInline(util::modules::GetTargetOffset(entry->m_Offset), Derived::Callback);
 +        }
 +
      };
@@ -21,7 +22,7 @@ diff --git a/exlaunch/source/lib/hook/replace.hpp b/exlaunch/source/lib/hook/rep
 index 2fa4dc1..c283b3f 100644
 --- a/exlaunch/source/lib/hook/replace.hpp
 +++ b/exlaunch/source/lib/hook/replace.hpp
-@@ -36,5 +36,12 @@ namespace exl::hook::impl {
+@@ -36,5 +36,13 @@ namespace exl::hook::impl {
              
              hook::Hook(ptr, Derived::Callback);
          }
@@ -29,8 +30,9 @@ index 2fa4dc1..c283b3f 100644
 +        static ALWAYS_INLINE void Install() {
 +            _HOOK_STATIC_CALLBACK_ASSERT();
 +
-+            // TODO accept s_name: InstallAtReloc(s_name -> exl::reloc::LookupEntryBin -> ptr)
-+            hook::Hook(util::modules::GetTargetOffset(Derived::s_offset), Derived::Callback);
++            const auto entry = exl::reloc::GetLookupTable().FindByName(Derived::s_name);
++            //auto mod = exl::util::GetModuleInfo(entry->m_ModuleIndex); // XXX cheat: always main module anyways for now
++            hook::Hook(util::modules::GetTargetOffset(entry->m_Offset), Derived::Callback);
 +        }
      };
 -}
@@ -40,7 +42,7 @@ diff --git a/exlaunch/source/lib/hook/trampoline.hpp b/exlaunch/source/lib/hook/
 index 7da67a8..aace11e 100644
 --- a/exlaunch/source/lib/hook/trampoline.hpp
 +++ b/exlaunch/source/lib/hook/trampoline.hpp
-@@ -52,6 +52,14 @@ namespace exl::hook::impl {
+@@ -52,6 +52,15 @@ namespace exl::hook::impl {
              
              OrigRef() = hook::Hook(ptr, Derived::Callback, true);
          }
@@ -48,8 +50,9 @@ index 7da67a8..aace11e 100644
 +        static ALWAYS_INLINE void Install() {
 +            _HOOK_STATIC_CALLBACK_ASSERT();
 +
-+            // TODO accept s_name: InstallAtReloc(s_name -> exl::reloc::LookupEntryBin -> ptr)
-+            OrigRef() = hook::Hook(util::modules::GetTargetOffset(Derived::s_offset), Derived::Callback, true);
++            const auto entry = exl::reloc::GetLookupTable().FindByName(Derived::s_name);
++            //auto mod = exl::util::GetModuleInfo(entry->m_ModuleIndex); // XXX cheat: always main module anyways for now
++            OrigRef() = hook::Hook(util::modules::GetTargetOffset(entry->m_Offset), Derived::Callback, true);
 +        }
 +
      };

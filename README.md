@@ -32,7 +32,7 @@
 - Manual preprocessing for certain work/changes:
     - Many headers are mirrored+patched from https://github.com/dt-12345/totk , see `dt_totk/CLOBBER_mirror.sh` to update or further patch them. tldr it rewrites the folder with upstream + local patches, which we commit into this repo.
     - angelscript source is similarly mirrored, and often receives nice new features
-    - `syms/build.py` is a symbol map+metadata build pipeline, keep this in sync! A header file holding `sym::` prefixed symbols and a linker script symbol table for each game version will be generated.
+    - `syms/build.py` is a symbol map+metadata build pipeline, keep this in sync! A header include file for each game version holding symbols prepared for exlaunch's lookup utilities will be generated. Symbols supplied mangled will also be included in the linker script.
 - Run `make` in a suitable build environment (such as [devkitPro](https://devkitpro.org/wiki/Getting_Started) or a [docker container](https://hub.docker.com/r/devkitpro/devkita64)) with cmake installed
 - Mod `exefs` files are at `build/main.npdm` and `build/subsdk9`, copy `romfs` configs from the repo
 

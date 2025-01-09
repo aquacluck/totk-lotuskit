@@ -1,7 +1,6 @@
 #include <nn/util.h>
 #include "tas/config.hpp"
 #include "tas/Playback.hpp"
-#include "syms_merged.hpp"
 #include "structs/VFRMgr.hpp"
 #include "Logger.hpp"
 #include "TextWriter.hpp"
@@ -16,7 +15,7 @@ namespace lotuskit::tas {
         // TODO elapsed frame count? system tick? this frame's delta time? rta? igt?
         // (however its impossible to predict or progress-bar a script's frame duration -- halting problem)
         lotuskit::TextWriter::printf(1, "[tas::Playback] TOTK_%d\n", TOTK_VERSION);
-        VFRMgr* vfrMgr = *exl::util::pointer_path::FollowSafe<VFRMgr*, sym::engine::module::VFRMgr::sInstance::offset>();
+        VFRMgr* vfrMgr = *EXL_SYM_RESOLVE<VFRMgr**>("engine::module::VFRMgr::sInstance");
 
         // int 2 or 3 = float 1.0 (@30fps) or 1.5 (@20fps)
         // assert(mDeltaFrame == 1.0 || mDeltaFrame == 1.5); // precisely

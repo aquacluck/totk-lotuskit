@@ -1,9 +1,8 @@
 #include <string.h>
-#include "lib.hpp"
+#include "exlaunch.hpp"
 #include <nn/hid.h>
 #include <nn/util.h>
 #include <heap/seadHeap.h>
-#include "syms_merged.hpp"
 
 #include "structs/engineActor.hpp"
 #include "Logger.hpp"
@@ -23,7 +22,7 @@ using Logger = lotuskit::Logger;
 
 
 HOOK_DEFINE_INLINE(StealHeap) {
-    static const ptrdiff_t s_offset = sym::engine::steal_heap::offset; // hacks
+    static constexpr auto s_name = "engine::steal_heap"; // hacks
     inline static sead::Heap* stolenHeap = nullptr;
     static void Callback(exl::hook::InlineCtx* ctx) {
 #ifdef TOTK_100
@@ -43,7 +42,7 @@ HOOK_DEFINE_INLINE(StealHeap) {
 
 /*
 HOOK_DEFINE_TRAMPOLINE(OnWhistleHook) {
-    static const ptrdiff_t s_offset = sym::game::ai::execute::ExecutePlayerWhistle::enterImpl_::offset;
+    static constexpr auto s_name = "game::ai::execute::ExecutePlayerWhistle::enterImpl_";
     static void Callback(void* param) {
         lotuskit::server::WebSocket::init(); // blocking
         Orig(param);
@@ -52,7 +51,7 @@ HOOK_DEFINE_TRAMPOLINE(OnWhistleHook) {
 */
 
 HOOK_DEFINE_INLINE(OnRecallUpdateHighlightActorHook) {
-    static const ptrdiff_t s_offset = sym::game::ai::execute::ExecutePlayerReverseRecorder::updateImpl_::state0::offset;
+    static constexpr auto s_name = "game::ai::execute::ExecutePlayerReverseRecorder::updateImpl_::state0";
     static void Callback(exl::hook::InlineCtx* ctx) {
         auto* highlightedActor = (engine::actor::ActorBase*)(ctx->X[8]);
         lotuskit::ActorWatcher::resolveRecallHighlight(highlightedActor);
@@ -61,7 +60,7 @@ HOOK_DEFINE_INLINE(OnRecallUpdateHighlightActorHook) {
 
 HOOK_DEFINE_TRAMPOLINE(OnRequestCreateActorAsyncHook) {
     // async is most actors, exceptions: actors created as a dependency?
-    static const ptrdiff_t s_offset = sym::engine::actor::ActorMgr::requestCreateActorAsync::offset;
+    static constexpr auto s_name = "engine::actor::ActorMgr::requestCreateActorAsync";
 
     static void* Callback
         (engine::actor::ActorMgr* actorMgr, char** actorName, sead::Vector3f* pos, void* param_4, u32 param_5, engine::actor::PreActor* preActor,
@@ -107,7 +106,7 @@ HOOK_DEFINE_TRAMPOLINE(OnRequestCreateActorAsyncHook) {
 };
 
 HOOK_DEFINE_TRAMPOLINE(BaseProcMgr_addDependency) {
-    static const ptrdiff_t s_offset = sym::engine::actor::BaseProcMgr::addDependency::offset;
+    static constexpr auto s_name = "engine::actor::BaseProcMgr::addDependency";
 
     static u32 Callback(engine::actor::BaseProcMgr &baseProcMgr, engine::actor::ActorBase &parent, engine::actor::ActorBase &child) {
         u32 result = Orig(baseProcMgr, parent, child);
@@ -146,7 +145,7 @@ HOOK_DEFINE_TRAMPOLINE(BaseProcMgr_addDependency) {
 };
 
 HOOK_DEFINE_TRAMPOLINE(MainGetNpadStates) {
-    static const ptrdiff_t s_offset = sym::engine::MainGetNpadStates::offset; // hacks
+    static constexpr auto s_name = "engine::MainGetNpadStates"; // hacks
 
     static void Callback(void* param_1) {
         // TODO option to lock/snap inputs to 90d/45d while ZL is held?
@@ -162,7 +161,7 @@ HOOK_DEFINE_TRAMPOLINE(MainGetNpadStates) {
 };
 
 HOOK_DEFINE_TRAMPOLINE(WorldManagerModuleBaseProcHook) {
-    static const auto s_offset = sym::game::wm::WorldManagerModule::baseProcExe::offset;
+    static constexpr auto s_name = "game::wm::WorldManagerModule::baseProcExe";
 
     static void Callback(double self, double param_2, double param_3, double param_4, void *wmmodule, void *param_6) {
         //Logger::logText("ffffeeeeddddcccc", "/HexDump/0", true); // blocking ws
@@ -192,7 +191,6 @@ HOOK_DEFINE_TRAMPOLINE(WorldManagerModuleBaseProcHook) {
     }
 };
 
-
 extern "C" void exl_main(void* x0, void* x1) {
     exl::hook::Initialize();
 
@@ -209,7 +207,7 @@ extern "C" void exl_main(void* x0, void* x1) {
     MainGetNpadStates::Install();
 
     //TODO check the branch we're overwriting -- ensure our "off" does the same thing
-    exl::patch::CodePatcher(sym::game::component::GameCameraParam::HACK_cameraCalc::offset).BranchLinkInst((void*)lotuskit::util::camera::disgustingCameraHook);
+    exl::patch::CodePatcher(EXL_SYM_OFFSET("game::component::GameCameraParam::HACK_cameraCalc")).BranchLinkInst((void*)lotuskit::util::camera::disgustingCameraHook);
 
     // hooks for textwriter+primitivedrawer overlay
     bool do_debugdraw = true; // XXX assert -- can't access fs here without sdk init?

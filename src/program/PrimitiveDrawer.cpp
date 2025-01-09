@@ -1,5 +1,4 @@
-#include <lib.hpp>
-#include "syms_merged.hpp"
+#include "exlaunch.hpp"
 #include "PrimitiveDrawer.hpp"
 #include "TextWriter.hpp"
 
@@ -321,26 +320,26 @@ namespace lotuskit {
         inline static DrawCylinder32Func* DrawCylinder32 = nullptr;
 
         void setupStatic() {
-            renderer = exl::util::pointer_path::FollowSafe<sead::PrimitiveRenderer*, sym::sead::PrimitiveRenderer::instance::offset>();
+            renderer = EXL_SYM_RESOLVE<sead::PrimitiveRenderer**>("sead::PrimitiveRenderer::instance");
 
-            Begin = reinterpret_cast<BeginFunc*>(exl::util::modules::GetTargetOffset(sym::sead::PrimitiveDrawer::begin::offset));
-            End = reinterpret_cast<EndFunc*>(exl::util::modules::GetTargetOffset(sym::sead::PrimitiveDrawer::end::offset));
-            SetModelMtx = reinterpret_cast<SetModelMtxFunc*>(exl::util::modules::GetTargetOffset(sym::sead::PrimitiveDrawer::setModelMtx::offset));
-            SetProjection = reinterpret_cast<SetProjectionFunc*>(exl::util::modules::GetTargetOffset(sym::sead::PrimitiveDrawer::setProjection::offset));
-            SetCamera = reinterpret_cast<SetCameraFunc*>(exl::util::modules::GetTargetOffset(sym::sead::PrimitiveDrawer::setCamera::offset));
-            SetDrawCtx = reinterpret_cast<SetDrawCtxFunc*>(exl::util::modules::GetTargetOffset(sym::sead::PrimitiveDrawer::setDrawCtx::offset));
+            Begin = EXL_SYM_RESOLVE<BeginFunc*>("sead::PrimitiveDrawer::begin");
+            End = EXL_SYM_RESOLVE<EndFunc*>("sead::PrimitiveDrawer::end");
+            SetModelMtx = EXL_SYM_RESOLVE<SetModelMtxFunc*>("sead::PrimitiveDrawer::setModelMtx");
+            SetProjection = EXL_SYM_RESOLVE<SetProjectionFunc*>("sead::PrimitiveDrawer::setProjection");
+            SetCamera = EXL_SYM_RESOLVE<SetCameraFunc*>("sead::PrimitiveDrawer::setCamera");
+            SetDrawCtx = EXL_SYM_RESOLVE<SetDrawCtxFunc*>("sead::PrimitiveDrawer::setDrawCtx");
 
-            DrawQuad = reinterpret_cast<DrawQuadFunc*>(exl::util::modules::GetTargetOffset(sym::sead::PrimitiveDrawer::drawQuad::offset));
-            DrawQuad2 = reinterpret_cast<DrawQuad2Func*>(exl::util::modules::GetTargetOffset(sym::sead::PrimitiveDrawer::drawQuad2::offset));
-            DrawBox = reinterpret_cast<DrawBoxFunc*>(exl::util::modules::GetTargetOffset(sym::sead::PrimitiveDrawer::drawBox::offset));
-            DrawWireCube = reinterpret_cast<DrawWireCubeFunc*>(exl::util::modules::GetTargetOffset(sym::sead::PrimitiveDrawer::drawWireCube::offset));
-            DrawLine = reinterpret_cast<DrawLineFunc*>(exl::util::modules::GetTargetOffset(sym::sead::PrimitiveDrawer::drawLine::offset));
-            DrawSphere4x8 = reinterpret_cast<DrawSphere4x8Func*>(exl::util::modules::GetTargetOffset(sym::sead::PrimitiveDrawer::drawSphere4x8::offset));
-            DrawSphere8x16 = reinterpret_cast<DrawSphere8x16Func*>(exl::util::modules::GetTargetOffset(sym::sead::PrimitiveDrawer::drawSphere8x16::offset));
-            DrawDisk32 = reinterpret_cast<DrawDisk32Func*>(exl::util::modules::GetTargetOffset(sym::sead::PrimitiveDrawer::drawDisk32::offset));
-            DrawCircle32 = reinterpret_cast<DrawCircle32Func*>(exl::util::modules::GetTargetOffset(sym::sead::PrimitiveDrawer::drawCircle32::offset));
-            DrawCylinder16 = reinterpret_cast<DrawCylinder16Func*>(exl::util::modules::GetTargetOffset(sym::sead::PrimitiveDrawer::drawCylinder16::offset));
-            DrawCylinder32 = reinterpret_cast<DrawCylinder32Func*>(exl::util::modules::GetTargetOffset(sym::sead::PrimitiveDrawer::drawCylinder32::offset));
+            DrawQuad = EXL_SYM_RESOLVE<DrawQuadFunc*>("sead::PrimitiveDrawer::drawQuad");
+            DrawQuad2 = EXL_SYM_RESOLVE<DrawQuad2Func*>("sead::PrimitiveDrawer::drawQuad2");
+            DrawBox = EXL_SYM_RESOLVE<DrawBoxFunc*>("sead::PrimitiveDrawer::drawBox");
+            DrawWireCube = EXL_SYM_RESOLVE<DrawWireCubeFunc*>("sead::PrimitiveDrawer::drawWireCube");
+            DrawLine = EXL_SYM_RESOLVE<DrawLineFunc*>("sead::PrimitiveDrawer::drawLine");
+            DrawSphere4x8 = EXL_SYM_RESOLVE<DrawSphere4x8Func*>("sead::PrimitiveDrawer::drawSphere4x8");
+            DrawSphere8x16 = EXL_SYM_RESOLVE<DrawSphere8x16Func*>("sead::PrimitiveDrawer::drawSphere8x16");
+            DrawDisk32 = EXL_SYM_RESOLVE<DrawDisk32Func*>("sead::PrimitiveDrawer::drawDisk32");
+            DrawCircle32 = EXL_SYM_RESOLVE<DrawCircle32Func*>("sead::PrimitiveDrawer::drawCircle32");
+            DrawCylinder16 = EXL_SYM_RESOLVE<DrawCylinder16Func*>("sead::PrimitiveDrawer::drawCylinder16");
+            DrawCylinder32 = EXL_SYM_RESOLVE<DrawCylinder32Func*>("sead::PrimitiveDrawer::drawCylinder32");
         }
 
         sead::PrimitiveRenderer* getPrimitiveRenderer() {

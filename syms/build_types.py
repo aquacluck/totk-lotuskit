@@ -4,9 +4,6 @@ from collections import defaultdict
 import os.path
 import pathlib
 
-from build_helper_itanium_demangler import Node, QualNode, CastNode, FuncNode, ArrayNode, MemberNode
-from build_helper_itanium_demangler import parse as sym_demangle
-
 
 class GameVersion:
     ALL_STR = ("TOTK_100", "TOTK_110", "TOTK_111", "TOTK_112", "TOTK_120", "TOTK_121")
@@ -101,16 +98,16 @@ SKIP = MagicWords.SKIP
 
 class NSOModule:
     # separate sym_map per module
-    sym_map: Dict[RuntimeSymbol.name, RuntimeSymbol] = NotImplementedError
+    sym_map: Dict[RuntimeSymbol.unique_name, RuntimeSymbol] = NotImplementedError
 
     # hold all nso modules, just do this by hand
     ALL_MODULES = []
 
-    def __new__(cls, mangled, address, symbol_type=SymbolType.FUNCTION) -> RuntimeSymbol:
+    def __new__(cls, unique_name, address, symbol_type=SymbolType.FUNCTION) -> RuntimeSymbol:
         # sugar to accumulate symbols in cls.sym_map
         global current_sym_file
-        sym = RuntimeSymbol(mangled, address, symbol_type, module=cls, source_path=current_sym_file)
-        cls.sym_map[sym.name] = sym
+        sym = RuntimeSymbol(unique_name, address, symbol_type, module=cls, source_path=current_sym_file)
+        cls.sym_map[sym.unique_name] = sym
         return sym
 
     @classmethod
@@ -121,12 +118,13 @@ class NSOModule:
     def postprocess(cls):
         # ensure stable output order
         keys = list(cls.sym_map.keys())
-        keys.sort(key=lambda k: cls.sym_map[k].mangled)
+        keys.sort(key=lambda k: cls.sym_map[k].unique_name)
         tmp: dict = cls.sym_map
         cls.sym_map: dict = {k: tmp[k] for k in keys}
         del tmp
 
 class RTLD(NSOModule):
+    exl_util_module_index = "util::ModuleIndex::Rtld"
     nso_filename = "rtld"
     module_name = "nnrtld"
     module_start_sym = "__rtld_start"
@@ -134,6 +132,7 @@ class RTLD(NSOModule):
     sym_map = {}
 
 class EXKING(NSOModule):
+    exl_util_module_index = "util::ModuleIndex::Main"
     nso_filename = "main"
     module_name = "EX-King"
     module_start_sym = "__main_start"
@@ -150,6 +149,7 @@ class EXKING(NSOModule):
     #module_filename = r"D:\home\Project\EX-King\App\Rom\NX64\Product_Optimize\code\EX-King.nss"
 
 class MULTIMEDIA(NSOModule):
+    exl_util_module_index = "util::ModuleIndex::Subsdk0"
     nso_filename = "subsdk0"
     module_name = "multimedia"
     module_start_sym = "__subsdk0_start"
@@ -157,6 +157,7 @@ class MULTIMEDIA(NSOModule):
     sym_map = {}
 
 class LOTUSKIT(NSOModule):
+    exl_util_module_index = "util::ModuleIndex::Subsdk9"
     nso_filename = "subsdk9"
     module_name = "subsdk9" # FIXME can i set name?
     module_start_sym = MagicWords.SKIP
@@ -164,6 +165,7 @@ class LOTUSKIT(NSOModule):
     sym_map = {}
 
 class NNSDK(NSOModule):
+    exl_util_module_index = "util::ModuleIndex::Sdk"
     nso_filename = "sdk"
     module_name = "nnSdk"
     module_start_sym = "__sdk_start"
@@ -175,7 +177,7 @@ NSOModule.ALL_MODULES.extend([RTLD, EXKING, MULTIMEDIA, LOTUSKIT, NNSDK])
 
 class RuntimeSymbol:
     # supplied from source_path (symbol file)
-    mangled: str
+    unique_name: str
     address: VersionedAddress
     symbol_type: SymbolType
 
@@ -183,70 +185,17 @@ class RuntimeSymbol:
     module: NSOModule
     source_path: Tuple[str]
 
-    def __init__(self, mangled, address, symbol_type, module, source_path):
-        self.mangled = mangled
+    def __init__(self, unique_name, address, symbol_type, module, source_path):
+        self.unique_name = unique_name
         self.address = address
         self.symbol_type = symbol_type
         self.module = module
         self.source_path = source_path
 
         # set derived
-        self.ast: Node = sym_demangle(self.mangled)
-        self.name = str(self.ast)
         self.address = VersionedAddress.from_pydsl(self.address)
-        self._derive_ns()
+        self.is_mangled = self.unique_name.startswith("_Z")
 
     def __hash__(self):
-        return hash(self.mangled)
+        return hash(self.unique_name)
 
-    def _derive_ns(self):
-        self.ns = () # default: no namespace
-        self.subject_identifier = None # the "basename" identifier, eg the function name
-
-        if self.ast.kind == "qual_name":
-            ns = []
-            for ns_identifier in self.ast.value[:-1]:
-                if ns_identifier.kind != "name":
-                    e = NotImplementedError(f"unsupported ns_identifier kind {ns_identifier.kind} in {type(self.ast)}: {self.name}")
-                    breakpoint(); raise e
-                ns.append(ns_identifier.value)
-
-            self.subject_identifier = self.ast.value[-1].value
-            self.ns = tuple(ns)
-            return
-
-        elif isinstance(self.ast, FuncNode):
-            namenode = self.ast.name
-            if namenode.kind == "cv_qual":
-                namenode = namenode.value
-
-            if namenode.kind == "name":
-                self.subject_identifier = namenode.value
-                return # unqualified: no namespace
-
-            if namenode.kind != "qual_name":
-                e = NotImplementedError(f"unsupported name kind {namenode.kind} in {type(self.ast)}: {self.name}")
-                breakpoint(); raise e
-
-            ns = []
-            for ns_identifier in namenode.value[:-1]:
-                if ns_identifier.kind != "name":
-                    e = NotImplementedError(f"unsupported ns_identifier kind {ns_identifier.kind} in {type(self.ast)}: {self.name}")
-                    breakpoint(); raise e
-                ns.append(ns_identifier.value)
-
-            # lib ctor+dtor values are further classifications "complete" etc.
-            # We usually don't care about exposing accurate hpp names, as these are for the linker instead.
-            if namenode.value[-1].kind == "ctor":
-                self.subject_identifier = "ctor"
-            elif namenode.value[-1].kind == "dtor":
-                self.subject_identifier = "dtor"
-            else:
-                self.subject_identifier = namenode.value[-1].value
-
-            self.ns = tuple(ns)
-            return
-
-        # handle more when it comes up
-        e = NotImplementedError(f"unsupported root type {type(self.ast)}: {self.name}")
-        breakpoint(); raise e

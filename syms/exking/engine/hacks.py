@@ -1,22 +1,19 @@
 from build_types import *
 begin_sym_file(__file__)
 
-# namespace engine { static uintptr_t nnMain_post_setup; }
-EXKING("_ZN6engineL17nnMain_post_setupE", {
+EXKING("engine::nnMain_post_setup", {
     TOTK_100: 0x00e998b8,
     TOTK_110: 0x00eb8f08,
     TOTK_121: 0x00e7ac48, # strb w8 ,[x21 , #0x8 ]. blr at 7100e7ac60 is point of no return? not sure what that call is
 }, SymbolType.INSTRUCTION)
 
-# namespace engine { static uintptr_t MainGetNpadStates; }
-EXKING("_ZN6engineL17MainGetNpadStatesE", {
+EXKING("engine::MainGetNpadStates", {
     TOTK_100: 0x029b442c,
     TOTK_110: 0x02a2c49c,
     TOTK_121: 0x02a267bc,
 })
 
-# namespace engine { static uintptr_t steal_heap; }
-EXKING("_ZN6engineL10steal_heapE", {
+EXKING("engine::steal_heap", {
     TOTK_100: 0x008111a8,
     TOTK_110: 0x0083c2fc,
     TOTK_111: 0x00713b74,

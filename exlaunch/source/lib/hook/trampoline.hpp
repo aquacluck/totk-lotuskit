@@ -56,8 +56,9 @@ namespace exl::hook::impl {
         static ALWAYS_INLINE void Install() {
             _HOOK_STATIC_CALLBACK_ASSERT();
 
-            // TODO accept s_name: InstallAtReloc(s_name -> exl::reloc::LookupEntryBin -> ptr)
-            OrigRef() = hook::Hook(util::modules::GetTargetOffset(Derived::s_offset), Derived::Callback, true);
+            const auto entry = exl::reloc::GetLookupTable().FindByName(Derived::s_name);
+            //auto mod = exl::util::GetModuleInfo(entry->m_ModuleIndex); // XXX cheat: always main module anyways for now
+            OrigRef() = hook::Hook(util::modules::GetTargetOffset(entry->m_Offset), Derived::Callback, true);
         }
 
     };

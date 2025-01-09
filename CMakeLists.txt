@@ -46,7 +46,7 @@ include(${CMAKE_SOURCE_DIR}/cmake/SwitchTools.cmake)
 
 
 # Begin game headers + symbols
-include_directories(${PROJECT_SOURCE_DIR}/syms/output/TOTK_${TOTK_VERSION}) # symbols in syms_merged.hpp
+include_directories(${PROJECT_SOURCE_DIR}/syms/output/TOTK_${TOTK_VERSION}) # generated output
 
 # Used by header patches to override visibility in specific cases.
 # Turn this off and re-clobber the headers for eg private method mangling compatibility (no need for this yet)

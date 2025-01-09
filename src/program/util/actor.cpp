@@ -1,6 +1,5 @@
 #include "ActorWatcher.hpp"
 #include "util/actor.hpp"
-#include "syms_merged.hpp"
 #include "structs/bbBlackboard.hpp"
 #include "script/globals.hpp"
 #include <prim/seadSafeString.h>
@@ -47,8 +46,8 @@ namespace lotuskit::util::actor {
         createArg.transform_flags.set(engine::actor::BaseProcMgr::CreateArg::TransformFlags::UsePosition);
         createArg.transform_flags.set(engine::actor::BaseProcMgr::CreateArg::TransformFlags::UseScale);
 
-        CreateFunc* requestCreateActorAsync = reinterpret_cast<CreateFunc*>(exl::util::modules::GetTargetOffset(sym::engine::actor::ActorMgr::requestCreateActorAsync::offset));
-        engine::actor::ActorMgr* actorMgr = *reinterpret_cast<engine::actor::ActorMgr**>(exl::util::modules::GetTargetOffset(sym::engine::actor::ActorMgr::sInstance::offset));
+        CreateFunc* requestCreateActorAsync = EXL_SYM_RESOLVE<CreateFunc*>("engine::actor::ActorMgr::requestCreateActorAsync");
+        engine::actor::ActorMgr* actorMgr = *EXL_SYM_RESOLVE<engine::actor::ActorMgr**>("engine::actor::ActorMgr::sInstance");
         engine::actor::BaseProcMgr::Result result;
 
         bool ret = requestCreateActorAsync(actorMgr, actorName.c_str(), createArg, nullptr, engine::actor::CreatePriority::High, nullptr, nullptr, nullptr, false, &result, nullptr);
@@ -78,8 +77,8 @@ namespace lotuskit::util::actor {
         createArg.transform_flags.set(engine::actor::BaseProcMgr::CreateArg::TransformFlags::UsePosition);
         createArg.transform_flags.set(engine::actor::BaseProcMgr::CreateArg::TransformFlags::UseScale);
 
-        CreateFunc* requestCreateActorAsync = reinterpret_cast<CreateFunc*>(exl::util::modules::GetTargetOffset(sym::engine::actor::ActorMgr::requestCreateActorAsync::offset));
-        engine::actor::ActorMgr* actorMgr = *reinterpret_cast<engine::actor::ActorMgr**>(exl::util::modules::GetTargetOffset(sym::engine::actor::ActorMgr::sInstance::offset));
+        CreateFunc* requestCreateActorAsync = EXL_SYM_RESOLVE<CreateFunc*>("engine::actor::ActorMgr::requestCreateActorAsync");
+        engine::actor::ActorMgr* actorMgr = *EXL_SYM_RESOLVE<engine::actor::ActorMgr**>("engine::actor::ActorMgr::sInstance");
         engine::actor::BaseProcMgr::Result result;
 
         engine::actor::PreActor* preactor = nullptr;
@@ -109,7 +108,7 @@ namespace lotuskit::util::actor {
     }
     void setPosRot(ActorBase* actor, sead::Vector3f pos, sead::Matrix33f rot) {
         ForceSetMatrixArg arg{pos, rot};
-        ForceSetMatrixFunc* forceSetMatrix = reinterpret_cast<ForceSetMatrixFunc*>(exl::util::modules::GetTargetOffset(sym::engine::actor::ActorBase::forceSetMatrix::offset));
+        ForceSetMatrixFunc* forceSetMatrix = EXL_SYM_RESOLVE<ForceSetMatrixFunc*>("engine::actor::ActorBase::forceSetMatrix");
         u32 usuallyZeroFlag = 0;
         forceSetMatrix(actor, &arg, usuallyZeroFlag);
     }

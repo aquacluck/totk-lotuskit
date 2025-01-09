@@ -2,7 +2,6 @@
 #include <nn/util.h>
 #include "tas/config.hpp"
 #include "tas/Record.hpp"
-#include "syms_merged.hpp"
 #include "structs/VFRMgr.hpp"
 #include "Logger.hpp"
 #include "TextWriter.hpp"
@@ -24,7 +23,7 @@ namespace lotuskit::tas {
         if (!isRecordActive) { return; } // not doing record
         lotuskit::TextWriter::printf(1, "[tas::Record] ws dump\n");
 
-        VFRMgr* vfrMgr = *exl::util::pointer_path::FollowSafe<VFRMgr*, sym::engine::module::VFRMgr::sInstance::offset>();
+        VFRMgr* vfrMgr = *EXL_SYM_RESOLVE<VFRMgr**>("engine::module::VFRMgr::sInstance");
         u32 deltaFrame60 = (u32)(vfrMgr->mDeltaFrame * 2);
         // assert(deltaFrame60 == 2 or 3); assert(mDeltaFrame == 1.0 or 1.5 @30fps);
 

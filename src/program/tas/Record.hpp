@@ -1,5 +1,5 @@
 #pragma once
-#include <lib.hpp>
+#include "exlaunch.hpp"
 #include <angelscript.h>
 #include <nn/hid.h>
 

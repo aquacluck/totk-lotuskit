@@ -1,7 +1,6 @@
 #pragma once
 #include <atomic>
-#include <lib.hpp>
-#include "syms_merged.hpp"
+#include "exlaunch.hpp"
 #include "PrimitiveDrawer.hpp"
 #include "Logger.hpp"
 using Logger = lotuskit::Logger;
@@ -113,7 +112,11 @@ namespace lotuskit {
         inline static void assignHeap(sead::Heap* heap) {
             // assert only called once
             debugDrawerInternalHeap = heap;
-            frame.heap = sead::FrameHeap::create(0x4000, "lotuskit::TextWriter", heap, 8, sead::Heap::cHeapDirection_Forward, 0); // XXX what are args 4+6?
+
+            using impl_t = sead::FrameHeap* (size_t, const sead::SafeString&, sead::Heap*, s32, sead::Heap::HeapDirection, bool);
+            auto impl = EXL_SYM_RESOLVE<impl_t*>("sead::FrameHeap::create");
+            frame.heap = impl(0x4000, "lotuskit::TextWriter", heap, 8, (sead::Heap::HeapDirection)1, 0); // 1 = forward XXX what are args 4+6?
+
             nn::os::InitializeMutex(&frame.drawLock, true, 0);
         }
         static TextWriterDrawNode* appendNewDrawNode(size_t drawList_i);
@@ -132,19 +135,19 @@ namespace lotuskit {
         using InitDebugDrawers = void(sead::Heap*, GraphicsModuleCreateArg&);
 
         HOOK_DEFINE_INLINE(BootupInitDebugDrawersHook) {
-            static const ptrdiff_t s_offset = sym::agl::create_arg::offset; // hacks
+            static constexpr auto s_name = "agl::create_arg"; // hacks
             static void Callback(exl::hook::InlineCtx* ctx) {
                 GraphicsModuleCreateArg arg = {0};
                 arg.value0 = reinterpret_cast<GraphicsModuleCreateArg*>(ctx->X[1])->value0;
                 arg.value1 = reinterpret_cast<GraphicsModuleCreateArg*>(ctx->X[1])->value1; // nvnBufferBuilderSetStorage?
 
-                auto func = reinterpret_cast<InitDebugDrawers*>(exl::util::modules::GetTargetOffset(sym::agl::init_debug_drawers::offset));
+                auto func = EXL_SYM_RESOLVE<InitDebugDrawers*>("agl::init_debug_drawers");
                 func(TextWriter::debugDrawerInternalHeap, arg); // PrimitiveDrawer uses some of this too
             }
         };
 
         HOOK_DEFINE_INLINE(DebugDrawLayerMaskHook) {
-            static const ptrdiff_t s_offset = sym::agl::lyr::RenderDisplay::drawLayer_::ensure_font::offset; // hacks
+            static constexpr auto s_name = "agl::lyr::RenderDisplay::drawLayer_::ensure_font"; // hacks
             static void Callback(exl::hook::InlineCtx* ctx) {
                 // allow any layer's draw pass to proceed into DebugDrawHook
                 auto* layer = (agl::lyr::Layer*)(ctx->X[21]);
@@ -154,7 +157,7 @@ namespace lotuskit {
         };
 
         HOOK_DEFINE_TRAMPOLINE(DebugDrawHook) {
-            static const ptrdiff_t s_offset = sym::agl::lyr::Layer::drawDebugInfo_::offset;
+            static constexpr auto s_name = "agl::lyr::Layer::drawDebugInfo_";
             static void Callback(agl::lyr::Layer* layer, const agl::lyr::RenderInfo& info) {
                 // draw onto the given layer: PrimitiveDrawer for 3D, TextWriter for 2D
                 auto* sead_draw_ctx = dynamic_cast<sead::DrawContext*>(info.draw_ctx);

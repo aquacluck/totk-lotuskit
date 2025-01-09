@@ -1,5 +1,5 @@
 #pragma once
-#include <lib.hpp>
+#include "exlaunch.hpp"
 #include <heap/seadHeap.h>
 
 #define WEBSOCKET_DO_THREADED_SEND false

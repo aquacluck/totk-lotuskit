@@ -1,8 +1,8 @@
-#include <lib.hpp>
+#include "exlaunch.hpp"
 #include "script/globals.hpp"
 
-#include "nn/util.h"
-#include "lib/json.hpp"
+#include <nn/util.h>
+#include <lib/json.hpp>
 #include "tas/Playback.hpp"
 #include "tas/Record.hpp"
 #include "ActorWatcher.hpp"
@@ -14,9 +14,8 @@
 using json = nlohmann::json;
 using Logger = lotuskit::Logger;
 #include <math/seadVector.h>
-#include "heap/seadHeapMgr.h"
-#include "thread/seadThread.h"
-#include "syms_merged.hpp"
+#include <heap/seadHeapMgr.h>
+#include <thread/seadThread.h>
 #include <string>
 
 
@@ -107,8 +106,9 @@ namespace lotuskit::script::globals {
                 haystackPtr++;
             }
         }
+
         void threadInfo() {
-            sead::ThreadMgr* mgr = *exl::util::pointer_path::FollowSafe<sead::ThreadMgr*, sym::sead::ThreadMgr::sInstance::offset>();
+            sead::ThreadMgr* mgr = *EXL_SYM_RESOLVE<sead::ThreadMgr**>("sead::ThreadMgr::sInstance");
             sead::ThreadList* threads = &(mgr->mList);
             //output["main"] = json::object({ {"id", mgr->mMainThread->getId()}, {"name", mgr->mMainThread->getName().cstr()} });
             Logger::logJson(json::object({ {"id", mgr->mMainThread->getId()}, {"name", mgr->mMainThread->getName().cstr()}, {"isMainThread", true} }), "/script/sys/threadInfo");
