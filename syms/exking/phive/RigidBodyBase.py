@@ -21,8 +21,9 @@ EXKING("_ZN5phive13RigidBodyBaseL7getNameE", {
 })
 
 EXKING("_ZN5phive13RigidBodyBaseL24requestSetLinearVelocityE", {
-    TOTK_100: 0x00751574,
-    TOTK_110: 0x007a4cfc,
+    TOTK_100: 0x00661dc0,
+    #TOTK_100: 0x00751574, # XXX this is angvel
+    TOTK_110: 0x007a4cfc, # XXX idk
     TOTK_121: 0x00acc874,
 })
 

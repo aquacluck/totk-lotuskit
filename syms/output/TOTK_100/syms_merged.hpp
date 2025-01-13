@@ -317,7 +317,7 @@ class getBoundingBoxWorld {
 namespace sym::phive::RigidBodyBase {
 class requestSetLinearVelocity {
     public:
-    inline static constexpr ptrdiff_t offset = 0x00751574;
+    inline static constexpr ptrdiff_t offset = 0x00661dc0;
 };
 }
 
