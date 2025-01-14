@@ -78,15 +78,18 @@ namespace lotuskit {
             // FIXME some symbol export issue if placed in cpp? [rtld] Unresolved symbol: _ZN8lotuskit10TextWriter6printfIJRA4_KcEEEvmPS2_DpOT_
             // FIXME early return if textwriter disabled?
             TextWriterDrawNode* newNode = appendNewDrawNode(drawList_i);
+            if (newNode == nullptr) { return; }
 
             // set outputText
             char buf[2000]; // TODO std::format etc with proper allocator?
             nn::util::SNPrintf(buf, sizeof(buf), fmt, std::forward<decltype(args)>(args)...);
             newNode->outputText = (char*)frame.heap->alloc(strlen(buf)+1);
+            if (newNode->outputText == nullptr) { return; }
             std::memcpy(newNode->outputText, buf, strlen(buf)+1);
         }
         inline static void appendCallback(size_t drawList_i, TextWriterDrawCallback* fn) {
             TextWriterDrawNode* newNode = appendNewDrawNode(drawList_i);
+            if (newNode == nullptr) { return; }
             newNode->fn = fn;
         }
         inline static void toastf(u64 ttlFrames, const char* fmt, auto&&... args) {

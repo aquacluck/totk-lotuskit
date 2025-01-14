@@ -13,6 +13,7 @@ namespace lotuskit {
         PrimitiveDrawerDrawNode* appendNewDrawNode(size_t drawList_i) {
             // alloc
             PrimitiveDrawerDrawNode* newNode = (PrimitiveDrawerDrawNode*)frame.heap->alloc(sizeof(PrimitiveDrawerDrawNode));
+            if (newNode == nullptr) { return nullptr; } // heap full (this can happen anytime Main 3D is blocked from drawing, eg quickmenu)
             newNode->primCallType = 0;
             newNode->primCallArgs = nullptr;
             newNode->next.store(nullptr);
@@ -34,7 +35,9 @@ namespace lotuskit {
 
         template <typename T>
         T* allocNodeArgs(PrimitiveDrawerDrawNode* node) {
+            if (node == nullptr) { return nullptr; }
             auto ret = (T*)frame.heap->alloc(sizeof(T));
+            if (ret == nullptr) { return nullptr; }
             node->primCallArgs = (void*)ret;
             return ret;
         }
@@ -144,36 +147,42 @@ namespace lotuskit {
         void setModelMtx(size_t drawList_i, sead::Matrix34f mtx) {
             auto* newNode = PrimitiveImpl::appendNewDrawNode(drawList_i);
             auto* args = PrimitiveImpl::allocNodeArgs<PrimitiveDrawerDrawNodeArgs::SetModelMtx>(newNode);
+            if (newNode == nullptr || args == nullptr) { return; }
             newNode->primCallType = 1;
             args->mtx = mtx;
         }
         void setProjection(size_t drawList_i, sead::Projection* projection) {
             auto* newNode = PrimitiveImpl::appendNewDrawNode(drawList_i);
             auto* args = PrimitiveImpl::allocNodeArgs<PrimitiveDrawerDrawNodeArgs::SetProjection>(newNode);
+            if (newNode == nullptr || args == nullptr) { return; }
             newNode->primCallType = 2;
             args->projection = projection;
         }
         void setCamera(size_t drawList_i, sead::Camera* camera) {
             auto* newNode = PrimitiveImpl::appendNewDrawNode(drawList_i);
             auto* args = PrimitiveImpl::allocNodeArgs<PrimitiveDrawerDrawNodeArgs::SetCamera>(newNode);
+            if (newNode == nullptr || args == nullptr) { return; }
             newNode->primCallType = 3;
             args->camera = camera;
         }
         void setDrawCtx(size_t drawList_i, sead::DrawContext* draw_ctx) {
             auto* newNode = PrimitiveImpl::appendNewDrawNode(drawList_i);
             auto* args = PrimitiveImpl::allocNodeArgs<PrimitiveDrawerDrawNodeArgs::SetDrawCtx>(newNode);
+            if (newNode == nullptr || args == nullptr) { return; }
             newNode->primCallType = 4;
             args->draw_ctx = draw_ctx;
         }
         void drawQuad(size_t drawList_i, const sead::PrimitiveDrawer::QuadArg& arg) { // TODO de-overload these? cpp overloads in AS bindings can be painful
             auto* newNode = PrimitiveImpl::appendNewDrawNode(drawList_i);
             auto* args = PrimitiveImpl::allocNodeArgs<PrimitiveDrawerDrawNodeArgs::Quad>(newNode);
+            if (newNode == nullptr || args == nullptr) { return; }
             newNode->primCallType = 5;
             args->arg = arg;
         }
         void drawQuad(size_t drawList_i, const sead::Color4f& c0, const sead::Color4f& c1) {
             auto* newNode = PrimitiveImpl::appendNewDrawNode(drawList_i);
             auto* args = PrimitiveImpl::allocNodeArgs<PrimitiveDrawerDrawNodeArgs::Quad2>(newNode);
+            if (newNode == nullptr || args == nullptr) { return; }
             newNode->primCallType = 6;
             args->c0 = c0;
             args->c1 = c1;
@@ -181,6 +190,7 @@ namespace lotuskit {
         void drawBox(size_t drawList_i, const sead::Color4f& c0, const sead::Color4f& c1) {
             auto* newNode = PrimitiveImpl::appendNewDrawNode(drawList_i);
             auto* args = PrimitiveImpl::allocNodeArgs<PrimitiveDrawerDrawNodeArgs::Box>(newNode);
+            if (newNode == nullptr || args == nullptr) { return; }
             newNode->primCallType = 7;
             args->c0 = c0;
             args->c1 = c1;
@@ -188,12 +198,14 @@ namespace lotuskit {
         void drawWireCube(size_t drawList_i, const sead::PrimitiveDrawer::CubeArg& arg) {
             auto* newNode = PrimitiveImpl::appendNewDrawNode(drawList_i);
             auto* args = PrimitiveImpl::allocNodeArgs<PrimitiveDrawerDrawNodeArgs::WireCube>(newNode);
+            if (newNode == nullptr || args == nullptr) { return; }
             newNode->primCallType = 8;
             args->arg = arg;
         }
         void drawLine(size_t drawList_i, const sead::Vector3f& start, const sead::Vector3f& end, const sead::Color4f& c0, const sead::Color4f& c1) {
             auto* newNode = PrimitiveImpl::appendNewDrawNode(drawList_i);
             auto* args = PrimitiveImpl::allocNodeArgs<PrimitiveDrawerDrawNodeArgs::Line>(newNode);
+            if (newNode == nullptr || args == nullptr) { return; }
             newNode->primCallType = 9;
             args->start = start;
             args->end = end;
@@ -203,6 +215,7 @@ namespace lotuskit {
         void drawSphere4x8(size_t drawList_i, const sead::Vector3f& pos, float radius, const sead::Color4f& north, const sead::Color4f& south) {
             auto* newNode = PrimitiveImpl::appendNewDrawNode(drawList_i);
             auto* args = PrimitiveImpl::allocNodeArgs<PrimitiveDrawerDrawNodeArgs::Sphere4x8>(newNode);
+            if (newNode == nullptr || args == nullptr) { return; }
             newNode->primCallType = 10;
             args->pos = pos;
             args->radius = radius;
@@ -212,6 +225,7 @@ namespace lotuskit {
         void drawSphere8x16(size_t drawList_i, const sead::Vector3f& pos, float radius, const sead::Color4f& north, const sead::Color4f& south) {
             auto* newNode = PrimitiveImpl::appendNewDrawNode(drawList_i);
             auto* args = PrimitiveImpl::allocNodeArgs<PrimitiveDrawerDrawNodeArgs::Sphere8x16>(newNode);
+            if (newNode == nullptr || args == nullptr) { return; }
             newNode->primCallType = 11;
             args->pos = pos;
             args->radius = radius;
@@ -221,6 +235,7 @@ namespace lotuskit {
         void drawDisk32(size_t drawList_i, const sead::Vector3f& pos, float radius, const sead::Color4f& center, const sead::Color4f& edge) {
             auto* newNode = PrimitiveImpl::appendNewDrawNode(drawList_i);
             auto* args = PrimitiveImpl::allocNodeArgs<PrimitiveDrawerDrawNodeArgs::Disk32>(newNode);
+            if (newNode == nullptr || args == nullptr) { return; }
             newNode->primCallType = 12;
             args->pos = pos;
             args->radius = radius;
@@ -230,6 +245,7 @@ namespace lotuskit {
         void drawCircle32(size_t drawList_i, const sead::Vector3f& pos, float radius, const sead::Color4f& color) {
             auto* newNode = PrimitiveImpl::appendNewDrawNode(drawList_i);
             auto* args = PrimitiveImpl::allocNodeArgs<PrimitiveDrawerDrawNodeArgs::Circle32>(newNode);
+            if (newNode == nullptr || args == nullptr) { return; }
             newNode->primCallType = 13;
             args->pos = pos;
             args->radius = radius;
@@ -238,6 +254,7 @@ namespace lotuskit {
         void drawCylinder16(size_t drawList_i, const sead::Vector3f& pos, float radius, float height, const sead::Color4f& top, const sead::Color4f& btm) {
             auto* newNode = PrimitiveImpl::appendNewDrawNode(drawList_i);
             auto* args = PrimitiveImpl::allocNodeArgs<PrimitiveDrawerDrawNodeArgs::Cylinder16>(newNode);
+            if (newNode == nullptr || args == nullptr) { return; }
             newNode->primCallType = 14;
             args->pos = pos;
             args->radius = radius;
@@ -248,6 +265,7 @@ namespace lotuskit {
         void drawCylinder32(size_t drawList_i, const sead::Vector3f& pos, float radius, float height, const sead::Color4f& top, const sead::Color4f& btm) {
             auto* newNode = PrimitiveImpl::appendNewDrawNode(drawList_i);
             auto* args = PrimitiveImpl::allocNodeArgs<PrimitiveDrawerDrawNodeArgs::Cylinder32>(newNode);
+            if (newNode == nullptr || args == nullptr) { return; }
             newNode->primCallType = 15;
             args->pos = pos;
             args->radius = radius;

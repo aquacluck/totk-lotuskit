@@ -6,6 +6,7 @@ namespace lotuskit {
     TextWriterDrawNode* TextWriter::appendNewDrawNode(size_t drawList_i) {
         // alloc
         TextWriterDrawNode* newNode = (TextWriterDrawNode*)frame.heap->alloc(sizeof(TextWriterDrawNode));
+        if (newNode == nullptr) { return nullptr; } // heap full (this could happen if Tool 2D was blocked from drawing)
         newNode->outputText = nullptr;
         newNode->fn = nullptr;
         newNode->next.store(nullptr);

@@ -23,11 +23,10 @@
 - Polling options in the frontend aren't perfect -- if the browser tries to connect right as the mod is opening its socket, the frontend can get stuck unable to connect.
 - Playing on console crashes after... 5 minutes? Not sure why yet
 - Don't leave ActorWatchers targeting dead/dying actors while you go through loading screens (especially title+shrine loads), this will eventually crash. Clear the watcher or target a resident actor like Player to avoid this.
-- ActorWatcher's RigidBody options can crash during eg shrine loads (and printing their names in general?)
 - Actors may fail to spawn in some scripts with ifs/branches?
 - Script size is limited to ~8KB and crashes on overflow
-- tas::input scripts sometimes (first time only? maybe playback injection doesnt wait for AS engine?) behave strangely and fail to clear the injected input. Usually you can then run a new input and everything is fine.
 - camera "above" button may choose bad angles resulting in inverted controls. This state is prone to crashing when taking out devices + more
+- PrimitiveDrawer shapes may be stale or repeated/overlapping when drawn after a pause, because tools like ActorWatcher try to draw the entire time without clearing the FrameHeap
 - The mod can't bind+serve on ipv6 yet -- the modded device must be accessed with a `ws://192.168.0.69:7072` style 4 number ipv4 address. This should only be a problem for ipv6-only LANs (somewhat exotic for home networks)
 - When reporting mid-game freezing/crashing problems, I'll need a lot of detail! Console vs emulator, version, how long was the play session, where it happened, any recent loads or approaching any major landmarks, any crash dump/log, etc... Modding the game is very fragile, there are countless ways to fail, it's hard to narrow down and I'm not very good at C++ or reverse engineering :)
 
