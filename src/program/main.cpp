@@ -59,6 +59,53 @@ HOOK_DEFINE_INLINE(OnRecallUpdateHighlightActorHook) {
     }
 };
 
+HOOK_DEFINE_TRAMPOLINE(OnRequestCreateActorAsyncHook) {
+    // async is most actors, exceptions: actors created as a dependency?
+    static const ptrdiff_t s_offset = sym::engine::actor::ActorMgr::requestCreateActorAsync::offset;
+
+    static void* Callback
+        (engine::actor::ActorMgr* actorMgr, char** actorName, sead::Vector3f* pos, void* param_4, u32 param_5, engine::actor::PreActor* preActor,
+        void* actorObserver, void* param_8, u8 param_9, u32* param_10, engine::actor::PreActor** destPreActor) {
+
+        if (actorName == nullptr || *actorName == nullptr) {
+            return Orig(actorMgr, actorName, pos, param_4, param_5, preActor, actorObserver, param_8, param_9, param_10, destPreActor);
+        }
+
+        s64 slot_i = lotuskit::ActorWatcher::querySpawnSelectorSlot(*actorName);
+        if (slot_i < 0) {
+            return Orig(actorMgr, actorName, pos, param_4, param_5, preActor, actorObserver, param_8, param_9, param_10, destPreActor);
+        }
+
+        // ActorWatcher match
+
+        // inject our own dest pointer if needed
+        engine::actor::PreActor* pa = nullptr;
+        if (destPreActor == nullptr) {
+            destPreActor = &pa;
+        }
+
+        void* ret = nullptr;
+        ret = Orig(actorMgr, actorName, pos, param_4, param_5, preActor, actorObserver, param_8, param_9, param_10, destPreActor);
+        pa = *destPreActor;
+
+        if (pa != nullptr && actorName && *actorName) {
+            /*// stuff tends to crash?
+            Logger::logJson(json::object({
+                {"actorName", *actorName},
+                {"pos", json::array({ pos->x, pos->y, pos->z })}, // rarely has placement
+                {"preactorPtr", (u64)pa},
+                {"preactorPos", json::array({ pa->mPosition.x, pa->mPosition.y, pa->mPosition.z })} // usually has placement
+            }), "/hook/sym/engine/actor/ActorMgr/requestCreateActorAsync");
+            */
+
+            // resolve "next spawn" actor selection. if many match in a burst, whichever writes last will win?
+            lotuskit::ActorWatcher::assignSlotPreActor(slot_i, pa);
+        }
+
+        return ret;
+    }
+};
+
 HOOK_DEFINE_TRAMPOLINE(BaseProcMgr_addDependency) {
     static const ptrdiff_t s_offset = sym::engine::actor::BaseProcMgr::addDependency::offset;
 
@@ -168,6 +215,7 @@ HOOK_DEFINE_INLINE(nnMainHook) {
         StealHeap::Install(); // called once, a bit later during bootup
         //OnWhistleHook::Install();
         OnRecallUpdateHighlightActorHook::Install();
+        OnRequestCreateActorAsyncHook::Install();
         BaseProcMgr_addDependency::Install();
         MainGetNpadStates::Install();
 

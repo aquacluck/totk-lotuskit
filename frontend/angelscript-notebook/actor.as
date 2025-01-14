@@ -50,7 +50,13 @@ ActorWatcher::assignSlotPreActor(1, somewhere);
 ActorWatcher::clearSlot(1);
 
 // next recall hover event
-ActorWatcher::assignSlotAwaitRecall(0);
+ActorWatcher::assignSlotAwaitRecall(1);
+
+// next spawn (anything)
+ActorWatcher::assignSlotAwaitSpawn(1, "");
+
+// next named spawn (exact match)
+ActorWatcher::assignSlotAwaitSpawn(1, "PouchPlayer");
 
 // ActorWatcher config
 ActorWatcher::doTextWriter(0, false);

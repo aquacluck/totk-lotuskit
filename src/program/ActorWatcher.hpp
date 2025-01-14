@@ -1,4 +1,5 @@
 #pragma once
+#include <string>
 #include <cstring>
 #include <gfx/seadPrimitiveRenderer.h>
 #include "structs/engineActor.hpp"
@@ -23,7 +24,8 @@ namespace lotuskit {
         // state (freely cleared+mutated by the mod)
         bool isCalc; // enable this slot to run
         bool isPendingSelection;
-        u8 selectionType; // 0 = unused, 1 = next spawn (TODO?), 2 = next dep to a given slot/actor (TODO?), 3 = preactor, 4 = recall hover
+        u8 selectionType; // 0 = unused, 1 = next spawn, 2 = next dep to a given slot/actor (TODO?), 3 = preactor, 4 = recall hover
+        std::string selectionStr;
         engine::actor::ActorBase* actorSelectorBaseProcDep;
         engine::actor::ActorBase* actor;
         engine::actor::PreActor* preactor;
@@ -71,6 +73,7 @@ namespace lotuskit {
             this->isCalc = false;
             this->isPendingSelection = false;
             this->selectionType = 0;
+            this->selectionStr = "";
             this->actorSelectorBaseProcDep = nullptr;
             this->actor = nullptr;
             this->preactor = nullptr;
@@ -145,6 +148,16 @@ namespace lotuskit {
             slot.wsAnnounceState(i);
             slot.wsAnnounceConfig(i);
         }
+        inline static void assignSlotAwaitSpawn(size_t i, std::string actorName) {
+            auto& slot = slots[i];
+            slot.clear();
+            slot.isCalc = true;
+            slot.selectionStr = actorName;
+            slot.selectionType = 1; // spawn
+            slot.isPendingSelection = true;
+            slot.wsAnnounceState(i);
+            slot.wsAnnounceConfig(i);
+        }
         inline static engine::actor::ActorBase* getSlotActor(size_t i) {
             // FIXME don't return/draw destroyed actors
             return slots[i].actor;
@@ -209,6 +222,22 @@ namespace lotuskit {
             }
         }
 
+        inline static s64 querySpawnSelectorSlot(const std::string actorName) {
+            for (u8 i=0; i < MAX_WATCHER_SLOTS; i++) {
+                auto& slot = slots[i];
+                if (!slot.isCalc) { continue; }
+                if (slot.isPendingSelection && slot.selectionType == 1) {
+                    if (slot.selectionStr.size() == 0) {
+                        return i; // select any
+                    }
+                    if (slot.selectionStr == actorName) {
+                        return i;
+                    }
+                }
+            }
+            return -1;
+        }
+
         inline static void drawRigidBody(phive::RigidBodyEntity* rbody, bool doDrawRigidBodyAABB, bool doDrawRigidBodyPos, bool doDrawRigidBodyPosPast, bool doDrawRigidBodyPosFuture) {
             if (doDrawRigidBodyPos || doDrawRigidBodyAABB) {
                 lotuskit::PrimitiveDrawer::setModelMtx(0, rbody->lastTransform);
@@ -264,6 +293,9 @@ namespace lotuskit {
                 }
                 if (slot.isPendingSelection && slot.selectionType == 4 && slot.doTextWriter) {
                     lotuskit::TextWriter::printf(0, "ActorWatcher[%d] awaiting Recall \n\n", i);
+                }
+                if (slot.isPendingSelection && slot.selectionType == 1) {
+                    lotuskit::TextWriter::printf(0, "ActorWatcher[%d] awaiting spawn(%s) \n\n", i, slot.selectionStr.c_str());
                 }
 
 

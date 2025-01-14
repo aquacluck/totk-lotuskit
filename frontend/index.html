@@ -420,6 +420,7 @@
             this.bumper_increment_ref = createRef();
             this.savestate_textbox_pos_ref = createRef();
             this.savestate_textbox_rot_ref = createRef();
+            this.selector_textbox_ref = createRef();
         }
 
         componentDidMount() {
@@ -428,6 +429,11 @@
 
         assignSlotAwaitRecall(slot_i) {
             WSTransport.send({execScriptString: wrap_implicit_main(`ActorWatcher::assignSlotAwaitRecall(${slot_i});`)});
+        }
+
+        assignSlotAwaitSpawn(slot_i) {
+            const name = this.selector_textbox_ref.current.value || "";
+            WSTransport.send({execScriptString: wrap_implicit_main(`ActorWatcher::assignSlotAwaitSpawn(${slot_i}, "${name}");`)});
         }
 
         clear_slot(slot_i) {
@@ -557,7 +563,9 @@
                         Select:
                         <button title="ActorWatcher::clearSlot(${i})" onClick=${ () => this.clear_slot(i) } class="pushbutton selectNull">null</button>
                         <button title="ActorWatcher::assignSlotAwaitRecall(${i})" onClick=${ () => this.assignSlotAwaitRecall(i) } class="pushbutton selectRecall"><img src="assets/img/Obj_ReverseRecorder.png" /></button>
-                        <!-- TODO on any next spawn, on specific actor's next dep, ... -->
+                        <button title="ActorWatcher::assignSlotAwaitSpawn(${i}, string actorName); // optional filter by name" onClick=${ () => this.assignSlotAwaitSpawn(i) } class="pushbutton selectSpawn">spawn</button>
+                        <input placeholder="selector arg" size="20" ref=${this.selector_textbox_ref} />
+                        <!-- TODO on specific actor's next dep, ... -->
                         <!--<input type="number" placeholder="0" size="2" min="0" max="3" size=2 />-->
                     </div>
 
