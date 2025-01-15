@@ -137,7 +137,8 @@ namespace lotuskit::server {
     //namespace WebSocketImpl::PrivateStatic {
         constexpr size_t SOCKET_POOL_SIZE = 0x100000;
         constexpr size_t ALLOCATOR_POOL_SIZE = 0x20000;
-        u8 socketPool[SOCKET_POOL_SIZE + ALLOCATOR_POOL_SIZE] __attribute__((aligned(0x4000))) = {0};
+        //u8 socketPool[SOCKET_POOL_SIZE + ALLOCATOR_POOL_SIZE] __attribute__((aligned(0x4000))) = {0};
+        u8* socketPool = nullptr;
         s32 serverSocketFd;
         s32 clientSocketFd;
         sockaddr serverAddress;
@@ -417,7 +418,9 @@ namespace lotuskit::server {
     }
 
     void WebSocket::init() {
-        // setup needs to happen in main thread
+        socketPool = (u8*)stolenHeap->alloc(SOCKET_POOL_SIZE + ALLOCATOR_POOL_SIZE + PAGE_SIZE);
+        socketPool = (u8*)ALIGN_UP(socketPool, PAGE_SIZE); // FIXME cant free this once we throw away alloc ptr
+
         WebSocketImpl::SendQueue::init();
         nn::nifm::Initialize();
         nn::socket::Initialize(socketPool, SOCKET_POOL_SIZE, ALLOCATOR_POOL_SIZE, 14);

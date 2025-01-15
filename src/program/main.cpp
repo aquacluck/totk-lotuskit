@@ -33,6 +33,7 @@ HOOK_DEFINE_INLINE(StealHeap) {
         stolenHeap = reinterpret_cast<sead::Heap*>(ctx->X[22]);
 #endif
         svcOutputDebugString("yoink", 5);
+        lotuskit::server::WebSocket::assignHeap(stolenHeap);
         lotuskit::TextWriter::assignHeap(stolenHeap);
         lotuskit::PrimitiveImpl::assignHeap(stolenHeap);
         lotuskit::script::engine::assignHeap(stolenHeap);
