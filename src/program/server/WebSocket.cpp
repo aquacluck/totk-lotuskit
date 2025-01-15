@@ -1,7 +1,6 @@
 #include "server/WebSocket.hpp"
 #include "server/JsonDispatch.hpp"
 
-#include "Config.hpp"
 #include "lib/base64.hpp"
 #include "lib/sha1.hpp"
 #include "lib/socket_hack.hpp"
@@ -138,14 +137,13 @@ namespace lotuskit::server {
     //namespace WebSocketImpl::PrivateStatic {
         constexpr size_t SOCKET_POOL_SIZE = 0x100000;
         constexpr size_t ALLOCATOR_POOL_SIZE = 0x20000;
-        u8 socketPool[SOCKET_POOL_SIZE + ALLOCATOR_POOL_SIZE] __attribute__((aligned(0x4000)));
+        u8 socketPool[SOCKET_POOL_SIZE + ALLOCATOR_POOL_SIZE] __attribute__((aligned(0x4000))) = {0};
         s32 serverSocketFd;
         s32 clientSocketFd;
         sockaddr serverAddress;
         sockaddr clientAddress;
         u32 clientAddressLen;
         bool isWsEstablished = false;
-        bool needsInit = true;
 #if WEBSOCKET_DO_THREADED_SEND
         constexpr size_t STACK_SIZE = 0x2000; // XXX idk
         alignas(PAGE_SIZE) u8 sendThreadStack[STACK_SIZE];
@@ -419,19 +417,6 @@ namespace lotuskit::server {
     }
 
     void WebSocket::init() {
-        // XXX dont depend on this just-get-the-config pattern too much -- we'll need to merge options from other places at runtime, and many details like pass-vs-pull are unclear.
-        // FIXME extract helper for traversing value(json_pointer) with JSON_NOEXCEPTION. "Turning off exceptions" in the lib exposes the existence of an internal exception
-        //       (otherwise-transparently used for flow control / traversal within the call) which now unexpectedly crashes/hangs because exceptions are turned off.
-        //       https://github.com/nlohmann/json/issues/2724#issuecomment-829202517 https://github.com/nlohmann/json/issues/1738 https://github.com/nlohmann/json/issues/871
-        auto config = lotuskit::Config::jsonConfig.contains(EXECNS) ? lotuskit::Config::jsonConfig[EXECNS] : json::object();
-        if (config.value("disabled", false) || !config.value("listenOnBootup", false)) {
-            char buf[100];
-            nn::util::SNPrintf(buf, sizeof(buf), "[WebSocket] disabled on bootup by config");
-            svcOutputDebugString(buf, strlen(buf));
-            needsInit = false;
-            return;
-        }
-
         // setup needs to happen in main thread
         WebSocketImpl::SendQueue::init();
         nn::nifm::Initialize();
@@ -445,8 +430,8 @@ namespace lotuskit::server {
             // XXX just ignore it? we'll see...
         }
 
-        const char* bindIp = config.value("bindIp", "0.0.0.0").c_str();
-        const u16 bindPort = config.value("bindPort", 7072);
+        const char* bindIp = "0.0.0.0";
+        const u16 bindPort = 7072;
         listenAndWaitForFrontend(bindIp, bindPort); // blocking
 
 #if WEBSOCKET_DO_THREADED_SEND
@@ -458,11 +443,9 @@ namespace lotuskit::server {
         svcStartThread(sendHandle);
 #endif
 
-        needsInit = false;
     }
 
     void WebSocket::calc() {
-        if (needsInit) { init(); }
         if (isWsEstablished) {
             recvNoblockAndProc(); // noblock poll ws -> dispatch commands (sometimes blocking)
             flushSendQueueBlocking(); // send any deferred logs since last proc. try to minimize useless logs!

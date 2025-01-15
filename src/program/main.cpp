@@ -6,7 +6,6 @@
 #include "syms_merged.hpp"
 
 #include "structs/engineActor.hpp"
-#include "Config.hpp"
 #include "Logger.hpp"
 #include "ActorWatcher.hpp"
 #include "HexDump.hpp"
@@ -41,15 +40,13 @@ HOOK_DEFINE_INLINE(StealHeap) {
     }
 };
 
-/*
 HOOK_DEFINE_TRAMPOLINE(OnWhistleHook) {
     static const ptrdiff_t s_offset = sym::game::ai::execute::ExecutePlayerWhistle::enterImpl_::offset;
     static void Callback(void* param) {
-        testAngelScript();
+        lotuskit::server::WebSocket::init(); // blocking
         Orig(param);
     }
 };
-*/
 
 HOOK_DEFINE_INLINE(OnRecallUpdateHighlightActorHook) {
     static const ptrdiff_t s_offset = sym::game::ai::execute::ExecutePlayerReverseRecorder::updateImpl_::state0::offset;
@@ -167,7 +164,6 @@ HOOK_DEFINE_TRAMPOLINE(WorldManagerModuleBaseProcHook) {
     static void Callback(double self, double param_2, double param_3, double param_4, void *wmmodule, void *param_6) {
         //Logger::logText("ffffeeeeddddcccc", "/HexDump/0", true); // blocking ws
         //Logger::logJson(json::object({{"kee", "vee"}, {"k2", 420}}));
-        // TODO source+display high level configs (socket, svclog, etc)?
 
         if (lotuskit::ActorWatcher::slots[0].actor == nullptr) {
             lotuskit::TextWriter::printf(0, "[totk-lotuskit:%d] awaiting Player, main_offset=%p\n", TOTK_VERSION, exl::util::GetMainModuleInfo().m_Total.m_Start);
@@ -192,69 +188,48 @@ HOOK_DEFINE_TRAMPOLINE(WorldManagerModuleBaseProcHook) {
     }
 };
 
-HOOK_DEFINE_INLINE(nnMainHook) {
-    static const ptrdiff_t s_offset = sym::engine::nnMain_post_setup::offset; // hacks
-    static void Callback(exl::hook::InlineCtx* ctx) {
-        // Effective entry point after sdk init
-        char buf[200];
-        nn::util::SNPrintf(buf, sizeof(buf), "[totk-lotuskit:%d] nnMainHook main_offset=%p", TOTK_VERSION, exl::util::GetMainModuleInfo().m_Total.m_Start);
-        svcOutputDebugString(buf, strlen(buf));
-
-        lotuskit::Config::loadJson();
-        auto& config = lotuskit::Config::jsonConfig;
-
-        const json::json_pointer GLOBAL_DISABLE("/global/disable");
-        if (config.contains(GLOBAL_DISABLE) && config[GLOBAL_DISABLE]) {
-            nn::util::SNPrintf(buf, sizeof(buf), "[totk-lotuskit:%d] all features disabled", TOTK_VERSION);
-            svcOutputDebugString(buf, strlen(buf));
-            return;
-        }
-
-        lotuskit::server::WebSocket::calc(); // blocking if listenOnBootup
-        WorldManagerModuleBaseProcHook::Install(); // "main loop"
-        StealHeap::Install(); // called once, a bit later during bootup
-        //OnWhistleHook::Install();
-        OnRecallUpdateHighlightActorHook::Install();
-        OnRequestCreateActorAsyncHook::Install();
-        BaseProcMgr_addDependency::Install();
-        MainGetNpadStates::Install();
-
-        //TODO check the branch we're overwriting -- ensure our "off" does the same thing
-        exl::patch::CodePatcher(sym::game::component::GameCameraParam::HACK_cameraCalc::offset).BranchLinkInst((void*)lotuskit::util::camera::disgustingCameraHook);
-
-        // hooks for textwriter+primitivedrawer overlay
-        bool do_debugdraw = (
-            lotuskit::util::romfs::fileExists("content:/Lib/sead/nvn_font/nvn_font.ntx") &&
-            lotuskit::util::romfs::fileExists("content:/Lib/sead/nvn_font/nvn_font_jis1.ntx") &&
-            lotuskit::util::romfs::fileExists("content:/Lib/sead/nvn_font/nvn_font_jis1_mipmap.xtx") &&
-            lotuskit::util::romfs::fileExists("content:/Lib/sead/nvn_font/nvn_font_jis1_tbl.bin") &&
-            lotuskit::util::romfs::fileExists("content:/Lib/sead/nvn_font/nvn_font_shader.bin") &&
-            lotuskit::util::romfs::fileExists("content:/Lib/sead/nvn_font/nvn_font_shader_jis1.bin") &&
-            lotuskit::util::romfs::fileExists("content:/Lib/sead/nvn_font/nvn_font_shader_jis1_mipmap.bin") &&
-            lotuskit::util::romfs::fileExists("content:/Lib/sead/primitive_renderer/primitive_drawer_nvn_shader.bin")
-        );
-        if (do_debugdraw) {
-            lotuskit::DebugDrawHooks::BootupInitDebugDrawersHook::Install();
-            lotuskit::DebugDrawHooks::DebugDrawLayerMaskHook::Install();
-            lotuskit::DebugDrawHooks::DebugDrawHook::Install();
-            lotuskit::PrimitiveImpl::setupStatic();
-        }
-
-        //InputHelper::initKBM();
-        //InputHelper::setPort(0); // default controller port
-    }
-};
 
 extern "C" void exl_main(void* x0, void* x1) {
-    // if you launch the wrong version this is all you'll see
-    char buf[] = "[totk-lotuskit:___] exl_main";
-    buf[15] = '0' + TOTK_VERSION/100;
-    buf[16] = '0' + TOTK_VERSION%100/10;
-    buf[17] = '0' + TOTK_VERSION%10;
+    exl::hook::Initialize();
+
+    char buf[200];
+    nn::util::SNPrintf(buf, sizeof(buf), "[totk-lotuskit:%d] exl_main main_offset=%p", TOTK_VERSION, exl::util::GetMainModuleInfo().m_Total.m_Start);
     svcOutputDebugString(buf, strlen(buf));
 
-    exl::hook::Initialize();
-    nnMainHook::Install();
+    WorldManagerModuleBaseProcHook::Install(); // "main loop"
+    StealHeap::Install(); // called once, a bit later during bootup
+    OnWhistleHook::Install();
+    OnRecallUpdateHighlightActorHook::Install();
+    OnRequestCreateActorAsyncHook::Install();
+    BaseProcMgr_addDependency::Install();
+    MainGetNpadStates::Install();
+
+    //TODO check the branch we're overwriting -- ensure our "off" does the same thing
+    exl::patch::CodePatcher(sym::game::component::GameCameraParam::HACK_cameraCalc::offset).BranchLinkInst((void*)lotuskit::util::camera::disgustingCameraHook);
+
+    // hooks for textwriter+primitivedrawer overlay
+    bool do_debugdraw = true; // XXX assert -- can't access fs here without sdk init?
+    /*
+    bool do_debugdraw = (
+        lotuskit::util::romfs::fileExists("content:/Lib/sead/nvn_font/nvn_font.ntx") &&
+        lotuskit::util::romfs::fileExists("content:/Lib/sead/nvn_font/nvn_font_jis1.ntx") &&
+        lotuskit::util::romfs::fileExists("content:/Lib/sead/nvn_font/nvn_font_jis1_mipmap.xtx") &&
+        lotuskit::util::romfs::fileExists("content:/Lib/sead/nvn_font/nvn_font_jis1_tbl.bin") &&
+        lotuskit::util::romfs::fileExists("content:/Lib/sead/nvn_font/nvn_font_shader.bin") &&
+        lotuskit::util::romfs::fileExists("content:/Lib/sead/nvn_font/nvn_font_shader_jis1.bin") &&
+        lotuskit::util::romfs::fileExists("content:/Lib/sead/nvn_font/nvn_font_shader_jis1_mipmap.bin") &&
+        lotuskit::util::romfs::fileExists("content:/Lib/sead/primitive_renderer/primitive_drawer_nvn_shader.bin")
+    );
+    */
+    if (do_debugdraw) {
+        lotuskit::DebugDrawHooks::BootupInitDebugDrawersHook::Install();
+        lotuskit::DebugDrawHooks::DebugDrawLayerMaskHook::Install();
+        lotuskit::DebugDrawHooks::DebugDrawHook::Install();
+        lotuskit::PrimitiveImpl::setupStatic();
+    }
+
+    //InputHelper::initKBM();
+    //InputHelper::setPort(0); // default controller port
 }
 
 // Note: this is only applicable in the context of applets/sysmodules
