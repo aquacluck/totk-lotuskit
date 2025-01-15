@@ -70,6 +70,12 @@ namespace phive {
             return this->applyLinearImpulse(&val);
         }
 
+        void getNextLinearVelocity(sead::Vector3f* dst) {
+            using impl_t = void (RigidBodyBase*, sead::Vector3f*);
+            auto impl = reinterpret_cast<impl_t*>(exl::util::modules::GetTargetOffset(sym::phive::RigidBodyBase::getNextLinearVelocity::offset));
+            return impl(this, dst);
+        }
+
     };
     static_assert(offsetof(RigidBodyBase, lastTransform) == 0x98);
 

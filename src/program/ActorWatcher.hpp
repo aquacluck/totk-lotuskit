@@ -246,8 +246,11 @@ namespace lotuskit {
                 lotuskit::PrimitiveDrawer::drawSphere8x16(0, sead::Vector3f(0,0,0), 0.1, PhysicalGreen, PhysicalGreen);
             }
             if (doDrawRigidBodyAABB) {
-                //TODO TextWriter config
-                lotuskit::TextWriter::printf(0, "RigidBody %s(%p) \n", rbody->getName(), rbody);
+                //TODO TextWriter config, its too much
+                float* xxx = (float*)&(rbody->lastTransform); //float x = [3]; float y = [7]; float z = [11];
+                sead::Vector3f vel = {0, 0, 0};
+                rbody->getNextLinearVelocity(&vel);
+                lotuskit::TextWriter::printf(0, "RigidBody %s(%p): pos %f %f %f, vel %f %f %f \n", rbody->getName(), rbody, xxx[3], xxx[7], xxx[11], vel.x, vel.y, vel.z );
 
                 sead::BoundBox3f aabb;
                 rbody->getAABB(&aabb);
@@ -319,7 +322,7 @@ namespace lotuskit {
                 if (slot.doTextWriter) {
                     const auto& v = actor->mLastLinearVelocity;
                     lotuskit::TextWriter::printf(
-                        0, "%s(%p) \npos: %f, %f, %f \nrot: [%f, %f, %f, %f, %f, %f, %f, %f, %f] \nvel: %f, %f, %f, |xz|=%f \nangvel: %f %f %f \n\n",
+                        0, "%s(%p) \npos: %f, %f, %f \nrot: [%f, %f, %f, %f, %f, %f, %f, %f, %f] \nvel: %f, %f, %f, |xz|=%f \nangvel: %f %f %f \n",
                         actor->mName.cstr(), slot.actor,
                         actor->mPosition.x, actor->mPosition.y, actor->mPosition.z,
                         rot.m[0][0], rot.m[0][1], rot.m[0][2], rot.m[1][0], rot.m[1][1], rot.m[1][2], rot.m[2][0], rot.m[2][1], rot.m[2][2],
@@ -493,6 +496,8 @@ namespace lotuskit {
 
                     } // do draw
                 } // allow draw
+
+                lotuskit::TextWriter::printf(0, "\n");
 
             } // foreach slot
         } // calc

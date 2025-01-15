@@ -51,6 +51,7 @@ _ZN4sead9ThreadMgr9sInstanceE    = __main_start + 0x04719520; /* sead::ThreadMgr
 _ZN5phive13ControllerSetL22visitRigidBodyEntitiesE = __main_start + 0x007baa9c; /* phive::ControllerSet::visitRigidBodyEntities */
 _ZN5phive13RigidBodyBaseL18applyLinearImpulseE = __main_start + 0x00ccc234; /* phive::RigidBodyBase::applyLinearImpulse */
 _ZN5phive13RigidBodyBaseL19getBoundingBoxWorldE = __main_start + 0x00c2c050; /* phive::RigidBodyBase::getBoundingBoxWorld */
+_ZN5phive13RigidBodyBaseL21getNextLinearVelocityE = __main_start + 0x011bb3b8; /* phive::RigidBodyBase::getNextLinearVelocity */
 _ZN5phive13RigidBodyBaseL24requestSetLinearVelocityE = __main_start + 0x007a4cfc; /* phive::RigidBodyBase::requestSetLinearVelocity */
 _ZN5phive13RigidBodyBaseL7getAABBE = __main_start + 0x00c2c050; /* phive::RigidBodyBase::getAABB */
 _ZN5phive13RigidBodyBaseL7getNameE = __main_start + 0x02a9750c; /* phive::RigidBodyBase::getName */

@@ -33,3 +33,9 @@ EXKING("_ZN5phive13RigidBodyBaseL18applyLinearImpulseE", {
     TOTK_121: 0x00cf600c,
 })
 
+EXKING("_ZN5phive13RigidBodyBaseL21getNextLinearVelocityE", {
+    TOTK_100: 0x011613d0,
+    TOTK_110: 0x011bb3b8,
+    TOTK_121: 0x011b44ac,
+})
+
