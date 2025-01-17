@@ -16,14 +16,14 @@ namespace lotuskit {
         if (frame.drawLists[drawList_i].compare_exchange_weak(cmpNode, newNode)) { return newNode; } // success -- appended to empty list
         // not null, enter the list
         TextWriterDrawNode* node = frame.drawLists[drawList_i].load();
-        while (true) {
-            cmpNode = nullptr; // ensure null at time of write
+        while (node) {
+            cmpNode = nullptr; // ensure null at time of write // FIXME can't node be freed rn?
             if (node->next.compare_exchange_weak(cmpNode, newNode)) { return newNode; } // success
             // not null, traverse into next
             node = cmpNode;
         }
 
-        return nullptr; // unreachable
+        return nullptr; // XXX frame completed after first compare, just abandon this draw node, its data is probably stale anyways
     }
 
     void TextWriter::drawFrame(TextWriterExt* writer) {

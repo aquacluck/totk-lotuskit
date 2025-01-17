@@ -1,6 +1,6 @@
 #pragma once
 #include <atomic>
-#include "lib.hpp"
+#include <lib.hpp>
 #include "syms_merged.hpp"
 #include "PrimitiveDrawer.hpp"
 #include "Logger.hpp"
