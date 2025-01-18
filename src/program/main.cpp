@@ -182,10 +182,11 @@ HOOK_DEFINE_TRAMPOLINE(WorldManagerModuleBaseProcHook) {
         lotuskit::tas::InputDisplay::draw();
 
         lotuskit::server::WebSocket::calc(); // noblock recv, but blocking processing if enabled
-        lotuskit::ActorWatcher::calc();
-        lotuskit::HexDump::calc();
 
         Orig(self, param_2, param_3, param_4, wmmodule, param_6);
+
+        lotuskit::ActorWatcher::calc();
+        lotuskit::HexDump::calc();
     }
 };
 

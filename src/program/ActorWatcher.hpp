@@ -6,6 +6,8 @@
 #include "structs/phive.hpp"
 #include "TextWriter.hpp"
 #include "PrimitiveDrawer.hpp"
+#include <lib/json.hpp>
+using json = nlohmann::json;
 
 //const sead::Color4f Transparent{0,0,0,0};
 //const sead::Color4f White{1,1,1,1};
