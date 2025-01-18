@@ -1,13 +1,15 @@
 #include "server/WebSocket.hpp"
 #include "server/JsonDispatch.hpp"
+#include "tas/Record.hpp"
+#include "TextWriter.hpp"
 
-#include "lib/base64.hpp"
-#include "lib/sha1.hpp"
-#include "lib/socket_hack.hpp"
-#include "nn/nifm.h"
-#include "nn/os.h"
-#include "nn/socket.h"
-#include "nn/util.h"
+#include <lib/base64.hpp>
+#include <lib/sha1.hpp>
+#include <lib/socket_hack.hpp>
+#include <nn/nifm.h>
+#include <nn/os.h>
+#include <nn/socket.h>
+#include <nn/util.h>
 
 namespace lotuskit::server {
     namespace WebSocketImpl::SendFrame {
@@ -145,6 +147,11 @@ namespace lotuskit::server {
         sockaddr clientAddress;
         u32 clientAddressLen;
         bool isWsEstablished = false;
+
+        constexpr u64 SERVER_LISTEN_COMBO = (1 << 6) | (1 << 7) | (1 << 8) | (1 << 9) | (1 << 10) | (1 << 11); // L R ZL ZR + -
+        u32 listenComboDebounce = 0;
+        u32 listenNotifDelay = 0;
+
 #if WEBSOCKET_DO_THREADED_SEND
         constexpr size_t STACK_SIZE = 0x2000; // XXX idk
         alignas(PAGE_SIZE) u8 sendThreadStack[STACK_SIZE];
@@ -454,6 +461,32 @@ namespace lotuskit::server {
             flushSendQueueBlocking(); // send any deferred logs since last proc. try to minimize useless logs!
             // FIXME until we get threaded sends to work, logging may impact performance/accuracy/???
             // TODO run some tests to verify ^ this is a real issue, use devtools throttling to break it, spam it etc and see what really blocks
+        }
+
+        const bool isCombo = *(u64*)&(lotuskit::tas::Record::currentInput.buttons) == SERVER_LISTEN_COMBO;
+        if (isCombo && listenComboDebounce == 0) {
+            listenComboDebounce = 15; // ignore button combo for n frames
+            listenNotifDelay = 3; // defer server for n frames in order to display notice
+        }
+        if (listenComboDebounce > 0) { listenComboDebounce--; }
+        if (listenNotifDelay > 0) {
+            listenNotifDelay--;
+            if (listenNotifDelay == 0) {
+                if (!isWsEstablished) {
+                    init(); // blocking
+                } else {
+                    // TODO clean disconnect? idk
+                }
+            } else {
+                // display notice just before freezing the game
+                lotuskit::TextWriter::appendCallback(2, [](lotuskit::TextWriterExt* writer, sead::Vector2f* textPos) {
+                    textPos->x = 100;
+                    textPos->y = 200;
+                    writer->mScale.x = 3;
+                    writer->mScale.y = 3;
+                });
+                lotuskit::TextWriter::printf(2, "[totk-lotuskit:%d] serving ws on 0.0.0.0:7072\n", TOTK_VERSION);
+            }
         }
     }
 

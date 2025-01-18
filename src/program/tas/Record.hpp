@@ -1,7 +1,7 @@
 #pragma once
-#include "lib.hpp"
-#include "angelscript.h"
-#include "nn/hid.h"
+#include <lib.hpp>
+#include <angelscript.h>
+#include <nn/hid.h>
 
 namespace lotuskit::tas {
     struct RecordInput {

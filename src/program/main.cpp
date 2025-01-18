@@ -41,6 +41,7 @@ HOOK_DEFINE_INLINE(StealHeap) {
     }
 };
 
+/*
 HOOK_DEFINE_TRAMPOLINE(OnWhistleHook) {
     static const ptrdiff_t s_offset = sym::game::ai::execute::ExecutePlayerWhistle::enterImpl_::offset;
     static void Callback(void* param) {
@@ -48,6 +49,7 @@ HOOK_DEFINE_TRAMPOLINE(OnWhistleHook) {
         Orig(param);
     }
 };
+*/
 
 HOOK_DEFINE_INLINE(OnRecallUpdateHighlightActorHook) {
     static const ptrdiff_t s_offset = sym::game::ai::execute::ExecutePlayerReverseRecorder::updateImpl_::state0::offset;
@@ -167,7 +169,7 @@ HOOK_DEFINE_TRAMPOLINE(WorldManagerModuleBaseProcHook) {
         //Logger::logJson(json::object({{"kee", "vee"}, {"k2", 420}}));
 
         if (lotuskit::ActorWatcher::slots[0].actor == nullptr) {
-            lotuskit::TextWriter::printf(0, "[totk-lotuskit:%d] awaiting Player, main_offset=%p\n", TOTK_VERSION, exl::util::GetMainModuleInfo().m_Total.m_Start);
+            lotuskit::TextWriter::printf(0, "[totk-lotuskit:%d] awaiting Player, main_offset=%p\nStart WS server anytime: L R ZL ZR + - \n", TOTK_VERSION, exl::util::GetMainModuleInfo().m_Total.m_Start);
         }
 
         // drawlist 0 near top-left (default)
@@ -200,7 +202,7 @@ extern "C" void exl_main(void* x0, void* x1) {
 
     WorldManagerModuleBaseProcHook::Install(); // "main loop"
     StealHeap::Install(); // called once, a bit later during bootup
-    OnWhistleHook::Install();
+    //OnWhistleHook::Install();
     OnRecallUpdateHighlightActorHook::Install();
     OnRequestCreateActorAsyncHook::Install();
     BaseProcMgr_addDependency::Install();

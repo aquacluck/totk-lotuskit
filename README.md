@@ -1,8 +1,7 @@
 ## Getting started
 - Download the [latest build](https://github.com/aquacluck/totk-lotuskit/releases) for your game version. This is replaced with every commit, so you might want to hang on to the zip in case I break it in the future!
 - Extract the zip and install the mod by copying the `romfs` and `exefs` folders into your switch sd's `/atmosphere/contents/0100f2c0115b6000/` folder.
-- Copy `romfs/totk_lotuskit/config.example.json` to `romfs/totk_lotuskit/config.json` and make any edits. Without this file the game will boot normally with all mod features disabled.
-- Run the game. Depending on your config, it may hang at bootup and wait for your frontend, or remain offline (still logging to the debug console in emulators), or ~~TODO you may connect later~~
+- Run the game. ActorWatcher[0] should automatically be assigned to Player. Press **`L R ZL ZR + -`** together to start the ws server anytime.
 - Run `frontend/run.py` (you'll need a python installation) and open the web frontend at [http://localhost:7073](http://localhost:7073)
 - Connect to an emulator with localhost (default), or enter your switch console ip+port in the bottom right to connect to the mod. Emulators are easier to get started with.
 - Fool around with things. You'll crash the game a lot and you'll be looking through some sort of code constantly, understand this going in and don't be frustrated :)
@@ -10,7 +9,7 @@
 ## You should know
 - **This is not a stable product!** Don't expect to leave the mod running during extended play without problems. Don't run the mod on your irreplaceable casual save file.
 - The mod version must match your game version, be sure to switch them together. Separate builds simplify certain version interop problems like differing structs or register usage. Don't worry about this for files under `frontend`, the frontend will handle all game versions with the same installation/assets.
-- To update the mod, copy/drag the new `romfs` and `exefs` folders into their destination. It's always safe to overwrite with the new zip contents. [Check if the config format has changed in the example file](https://github.com/aquacluck/totk-lotuskit/blame/main/romfs/totk_lotuskit/config.example.json) and update your config if needed. Also serve the updated frontend, refresh it in your browser if needed, etc.
+- To update the mod, copy/drag the new `romfs` and `exefs` folders into their destination. It's always safe to overwrite with the new zip contents. Also serve the updated frontend, refresh it in your browser if needed, etc.
 - TOTK versions 1.0.0 and 1.2.1 are primarily supported. I'll also build for 1.1.0, but the testing workload is too much while the project is in flux, so these builds are untested+unsupported for now.
 - Everything you do in the frontend is accomplished by running AngelScript snippets, and usually you can hover on buttons/etc for clarification about scripting or other quirks.
 - Check the "AS📖" button in the bottom right for script docs, see `registerGlobals` in `src/program/script/globals.cpp` for a complete list of script bindings available, and see [AngelScript's docs](https://www.angelcode.com/angelscript/sdk/docs/manual/doc_script.html) for language details (it's mostly "interpreted C++" with `@handles` instead of `*pointers`)
@@ -19,10 +18,9 @@
 ## Known bugs, sharp edges, and bad times
 - When troubleshooting be sure to check any emulator logs as well as ws traffic and console in browser devtools. Things like scripting syntax errors will show up there.
 - Opening up a game/emulator process for arbitrary manipulation over the network is inherently risky, be sure you understand the risks and keep the device on safe networks.
-- WebSocket connection to the mod must be established at bootup (for now) or not at all. There is no way to reconnect to a game. Yeah it sucks.
-- Polling options in the frontend aren't perfect -- if the browser tries to connect right as the mod is opening its socket, the frontend can get stuck unable to connect.
-- Playing on console crashes after... 5 minutes? Not sure why yet
 - Don't leave ActorWatchers targeting dead/dying actors while you go through loading screens (especially title+shrine loads), this will eventually crash. Clear the watcher or target a resident actor like Player to avoid this.
+- Only 1 WebSocket connection to the mod per launch. There is no way to disconnect+reconnect to the game yet.
+- Polling options in the frontend aren't perfect -- if the browser tries to connect right as the mod is opening its socket, the frontend can get stuck unable to connect.
 - Actors may fail to spawn in some scripts with ifs/branches?
 - Script size is limited to ~8KB and crashes on overflow
 - camera "above" button may choose bad angles resulting in inverted controls. This state is prone to crashing when taking out devices + more
