@@ -22,8 +22,8 @@ if [[ "$KEEP_TMPGIT" != "1" ]]; then
     rm -rf tmpgit
 
     # temp repo
-    # last base: "Reorganize relocation table impl to be more flexible, if people want to implement their own mechanisms built on it"
-    #            https://github.com/shadowninja108/exlaunch/commit/fb102d67b8da42f991a5cb02b960054ae4beaf14
+    # last base: "Forgot a few things :3"
+    #            https://github.com/shadowninja108/exlaunch/commit/4778861a288f2719ae5b7d867e435b271334b747
     git clone --recursive --depth 1 https://github.com/shadowninja108/exlaunch tmpgit
     echo
     echo

@@ -3,9 +3,6 @@
 #include <common.hpp>
 
 namespace exl::util::neon {
-    #ifndef STRINGIFY
-    #define STRINGIFY(x) #x
-    #endif
 
     #define VECTOR_SIZE(size) [[gnu::vector_size(size)]]
     #define VECTOR_NAME(bits, length) F##bits##x##length
@@ -41,5 +38,4 @@ namespace exl::util::neon {
     #undef VECTOR_SIZE
     #undef VECTOR_NAME
     #undef VECTOR_TYPE
-    #undef STRINGIFY
 }
