@@ -53,6 +53,7 @@
 - build + name thanks to [LunaKit](https://github.com/Amethyst-szs/smo-lunakit) by Amethyst, licensed under GPL2. Thanks [CraftyBoss](https://github.com/CraftyBoss), [Sanae](https://github.com/Sanae6), [exlaunch-cmake](https://github.com/EngineLessCC/exlaunch-cmake/), [oss-rtld](https://github.com/Thog/oss-rtld) for their contributions or references used in LunaKit.
 - Phil + TOTK Data Collection community for: actor list, recall+camera+lotus icons
 - lessons from inspecting MaxLastBreath's [UltraCam](https://github.com/MaxLastBreath/TOTK-mods/) binaries
+- influences from the [baritone](https://github.com/cabaletta/baritone) and [STROOP](https://github.com/SM64-TAS-ABC/STROOP) projects
 - socket bits+pieces+reference from the [Atmosphere project](https://github.com/Atmosphere-NX/Atmosphere) licensed under GPL2
 - socket+logging bits+pieces from the [Skyline project](https://github.com/skyline-dev/skyline) licensed under MIT
 - [AngelScript](https://www.angelcode.com/angelscript/) by Andreas Jönsson, under zlib license

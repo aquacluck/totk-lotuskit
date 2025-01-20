@@ -52,6 +52,51 @@ namespace lotuskit::script::globals {
         sead::Vector3f SOUTHEAST( M_SQRT1_2, 0,  M_SQRT1_2);
         sead::Vector3f SOUTHWEST(-M_SQRT1_2, 0,  M_SQRT1_2);
     } // ns
+    namespace Matrix22fStatic {
+        sead::Matrix22f IDENTITY(1,0, 0,1);
+        sead::Matrix22f ZERO(0,0, 0,0);
+        sead::Matrix22f ONE(1,1, 1,1);
+        sead::Matrix22f NEG(-1,-1, -1,-1);
+    } // ns
+    namespace Matrix33fStatic {
+        sead::Matrix33f IDENTITY(1,0,0, 0,1,0,   0,0,1);
+        sead::Matrix33f ZERO(0, 0, 0,   0,0,0,   0,0,0);
+        sead::Matrix33f ONE( 1, 1, 1,   1,1,1,   1,1,1);
+        sead::Matrix33f NEG(-1,-1,-1,  -1,-1,-1, -1,-1,-1);
+
+        sead::Matrix33f NORTH(-1,0, 0,  0,1,0,   0,0,-1);
+        sead::Matrix33f SOUTH( 1,0, 0,  0,1,0,   0,0, 1); // identity
+        sead::Matrix33f EAST(  0,0, 1,  0,1,0,  -1,0, 0);
+        sead::Matrix33f WEST(  0,0,-1,  0,1,0,   1,0, 0);
+
+        sead::Matrix33f NORTHEAST(-M_SQRT1_2,0, M_SQRT1_2,   0,1,0,  -M_SQRT1_2,0,-M_SQRT1_2);
+        sead::Matrix33f NORTHWEST(-M_SQRT1_2,0,-M_SQRT1_2,   0,1,0,   M_SQRT1_2,0,-M_SQRT1_2);
+        sead::Matrix33f SOUTHEAST( M_SQRT1_2,0, M_SQRT1_2,   0,1,0,  -M_SQRT1_2,0, M_SQRT1_2);
+        sead::Matrix33f SOUTHWEST( M_SQRT1_2,0,-M_SQRT1_2,   0,1,0,   M_SQRT1_2,0, M_SQRT1_2);
+
+        // facing up or down + specified roll
+        sead::Matrix33f DOWN__UP_IS_EAST(  0, 1,0,   0,0,-1,  -1, 0,0);
+        sead::Matrix33f DOWN__UP_IS_WEST(  0,-1,0,   0,0,-1,   1, 0,0);
+        sead::Matrix33f DOWN__UP_IS_NORTH(-1, 0,0,   0,0,-1,   0,-1,0);
+        sead::Matrix33f DOWN__UP_IS_SOUTH( 1, 0,0,   0,0,-1,   0, 1,0);
+        sead::Matrix33f UP__UP_IS_EAST(    0, 1,0,   0,0, 1,   1, 0,0);
+        sead::Matrix33f UP__UP_IS_WEST(    0,-1,0,   0,0, 1,  -1, 0,0);
+        sead::Matrix33f UP__UP_IS_NORTH(   1, 0,0,   0,0, 1,   0,-1,0);
+        sead::Matrix33f UP__UP_IS_SOUTH(  -1, 0,0,   0,0, 1,   0, 1,0);
+        // TODO up=nsew, facing nsewud etc rotations? prob simpler to apply quats tho
+
+    } // ns
+    namespace Matrix34fStatic {
+        sead::Matrix34f ZERO(0, 0, 0,   0,0,0,   0,0,0, 0,0,0);
+        sead::Matrix34f ONE( 1, 1, 1,   1,1,1,   1,1,1, 1,1,1);
+        sead::Matrix34f NEG(-1,-1,-1,  -1,-1,-1, -1,-1,-1, -1,-1,-1);
+    } // ns
+    namespace Matrix44fStatic {
+        sead::Matrix44f IDENTITY(1,0,0,0,  0,1,0,0,   0,0,1,0, 0,0,0,1);
+        sead::Matrix44f ZERO(0, 0, 0, 0,   0,0,0,0,   0,0,0,0, 0,0,0,0);
+        sead::Matrix44f ONE( 1, 1, 1, 1,   1,1,1,1,   1,1,1,1, 1,1,1,1);
+        sead::Matrix44f NEG(-1,-1,-1,-1,  -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1);
+    } // ns
 
 
     // Begin AS helpers+impls
@@ -184,6 +229,7 @@ namespace lotuskit::script::globals {
     void actor_pos_set_x(::engine::actor::ActorBase* actor, float x) { lotuskit::util::actor::setPosXYZ(actor, x, actor->mPosition.y, actor->mPosition.z); }
     void actor_pos_set_y(::engine::actor::ActorBase* actor, float y) { lotuskit::util::actor::setPosXYZ(actor, actor->mPosition.x, y, actor->mPosition.z); }
     void actor_pos_set_z(::engine::actor::ActorBase* actor, float z) { lotuskit::util::actor::setPosXYZ(actor, actor->mPosition.x, actor->mPosition.y, z); }
+    sead::Matrix33f actor_rot_get(::engine::actor::ActorBase* actor) { return actor->mRotation; }
 
     void tas_input_vec2f_l(u32 duration, u64 nextButtons, const sead::Vector2f &nextLStick) {
         lotuskit::tas::Playback::setCurrentInput(duration, nextButtons, nextLStick.x, nextLStick.y, 0, 0);
@@ -197,6 +243,41 @@ namespace lotuskit::script::globals {
     void tas_input_vec2f_0lr(u32 duration, const sead::Vector2f &nextLStick, const sead::Vector2f &nextRStick) {
         lotuskit::tas::Playback::setCurrentInput(duration, 0, nextLStick.x, nextLStick.y, nextRStick.x, nextRStick.y);
     }
+
+    // asOBJ_APP_CLASS_CAK=Construct Assign Kopy
+    void Vector2fConstructor(sead::Vector2f *self) { new(self) sead::Vector2f(); }
+    void Vector2fAssignConstructor(float x, float y, sead::Vector2f *self) { new(self) sead::Vector2f(x,y); }
+    void Vector2fKopyKonstructor(const sead::Vector2f &other, sead::Vector2f *self) { new(self) sead::Vector2f(other); }
+    sead::Vector2f Vector2fAdd(const sead::Vector2f& a, const sead::Vector2f& b) { return a+b; }
+    sead::Vector2f Vector2fSub(const sead::Vector2f& a, const sead::Vector2f& b) { return a-b; }
+    sead::Vector2f Vector2fMul(const sead::Vector2f& a, float b) { return a*b; }
+    sead::Vector2f Vector2fMul_r(float b, const sead::Vector2f& a) { return a*b; }
+    sead::Vector2f Vector2fDiv(const sead::Vector2f& a, float b) { return a/b; }
+
+    void Vector3fConstructor(sead::Vector3f *self) { new(self) sead::Vector3f(); }
+    void Vector3fAssignConstructor(float x, float y, float z, sead::Vector3f *self) { new(self) sead::Vector3f(x,y,z); }
+    void Vector3fKopyKonstructor(const sead::Vector3f &other, sead::Vector3f *self) { new(self) sead::Vector3f(other); }
+    sead::Vector3f Vector3fAdd(const sead::Vector3f& a, const sead::Vector3f& b) { return a+b; }
+    sead::Vector3f Vector3fSub(const sead::Vector3f& a, const sead::Vector3f& b) { return a-b; }
+    sead::Vector3f Vector3fMul(const sead::Vector3f& a, float b) { return a*b; }
+    sead::Vector3f Vector3fMul_r(float b, const sead::Vector3f& a) { return a*b; }
+    sead::Vector3f Vector3fDiv(const sead::Vector3f& a, float b) { return a/b; }
+
+    void Matrix22fConstructor(sead::Matrix22f *self) { new(self) sead::Matrix22f(); }
+    void Matrix22fAssignConstructor(float a0, float a1, float a2, float a3, sead::Matrix22f *self) { new(self) sead::Matrix22f(a0,a1,a2,a3); }
+    void Matrix22fKopyKonstructor(const sead::Matrix22f &other, sead::Matrix22f *self) { new(self) sead::Matrix22f(other); }
+
+    void Matrix33fConstructor(sead::Matrix33f *self) { new(self) sead::Matrix33f(); }
+    void Matrix33fAssignConstructor(float a0, float a1, float a2, float a3, float a4, float a5, float a6, float a7, float a8, sead::Matrix33f *self) { new(self) sead::Matrix33f(a0,a1,a2,a3,a4,a5,a6,a7,a8); }
+    void Matrix33fKopyKonstructor(const sead::Matrix33f &other, sead::Matrix33f *self) { new(self) sead::Matrix33f(other); }
+
+    void Matrix34fConstructor(sead::Matrix34f *self) { new(self) sead::Matrix34f(); }
+    void Matrix34fAssignConstructor(float a0, float a1, float a2, float a3, float a4, float a5, float a6, float a7, float a8, float a9, float a10, float a11, sead::Matrix34f *self) { new(self) sead::Matrix34f(a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11); }
+    void Matrix34fKopyKonstructor(const sead::Matrix34f &other, sead::Matrix34f *self) { new(self) sead::Matrix34f(other); }
+
+    void Matrix44fConstructor(sead::Matrix44f *self) { new(self) sead::Matrix44f(); }
+    void Matrix44fAssignConstructor(float a0, float a1, float a2, float a3, float a4, float a5, float a6, float a7, float a8, float a9, float a10, float a11, float a12, float a13, float a14, float a15, sead::Matrix44f *self) { new(self) sead::Matrix44f(a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,a15); }
+    void Matrix44fKopyKonstructor(const sead::Matrix44f &other, sead::Matrix44f *self) { new(self) sead::Matrix44f(other); }
 
 
     // Begin AS engine registrations
@@ -221,25 +302,6 @@ namespace lotuskit::script::globals {
         asErrno = engine->RegisterTypedef("f16", "uint16"); assert(asErrno >= 0); // AS has no half floats, just to preserve context/compat
         asErrno = engine->RegisterTypedef("f16_fake", "uint16"); assert(asErrno >= 0);
     }
-
-    // asOBJ_APP_CLASS_CAK=Construct Assign Kopy
-    void Vector2fConstructor(sead::Vector2f *self) { new(self) sead::Vector2f(); }
-    void Vector2fAssignConstructor(float x, float y, sead::Vector2f *self) { new(self) sead::Vector2f(x,y); }
-    void Vector2fKopyKonstructor(const sead::Vector2f &other, sead::Vector2f *self) { new(self) sead::Vector2f(other); }
-    sead::Vector2f Vector2fAdd(const sead::Vector2f& a, const sead::Vector2f& b) { return a+b; }
-    sead::Vector2f Vector2fSub(const sead::Vector2f& a, const sead::Vector2f& b) { return a-b; }
-    sead::Vector2f Vector2fMul(const sead::Vector2f& a, float b) { return a*b; }
-    sead::Vector2f Vector2fMul_r(float b, const sead::Vector2f& a) { return a*b; }
-    sead::Vector2f Vector2fDiv(const sead::Vector2f& a, float b) { return a/b; }
-
-    void Vector3fConstructor(sead::Vector3f *self) { new(self) sead::Vector3f(); }
-    void Vector3fAssignConstructor(float x, float y, float z, sead::Vector3f *self) { new(self) sead::Vector3f(x,y,z); }
-    void Vector3fKopyKonstructor(const sead::Vector3f &other, sead::Vector3f *self) { new(self) sead::Vector3f(other); }
-    sead::Vector3f Vector3fAdd(const sead::Vector3f& a, const sead::Vector3f& b) { return a+b; }
-    sead::Vector3f Vector3fSub(const sead::Vector3f& a, const sead::Vector3f& b) { return a-b; }
-    sead::Vector3f Vector3fMul(const sead::Vector3f& a, float b) { return a*b; }
-    sead::Vector3f Vector3fMul_r(float b, const sead::Vector3f& a) { return a*b; }
-    sead::Vector3f Vector3fDiv(const sead::Vector3f& a, float b) { return a/b; }
 
     void registerContainers(AngelScript::asIScriptEngine* engine) {
         s32 asErrno;
@@ -291,9 +353,70 @@ namespace lotuskit::script::globals {
         asErrno = engine->RegisterObjectMethod("Vector3f", "Vector3f opMul_r(float) const", AngelScript::asFUNCTIONPR(Vector3fMul_r, (float, const sead::Vector3f&), sead::Vector3f), AngelScript::asCALL_CDECL_OBJLAST); assert( asErrno >= 0 );
         asErrno = engine->RegisterObjectMethod("Vector3f", "Vector3f opDiv(float) const", AngelScript::asFUNCTIONPR(Vector3fDiv, (const sead::Vector3f&, float), sead::Vector3f), AngelScript::asCALL_CDECL_OBJFIRST); assert( asErrno >= 0 );
 
-        // TODO Vector4f, Quatf, doubles, ints?
+        // TODO Vector4f, Quatf, doubles, ints? BoundBox3f
 
-        // TODO Matrix33f, Matrix43f, Matrix44f, Matrix22f, BoundBox3f
+        asErrno = engine->RegisterObjectType("Matrix22f", sizeof(sead::Matrix22f), AngelScript::asOBJ_VALUE | AngelScript::asOBJ_POD | AngelScript::asOBJ_APP_CLASS_CAK | AngelScript::asOBJ_APP_CLASS_ALLFLOATS); assert( asErrno >= 0 );
+        asErrno = engine->RegisterObjectProperty("Matrix22f", "float a0", asOFFSET(sead::Matrix22f, a[0])); assert(asErrno >= 0);
+        asErrno = engine->RegisterObjectProperty("Matrix22f", "float a1", asOFFSET(sead::Matrix22f, a[1])); assert(asErrno >= 0);
+        asErrno = engine->RegisterObjectProperty("Matrix22f", "float a2", asOFFSET(sead::Matrix22f, a[2])); assert(asErrno >= 0);
+        asErrno = engine->RegisterObjectProperty("Matrix22f", "float a3", asOFFSET(sead::Matrix22f, a[3])); assert(asErrno >= 0);
+        asErrno = engine->RegisterObjectBehaviour("Matrix22f", AngelScript::asBEHAVE_CONSTRUCT, "void f()", AngelScript::asFUNCTION(Matrix22fConstructor), AngelScript::asCALL_CDECL_OBJLAST); assert( asErrno >= 0 );
+        asErrno = engine->RegisterObjectBehaviour("Matrix22f", AngelScript::asBEHAVE_CONSTRUCT, "void f(float a0, float a1=0, float a2=0, float a3=0, float a4=0, float a5=0, float a6=0, float a7=0, float a8=0)", AngelScript::asFUNCTION(Matrix22fAssignConstructor), AngelScript::asCALL_CDECL_OBJLAST); assert( asErrno >= 0 );
+        asErrno = engine->RegisterObjectBehaviour("Matrix22f", AngelScript::asBEHAVE_CONSTRUCT, "void f(const Matrix22f &in)", AngelScript::asFUNCTION(Matrix22fKopyKonstructor), AngelScript::asCALL_CDECL_OBJLAST); assert( asErrno >= 0 );
+
+        asErrno = engine->RegisterObjectType("Matrix33f", sizeof(sead::Matrix33f), AngelScript::asOBJ_VALUE | AngelScript::asOBJ_POD | AngelScript::asOBJ_APP_CLASS_CAK | AngelScript::asOBJ_APP_CLASS_ALLFLOATS); assert( asErrno >= 0 );
+        asErrno = engine->RegisterObjectProperty("Matrix33f", "float a0", asOFFSET(sead::Matrix33f, a[0])); assert(asErrno >= 0);
+        asErrno = engine->RegisterObjectProperty("Matrix33f", "float a1", asOFFSET(sead::Matrix33f, a[1])); assert(asErrno >= 0);
+        asErrno = engine->RegisterObjectProperty("Matrix33f", "float a2", asOFFSET(sead::Matrix33f, a[2])); assert(asErrno >= 0);
+        asErrno = engine->RegisterObjectProperty("Matrix33f", "float a3", asOFFSET(sead::Matrix33f, a[3])); assert(asErrno >= 0);
+        asErrno = engine->RegisterObjectProperty("Matrix33f", "float a4", asOFFSET(sead::Matrix33f, a[4])); assert(asErrno >= 0);
+        asErrno = engine->RegisterObjectProperty("Matrix33f", "float a5", asOFFSET(sead::Matrix33f, a[5])); assert(asErrno >= 0);
+        asErrno = engine->RegisterObjectProperty("Matrix33f", "float a6", asOFFSET(sead::Matrix33f, a[6])); assert(asErrno >= 0);
+        asErrno = engine->RegisterObjectProperty("Matrix33f", "float a7", asOFFSET(sead::Matrix33f, a[7])); assert(asErrno >= 0);
+        asErrno = engine->RegisterObjectProperty("Matrix33f", "float a8", asOFFSET(sead::Matrix33f, a[8])); assert(asErrno >= 0);
+        asErrno = engine->RegisterObjectBehaviour("Matrix33f", AngelScript::asBEHAVE_CONSTRUCT, "void f()", AngelScript::asFUNCTION(Matrix33fConstructor), AngelScript::asCALL_CDECL_OBJLAST); assert( asErrno >= 0 );
+        asErrno = engine->RegisterObjectBehaviour("Matrix33f", AngelScript::asBEHAVE_CONSTRUCT, "void f(float a0, float a1=0, float a2=0, float a3=0, float a4=0, float a5=0, float a6=0, float a7=0, float a8=0)", AngelScript::asFUNCTION(Matrix33fAssignConstructor), AngelScript::asCALL_CDECL_OBJLAST); assert( asErrno >= 0 );
+        asErrno = engine->RegisterObjectBehaviour("Matrix33f", AngelScript::asBEHAVE_CONSTRUCT, "void f(const Matrix33f &in)", AngelScript::asFUNCTION(Matrix33fKopyKonstructor), AngelScript::asCALL_CDECL_OBJLAST); assert( asErrno >= 0 );
+
+        asErrno = engine->RegisterObjectType("Matrix34f", sizeof(sead::Matrix34f), AngelScript::asOBJ_VALUE | AngelScript::asOBJ_POD | AngelScript::asOBJ_APP_CLASS_CAK | AngelScript::asOBJ_APP_CLASS_ALLFLOATS); assert( asErrno >= 0 );
+        asErrno = engine->RegisterObjectProperty("Matrix34f", "float a0", asOFFSET(sead::Matrix34f, a[0])); assert(asErrno >= 0);
+        asErrno = engine->RegisterObjectProperty("Matrix34f", "float a1", asOFFSET(sead::Matrix34f, a[1])); assert(asErrno >= 0);
+        asErrno = engine->RegisterObjectProperty("Matrix34f", "float a2", asOFFSET(sead::Matrix34f, a[2])); assert(asErrno >= 0);
+        asErrno = engine->RegisterObjectProperty("Matrix34f", "float a3", asOFFSET(sead::Matrix34f, a[3])); assert(asErrno >= 0);
+        asErrno = engine->RegisterObjectProperty("Matrix34f", "float a4", asOFFSET(sead::Matrix34f, a[4])); assert(asErrno >= 0);
+        asErrno = engine->RegisterObjectProperty("Matrix34f", "float a5", asOFFSET(sead::Matrix34f, a[5])); assert(asErrno >= 0);
+        asErrno = engine->RegisterObjectProperty("Matrix34f", "float a6", asOFFSET(sead::Matrix34f, a[6])); assert(asErrno >= 0);
+        asErrno = engine->RegisterObjectProperty("Matrix34f", "float a7", asOFFSET(sead::Matrix34f, a[7])); assert(asErrno >= 0);
+        asErrno = engine->RegisterObjectProperty("Matrix34f", "float a8", asOFFSET(sead::Matrix34f, a[8])); assert(asErrno >= 0);
+        asErrno = engine->RegisterObjectProperty("Matrix34f", "float a9", asOFFSET(sead::Matrix34f, a[9])); assert(asErrno >= 0);
+        asErrno = engine->RegisterObjectProperty("Matrix34f", "float a10", asOFFSET(sead::Matrix34f, a[10])); assert(asErrno >= 0);
+        asErrno = engine->RegisterObjectProperty("Matrix34f", "float a11", asOFFSET(sead::Matrix34f, a[11])); assert(asErrno >= 0);
+        asErrno = engine->RegisterObjectBehaviour("Matrix34f", AngelScript::asBEHAVE_CONSTRUCT, "void f()", AngelScript::asFUNCTION(Matrix34fConstructor), AngelScript::asCALL_CDECL_OBJLAST); assert( asErrno >= 0 );
+        asErrno = engine->RegisterObjectBehaviour("Matrix34f", AngelScript::asBEHAVE_CONSTRUCT, "void f(float a0, float a1=0, float a2=0, float a3=0, float a4=0, float a5=0, float a6=0, float a7=0, float a8=0, float a9=0, float a10=0, float a11=0)", AngelScript::asFUNCTION(Matrix34fAssignConstructor), AngelScript::asCALL_CDECL_OBJLAST); assert( asErrno >= 0 );
+        asErrno = engine->RegisterObjectBehaviour("Matrix34f", AngelScript::asBEHAVE_CONSTRUCT, "void f(const Matrix34f &in)", AngelScript::asFUNCTION(Matrix34fKopyKonstructor), AngelScript::asCALL_CDECL_OBJLAST); assert( asErrno >= 0 );
+
+        asErrno = engine->RegisterObjectType("Matrix44f", sizeof(sead::Matrix44f), AngelScript::asOBJ_VALUE | AngelScript::asOBJ_POD | AngelScript::asOBJ_APP_CLASS_CAK | AngelScript::asOBJ_APP_CLASS_ALLFLOATS); assert( asErrno >= 0 );
+        asErrno = engine->RegisterObjectProperty("Matrix44f", "float a0", asOFFSET(sead::Matrix44f, a[0])); assert(asErrno >= 0);
+        asErrno = engine->RegisterObjectProperty("Matrix44f", "float a1", asOFFSET(sead::Matrix44f, a[1])); assert(asErrno >= 0);
+        asErrno = engine->RegisterObjectProperty("Matrix44f", "float a2", asOFFSET(sead::Matrix44f, a[2])); assert(asErrno >= 0);
+        asErrno = engine->RegisterObjectProperty("Matrix44f", "float a3", asOFFSET(sead::Matrix44f, a[3])); assert(asErrno >= 0);
+        asErrno = engine->RegisterObjectProperty("Matrix44f", "float a4", asOFFSET(sead::Matrix44f, a[4])); assert(asErrno >= 0);
+        asErrno = engine->RegisterObjectProperty("Matrix44f", "float a5", asOFFSET(sead::Matrix44f, a[5])); assert(asErrno >= 0);
+        asErrno = engine->RegisterObjectProperty("Matrix44f", "float a6", asOFFSET(sead::Matrix44f, a[6])); assert(asErrno >= 0);
+        asErrno = engine->RegisterObjectProperty("Matrix44f", "float a7", asOFFSET(sead::Matrix44f, a[7])); assert(asErrno >= 0);
+        asErrno = engine->RegisterObjectProperty("Matrix44f", "float a8", asOFFSET(sead::Matrix44f, a[8])); assert(asErrno >= 0);
+        asErrno = engine->RegisterObjectProperty("Matrix44f", "float a9", asOFFSET(sead::Matrix44f, a[9])); assert(asErrno >= 0);
+        asErrno = engine->RegisterObjectProperty("Matrix44f", "float a10", asOFFSET(sead::Matrix44f, a[10])); assert(asErrno >= 0);
+        asErrno = engine->RegisterObjectProperty("Matrix44f", "float a11", asOFFSET(sead::Matrix44f, a[11])); assert(asErrno >= 0);
+        asErrno = engine->RegisterObjectProperty("Matrix44f", "float a12", asOFFSET(sead::Matrix44f, a[12])); assert(asErrno >= 0);
+        asErrno = engine->RegisterObjectProperty("Matrix44f", "float a13", asOFFSET(sead::Matrix44f, a[13])); assert(asErrno >= 0);
+        asErrno = engine->RegisterObjectProperty("Matrix44f", "float a14", asOFFSET(sead::Matrix44f, a[14])); assert(asErrno >= 0);
+        asErrno = engine->RegisterObjectProperty("Matrix44f", "float a15", asOFFSET(sead::Matrix44f, a[15])); assert(asErrno >= 0);
+        asErrno = engine->RegisterObjectBehaviour("Matrix44f", AngelScript::asBEHAVE_CONSTRUCT, "void f()", AngelScript::asFUNCTION(Matrix44fConstructor), AngelScript::asCALL_CDECL_OBJLAST); assert( asErrno >= 0 );
+        asErrno = engine->RegisterObjectBehaviour("Matrix44f", AngelScript::asBEHAVE_CONSTRUCT, "void f(float a0, float a1=0, float a2=0, float a3=0, float a4=0, float a5=0, float a6=0, float a7=0, float a8=0, float a9=0, float a10=0, float a11=0, float a12=0, float a13=0, float a14=0, float a15=0)", AngelScript::asFUNCTION(Matrix44fAssignConstructor), AngelScript::asCALL_CDECL_OBJLAST); assert( asErrno >= 0 );
+        asErrno = engine->RegisterObjectBehaviour("Matrix44f", AngelScript::asBEHAVE_CONSTRUCT, "void f(const Matrix44f &in)", AngelScript::asFUNCTION(Matrix44fKopyKonstructor), AngelScript::asCALL_CDECL_OBJLAST); assert( asErrno >= 0 );
+
+        // TODO register matrix operations
 
         // register container statics (AS just uses namespaces for statics)
         engine->SetDefaultNamespace("Vector3f");
@@ -320,6 +443,56 @@ namespace lotuskit::script::globals {
         asErrno = engine->RegisterGlobalProperty("const Vector3f SE"       , &Vector3fStatic::SOUTHEAST); assert(asErrno >= 0);
         asErrno = engine->RegisterGlobalProperty("const Vector3f SOUTHWEST", &Vector3fStatic::SOUTHWEST); assert(asErrno >= 0);
         asErrno = engine->RegisterGlobalProperty("const Vector3f SW"       , &Vector3fStatic::SOUTHWEST); assert(asErrno >= 0);
+
+        engine->SetDefaultNamespace("Matrix22f");
+        asErrno = engine->RegisterGlobalProperty("const Matrix22f IDENTITY", &Matrix22fStatic::IDENTITY); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalProperty("const Matrix22f ZERO",  &Matrix22fStatic::ZERO); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalProperty("const Matrix22f ONE",   &Matrix22fStatic::ONE); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalProperty("const Matrix22f NEG",   &Matrix22fStatic::NEG); assert(asErrno >= 0);
+
+        engine->SetDefaultNamespace("Matrix33f");
+        asErrno = engine->RegisterGlobalProperty("const Matrix33f IDENTITY", &Matrix33fStatic::IDENTITY); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalProperty("const Matrix33f ZERO",  &Matrix33fStatic::ZERO); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalProperty("const Matrix33f ONE",   &Matrix33fStatic::ONE); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalProperty("const Matrix33f NEG",   &Matrix33fStatic::NEG); assert(asErrno >= 0);
+
+        asErrno = engine->RegisterGlobalProperty("const Matrix33f EAST",  &Matrix33fStatic::EAST); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalProperty("const Matrix33f E"   ,  &Matrix33fStatic::EAST); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalProperty("const Matrix33f WEST",  &Matrix33fStatic::WEST); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalProperty("const Matrix33f W"   ,  &Matrix33fStatic::WEST); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalProperty("const Matrix33f NORTH", &Matrix33fStatic::NORTH); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalProperty("const Matrix33f N"    , &Matrix33fStatic::NORTH); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalProperty("const Matrix33f SOUTH", &Matrix33fStatic::SOUTH); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalProperty("const Matrix33f S"    , &Matrix33fStatic::SOUTH); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalProperty("const Matrix33f NORTHEAST", &Matrix33fStatic::NORTHEAST); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalProperty("const Matrix33f NE"       , &Matrix33fStatic::NORTHEAST); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalProperty("const Matrix33f NORTHWEST", &Matrix33fStatic::NORTHWEST); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalProperty("const Matrix33f NW"       , &Matrix33fStatic::NORTHWEST); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalProperty("const Matrix33f SOUTHEAST", &Matrix33fStatic::SOUTHEAST); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalProperty("const Matrix33f SE"       , &Matrix33fStatic::SOUTHEAST); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalProperty("const Matrix33f SOUTHWEST", &Matrix33fStatic::SOUTHWEST); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalProperty("const Matrix33f SW"       , &Matrix33fStatic::SOUTHWEST); assert(asErrno >= 0);
+
+        asErrno = engine->RegisterGlobalProperty("const Matrix33f DOWN__UP_IS_EAST", &Matrix33fStatic::DOWN__UP_IS_EAST); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalProperty("const Matrix33f DOWN__UP_IS_WEST", &Matrix33fStatic::DOWN__UP_IS_WEST); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalProperty("const Matrix33f DOWN__UP_IS_NORTH", &Matrix33fStatic::DOWN__UP_IS_NORTH); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalProperty("const Matrix33f DOWN__UP_IS_SOUTH", &Matrix33fStatic::DOWN__UP_IS_SOUTH); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalProperty("const Matrix33f UP__UP_IS_EAST", &Matrix33fStatic::UP__UP_IS_EAST); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalProperty("const Matrix33f UP__UP_IS_WEST", &Matrix33fStatic::UP__UP_IS_WEST); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalProperty("const Matrix33f UP__UP_IS_NORTH", &Matrix33fStatic::UP__UP_IS_NORTH); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalProperty("const Matrix33f UP__UP_IS_SOUTH", &Matrix33fStatic::UP__UP_IS_SOUTH); assert(asErrno >= 0);
+
+        engine->SetDefaultNamespace("Matrix34f");
+        asErrno = engine->RegisterGlobalProperty("const Matrix34f ZERO",  &Matrix34fStatic::ZERO); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalProperty("const Matrix34f ONE",   &Matrix34fStatic::ONE); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalProperty("const Matrix34f NEG",   &Matrix34fStatic::NEG); assert(asErrno >= 0);
+
+        engine->SetDefaultNamespace("Matrix44f");
+        asErrno = engine->RegisterGlobalProperty("const Matrix44f IDENTITY", &Matrix44fStatic::IDENTITY); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalProperty("const Matrix44f ZERO",  &Matrix44fStatic::ZERO); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalProperty("const Matrix44f ONE",   &Matrix44fStatic::ONE); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalProperty("const Matrix44f NEG",   &Matrix44fStatic::NEG); assert(asErrno >= 0);
+
     }
 
     void registerUtil(AngelScript::asIScriptEngine* engine) {
@@ -359,6 +532,7 @@ namespace lotuskit::script::globals {
             // camera hacks
             asErrno = engine->RegisterGlobalFunction("void toggleFreeze()", AngelScript::asFUNCTION(lotuskit::util::camera::toggleFreeze), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
             asErrno = engine->RegisterGlobalFunction("void freeze(float, float, float, double, double, double, double, double, double)", AngelScript::asFUNCTION(lotuskit::util::camera::freeze333), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+            // FIXME trash freeze binding
             asErrno = engine->RegisterGlobalFunction("void log()", AngelScript::asFUNCTION(lotuskit::util::camera::log), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
         /// }
     }
@@ -448,8 +622,14 @@ namespace lotuskit::script::globals {
             asErrno = engine->RegisterObjectMethod("ActorBase", "void set_pos_z(float) property", AngelScript::asFUNCTION(actor_pos_set_z), AngelScript::asCALL_CDECL_OBJFIRST); assert(asErrno >= 0);
             asErrno = engine->RegisterObjectMethod("ActorBase", "void setPos(const Vector3f &in)", AngelScript::asFUNCTION(lotuskit::util::actor::setPos), AngelScript::asCALL_CDECL_OBJFIRST); assert(asErrno >= 0);
             asErrno = engine->RegisterObjectMethod("ActorBase", "void setPos(float, float, float)", AngelScript::asFUNCTION(lotuskit::util::actor::setPosXYZ), AngelScript::asCALL_CDECL_OBJFIRST); assert(asErrno >= 0);
+
+            asErrno = engine->RegisterObjectMethod("ActorBase", "Matrix33f get_rot() property", AngelScript::asFUNCTION(actor_rot_get), AngelScript::asCALL_CDECL_OBJFIRST); assert(asErrno >= 0);
+            asErrno = engine->RegisterObjectMethod("ActorBase", "void set_rot(const Matrix33f &in) property", AngelScript::asFUNCTION(lotuskit::util::actor::setRot), AngelScript::asCALL_CDECL_OBJFIRST); assert(asErrno >= 0);
             asErrno = engine->RegisterObjectMethod("ActorBase", "void setRot(float, float, float, float, float, float, float, float, float)", AngelScript::asFUNCTION(lotuskit::util::actor::setRot9), AngelScript::asCALL_CDECL_OBJFIRST); assert(asErrno >= 0);
+            asErrno = engine->RegisterObjectMethod("ActorBase", "void setRot(const Matrix33f &in)", AngelScript::asFUNCTION(lotuskit::util::actor::setRot), AngelScript::asCALL_CDECL_OBJFIRST); assert(asErrno >= 0);
             asErrno = engine->RegisterObjectMethod("ActorBase", "void setPosRot(float, float, float, float, float, float, float, float, float, float, float, float)", AngelScript::asFUNCTION(lotuskit::util::actor::setPosRot39), AngelScript::asCALL_CDECL_OBJFIRST); assert(asErrno >= 0);
+            asErrno = engine->RegisterObjectMethod("ActorBase", "void setPosRot(const Vector3f &in, const Matrix33f &in)", AngelScript::asFUNCTION(lotuskit::util::actor::setPosRot), AngelScript::asCALL_CDECL_OBJFIRST); assert(asErrno >= 0);
+
             asErrno = engine->RegisterObjectMethod("ActorBase", "RigidBody@ getMainRigidBody()", AngelScript::asFUNCTION(lotuskit::util::actor::getMainRigidBody), AngelScript::asCALL_CDECL_OBJFIRST); assert(asErrno >= 0);
             //engine->SetDefaultNamespace("ResidentActors");
             asErrno = engine->RegisterGlobalProperty("ActorBase@ Player", &ResidentActors::Player); assert(asErrno >= 0);

@@ -42,6 +42,7 @@ actor::createAndWatch(
 honse1.setPos(123, 456.0, 789.5);
 honse1.pos += Vector3f::SOUTH * 6.9;
 Player.pos += Vector3f(0, 100, 0);
+Player.rot = Matrix33f::NORTHEAST;
 PlayerCamera.setRot(1,0,0, 0,1,0, 0,0,1);
 EventCamera.setPosRot(
     123, 456.0, 789.5, // xyz (engine)
