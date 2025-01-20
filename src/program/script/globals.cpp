@@ -180,14 +180,78 @@ namespace lotuskit::script::globals {
         asErrno = engine->RegisterTypedef("f16_fake", "uint16"); assert(asErrno >= 0);
     }
 
+    // asOBJ_APP_CLASS_CAK=Construct Assign Kopy
+    void Vector2fConstructor(sead::Vector2f *self) { new(self) sead::Vector2f(); }
+    void Vector2fAssignConstructor(float x, float y, sead::Vector2f *self) { new(self) sead::Vector2f(x,y); }
+    void Vector2fKopyKonstructor(const sead::Vector2f &other, sead::Vector2f *self) { new(self) sead::Vector2f(other); }
+    sead::Vector2f Vector2fAdd(const sead::Vector2f& a, const sead::Vector2f& b) { return a+b; }
+    sead::Vector2f Vector2fSub(const sead::Vector2f& a, const sead::Vector2f& b) { return a-b; }
+    sead::Vector2f Vector2fMul(const sead::Vector2f& a, float b) { return a*b; }
+    sead::Vector2f Vector2fMul_r(float b, const sead::Vector2f& a) { return a*b; }
+    sead::Vector2f Vector2fDiv(const sead::Vector2f& a, float b) { return a/b; }
+
+    void Vector3fConstructor(sead::Vector3f *self) { new(self) sead::Vector3f(); }
+    void Vector3fAssignConstructor(float x, float y, float z, sead::Vector3f *self) { new(self) sead::Vector3f(x,y,z); }
+    void Vector3fKopyKonstructor(const sead::Vector3f &other, sead::Vector3f *self) { new(self) sead::Vector3f(other); }
+    sead::Vector3f Vector3fAdd(const sead::Vector3f& a, const sead::Vector3f& b) { return a+b; }
+    sead::Vector3f Vector3fSub(const sead::Vector3f& a, const sead::Vector3f& b) { return a-b; }
+    sead::Vector3f Vector3fMul(const sead::Vector3f& a, float b) { return a*b; }
+    sead::Vector3f Vector3fMul_r(float b, const sead::Vector3f& a) { return a*b; }
+    sead::Vector3f Vector3fDiv(const sead::Vector3f& a, float b) { return a/b; }
+
     void registerContainers(AngelScript::asIScriptEngine* engine) {
-        /* //no worky
-        engine->SetDefaultNamespace("sead");
-        asErrno = engine->RegisterObjectType("Vector3f", 0, AngelScript::asOBJ_REF | AngelScript::asOBJ_NOCOUNT); assert(asErrno >= 0);
+        s32 asErrno;
+        engine->SetDefaultNamespace(""); // root
+
+        // Vector2f
+        asErrno = engine->RegisterObjectType("Vector2f", sizeof(sead::Vector2f), AngelScript::asOBJ_VALUE | AngelScript::asOBJ_POD | AngelScript::asOBJ_APP_CLASS_CAK | AngelScript::asOBJ_APP_CLASS_ALLFLOATS); assert( asErrno >= 0 );
+        asErrno = engine->RegisterObjectProperty("Vector2f", "float x", asOFFSET(sead::Vector2f, x)); assert(asErrno >= 0);
+        asErrno = engine->RegisterObjectProperty("Vector2f", "float y", asOFFSET(sead::Vector2f, y)); assert(asErrno >= 0);
+        asErrno = engine->RegisterObjectBehaviour("Vector2f", AngelScript::asBEHAVE_CONSTRUCT, "void f()", AngelScript::asFUNCTION(Vector2fConstructor), AngelScript::asCALL_CDECL_OBJLAST); assert( asErrno >= 0 );
+        asErrno = engine->RegisterObjectBehaviour("Vector2f", AngelScript::asBEHAVE_CONSTRUCT, "void f(float, float y = 0)", AngelScript::asFUNCTION(Vector2fAssignConstructor), AngelScript::asCALL_CDECL_OBJLAST); assert( asErrno >= 0 );
+        asErrno = engine->RegisterObjectBehaviour("Vector2f", AngelScript::asBEHAVE_CONSTRUCT, "void f(const Vector2f &in)", AngelScript::asFUNCTION(Vector2fKopyKonstructor), AngelScript::asCALL_CDECL_OBJLAST); assert( asErrno >= 0 );
+        asErrno = engine->RegisterObjectMethod("Vector2f", "float dot() const", AngelScript::asMETHOD(sead::Vector2f, dot), AngelScript::asCALL_THISCALL); assert( asErrno >= 0 );
+        asErrno = engine->RegisterObjectMethod("Vector2f", "float length() const", AngelScript::asMETHOD(sead::Vector2f, length), AngelScript::asCALL_THISCALL); assert( asErrno >= 0 );
+
+        // Vector2f operators
+        asErrno = engine->RegisterObjectMethod("Vector2f", "Vector2f &opAddAssign(const Vector2f &in)", AngelScript::asMETHODPR(sead::Vector2f, operator+=, (const sead::Vector2f &), sead::Vector2f&), AngelScript::asCALL_THISCALL); assert( asErrno >= 0 );
+        asErrno = engine->RegisterObjectMethod("Vector2f", "Vector2f &opSubAssign(const Vector2f &in)", AngelScript::asMETHODPR(sead::Vector2f, operator-=, (const sead::Vector2f &), sead::Vector2f&), AngelScript::asCALL_THISCALL); assert( asErrno >= 0 );
+        asErrno = engine->RegisterObjectMethod("Vector2f", "Vector2f &opMulAssign(float)", AngelScript::asMETHODPR(sead::Vector2f, operator*=, (float), sead::Vector2f&), AngelScript::asCALL_THISCALL); assert( asErrno >= 0 );
+        asErrno = engine->RegisterObjectMethod("Vector2f", "Vector2f &opDivAssign(float)", AngelScript::asMETHODPR(sead::Vector2f, operator/=, (float), sead::Vector2f&), AngelScript::asCALL_THISCALL); assert( asErrno >= 0 );
+        asErrno = engine->RegisterObjectMethod("Vector2f", "bool opEquals(const Vector2f &in) const", AngelScript::asMETHOD(sead::Vector2f, operator==), AngelScript::asCALL_THISCALL); assert( asErrno >= 0 );
+        asErrno = engine->RegisterObjectMethod("Vector2f", "Vector2f opAdd(const Vector2f &in) const", AngelScript::asFUNCTIONPR(Vector2fAdd, (const sead::Vector2f&, const sead::Vector2f&), sead::Vector2f), AngelScript::asCALL_CDECL_OBJFIRST); assert( asErrno >= 0 );
+        asErrno = engine->RegisterObjectMethod("Vector2f", "Vector2f opSub(const Vector2f &in) const", AngelScript::asFUNCTIONPR(Vector2fSub, (const sead::Vector2f&, const sead::Vector2f&), sead::Vector2f), AngelScript::asCALL_CDECL_OBJFIRST); assert( asErrno >= 0 );
+        asErrno = engine->RegisterObjectMethod("Vector2f", "Vector2f opMul(float) const", AngelScript::asFUNCTIONPR(Vector2fMul, (const sead::Vector2f&, float), sead::Vector2f), AngelScript::asCALL_CDECL_OBJFIRST); assert( asErrno >= 0 );
+        asErrno = engine->RegisterObjectMethod("Vector2f", "Vector2f opMul_r(float) const", AngelScript::asFUNCTIONPR(Vector2fMul_r, (float, const sead::Vector2f&), sead::Vector2f), AngelScript::asCALL_CDECL_OBJLAST); assert( asErrno >= 0 );
+        asErrno = engine->RegisterObjectMethod("Vector2f", "Vector2f opDiv(float) const", AngelScript::asFUNCTIONPR(Vector2fDiv, (const sead::Vector2f&, float), sead::Vector2f), AngelScript::asCALL_CDECL_OBJFIRST); assert( asErrno >= 0 );
+
+        // Vector3f
+        asErrno = engine->RegisterObjectType("Vector3f", sizeof(sead::Vector3f), AngelScript::asOBJ_VALUE | AngelScript::asOBJ_POD | AngelScript::asOBJ_APP_CLASS_CAK | AngelScript::asOBJ_APP_CLASS_ALLFLOATS); assert( asErrno >= 0 );
         asErrno = engine->RegisterObjectProperty("Vector3f", "float x", asOFFSET(sead::Vector3f, x)); assert(asErrno >= 0);
         asErrno = engine->RegisterObjectProperty("Vector3f", "float y", asOFFSET(sead::Vector3f, y)); assert(asErrno >= 0);
         asErrno = engine->RegisterObjectProperty("Vector3f", "float z", asOFFSET(sead::Vector3f, z)); assert(asErrno >= 0);
-        */
+        asErrno = engine->RegisterObjectBehaviour("Vector3f", AngelScript::asBEHAVE_CONSTRUCT, "void f()", AngelScript::asFUNCTION(Vector3fConstructor), AngelScript::asCALL_CDECL_OBJLAST); assert( asErrno >= 0 );
+        asErrno = engine->RegisterObjectBehaviour("Vector3f", AngelScript::asBEHAVE_CONSTRUCT, "void f(float, float y = 0, float z = 0)", AngelScript::asFUNCTION(Vector3fAssignConstructor), AngelScript::asCALL_CDECL_OBJLAST); assert( asErrno >= 0 );
+        asErrno = engine->RegisterObjectBehaviour("Vector3f", AngelScript::asBEHAVE_CONSTRUCT, "void f(const Vector3f &in)", AngelScript::asFUNCTION(Vector3fKopyKonstructor), AngelScript::asCALL_CDECL_OBJLAST); assert( asErrno >= 0 );
+        asErrno = engine->RegisterObjectMethod("Vector3f", "float dot() const", AngelScript::asMETHOD(sead::Vector3f, dot), AngelScript::asCALL_THISCALL); assert( asErrno >= 0 );
+        asErrno = engine->RegisterObjectMethod("Vector3f", "float length() const", AngelScript::asMETHOD(sead::Vector3f, length), AngelScript::asCALL_THISCALL); assert( asErrno >= 0 );
+        // TODO cross, normalize, rotate?
+
+        // Vector3f operators
+        asErrno = engine->RegisterObjectMethod("Vector3f", "Vector3f &opAddAssign(const Vector3f &in)", AngelScript::asMETHODPR(sead::Vector3f, operator+=, (const sead::Vector3f &), sead::Vector3f&), AngelScript::asCALL_THISCALL); assert( asErrno >= 0 );
+        asErrno = engine->RegisterObjectMethod("Vector3f", "Vector3f &opSubAssign(const Vector3f &in)", AngelScript::asMETHODPR(sead::Vector3f, operator-=, (const sead::Vector3f &), sead::Vector3f&), AngelScript::asCALL_THISCALL); assert( asErrno >= 0 );
+        asErrno = engine->RegisterObjectMethod("Vector3f", "Vector3f &opMulAssign(float)", AngelScript::asMETHODPR(sead::Vector3f, operator*=, (float), sead::Vector3f&), AngelScript::asCALL_THISCALL); assert( asErrno >= 0 );
+        asErrno = engine->RegisterObjectMethod("Vector3f", "Vector3f &opDivAssign(float)", AngelScript::asMETHODPR(sead::Vector3f, operator/=, (float), sead::Vector3f&), AngelScript::asCALL_THISCALL); assert( asErrno >= 0 );
+        asErrno = engine->RegisterObjectMethod("Vector3f", "bool opEquals(const Vector3f &in) const", AngelScript::asMETHOD(sead::Vector3f, operator==), AngelScript::asCALL_THISCALL); assert( asErrno >= 0 );
+        asErrno = engine->RegisterObjectMethod("Vector3f", "Vector3f opAdd(const Vector3f &in) const", AngelScript::asFUNCTIONPR(Vector3fAdd, (const sead::Vector3f&, const sead::Vector3f&), sead::Vector3f), AngelScript::asCALL_CDECL_OBJFIRST); assert( asErrno >= 0 );
+        asErrno = engine->RegisterObjectMethod("Vector3f", "Vector3f opSub(const Vector3f &in) const", AngelScript::asFUNCTIONPR(Vector3fSub, (const sead::Vector3f&, const sead::Vector3f&), sead::Vector3f), AngelScript::asCALL_CDECL_OBJFIRST); assert( asErrno >= 0 );
+        asErrno = engine->RegisterObjectMethod("Vector3f", "Vector3f opMul(float) const", AngelScript::asFUNCTIONPR(Vector3fMul, (const sead::Vector3f&, float), sead::Vector3f), AngelScript::asCALL_CDECL_OBJFIRST); assert( asErrno >= 0 );
+        asErrno = engine->RegisterObjectMethod("Vector3f", "Vector3f opMul_r(float) const", AngelScript::asFUNCTIONPR(Vector3fMul_r, (float, const sead::Vector3f&), sead::Vector3f), AngelScript::asCALL_CDECL_OBJLAST); assert( asErrno >= 0 );
+        asErrno = engine->RegisterObjectMethod("Vector3f", "Vector3f opDiv(float) const", AngelScript::asFUNCTIONPR(Vector3fDiv, (const sead::Vector3f&, float), sead::Vector3f), AngelScript::asCALL_CDECL_OBJFIRST); assert( asErrno >= 0 );
+
+        // TODO Vector4f, Quatf, doubles, ints?
+
+        // TODO Matrix33f, Matrix43f, Matrix44f, Matrix22f
     }
 
     void registerUtil(AngelScript::asIScriptEngine* engine) {
