@@ -69,7 +69,7 @@ namespace lotuskit {
         for (size_t i=0; i < TextWriter::MAX_TOASTS; i++) {
             TextWriterToastNode* node = toasts[i].load();
             if (node == nullptr) { continue; }
-            if (node->ttlFrames-- <= 0) {
+            if (node->ttlFrames == 0) {
                 toasts[i].store(nullptr);
                 if (node->outputText != nullptr) {
                     debugDrawerInternalHeap->free(node->outputText);
@@ -77,6 +77,7 @@ namespace lotuskit {
                 debugDrawerInternalHeap->free(node);
                 continue;
             }
+            node->ttlFrames--;
             if (node->fn != nullptr) {
                 node->fn(writer, &textPos);
             }
@@ -86,7 +87,7 @@ namespace lotuskit {
         }
     }
 
-    TextWriterToastNode* TextWriter::appendNewToastNode(u64 ttlFrames) {
+    TextWriterToastNode* TextWriter::appendNewToastNode(u32 ttlFrames) {
         TextWriterToastNode* newNode = (TextWriterToastNode*)debugDrawerInternalHeap->alloc(sizeof(TextWriterToastNode));
         newNode->outputText = nullptr;
         newNode->fn = nullptr;

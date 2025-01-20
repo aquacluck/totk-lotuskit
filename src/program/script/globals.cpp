@@ -147,7 +147,7 @@ namespace lotuskit::script::globals {
     } // ns
 
     void textwriter_as_print(size_t drawList_i, const std::string& msg) { lotuskit::TextWriter::printf(drawList_i, msg.c_str()); }
-    void textwriter_as_toast(u64 ttlFrames, const std::string& msg) { lotuskit::TextWriter::toastf(ttlFrames, msg.c_str()); }
+    void textwriter_as_toast(u32 ttlFrames, const std::string& msg) { lotuskit::TextWriter::toastf(ttlFrames, msg.c_str()); }
 
     float actor_pos_get_x(::engine::actor::ActorBase* actor) { return actor->mPosition.x; }
     float actor_pos_get_y(::engine::actor::ActorBase* actor) { return actor->mPosition.y; }

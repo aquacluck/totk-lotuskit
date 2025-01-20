@@ -41,7 +41,7 @@ namespace lotuskit {
     struct TextWriterToastNode {
         char* outputText;
         TextWriterDrawCallback* fn;
-        u64 ttlFrames;
+        u32 ttlFrames;
     };
 
     class TextWriterExt: public sead::TextWriter {
@@ -91,7 +91,7 @@ namespace lotuskit {
             if (newNode == nullptr) { return; }
             newNode->fn = fn;
         }
-        inline static void toastf(u64 ttlFrames, const char* fmt, auto&&... args) {
+        inline static void toastf(u32 ttlFrames, const char* fmt, auto&&... args) {
             TextWriterToastNode* newNode = appendNewToastNode(ttlFrames);
             if (newNode) {
                 // set outputText
@@ -120,7 +120,7 @@ namespace lotuskit {
             nn::os::InitializeMutex(&frame.drawLock, true, 0);
         }
         static TextWriterDrawNode* appendNewDrawNode(size_t drawList_i);
-        static TextWriterToastNode* appendNewToastNode(u64 ttlFrames);
+        static TextWriterToastNode* appendNewToastNode(u32 ttlFrames);
         static void drawFrame(TextWriterExt*);
         static void drawToasts(TextWriterExt*);
     };
