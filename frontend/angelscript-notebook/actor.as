@@ -29,17 +29,18 @@ if (Player.pos_y < honse1.pos_y) {
 // spawn a wing below Player, watch it in slot 2
 actor::createAndWatch(
     2, "SpObj_LiftGeneratorWing_A_01",
-    Player.pos_x, Player.pos_y - 5, Player.pos_z
+    Player.pos + 5*Vector3f::DOWN
 );
 
 // or i do this a lot and it smacks Link hehe
 actor::createAndWatch(
     1, "SpObj_LiftGeneratorWing_A_01",
-    Player.pos + Vector3f(0, 5, 0)
+    Player.pos + 5*Vector3f::UP
 );
 
 // set position/rotation
 honse1.setPos(123, 456.0, 789.5);
+honse1.pos += Vector3f::SOUTH * 6.9;
 Player.pos += Vector3f(0, 100, 0);
 PlayerCamera.setRot(1,0,0, 0,1,0, 0,0,1);
 EventCamera.setPosRot(

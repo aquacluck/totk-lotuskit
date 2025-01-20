@@ -39,6 +39,7 @@ Vector2f honk(69, 420);
 Vector3f donk(honk.y, 0, honk.x);
 honk += Vector2f(1.2, 3.4) / honk.length();
 if (honk == Vector2f(donk.x, donk.z)) {
+    donk += Vector3f::SOUTHWEST * 5.6;
     honk *= 2 + donk.length();
 }
 

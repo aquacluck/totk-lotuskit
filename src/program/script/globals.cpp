@@ -16,6 +16,7 @@ using Logger = lotuskit::Logger;
 #include <math/seadVector.h>
 #include <heap/seadHeapMgr.h>
 #include <thread/seadThread.h>
+#include <cmath>
 #include <string>
 
 
@@ -24,6 +25,22 @@ namespace lotuskit::script::globals {
         ::engine::actor::ActorBase* Player = nullptr;
         ::engine::actor::ActorBase* PlayerCamera = nullptr;
         ::engine::actor::ActorBase* EventCamera = nullptr;
+    } // ns
+    namespace Vector3fStatic {
+        // XXX AS RegisterGlobalProperty won't let these be const?
+        sead::Vector3f  ZERO( 0,  0,  0);
+        sead::Vector3f   ONE( 1,  1,  1);
+        sead::Vector3f   NEG(-1, -1, -1);
+        sead::Vector3f    UP( 0,  1,  0);
+        sead::Vector3f  DOWN( 0, -1,  0);
+        sead::Vector3f  EAST( 1,  0,  0);
+        sead::Vector3f  WEST(-1,  0,  0);
+        sead::Vector3f NORTH( 0,  0, -1);
+        sead::Vector3f SOUTH( 0,  0,  1);
+        sead::Vector3f NORTHEAST( M_SQRT1_2, 0, -M_SQRT1_2);
+        sead::Vector3f NORTHWEST(-M_SQRT1_2, 0, -M_SQRT1_2);
+        sead::Vector3f SOUTHEAST( M_SQRT1_2, 0,  M_SQRT1_2);
+        sead::Vector3f SOUTHWEST(-M_SQRT1_2, 0,  M_SQRT1_2);
     } // ns
 
 
@@ -254,6 +271,32 @@ namespace lotuskit::script::globals {
         // TODO Vector4f, Quatf, doubles, ints?
 
         // TODO Matrix33f, Matrix43f, Matrix44f, Matrix22f, BoundBox3f
+
+        // register container statics (AS just uses namespaces for statics)
+        engine->SetDefaultNamespace("Vector3f");
+        asErrno = engine->RegisterGlobalProperty("const Vector3f ZERO",  &Vector3fStatic::ZERO); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalProperty("const Vector3f ONE",   &Vector3fStatic::ONE); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalProperty("const Vector3f NEG",   &Vector3fStatic::NEG); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalProperty("const Vector3f UP",    &Vector3fStatic::UP); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalProperty("const Vector3f U" ,    &Vector3fStatic::UP); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalProperty("const Vector3f DOWN",  &Vector3fStatic::DOWN); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalProperty("const Vector3f D"   ,  &Vector3fStatic::DOWN); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalProperty("const Vector3f EAST",  &Vector3fStatic::EAST); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalProperty("const Vector3f E"   ,  &Vector3fStatic::EAST); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalProperty("const Vector3f WEST",  &Vector3fStatic::WEST); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalProperty("const Vector3f W"   ,  &Vector3fStatic::WEST); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalProperty("const Vector3f NORTH", &Vector3fStatic::NORTH); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalProperty("const Vector3f N"    , &Vector3fStatic::NORTH); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalProperty("const Vector3f SOUTH", &Vector3fStatic::SOUTH); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalProperty("const Vector3f S"    , &Vector3fStatic::SOUTH); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalProperty("const Vector3f NORTHEAST", &Vector3fStatic::NORTHEAST); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalProperty("const Vector3f NE"       , &Vector3fStatic::NORTHEAST); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalProperty("const Vector3f NORTHWEST", &Vector3fStatic::NORTHWEST); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalProperty("const Vector3f NW"       , &Vector3fStatic::NORTHWEST); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalProperty("const Vector3f SOUTHEAST", &Vector3fStatic::SOUTHEAST); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalProperty("const Vector3f SE"       , &Vector3fStatic::SOUTHEAST); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalProperty("const Vector3f SOUTHWEST", &Vector3fStatic::SOUTHWEST); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalProperty("const Vector3f SW"       , &Vector3fStatic::SOUTHWEST); assert(asErrno >= 0);
     }
 
     void registerUtil(AngelScript::asIScriptEngine* engine) {
