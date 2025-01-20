@@ -26,6 +26,10 @@ namespace lotuskit::script::globals {
         ::engine::actor::ActorBase* EventCamera = nullptr;
     } // ns
 
+
+    // Begin AS helpers+impls
+
+
     namespace sys {
         u64 mainOffset() { return exl::util::GetMainModuleInfo().m_Total.m_Start; }
         u32 totkVersion() { return TOTK_VERSION; }
@@ -152,28 +156,45 @@ namespace lotuskit::script::globals {
     void actor_pos_set_y(::engine::actor::ActorBase* actor, float y) { lotuskit::util::actor::setPosXYZ(actor, actor->mPosition.x, y, actor->mPosition.z); }
     void actor_pos_set_z(::engine::actor::ActorBase* actor, float z) { lotuskit::util::actor::setPosXYZ(actor, actor->mPosition.x, actor->mPosition.y, z); }
 
-    void registerGlobals(AngelScript::asIScriptEngine* engine) {
+
+    // Begin AS engine registrations
+
+
+    void registerBaseTypes(AngelScript::asIScriptEngine* engine) {
+        s32 asErrno;
+        engine->SetDefaultNamespace(""); // root
+        asErrno = engine->RegisterTypedef("u8", "uint8"); assert(asErrno >= 0);
+        asErrno = engine->RegisterTypedef("u16", "uint16"); assert(asErrno >= 0);
+        asErrno = engine->RegisterTypedef("u32", "uint"); assert(asErrno >= 0);
+        asErrno = engine->RegisterTypedef("u64", "uint64"); assert(asErrno >= 0);
+        asErrno = engine->RegisterTypedef("s8", "int8"); assert(asErrno >= 0);
+        asErrno = engine->RegisterTypedef("s16", "int16"); assert(asErrno >= 0);
+        asErrno = engine->RegisterTypedef("s32", "int"); assert(asErrno >= 0);
+        asErrno = engine->RegisterTypedef("s64", "int64"); assert(asErrno >= 0);
+        asErrno = engine->RegisterTypedef("ptrdiff_t", "int64"); assert(asErrno >= 0);
+        asErrno = engine->RegisterTypedef("ptr_t", "uint64"); assert(asErrno >= 0); // AS has no raw pointers, but we often need to deal with their values
+        asErrno = engine->RegisterTypedef("size_t", "uint64"); assert(asErrno >= 0);
+        asErrno = engine->RegisterTypedef("index_t", "uint64"); assert(asErrno >= 0); // more appropriately named size_t
+        asErrno = engine->RegisterTypedef("flagset_t", "uint64"); assert(asErrno >= 0);
+        asErrno = engine->RegisterTypedef("f16", "uint16"); assert(asErrno >= 0); // AS has no half floats, just to preserve context/compat
+        asErrno = engine->RegisterTypedef("f16_fake", "uint16"); assert(asErrno >= 0);
+    }
+
+    void registerContainers(AngelScript::asIScriptEngine* engine) {
+        /* //no worky
+        engine->SetDefaultNamespace("sead");
+        asErrno = engine->RegisterObjectType("Vector3f", 0, AngelScript::asOBJ_REF | AngelScript::asOBJ_NOCOUNT); assert(asErrno >= 0);
+        asErrno = engine->RegisterObjectProperty("Vector3f", "float x", asOFFSET(sead::Vector3f, x)); assert(asErrno >= 0);
+        asErrno = engine->RegisterObjectProperty("Vector3f", "float y", asOFFSET(sead::Vector3f, y)); assert(asErrno >= 0);
+        asErrno = engine->RegisterObjectProperty("Vector3f", "float z", asOFFSET(sead::Vector3f, z)); assert(asErrno >= 0);
+        */
+    }
+
+    void registerUtil(AngelScript::asIScriptEngine* engine) {
         s32 asErrno;
 
-        engine->SetDefaultNamespace(""); /// root {
-            asErrno = engine->RegisterTypedef("u8", "uint8"); assert(asErrno >= 0);
-            asErrno = engine->RegisterTypedef("u16", "uint16"); assert(asErrno >= 0);
-            asErrno = engine->RegisterTypedef("u32", "uint"); assert(asErrno >= 0);
-            asErrno = engine->RegisterTypedef("u64", "uint64"); assert(asErrno >= 0);
-            asErrno = engine->RegisterTypedef("s8", "int8"); assert(asErrno >= 0);
-            asErrno = engine->RegisterTypedef("s16", "int16"); assert(asErrno >= 0);
-            asErrno = engine->RegisterTypedef("s32", "int"); assert(asErrno >= 0);
-            asErrno = engine->RegisterTypedef("s64", "int64"); assert(asErrno >= 0);
-            asErrno = engine->RegisterTypedef("ptrdiff_t", "int64"); assert(asErrno >= 0);
-            asErrno = engine->RegisterTypedef("ptr_t", "uint64"); assert(asErrno >= 0); // AS has no raw pointers, but we often need to deal with their values
-            asErrno = engine->RegisterTypedef("size_t", "uint64"); assert(asErrno >= 0);
-            asErrno = engine->RegisterTypedef("index_t", "uint64"); assert(asErrno >= 0); // more appropriately named size_t
-            asErrno = engine->RegisterTypedef("flagset_t", "uint64"); assert(asErrno >= 0);
-            asErrno = engine->RegisterTypedef("f16", "uint16"); assert(asErrno >= 0); // AS has no half floats, just to preserve context/compat
-            asErrno = engine->RegisterTypedef("f16_fake", "uint16"); assert(asErrno >= 0);
-
-            asErrno = engine->RegisterGlobalFunction("void yield()", AngelScript::asFUNCTION(sys::suspendCtx), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
-        /// }
+        engine->SetDefaultNamespace(""); // root
+        asErrno = engine->RegisterGlobalFunction("void yield()", AngelScript::asFUNCTION(sys::suspendCtx), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
 
         engine->SetDefaultNamespace("sys"); /// {
             asErrno = engine->RegisterGlobalFunction("void heapInfo()", AngelScript::asFUNCTION(sys::heapInfo), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
@@ -202,20 +223,16 @@ namespace lotuskit::script::globals {
             asErrno = engine->RegisterGlobalFunction("void toast(u32, const string &in)", AngelScript::asFUNCTION(textwriter_as_toast), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
         /// }
 
-        engine->SetDefaultNamespace("tas"); /// {
-            // TODO tas::yieldInput(frameCount) -- consume time in tas scheduling but do not override input
-            asErrno = engine->RegisterGlobalFunction(
-                "void input(u32 duration=1, u64 nextButtons=0, s32 nextLStickX=0, s32 nextLStickY=0, s32 nextRStickX=0, s32 nextRStickY=0)",
-                AngelScript::asFUNCTION(lotuskit::tas::Playback::setCurrentInput),
-                AngelScript::asCALL_CDECL
-            ); assert( asErrno >= 0 );
-            asErrno = engine->RegisterGlobalFunction(
-                "void toggleDump()",
-                AngelScript::asFUNCTION(lotuskit::tas::Record::trashToggleDump),
-                AngelScript::asCALL_CDECL
-            ); assert( asErrno >= 0 );
+        engine->SetDefaultNamespace("camera"); /// {
+            // camera hacks
+            asErrno = engine->RegisterGlobalFunction("void toggleFreeze()", AngelScript::asFUNCTION(lotuskit::util::camera::toggleFreeze), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+            asErrno = engine->RegisterGlobalFunction("void freeze(float, float, float, double, double, double, double, double, double)", AngelScript::asFUNCTION(lotuskit::util::camera::freeze333), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+            asErrno = engine->RegisterGlobalFunction("void log()", AngelScript::asFUNCTION(lotuskit::util::camera::log), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
         /// }
+    }
 
+    void registerTAS(AngelScript::asIScriptEngine* engine) {
+        s32 asErrno;
         // define nx-TAS buttons: KEY_ZL;KEY_X -> KEY_ZL|KEY_X
         engine->SetDefaultNamespace(""); /// root {
             asErrno = engine->RegisterEnum("nxTASButton"); assert(asErrno >= 0);
@@ -238,20 +255,26 @@ namespace lotuskit::script::globals {
             asErrno = engine->RegisterEnumValue("nxTASButton", "KEY_RSTICK", (1 << 5)); assert(asErrno >= 0);
         /// }
 
-        /* //no worky
-        engine->SetDefaultNamespace("sead");
-        asErrno = engine->RegisterObjectType("Vector3f", 0, AngelScript::asOBJ_REF | AngelScript::asOBJ_NOCOUNT); assert(asErrno >= 0);
-        asErrno = engine->RegisterObjectProperty("Vector3f", "float x", asOFFSET(sead::Vector3f, x)); assert(asErrno >= 0);
-        asErrno = engine->RegisterObjectProperty("Vector3f", "float y", asOFFSET(sead::Vector3f, y)); assert(asErrno >= 0);
-        asErrno = engine->RegisterObjectProperty("Vector3f", "float z", asOFFSET(sead::Vector3f, z)); assert(asErrno >= 0);
-        */
+        engine->SetDefaultNamespace("tas"); /// {
+            // TODO tas::yieldInput(frameCount) -- consume time in tas scheduling but do not override input
+            asErrno = engine->RegisterGlobalFunction(
+                "void input(u32 duration=1, u64 nextButtons=0, s32 nextLStickX=0, s32 nextLStickY=0, s32 nextRStickX=0, s32 nextRStickY=0)",
+                AngelScript::asFUNCTION(lotuskit::tas::Playback::setCurrentInput),
+                AngelScript::asCALL_CDECL
+            ); assert( asErrno >= 0 );
+            asErrno = engine->RegisterGlobalFunction(
+                "void toggleDump()",
+                AngelScript::asFUNCTION(lotuskit::tas::Record::trashToggleDump),
+                AngelScript::asCALL_CDECL
+            ); assert( asErrno >= 0 );
+        /// }
+    }
 
-        // actor system
+    void registerActorSystem(AngelScript::asIScriptEngine* engine) {
+        s32 asErrno;
 
         engine->SetDefaultNamespace(""); /// root {
             //asErrno = engine->RegisterObjectType("PreActor", 0, AngelScript::asOBJ_REF | AngelScript::asOBJ_NOCOUNT); assert(asErrno >= 0);
-            asErrno = engine->RegisterObjectType("RigidBody", 0, AngelScript::asOBJ_REF | AngelScript::asOBJ_NOCOUNT); assert(asErrno >= 0);
-
             asErrno = engine->RegisterObjectType("ActorBase", 0, AngelScript::asOBJ_REF | AngelScript::asOBJ_NOCOUNT); assert(asErrno >= 0);
             asErrno = engine->RegisterObjectMethod("ActorBase", "float get_pos_x() property", AngelScript::asFUNCTION(actor_pos_get_x), AngelScript::asCALL_CDECL_OBJFIRST); assert(asErrno >= 0);
             asErrno = engine->RegisterObjectMethod("ActorBase", "float get_pos_y() property", AngelScript::asFUNCTION(actor_pos_get_y), AngelScript::asCALL_CDECL_OBJFIRST); assert(asErrno >= 0);
@@ -312,19 +335,24 @@ namespace lotuskit::script::globals {
             asErrno = engine->RegisterGlobalProperty("ActorBase@ actor2", &(lotuskit::ActorWatcher::slots[2].actor)); assert(asErrno >= 0);
             asErrno = engine->RegisterGlobalProperty("ActorBase@ actor3", &(lotuskit::ActorWatcher::slots[3].actor)); assert(asErrno >= 0);
         /// }
+    }
 
+    void registerPhive(AngelScript::asIScriptEngine* engine) {
+        s32 asErrno;
+        engine->SetDefaultNamespace(""); // root
+        asErrno = engine->RegisterObjectType("RigidBody", 0, AngelScript::asOBJ_REF | AngelScript::asOBJ_NOCOUNT); assert(asErrno >= 0);
         // RigidBodyBase+RigidBodyEntity methods
         asErrno = engine->RegisterObjectMethod("RigidBody", "void setVel(float, float, float)", AngelScript::asMETHOD(phive::RigidBodyBase, requestSetLinearVelocityXYZ), AngelScript::asCALL_THISCALL); assert(asErrno >= 0);
         asErrno = engine->RegisterObjectMethod("RigidBody", "void applyImpulse(float, float, float)", AngelScript::asMETHOD(phive::RigidBodyBase, applyLinearImpulseXYZ), AngelScript::asCALL_THISCALL); assert(asErrno >= 0);
+    }
 
-        engine->SetDefaultNamespace("camera"); /// {
-            // camera hacks
-            asErrno = engine->RegisterGlobalFunction("void toggleFreeze()", AngelScript::asFUNCTION(lotuskit::util::camera::toggleFreeze), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
-            asErrno = engine->RegisterGlobalFunction("void freeze(float, float, float, double, double, double, double, double, double)", AngelScript::asFUNCTION(lotuskit::util::camera::freeze333), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
-            asErrno = engine->RegisterGlobalFunction("void log()", AngelScript::asFUNCTION(lotuskit::util::camera::log), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
-
-        /// }
-
+    void registerGlobals(AngelScript::asIScriptEngine* engine) {
+        registerBaseTypes(engine);
+        registerContainers(engine);
+        registerUtil(engine);
+        registerTAS(engine);
+        registerPhive(engine);
+        registerActorSystem(engine);
     }
 
 } // ns
