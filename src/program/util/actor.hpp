@@ -9,14 +9,17 @@ using ActorBase = engine::actor::ActorBase;
 namespace lotuskit::util::actor {
     void createSimple(const std::string &actorName);
     void createSimpleXYZ(const std::string &actorName, float x, float y, float z);
+    void createSimplePos(const std::string &actorName, const sead::Vector3f &pos);
     void createAndWatch(size_t slotIndex, const std::string &actorName);
     void createAndWatchXYZ(size_t slotIndex, const std::string &actorName, float x, float y, float z);
+    void createAndWatchPos(size_t slotIndex, const std::string &actorName, const sead::Vector3f &pos);
 
-    // FIXME too many args, but AS arrays aren't wired to sead containers yet
+    void setPos(ActorBase* actor, const sead::Vector3f &pos);
     void setPosXYZ(ActorBase* actor, float x, float y, float z);
+    void setRot(ActorBase* actor, const sead::Matrix33f &rot);
     void setRot9(ActorBase* actor, float m00, float m01, float m02, float m10, float m11, float m12, float m20, float m21, float m22);
     void setPosRot39(ActorBase* actor, float x, float y, float z, float m00, float m01, float m02, float m10, float m11, float m12, float m20, float m21, float m22);
-    void setPosRot(ActorBase* actor, sead::Vector3f, sead::Matrix33f);
+    void setPosRot(ActorBase* actor, const sead::Vector3f &pos, const sead::Matrix33f &rot);
 
     phive::RigidBodyEntity* getMainRigidBody(ActorBase* actor);
 

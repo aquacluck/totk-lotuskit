@@ -149,9 +149,11 @@ namespace lotuskit::script::globals {
     void textwriter_as_print(size_t drawList_i, const std::string& msg) { lotuskit::TextWriter::printf(drawList_i, msg.c_str()); }
     void textwriter_as_toast(u32 ttlFrames, const std::string& msg) { lotuskit::TextWriter::toastf(ttlFrames, msg.c_str()); }
 
+    sead::Vector3f actor_pos_get(::engine::actor::ActorBase* actor) { return actor->mPosition; }
     float actor_pos_get_x(::engine::actor::ActorBase* actor) { return actor->mPosition.x; }
     float actor_pos_get_y(::engine::actor::ActorBase* actor) { return actor->mPosition.y; }
     float actor_pos_get_z(::engine::actor::ActorBase* actor) { return actor->mPosition.z; }
+    void actor_pos_set(::engine::actor::ActorBase* actor, const sead::Vector3f &pos) { lotuskit::util::actor::setPos(actor, pos); }
     void actor_pos_set_x(::engine::actor::ActorBase* actor, float x) { lotuskit::util::actor::setPosXYZ(actor, x, actor->mPosition.y, actor->mPosition.z); }
     void actor_pos_set_y(::engine::actor::ActorBase* actor, float y) { lotuskit::util::actor::setPosXYZ(actor, actor->mPosition.x, y, actor->mPosition.z); }
     void actor_pos_set_z(::engine::actor::ActorBase* actor, float z) { lotuskit::util::actor::setPosXYZ(actor, actor->mPosition.x, actor->mPosition.y, z); }
@@ -251,7 +253,7 @@ namespace lotuskit::script::globals {
 
         // TODO Vector4f, Quatf, doubles, ints?
 
-        // TODO Matrix33f, Matrix43f, Matrix44f, Matrix22f
+        // TODO Matrix33f, Matrix43f, Matrix44f, Matrix22f, BoundBox3f
     }
 
     void registerUtil(AngelScript::asIScriptEngine* engine) {
@@ -340,17 +342,19 @@ namespace lotuskit::script::globals {
         engine->SetDefaultNamespace(""); /// root {
             //asErrno = engine->RegisterObjectType("PreActor", 0, AngelScript::asOBJ_REF | AngelScript::asOBJ_NOCOUNT); assert(asErrno >= 0);
             asErrno = engine->RegisterObjectType("ActorBase", 0, AngelScript::asOBJ_REF | AngelScript::asOBJ_NOCOUNT); assert(asErrno >= 0);
+            asErrno = engine->RegisterObjectMethod("ActorBase", "Vector3f get_pos() property", AngelScript::asFUNCTION(actor_pos_get), AngelScript::asCALL_CDECL_OBJFIRST); assert(asErrno >= 0);
             asErrno = engine->RegisterObjectMethod("ActorBase", "float get_pos_x() property", AngelScript::asFUNCTION(actor_pos_get_x), AngelScript::asCALL_CDECL_OBJFIRST); assert(asErrno >= 0);
             asErrno = engine->RegisterObjectMethod("ActorBase", "float get_pos_y() property", AngelScript::asFUNCTION(actor_pos_get_y), AngelScript::asCALL_CDECL_OBJFIRST); assert(asErrno >= 0);
             asErrno = engine->RegisterObjectMethod("ActorBase", "float get_pos_z() property", AngelScript::asFUNCTION(actor_pos_get_z), AngelScript::asCALL_CDECL_OBJFIRST); assert(asErrno >= 0);
+            asErrno = engine->RegisterObjectMethod("ActorBase", "void set_pos(const Vector3f &in) property", AngelScript::asFUNCTION(actor_pos_set), AngelScript::asCALL_CDECL_OBJFIRST); assert(asErrno >= 0);
             asErrno = engine->RegisterObjectMethod("ActorBase", "void set_pos_x(float) property", AngelScript::asFUNCTION(actor_pos_set_x), AngelScript::asCALL_CDECL_OBJFIRST); assert(asErrno >= 0);
             asErrno = engine->RegisterObjectMethod("ActorBase", "void set_pos_y(float) property", AngelScript::asFUNCTION(actor_pos_set_y), AngelScript::asCALL_CDECL_OBJFIRST); assert(asErrno >= 0);
             asErrno = engine->RegisterObjectMethod("ActorBase", "void set_pos_z(float) property", AngelScript::asFUNCTION(actor_pos_set_z), AngelScript::asCALL_CDECL_OBJFIRST); assert(asErrno >= 0);
+            asErrno = engine->RegisterObjectMethod("ActorBase", "void setPos(const Vector3f &in)", AngelScript::asFUNCTION(lotuskit::util::actor::setPos), AngelScript::asCALL_CDECL_OBJFIRST); assert(asErrno >= 0);
             asErrno = engine->RegisterObjectMethod("ActorBase", "void setPos(float, float, float)", AngelScript::asFUNCTION(lotuskit::util::actor::setPosXYZ), AngelScript::asCALL_CDECL_OBJFIRST); assert(asErrno >= 0);
             asErrno = engine->RegisterObjectMethod("ActorBase", "void setRot(float, float, float, float, float, float, float, float, float)", AngelScript::asFUNCTION(lotuskit::util::actor::setRot9), AngelScript::asCALL_CDECL_OBJFIRST); assert(asErrno >= 0);
             asErrno = engine->RegisterObjectMethod("ActorBase", "void setPosRot(float, float, float, float, float, float, float, float, float, float, float, float)", AngelScript::asFUNCTION(lotuskit::util::actor::setPosRot39), AngelScript::asCALL_CDECL_OBJFIRST); assert(asErrno >= 0);
             asErrno = engine->RegisterObjectMethod("ActorBase", "RigidBody@ getMainRigidBody()", AngelScript::asFUNCTION(lotuskit::util::actor::getMainRigidBody), AngelScript::asCALL_CDECL_OBJFIRST); assert(asErrno >= 0);
-            //asErrno = engine->RegisterObjectProperty("ActorBase", "sead::Vector3f &pos", asOFFSET(::engine::actor::ActorBase, mPosition)); assert(asErrno >= 0);
             //engine->SetDefaultNamespace("ResidentActors");
             asErrno = engine->RegisterGlobalProperty("ActorBase@ Player", &ResidentActors::Player); assert(asErrno >= 0);
             asErrno = engine->RegisterGlobalProperty("ActorBase@ PlayerCamera", &ResidentActors::PlayerCamera); assert(asErrno >= 0);
@@ -360,8 +364,10 @@ namespace lotuskit::script::globals {
         engine->SetDefaultNamespace("actor"); /// {
             asErrno = engine->RegisterGlobalFunction("void createSimple(string &in)", AngelScript::asFUNCTION(lotuskit::util::actor::createSimple), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
             asErrno = engine->RegisterGlobalFunction("void createSimple(string &in, float, float, float)", AngelScript::asFUNCTION(lotuskit::util::actor::createSimpleXYZ), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+            asErrno = engine->RegisterGlobalFunction("void createSimple(string &in, const Vector3f &in)", AngelScript::asFUNCTION(lotuskit::util::actor::createSimplePos), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
             asErrno = engine->RegisterGlobalFunction("void createAndWatch(index_t, string &in)", AngelScript::asFUNCTION(lotuskit::util::actor::createAndWatch), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
             asErrno = engine->RegisterGlobalFunction("void createAndWatch(index_t, string &in, float, float, float)", AngelScript::asFUNCTION(lotuskit::util::actor::createAndWatchXYZ), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+            asErrno = engine->RegisterGlobalFunction("void createAndWatch(index_t, string &in, const Vector3f &in)", AngelScript::asFUNCTION(lotuskit::util::actor::createAndWatchPos), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
         /// }
 
         engine->SetDefaultNamespace("ActorWatcher"); /// {
@@ -406,7 +412,9 @@ namespace lotuskit::script::globals {
         engine->SetDefaultNamespace(""); // root
         asErrno = engine->RegisterObjectType("RigidBody", 0, AngelScript::asOBJ_REF | AngelScript::asOBJ_NOCOUNT); assert(asErrno >= 0);
         // RigidBodyBase+RigidBodyEntity methods
+        asErrno = engine->RegisterObjectMethod("RigidBody", "void setVel(const Vector3f &in)", AngelScript::asMETHOD(phive::RigidBodyBase, requestSetLinearVelocity), AngelScript::asCALL_THISCALL); assert(asErrno >= 0);
         asErrno = engine->RegisterObjectMethod("RigidBody", "void setVel(float, float, float)", AngelScript::asMETHOD(phive::RigidBodyBase, requestSetLinearVelocityXYZ), AngelScript::asCALL_THISCALL); assert(asErrno >= 0);
+        asErrno = engine->RegisterObjectMethod("RigidBody", "void applyImpulse(const Vector3f &in)", AngelScript::asMETHOD(phive::RigidBodyBase, applyLinearImpulse), AngelScript::asCALL_THISCALL); assert(asErrno >= 0);
         asErrno = engine->RegisterObjectMethod("RigidBody", "void applyImpulse(float, float, float)", AngelScript::asMETHOD(phive::RigidBodyBase, applyLinearImpulseXYZ), AngelScript::asCALL_THISCALL); assert(asErrno >= 0);
     }
 

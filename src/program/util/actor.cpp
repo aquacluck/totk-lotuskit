@@ -35,12 +35,16 @@ namespace lotuskit::util::actor {
     }
 
     void createSimpleXYZ(const std::string &actorName, float x, float y, float z) {
+        createSimplePos(actorName, sead::Vector3f{x, y, z});
+    }
+
+    void createSimplePos(const std::string &actorName, const sead::Vector3f &pos) {
         bb::InitInfo<32> initInfo;
         //initInfo.setParam(sead::SafeString{"EquipmentUser_Bow"}, sead::SafeString{"Weapon_Bow_032"});
         //initInfo.setParam(sead::SafeString{"EquipmentUser_Shield"}, sead::SafeString{"Weapon_Shield_018"});
         //initInfo.setParam(sead::SafeString{"EquipmentUser_Weapon"}, sead::SafeString{"Weapon_Sword_124"});
         engine::actor::BaseProcMgr::CreateArg createArg;
-        createArg.position = {x, y, z};
+        createArg.position = pos;
         createArg.scale = { 1.f, 1.f, 1.f };
         createArg.blackboard_info = &initInfo;
         createArg.transform_flags.set(engine::actor::BaseProcMgr::CreateArg::TransformFlags::UsePosition);
@@ -53,7 +57,7 @@ namespace lotuskit::util::actor {
         bool ret = requestCreateActorAsync(actorMgr, actorName.c_str(), createArg, nullptr, engine::actor::CreatePriority::High, nullptr, nullptr, nullptr, false, &result, nullptr);
 
         char buf[200];
-        nn::util::SNPrintf(buf, sizeof(buf), "actor::createSimple(%s, %f, %f, %f) -> %d, code %d", actorName.c_str(), x, y, z, ret?1:0, (u32)result);
+        nn::util::SNPrintf(buf, sizeof(buf), "actor::createSimple(%s, pos(%f, %f, %f)) -> %d, code %d", actorName.c_str(), pos.x, pos.y, pos.z, ret?1:0, (u32)result);
         svcOutputDebugString(buf, strlen(buf));
     }
 
@@ -66,12 +70,16 @@ namespace lotuskit::util::actor {
     }
 
     void createAndWatchXYZ(size_t slotIndex, const std::string &actorName, float x, float y, float z) {
+        createAndWatchPos(slotIndex, actorName, sead::Vector3f{x, y, z});
+    }
+
+    void createAndWatchPos(size_t slotIndex, const std::string &actorName, const sead::Vector3f &pos) {
         bb::InitInfo<32> initInfo;
         //initInfo.setParam(sead::SafeString{"EquipmentUser_Bow"}, sead::SafeString{"Weapon_Bow_032"});
         //initInfo.setParam(sead::SafeString{"EquipmentUser_Shield"}, sead::SafeString{"Weapon_Shield_018"});
         //initInfo.setParam(sead::SafeString{"EquipmentUser_Weapon"}, sead::SafeString{"Weapon_Sword_124"});
         engine::actor::BaseProcMgr::CreateArg createArg;
-        createArg.position = {x, y, z};
+        createArg.position = pos;
         createArg.scale = { 1.f, 1.f, 1.f };
         createArg.blackboard_info = &initInfo;
         createArg.transform_flags.set(engine::actor::BaseProcMgr::CreateArg::TransformFlags::UsePosition);
@@ -93,20 +101,26 @@ namespace lotuskit::util::actor {
         }
 
         char buf[200];
-        nn::util::SNPrintf(buf, sizeof(buf), "actor::createAndWatch(%d, %s, %f, %f, %f) -> %d, code %d, preactor %p", slotIndex, actorName.c_str(), x, y, z, ret?1:0, (u32)result, preactor);
+        nn::util::SNPrintf(buf, sizeof(buf), "actor::createAndWatch(%d, %s, pos(%f, %f, %f)) -> %d, code %d, preactor %p", slotIndex, actorName.c_str(), pos.x, pos.y, pos.z, ret?1:0, (u32)result, preactor);
         svcOutputDebugString(buf, strlen(buf));
     }
 
+    void setPos(ActorBase* actor, const sead::Vector3f &pos) {
+        setPosRot(actor, pos, actor->mRotation);
+    }
     void setPosXYZ(ActorBase* actor, float x, float y, float z) {
-        setPosRot(actor, sead::Vector3f{x, y, z}, actor->mRotation);
+        setPos(actor, sead::Vector3f{x, y, z});
+    }
+    void setRot(ActorBase* actor, const sead::Matrix33f &rot) {
+        setPosRot(actor, actor->mPosition, rot);
     }
     void setRot9(ActorBase* actor, float m00, float m01, float m02, float m10, float m11, float m12, float m20, float m21, float m22) {
-        setPosRot(actor, actor->mPosition, sead::Matrix33f{m00, m01, m02, m10, m11, m12, m20, m21, m22});
+        setRot(actor, sead::Matrix33f{m00, m01, m02, m10, m11, m12, m20, m21, m22});
     }
     void setPosRot39(ActorBase* actor, float x, float y, float z, float m00, float m01, float m02, float m10, float m11, float m12, float m20, float m21, float m22) {
         setPosRot(actor, sead::Vector3f{x, y, z}, sead::Matrix33f{m00, m01, m02, m10, m11, m12, m20, m21, m22});
     }
-    void setPosRot(ActorBase* actor, sead::Vector3f pos, sead::Matrix33f rot) {
+    void setPosRot(ActorBase* actor, const sead::Vector3f &pos, const sead::Matrix33f &rot) {
         ForceSetMatrixArg arg{pos, rot};
         ForceSetMatrixFunc* forceSetMatrix = EXL_SYM_RESOLVE<ForceSetMatrixFunc*>("engine::actor::ActorBase::forceSetMatrix");
         u32 usuallyZeroFlag = 0;

@@ -34,5 +34,13 @@ f16       v13;       // half floats dont exist in AngelScript! just u16.
 f16_fake  v14;       // maybe nice to be explicit about that --
                      // attempting math would fail in confusing ways
 
+// Vector types
+Vector2f honk(69, 420);
+Vector3f donk(honk.y, 0, honk.x);
+honk += Vector2f(1.2, 3.4) / honk.length();
+if (honk == Vector2f(donk.x, donk.z)) {
+    honk *= 2 + donk.length();
+}
+
 // ok thats it bye
 

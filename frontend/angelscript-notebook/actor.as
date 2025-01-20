@@ -21,6 +21,9 @@ ActorWatcher::assignSlot(0, honse1);
 // actor position can be read and written with pos_*
 if (Player.pos_y < honse1.pos_y) {
     Player.pos_y = honse1.pos_y + 5;
+
+    // or use vectors
+    Player.pos = honse1.pos + Vector3f(0, 5, 0);
 }
 
 // spawn a wing below Player, watch it in slot 2
@@ -28,14 +31,16 @@ actor::createAndWatch(
     2, "SpObj_LiftGeneratorWing_A_01",
     Player.pos_x, Player.pos_y - 5, Player.pos_z
 );
+
 // or i do this a lot and it smacks Link hehe
 actor::createAndWatch(
     1, "SpObj_LiftGeneratorWing_A_01",
-    Player.pos_x, Player.pos_y + 5, Player.pos_z
+    Player.pos + Vector3f(0, 5, 0)
 );
 
-// set position/rotation all at once
+// set position/rotation
 honse1.setPos(123, 456.0, 789.5);
+Player.pos += Vector3f(0, 100, 0);
 PlayerCamera.setRot(1,0,0, 0,1,0, 0,0,1);
 EventCamera.setPosRot(
     123, 456.0, 789.5, // xyz (engine)
@@ -76,5 +81,7 @@ ActorWatcher::doDrawRigidBodyPosFuture(0, 4+8); // flags -3 | -4
 
 RigidBody@ rbody = ActorWatcher::get(1).getMainRigidBody();
 rbody.setVel(0, 20.0, 0); // doesnt work on Player
+rbody.setVel(Vector3f(0, 20.0, 0));
 rbody.applyImpulse(0, 5000.0, 0); // larger values, also no Player
+rbody.applyImpulse(Vector3f(0, 5000.0, 0));
 
