@@ -7,6 +7,11 @@ tas::input(30, NONE, 0,0, 0,0);
 // (chosen because abs(x) > 16400 is when nnsdk flags it as a button press)
 tas::input(1, KEY_DDOWN|KEY_B, 0,0, -16401,0);
 
+// or use vector math: LStick: 0,16383, RStick: -8000,0
+tas::input(15, KEY_B, 0.5*STICK_UP_MAX, 8000*STICK_LEFT);
+
+// TODO angle+arc+tweening helpers
+
 // not "recording", just logging the inputs --
 // for now saving+organizing them is entirely your job.
 // (but i plan to add basic file support sometime)

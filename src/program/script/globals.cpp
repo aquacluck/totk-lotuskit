@@ -26,8 +26,18 @@ namespace lotuskit::script::globals {
         ::engine::actor::ActorBase* PlayerCamera = nullptr;
         ::engine::actor::ActorBase* EventCamera = nullptr;
     } // ns
-    namespace Vector3fStatic {
+    namespace Vector2fStatic {
         // XXX AS RegisterGlobalProperty won't let these be const?
+        sead::Vector2f STICK_UP_MAX(0, 32767);
+        sead::Vector2f STICK_UP_DIR(0, 1);
+        sead::Vector2f STICK_DOWN_MAX(0, -32768);
+        sead::Vector2f STICK_DOWN_DIR(0, -1);
+        sead::Vector2f STICK_LEFT_MAX(-32768, 0);
+        sead::Vector2f STICK_LEFT_DIR(-1, 0);
+        sead::Vector2f STICK_RIGHT_MAX(32767, 0);
+        sead::Vector2f STICK_RIGHT_DIR(1, 0);
+    } // ns
+    namespace Vector3fStatic {
         sead::Vector3f  ZERO( 0,  0,  0);
         sead::Vector3f   ONE( 1,  1,  1);
         sead::Vector3f   NEG(-1, -1, -1);
@@ -174,6 +184,19 @@ namespace lotuskit::script::globals {
     void actor_pos_set_x(::engine::actor::ActorBase* actor, float x) { lotuskit::util::actor::setPosXYZ(actor, x, actor->mPosition.y, actor->mPosition.z); }
     void actor_pos_set_y(::engine::actor::ActorBase* actor, float y) { lotuskit::util::actor::setPosXYZ(actor, actor->mPosition.x, y, actor->mPosition.z); }
     void actor_pos_set_z(::engine::actor::ActorBase* actor, float z) { lotuskit::util::actor::setPosXYZ(actor, actor->mPosition.x, actor->mPosition.y, z); }
+
+    void tas_input_vec2f_l(u32 duration, u64 nextButtons, const sead::Vector2f &nextLStick) {
+        lotuskit::tas::Playback::setCurrentInput(duration, nextButtons, nextLStick.x, nextLStick.y, 0, 0);
+    }
+    void tas_input_vec2f_lr(u32 duration, u64 nextButtons, const sead::Vector2f &nextLStick, const sead::Vector2f &nextRStick) {
+        lotuskit::tas::Playback::setCurrentInput(duration, nextButtons, nextLStick.x, nextLStick.y, nextRStick.x, nextRStick.y);
+    }
+    void tas_input_vec2f_0l(u32 duration, const sead::Vector2f &nextLStick) {
+        lotuskit::tas::Playback::setCurrentInput(duration, 0, nextLStick.x, nextLStick.y, 0, 0);
+    }
+    void tas_input_vec2f_0lr(u32 duration, const sead::Vector2f &nextLStick, const sead::Vector2f &nextRStick) {
+        lotuskit::tas::Playback::setCurrentInput(duration, 0, nextLStick.x, nextLStick.y, nextRStick.x, nextRStick.y);
+    }
 
 
     // Begin AS engine registrations
@@ -362,6 +385,15 @@ namespace lotuskit::script::globals {
             asErrno = engine->RegisterEnumValue("nxTASButton", "KEY_DDOWN", (1 << 15)); assert(asErrno >= 0);
             asErrno = engine->RegisterEnumValue("nxTASButton", "KEY_LSTICK", (1 << 4)); assert(asErrno >= 0);
             asErrno = engine->RegisterEnumValue("nxTASButton", "KEY_RSTICK", (1 << 5)); assert(asErrno >= 0);
+
+            asErrno = engine->RegisterGlobalProperty("const Vector2f STICK_UP_MAX", &Vector2fStatic::STICK_UP_MAX); assert(asErrno >= 0);
+            asErrno = engine->RegisterGlobalProperty("const Vector2f STICK_UP", &Vector2fStatic::STICK_UP_DIR); assert(asErrno >= 0);
+            asErrno = engine->RegisterGlobalProperty("const Vector2f STICK_DOWN_MAX", &Vector2fStatic::STICK_DOWN_MAX); assert(asErrno >= 0);
+            asErrno = engine->RegisterGlobalProperty("const Vector2f STICK_DOWN", &Vector2fStatic::STICK_DOWN_DIR); assert(asErrno >= 0);
+            asErrno = engine->RegisterGlobalProperty("const Vector2f STICK_LEFT_MAX", &Vector2fStatic::STICK_LEFT_MAX); assert(asErrno >= 0);
+            asErrno = engine->RegisterGlobalProperty("const Vector2f STICK_LEFT", &Vector2fStatic::STICK_LEFT_DIR); assert(asErrno >= 0);
+            asErrno = engine->RegisterGlobalProperty("const Vector2f STICK_RIGHT_MAX", &Vector2fStatic::STICK_RIGHT_MAX); assert(asErrno >= 0);
+            asErrno = engine->RegisterGlobalProperty("const Vector2f STICK_RIGHT", &Vector2fStatic::STICK_RIGHT_DIR); assert(asErrno >= 0);
         /// }
 
         engine->SetDefaultNamespace("tas"); /// {
@@ -369,6 +401,27 @@ namespace lotuskit::script::globals {
             asErrno = engine->RegisterGlobalFunction(
                 "void input(u32 duration=1, u64 nextButtons=0, s32 nextLStickX=0, s32 nextLStickY=0, s32 nextRStickX=0, s32 nextRStickY=0)",
                 AngelScript::asFUNCTION(lotuskit::tas::Playback::setCurrentInput),
+                AngelScript::asCALL_CDECL
+            ); assert( asErrno >= 0 );
+            asErrno = engine->RegisterGlobalFunction(
+                // note these floats still use s32 units, not 0...1! There's no Vector2i binding yet and this seems simpler anyways
+                "void input(u32 duration, u64 nextButtons, const Vector2f &in)",
+                AngelScript::asFUNCTION(tas_input_vec2f_l),
+                AngelScript::asCALL_CDECL
+            ); assert( asErrno >= 0 );
+            asErrno = engine->RegisterGlobalFunction(
+                "void input(u32 duration, u64 nextButtons, const Vector2f &in, const Vector2f &in)",
+                AngelScript::asFUNCTION(tas_input_vec2f_lr),
+                AngelScript::asCALL_CDECL
+            ); assert( asErrno >= 0 );
+            asErrno = engine->RegisterGlobalFunction(
+                "void input(u32 duration, const Vector2f &in)",
+                AngelScript::asFUNCTION(tas_input_vec2f_0l),
+                AngelScript::asCALL_CDECL
+            ); assert( asErrno >= 0 );
+            asErrno = engine->RegisterGlobalFunction(
+                "void input(u32 duration, const Vector2f &in, const Vector2f &in)",
+                AngelScript::asFUNCTION(tas_input_vec2f_0lr),
                 AngelScript::asCALL_CDECL
             ); assert( asErrno >= 0 );
             asErrno = engine->RegisterGlobalFunction(
