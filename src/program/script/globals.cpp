@@ -713,6 +713,11 @@ namespace lotuskit::script::globals {
                 AngelScript::asCALL_CDECL
             ); assert( asErrno >= 0 );
             asErrno = engine->RegisterGlobalFunction(
+                "void sleep(u32 duration=1)",
+                AngelScript::asFUNCTION(lotuskit::tas::Playback::setSleepInput),
+                AngelScript::asCALL_CDECL
+            ); assert( asErrno >= 0 );
+            asErrno = engine->RegisterGlobalFunction(
                 "void toggleDump()",
                 AngelScript::asFUNCTION(lotuskit::tas::Record::trashToggleDump),
                 AngelScript::asCALL_CDECL

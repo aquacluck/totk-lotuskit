@@ -10,6 +10,8 @@ tas::input(1, KEY_DDOWN|KEY_B, 0,0, -16401,0);
 // or use vector math: LStick: 0,16383, RStick: -8000,0
 tas::input(15, KEY_B, 0.5*STICK_UP_MAX, 8000*STICK_LEFT);
 
+tas::sleep(30); // passthrough human control for 30f
+
 // TODO angle+arc+tweening helpers
 
 // not "recording", just logging the inputs --

@@ -80,32 +80,61 @@ namespace lotuskit::tas {
         // assert duration60 > 0
 
         AngelScript::asIScriptContext *ctx = AngelScript::asGetActiveContext();
-        if (ctx != nullptr) {
-            //TODO atomic toggle between double buffer currentInput+nextInput
-            currentInputTTL60 = duration60;
-            currentInput.LStick.mX = nextLStickX;
-            currentInput.LStick.mY = nextLStickY;
-            currentInput.RStick.mX = nextRStickX;
-            currentInput.RStick.mY = nextRStickY;
+        if (ctx == nullptr) { return; }
 
-            // rehydrate axis flags, matching 16400 sdk threshold (arguably bad for us, hiding low signals). idk why these are buttons but it's useful to preserve them for InputDisplay
-            if (nextLStickX >  16400) { nextButtons |= (1 << (u32)nn::hid::NpadButton::StickLRight); }
-            if (nextLStickX < -16400) { nextButtons |= (1 << (u32)nn::hid::NpadButton::StickLLeft); }
-            if (nextLStickY >  16400) { nextButtons |= (1 << (u32)nn::hid::NpadButton::StickLUp); }
-            if (nextLStickY < -16400) { nextButtons |= (1 << (u32)nn::hid::NpadButton::StickLDown); }
-            if (nextRStickX >  16400) { nextButtons |= (1 << (u32)nn::hid::NpadButton::StickRRight); }
-            if (nextRStickX < -16400) { nextButtons |= (1 << (u32)nn::hid::NpadButton::StickRLeft); }
-            if (nextRStickY >  16400) { nextButtons |= (1 << (u32)nn::hid::NpadButton::StickRUp); }
-            if (nextRStickY < -16400) { nextButtons |= (1 << (u32)nn::hid::NpadButton::StickRDown); }
+        //TODO atomic toggle between double buffer currentInput+nextInput
+        currentInputTTL60 = duration60;
+        currentInput.LStick.mX = nextLStickX;
+        currentInput.LStick.mY = nextLStickY;
+        currentInput.RStick.mX = nextRStickX;
+        currentInput.RStick.mY = nextRStickY;
 
-            *(u64*)&(currentInput.buttons) = nextButtons; // These are expected to be
-            isPlaybackActive = true;                      // written/observable in order
-            // XXX and i'm not confident that's guaranteed, but it doesnt seem dangerous at least?
-            //     i do this sort of guard without locking a lot though, so i need to find out. std::memory_order or something?
+        // rehydrate axis flags, matching 16400 sdk threshold (arguably bad for us, hiding low signals). idk why these are buttons but it's useful to preserve them for InputDisplay
+        if (nextLStickX >  16400) { nextButtons |= (1 << (u32)nn::hid::NpadButton::StickLRight); }
+        if (nextLStickX < -16400) { nextButtons |= (1 << (u32)nn::hid::NpadButton::StickLLeft); }
+        if (nextLStickY >  16400) { nextButtons |= (1 << (u32)nn::hid::NpadButton::StickLUp); }
+        if (nextLStickY < -16400) { nextButtons |= (1 << (u32)nn::hid::NpadButton::StickLDown); }
+        if (nextRStickX >  16400) { nextButtons |= (1 << (u32)nn::hid::NpadButton::StickRRight); }
+        if (nextRStickX < -16400) { nextButtons |= (1 << (u32)nn::hid::NpadButton::StickRLeft); }
+        if (nextRStickY >  16400) { nextButtons |= (1 << (u32)nn::hid::NpadButton::StickRUp); }
+        if (nextRStickY < -16400) { nextButtons |= (1 << (u32)nn::hid::NpadButton::StickRDown); }
 
-            // yield execution from script back to game, to be resumed in n frames
-            currentCtx = ctx;
-            ctx->Suspend(); // assert ctx->GetState() == asEXECUTION_SUSPENDED
-        }
+        *(u64*)&(currentInput.buttons) = nextButtons; // These are expected to be
+        isPlaybackActive = true;                      // written/observable in order
+        // XXX and i'm not confident that's guaranteed, but it doesnt seem dangerous at least?
+        //     i do this sort of guard without locking a lot though, so i need to find out. std::memory_order or something?
+
+        // yield execution from script back to game, to be resumed in n frames
+        currentCtx = ctx;
+        ctx->Suspend(); // assert ctx->GetState() == asEXECUTION_SUSPENDED
     }
+
+    void Playback::setSleepInput(u32 duration) {
+        // called by tas script to passthrough human input for next n frames
+        if (duration == 0) { return; } // ignore
+
+        // what is "n frames" expected to mean?
+        u32 duration60 = 0;
+        if (config::inputMode == config::InputDurationScalingStrategy::FPS60_1X) {
+            duration60 = duration;
+        } else if (config::inputMode == config::InputDurationScalingStrategy::FPS30_2X) {
+            duration60 = duration * 2;
+        } else if (config::inputMode == config::InputDurationScalingStrategy::FPS20_3X) {
+            duration60 = duration * 3;
+        } else return;
+        // assert duration60 > 0
+
+        AngelScript::asIScriptContext *ctx = AngelScript::asGetActiveContext();
+        if (ctx == nullptr) { return; }
+
+        //TODO atomic toggle between double buffer currentInput+nextInput
+        currentInputTTL60 = duration60;
+        isSleepInput = true;
+        isPlaybackActive = true;
+
+        // yield execution from script back to game, to be resumed in n frames
+        currentCtx = ctx;
+        ctx->Suspend(); // assert ctx->GetState() == asEXECUTION_SUSPENDED
+    }
+
 } // ns
