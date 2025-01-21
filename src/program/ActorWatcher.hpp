@@ -250,8 +250,7 @@ namespace lotuskit {
             if (doDrawRigidBodyAABB) {
                 //TODO TextWriter config, its too much
                 float* xxx = (float*)&(rbody->lastTransform); //float x = [3]; float y = [7]; float z = [11];
-                sead::Vector3f vel = {0, 0, 0};
-                rbody->getNextLinearVelocity(&vel);
+                sead::Vector3f vel = rbody->getNextLinearVelocity();
                 lotuskit::TextWriter::printf(0, "RigidBody %s(%p): pos %f %f %f, vel %f %f %f \n", rbody->getName(), rbody, xxx[3], xxx[7], xxx[11], vel.x, vel.y, vel.z );
 
                 sead::BoundBox3f aabb = rbody->getAABB();

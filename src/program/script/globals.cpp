@@ -734,6 +734,8 @@ namespace lotuskit::script::globals {
         engine->SetDefaultNamespace(""); // root
         asErrno = engine->RegisterObjectType("RigidBody", 0, AngelScript::asOBJ_REF | AngelScript::asOBJ_NOCOUNT); assert(asErrno >= 0);
         // RigidBodyBase+RigidBodyEntity methods
+        asErrno = engine->RegisterObjectMethod("RigidBody", "Vector3f get_vel() property", AngelScript::asMETHOD(phive::RigidBodyBase, getNextLinearVelocity), AngelScript::asCALL_THISCALL); assert(asErrno >= 0);
+        asErrno = engine->RegisterObjectMethod("RigidBody", "void set_vel(const Vector3f &in) property", AngelScript::asMETHOD(phive::RigidBodyBase, requestSetLinearVelocity), AngelScript::asCALL_THISCALL); assert(asErrno >= 0);
         asErrno = engine->RegisterObjectMethod("RigidBody", "void setVel(const Vector3f &in)", AngelScript::asMETHOD(phive::RigidBodyBase, requestSetLinearVelocity), AngelScript::asCALL_THISCALL); assert(asErrno >= 0);
         asErrno = engine->RegisterObjectMethod("RigidBody", "void setVel(float, float, float)", AngelScript::asMETHOD(phive::RigidBodyBase, requestSetLinearVelocityXYZ), AngelScript::asCALL_THISCALL); assert(asErrno >= 0);
         asErrno = engine->RegisterObjectMethod("RigidBody", "void applyImpulse(const Vector3f &in)", AngelScript::asMETHOD(phive::RigidBodyBase, applyLinearImpulse), AngelScript::asCALL_THISCALL); assert(asErrno >= 0);

@@ -81,10 +81,16 @@ namespace phive {
             return this->applyLinearImpulse(&val);
         }
 
-        void getNextLinearVelocity(sead::Vector3f* dst) {
+        void getNextLinearVelocity_(sead::Vector3f* dst) {
             using impl_t = void (RigidBodyBase*, sead::Vector3f*);
             auto impl = EXL_SYM_RESOLVE<impl_t*>("phive::RigidBodyBase::getNextLinearVelocity");
             return impl(this, dst);
+        }
+
+        sead::Vector3f getNextLinearVelocity() {
+            sead::Vector3f out = {0,0,0};
+            this->getNextLinearVelocity_(&out);
+            return out;
         }
 
     };

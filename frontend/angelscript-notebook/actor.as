@@ -92,7 +92,7 @@ TextWriter::toast(30, format(
 // set RigidBodys in motion
 RigidBody@ rbody = ActorWatcher::get(1).getMainRigidBody();
 rbody.setVel(0, 20.0, 0); // doesnt work on Player
-rbody.setVel(Vector3f(0, 20.0, 0));
+rbody.vel += Vector3f(0, 20.0, 0);
 rbody.applyImpulse(0, 5000.0, 0); // larger values, also no Player
 rbody.applyImpulse(Vector3f(0, 5000.0, 0));
 
