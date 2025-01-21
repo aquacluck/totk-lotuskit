@@ -12,6 +12,7 @@
 #include "PrimitiveDrawer.hpp"
 #include "util/actor.hpp"
 #include "util/camera.hpp"
+#include "util/color.hpp"
 using json = nlohmann::json;
 using Logger = lotuskit::Logger;
 #include <gfx/seadColor.h>
@@ -406,7 +407,12 @@ namespace lotuskit::script::globals {
         asErrno = engine->RegisterObjectBehaviour("Color4f", AngelScript::asBEHAVE_CONSTRUCT, "void f()", AngelScript::asFUNCTION(Color4fConstructor), AngelScript::asCALL_CDECL_OBJLAST); assert( asErrno >= 0 );
         asErrno = engine->RegisterObjectBehaviour("Color4f", AngelScript::asBEHAVE_CONSTRUCT, "void f(float, float g = 0, float b = 0, float a = 1)", AngelScript::asFUNCTION(Color4fAssignConstructor), AngelScript::asCALL_CDECL_OBJLAST); assert( asErrno >= 0 );
         asErrno = engine->RegisterObjectBehaviour("Color4f", AngelScript::asBEHAVE_CONSTRUCT, "void f(const Color4f &in)", AngelScript::asFUNCTION(Color4fKopyKonstructor), AngelScript::asCALL_CDECL_OBJLAST); assert( asErrno >= 0 );
-        // TODO HSL/etc factories+adjusts, presets
+        asErrno = engine->RegisterObjectMethod("Color4f", "float get_h() property", AngelScript::asFUNCTION(lotuskit::util::color::hue_from_color), AngelScript::asCALL_CDECL_OBJFIRST); assert(asErrno >= 0);
+        asErrno = engine->RegisterObjectMethod("Color4f", "float get_s() property", AngelScript::asFUNCTION(lotuskit::util::color::sat_from_color), AngelScript::asCALL_CDECL_OBJFIRST); assert(asErrno >= 0);
+        asErrno = engine->RegisterObjectMethod("Color4f", "float get_v() property", AngelScript::asFUNCTION(lotuskit::util::color::val_from_color), AngelScript::asCALL_CDECL_OBJFIRST); assert(asErrno >= 0);
+        engine->SetDefaultNamespace("Color4f"); // HSV factories+static
+        asErrno = engine->RegisterGlobalFunction("Color4f from_hsva(float h=1, float s=1, float v=1, float a=1)", AngelScript::asFUNCTION(lotuskit::util::color::color_from_hsva), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        engine->SetDefaultNamespace(""); // root
 
         // TODO Quatf/Quatd, Vector3d, Vector2i?
 
