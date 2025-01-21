@@ -9,10 +9,13 @@
 #include "HexDump.hpp"
 #include "Logger.hpp"
 #include "TextWriter.hpp"
+#include "PrimitiveDrawer.hpp"
 #include "util/actor.hpp"
 #include "util/camera.hpp"
 using json = nlohmann::json;
 using Logger = lotuskit::Logger;
+#include <gfx/seadColor.h>
+#include <gfx/seadPrimitiveRenderer.h>
 #include <math/seadVector.h>
 #include <heap/seadHeapMgr.h>
 #include <thread/seadThread.h>
@@ -222,6 +225,9 @@ namespace lotuskit::script::globals {
     void textwriter_as_print(size_t drawList_i, const std::string& msg) { lotuskit::TextWriter::printf(drawList_i, msg.c_str()); }
     void textwriter_as_toast(u32 ttlFrames, const std::string& msg) { lotuskit::TextWriter::toastf(ttlFrames, msg.c_str()); }
 
+    void primq_wirecube(size_t drawList_i, const sead::BoundBox3f& box, const sead::Color4f& color) { lotuskit::PrimitiveDrawer::drawWireCube(drawList_i, sead::PrimitiveDrawer::CubeArg(box, color)); }
+    void primq_wirecube2(size_t drawList_i, const sead::Vector3f& pos, const sead::Vector3f& size, const sead::Color4f& color) { lotuskit::PrimitiveDrawer::drawWireCube(drawList_i, sead::PrimitiveDrawer::CubeArg(pos, size, color)); }
+
     sead::Vector3f actor_pos_get(::engine::actor::ActorBase* actor) { return actor->mPosition; }
     float actor_pos_get_x(::engine::actor::ActorBase* actor) { return actor->mPosition.x; }
     float actor_pos_get_y(::engine::actor::ActorBase* actor) { return actor->mPosition.y; }
@@ -265,6 +271,10 @@ namespace lotuskit::script::globals {
     sead::Vector3f Vector3fMul(const sead::Vector3f& a, float b) { return a*b; }
     sead::Vector3f Vector3fMul_r(float b, const sead::Vector3f& a) { return a*b; }
     sead::Vector3f Vector3fDiv(const sead::Vector3f& a, float b) { return a/b; }
+
+    void Color4fConstructor(sead::Color4f *self) { new(self) sead::Color4f(); }
+    void Color4fAssignConstructor(float r, float g, float b, float a, sead::Color4f *self) { new(self) sead::Color4f(r,g,b,a); }
+    void Color4fKopyKonstructor(const sead::Color4f &other, sead::Color4f *self) { new(self) sead::Color4f(other); }
 
     void Matrix22fConstructor(sead::Matrix22f *self) { new(self) sead::Matrix22f(); }
     void Matrix22fAssignConstructor(float a0, float a1, float a2, float a3, sead::Matrix22f *self) { new(self) sead::Matrix22f(a0,a1,a2,a3); }
@@ -387,7 +397,18 @@ namespace lotuskit::script::globals {
         asErrno = engine->RegisterObjectMethod("Vector3f", "Vector3f opMul_r(float) const", AngelScript::asFUNCTIONPR(Vector3fMul_r, (float, const sead::Vector3f&), sead::Vector3f), AngelScript::asCALL_CDECL_OBJLAST); assert( asErrno >= 0 );
         asErrno = engine->RegisterObjectMethod("Vector3f", "Vector3f opDiv(float) const", AngelScript::asFUNCTIONPR(Vector3fDiv, (const sead::Vector3f&, float), sead::Vector3f), AngelScript::asCALL_CDECL_OBJFIRST); assert( asErrno >= 0 );
 
-        // TODO Vector4f, Quatf, doubles, ints?
+        // Color4f
+        asErrno = engine->RegisterObjectType("Color4f", sizeof(sead::Color4f), AngelScript::asOBJ_VALUE | AngelScript::asOBJ_POD | AngelScript::asOBJ_APP_CLASS_CAK | AngelScript::asOBJ_APP_CLASS_ALLFLOATS); assert( asErrno >= 0 );
+        asErrno = engine->RegisterObjectProperty("Color4f", "float r", asOFFSET(sead::Color4f, r)); assert(asErrno >= 0);
+        asErrno = engine->RegisterObjectProperty("Color4f", "float g", asOFFSET(sead::Color4f, g)); assert(asErrno >= 0);
+        asErrno = engine->RegisterObjectProperty("Color4f", "float b", asOFFSET(sead::Color4f, b)); assert(asErrno >= 0);
+        asErrno = engine->RegisterObjectProperty("Color4f", "float a", asOFFSET(sead::Color4f, a)); assert(asErrno >= 0);
+        asErrno = engine->RegisterObjectBehaviour("Color4f", AngelScript::asBEHAVE_CONSTRUCT, "void f()", AngelScript::asFUNCTION(Color4fConstructor), AngelScript::asCALL_CDECL_OBJLAST); assert( asErrno >= 0 );
+        asErrno = engine->RegisterObjectBehaviour("Color4f", AngelScript::asBEHAVE_CONSTRUCT, "void f(float, float g = 0, float b = 0, float a = 1)", AngelScript::asFUNCTION(Color4fAssignConstructor), AngelScript::asCALL_CDECL_OBJLAST); assert( asErrno >= 0 );
+        asErrno = engine->RegisterObjectBehaviour("Color4f", AngelScript::asBEHAVE_CONSTRUCT, "void f(const Color4f &in)", AngelScript::asFUNCTION(Color4fKopyKonstructor), AngelScript::asCALL_CDECL_OBJLAST); assert( asErrno >= 0 );
+        // TODO HSL/etc factories+adjusts, presets
+
+        // TODO Quatf/Quatd, Vector3d, Vector2i?
 
         asErrno = engine->RegisterObjectType("Matrix22f", sizeof(sead::Matrix22f), AngelScript::asOBJ_VALUE | AngelScript::asOBJ_POD | AngelScript::asOBJ_APP_CLASS_CAK | AngelScript::asOBJ_APP_CLASS_ALLFLOATS); assert( asErrno >= 0 );
         asErrno = engine->RegisterObjectProperty("Matrix22f", "float a0", asOFFSET(sead::Matrix22f, a[0])); assert(asErrno >= 0);
@@ -604,6 +625,24 @@ namespace lotuskit::script::globals {
             // FIXME trash freeze binding
             asErrno = engine->RegisterGlobalFunction("void log()", AngelScript::asFUNCTION(lotuskit::util::camera::log), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
         /// }
+
+        engine->SetDefaultNamespace("PrimitiveDrawer");
+        asErrno = engine->RegisterGlobalFunction("void setModelMtx(index_t, const Matrix34f &in)", AngelScript::asFUNCTION(lotuskit::PrimitiveDrawer::setModelMtx), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        //asErrno = engine->RegisterGlobalFunction("void setProjection(index_t, const sead::Projection &in)", AngelScript::asFUNCTION(lotuskit::PrimitiveDrawer::setProjection), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        //asErrno = engine->RegisterGlobalFunction("void setCamera(index_t, const sead::Camera &in)", AngelScript::asFUNCTION(lotuskit::PrimitiveDrawer::setCamera), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        //asErrno = engine->RegisterGlobalFunction("void setDrawCtx(index_t, const sead::DrawContext &in)", AngelScript::asFUNCTION(lotuskit::PrimitiveDrawer::setDrawCtx), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        //asErrno = engine->RegisterGlobalFunction("void drawQuad(index_t, const sead::PrimitiveDrawer::QuadArg &in)", AngelScript::asFUNCTION(lotuskit::PrimitiveDrawer::drawQuad), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void drawQuad(index_t, const Color4f &in)", AngelScript::asFUNCTION(lotuskit::PrimitiveDrawer::drawQuad), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void drawBox(index_t, const Color4f &in, const Color4f &in)", AngelScript::asFUNCTION(lotuskit::PrimitiveDrawer::drawBox), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void drawWireCube(index_t, const BoundBox3f &in, const Color4f &in)", AngelScript::asFUNCTION(primq_wirecube), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void drawWireCube(index_t, const Vector3f &in, const Vector3f &in, const Color4f &in)", AngelScript::asFUNCTION(primq_wirecube2), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void drawLine(index_t, const Vector3f &in, const Vector3f &in, const Color4f &in, const Color4f &in)", AngelScript::asFUNCTION(lotuskit::PrimitiveDrawer::drawLine), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void drawSphere4x8(index_t, const Vector3f &in, float, const Color4f &in, const Color4f &in)", AngelScript::asFUNCTION(lotuskit::PrimitiveDrawer::drawSphere4x8), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void drawSphere8x16(index_t, const Vector3f &in, float, const Color4f &in, const Color4f &in)", AngelScript::asFUNCTION(lotuskit::PrimitiveDrawer::drawSphere8x16), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void drawDisk32(index_t, const Vector3f &in, float, const Color4f &in, const Color4f &in)", AngelScript::asFUNCTION(lotuskit::PrimitiveDrawer::drawDisk32), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void drawCircle32(index_t, const Vector3f &in, float, const Color4f &in)", AngelScript::asFUNCTION(lotuskit::PrimitiveDrawer::drawCircle32), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void drawCylinder16(index_t, const Vector3f &in, float, float, const Color4f &in, const Color4f &in)", AngelScript::asFUNCTION(lotuskit::PrimitiveDrawer::drawCylinder16), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void drawCylinder32(index_t, const Vector3f &in, float, float, const Color4f &in, const Color4f &in)", AngelScript::asFUNCTION(lotuskit::PrimitiveDrawer::drawCylinder32), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
     }
 
     void registerTAS(AngelScript::asIScriptEngine* engine) {

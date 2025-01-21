@@ -251,7 +251,7 @@ namespace lotuskit {
                 //TODO TextWriter config, its too much
                 float* xxx = (float*)&(rbody->lastTransform); //float x = [3]; float y = [7]; float z = [11];
                 sead::Vector3f vel = rbody->getNextLinearVelocity();
-                lotuskit::TextWriter::printf(0, "RigidBody %s(%p): pos %f %f %f, vel %f %f %f \n", rbody->getName(), rbody, xxx[3], xxx[7], xxx[11], vel.x, vel.y, vel.z );
+                lotuskit::TextWriter::printf(0, "RigidBody %s(%p): pos %f %f %f, vel %f %f %f \n", rbody->getName().c_str(), rbody, xxx[3], xxx[7], xxx[11], vel.x, vel.y, vel.z );
 
                 sead::BoundBox3f aabb = rbody->getAABB();
                 lotuskit::PrimitiveDrawer::drawWireCube(0, sead::PrimitiveDrawer::CubeArg(aabb, PhysicalGreen));
@@ -423,7 +423,7 @@ namespace lotuskit {
 
                         lotuskit::TextWriter::printf(
                             0, "RigidBody %s(%p) \naabb : [%f, %f] [%f, %f] [%f, %f] \nworld: [%f, %f] [%f, %f] [%f, %f] \n\n",
-                            rbody->getName(), rbody,
+                            rbody->getName().c_str(), rbody,
                             aabb.getMin().x, aabb.getMax().x, aabb.getMin().y, aabb.getMax().y, aabb.getMin().z, aabb.getMax().z,
                             wrld.getMin().x, wrld.getMax().x, wrld.getMin().y, wrld.getMax().y, wrld.getMin().z, wrld.getMax().z
                         );

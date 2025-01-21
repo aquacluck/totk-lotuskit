@@ -92,8 +92,8 @@ namespace lotuskit {
                     PrimitiveImpl::setDrawCtx(n->draw_ctx);
                     break;
                 } case 5: {
-                    auto n = (PrimitiveDrawerDrawNodeArgs::Quad*)node;
-                    PrimitiveImpl::drawQuad(n->arg);
+                    //auto n = (PrimitiveDrawerDrawNodeArgs::Quad*)node;
+                    //PrimitiveImpl::drawQuad(n->arg);
                     break;
                 } case 6: {
                     auto n = (PrimitiveDrawerDrawNodeArgs::Quad2*)node;
@@ -143,7 +143,7 @@ namespace lotuskit {
     } // ns
 
     namespace PrimitiveDrawer {
-        void setModelMtx(size_t drawList_i, sead::Matrix34f mtx) {
+        void setModelMtx(size_t drawList_i, const sead::Matrix34f &mtx) {
             auto* newNode = PrimitiveImpl::appendNewDrawNode(drawList_i);
             auto* args = PrimitiveImpl::allocNodeArgs<PrimitiveDrawerDrawNodeArgs::SetModelMtx>(newNode);
             if (newNode == nullptr || args == nullptr) { return; }
@@ -171,6 +171,7 @@ namespace lotuskit {
             newNode->primCallType = 4;
             args->draw_ctx = draw_ctx;
         }
+        /*
         void drawQuad(size_t drawList_i, const sead::PrimitiveDrawer::QuadArg& arg) { // TODO de-overload these? cpp overloads in AS bindings can be painful
             auto* newNode = PrimitiveImpl::appendNewDrawNode(drawList_i);
             auto* args = PrimitiveImpl::allocNodeArgs<PrimitiveDrawerDrawNodeArgs::Quad>(newNode);
@@ -178,6 +179,7 @@ namespace lotuskit {
             newNode->primCallType = 5;
             args->arg = arg;
         }
+        */
         void drawQuad(size_t drawList_i, const sead::Color4f& c0, const sead::Color4f& c1) {
             auto* newNode = PrimitiveImpl::appendNewDrawNode(drawList_i);
             auto* args = PrimitiveImpl::allocNodeArgs<PrimitiveDrawerDrawNodeArgs::Quad2>(newNode);
@@ -382,9 +384,11 @@ namespace lotuskit {
             SetDrawCtx(getPrimitiveDrawer(), draw_ctx);
         }
 
+        /*
         void drawQuad(const sead::PrimitiveDrawer::QuadArg& arg) {
             DrawQuad(getPrimitiveDrawer(), arg);
         }
+        */
 
         void drawQuad(const sead::Color4f& c0, const sead::Color4f& c1) {
             DrawQuad2(getPrimitiveDrawer(), c0, c1);

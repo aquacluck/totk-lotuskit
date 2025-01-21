@@ -26,11 +26,11 @@ namespace lotuskit {
 
     // AS+scheduled+etc wrappers: Append shape to draw queue
     namespace PrimitiveDrawer {
-        void setModelMtx(size_t drawList_i, sead::Matrix34f mtx);
+        void setModelMtx(size_t drawList_i, const sead::Matrix34f& mtx);
         void setProjection(size_t drawList_i, sead::Projection* projection);
         void setCamera(size_t drawList_i, sead::Camera* camera);
         void setDrawCtx(size_t drawList_i, sead::DrawContext* draw_ctx);
-        void drawQuad(size_t drawList_i, const sead::PrimitiveDrawer::QuadArg& arg); // TODO de-overload these? cpp overloads in AS bindings can be painful
+        //void drawQuad(size_t drawList_i, const sead::PrimitiveDrawer::QuadArg& arg); // TODO de-overload these? cpp overloads in AS bindings can be painful
         void drawQuad(size_t drawList_i, const sead::Color4f& c0, const sead::Color4f& c1);
         void drawBox(size_t drawList_i, const sead::Color4f& c0, const sead::Color4f& c1);
         void drawWireCube(size_t drawList_i, const sead::PrimitiveDrawer::CubeArg& arg);
@@ -57,7 +57,7 @@ namespace lotuskit {
         void setProjection(sead::Projection* projection);
         void setCamera(sead::Camera* camera);
         void setDrawCtx(sead::DrawContext* draw_ctx);
-        void drawQuad(const sead::PrimitiveDrawer::QuadArg& arg); // TODO de-overload these? cpp overloads in AS bindings can be painful
+        //void drawQuad(const sead::PrimitiveDrawer::QuadArg& arg); // TODO de-overload these? cpp overloads in AS bindings can be painful
         void drawQuad(const sead::Color4f& c0, const sead::Color4f& c1);
         void drawBox(const sead::Color4f& c0, const sead::Color4f& c1);
         void drawWireCube(const sead::PrimitiveDrawer::CubeArg& arg);
