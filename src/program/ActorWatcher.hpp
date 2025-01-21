@@ -254,8 +254,7 @@ namespace lotuskit {
                 rbody->getNextLinearVelocity(&vel);
                 lotuskit::TextWriter::printf(0, "RigidBody %s(%p): pos %f %f %f, vel %f %f %f \n", rbody->getName(), rbody, xxx[3], xxx[7], xxx[11], vel.x, vel.y, vel.z );
 
-                sead::BoundBox3f aabb;
-                rbody->getAABB(&aabb);
+                sead::BoundBox3f aabb = rbody->getAABB();
                 lotuskit::PrimitiveDrawer::drawWireCube(0, sead::PrimitiveDrawer::CubeArg(aabb, PhysicalGreen));
             }
 
@@ -420,10 +419,8 @@ namespace lotuskit {
                     if (false) {
                         // TODO ws log rigidbodies for frontend?
                         const auto rbody = physCmp->controllerSet->mainRigidBody;
-                        sead::BoundBox3f aabb;
-                        sead::BoundBox3f wrld;
-                        rbody->getAABB(&aabb);
-                        rbody->getBoundingBoxWorld(&wrld);
+                        sead::BoundBox3f aabb = rbody->getAABB();
+                        sead::BoundBox3f wrld = rbody->getBoundingBoxWorld();
 
                         lotuskit::TextWriter::printf(
                             0, "RigidBody %s(%p) \naabb : [%f, %f] [%f, %f] [%f, %f] \nworld: [%f, %f] [%f, %f] [%f, %f] \n\n",

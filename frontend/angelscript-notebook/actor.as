@@ -9,7 +9,7 @@ actor::createAndWatch(1, "GameRomHorse");
 
 // wait for actor to spawn before accessing
 // (see [tas.as] for more info on timing)
-tas::input(4, NONE, 0,0, 0,0);
+tas::input(4, NONE);
 
 // get a handle to the watched horse
 ActorBase@ honse1 = ActorWatcher::get(1);
@@ -29,7 +29,8 @@ if (Player.pos_y < honse1.pos_y) {
 // spawn a wing below Player, watch it in slot 2
 actor::createAndWatch(
     2, "SpObj_LiftGeneratorWing_A_01",
-    Player.pos + 5*Vector3f::DOWN
+    Player.pos + 5*Vector3f::DOWN,
+    Player.rot // inherit rotation
 );
 
 // or i do this a lot and it smacks Link hehe
@@ -81,9 +82,25 @@ ActorWatcher::doDrawRigidBodyPos(0, 0xffffffffffffffff); // all
 ActorWatcher::doDrawRigidBodyPosPast(0, 0); // none
 ActorWatcher::doDrawRigidBodyPosFuture(0, 4+8); // flags -3 | -4
 
+// access ActorBase name, aabb, ...
+BoundBox3f aabb = Player.getAABB();
+TextWriter::toast(30, format(
+    "{}: {} {} \n",
+    Player.getName(), aabb.min_y, aabb.max_y
+));
+
+// set RigidBodys in motion
 RigidBody@ rbody = ActorWatcher::get(1).getMainRigidBody();
 rbody.setVel(0, 20.0, 0); // doesnt work on Player
 rbody.setVel(Vector3f(0, 20.0, 0));
 rbody.applyImpulse(0, 5000.0, 0); // larger values, also no Player
 rbody.applyImpulse(Vector3f(0, 5000.0, 0));
+
+// access RigidBody name, aabb, ...
+auto rbody = Player.getMainRigidBody();
+auto aabb = rbody.getAABB();
+TextWriter::toast(30, format(
+    "{}: {} {} \n",
+    rbody.getName(), aabb.min_y, aabb.max_y
+));
 

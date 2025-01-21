@@ -4,6 +4,7 @@
 #include <math/seadBoundBox.h>
 #include <math/seadVector.h>
 #include <math/seadMatrix.h>
+#include <string>
 
 #include "exlaunch.hpp"
 
@@ -28,19 +29,31 @@ namespace phive {
         sead::Matrix34f prevTransform;
         // XXX pad more members before RigidBodyEntity?
 
-        void getAABB(sead::BoundBox3f* dst) {
+        void getAABB_(sead::BoundBox3f* dst) {
             using impl_t = void (RigidBodyBase*, sead::BoundBox3f*);
             auto impl = EXL_SYM_RESOLVE<impl_t*>("phive::RigidBodyBase::getAABB");
             return impl(this, dst); // TODO magic: get current func string to ^ pass?
         }
 
-        void getBoundingBoxWorld(sead::BoundBox3f* dst) {
+        sead::BoundBox3f getAABB() {
+            sead::BoundBox3f out = {0,0,0,0,0,0};
+            this->getAABB_(&out);
+            return out;
+        }
+
+        void getBoundingBoxWorld_(sead::BoundBox3f* dst) {
             using impl_t = void (RigidBodyBase*, sead::BoundBox3f*);
             auto impl = EXL_SYM_RESOLVE<impl_t*>("phive::RigidBodyBase::getBoundingBoxWorld");
             return impl(this, dst);
         }
 
-        const char* getName() {
+        sead::BoundBox3f getBoundingBoxWorld() {
+            sead::BoundBox3f out = {0,0,0,0,0,0};
+            this->getBoundingBoxWorld_(&out);
+            return out;
+        }
+
+        std::string getName() {
             using impl_t = const char* (RigidBodyBase*);
             auto impl = EXL_SYM_RESOLVE<impl_t*>("phive::RigidBodyBase::getName");
             return impl(this);

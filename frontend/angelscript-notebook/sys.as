@@ -4,6 +4,7 @@ sys::memSearch(ptr_t); // search for ptr in the main heap
 sys::threadInfo(); // quick thread overview through Logger
 TextWriter::toast(30, format("main {} \n", sys::mainOffset()));
 TextWriter::toast(30, format("v {} \n", sys::totkVersion()));
+TextWriter::toast(30, format("tick {} \n", sys::tick()));
 sys::debugLog("hello debug");
 
 // scripts are non-preemptive: `while(true){ }` will freeze your game,

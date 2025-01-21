@@ -12,6 +12,7 @@ namespace lotuskit::script::globals {
     namespace sys {
         u64 mainOffset();
         u32 totkVersion();
+        u64 tick();
         void heapInfo();
         void hookLimits();
         void memSearch(u64 needle);

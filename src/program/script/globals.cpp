@@ -105,6 +105,7 @@ namespace lotuskit::script::globals {
     namespace sys {
         u64 mainOffset() { return exl::util::GetMainModuleInfo().m_Total.m_Start; }
         u32 totkVersion() { return TOTK_VERSION; }
+        u64 tick() { return svcGetSystemTick(); }
         void heapInfo() {
             const auto rootheap0 = sead::HeapMgr::sRootHeaps[0];
             sead::Heap* h = rootheap0; // current/visiting entry
@@ -229,6 +230,8 @@ namespace lotuskit::script::globals {
     void actor_pos_set_x(::engine::actor::ActorBase* actor, float x) { lotuskit::util::actor::setPosXYZ(actor, x, actor->mPosition.y, actor->mPosition.z); }
     void actor_pos_set_y(::engine::actor::ActorBase* actor, float y) { lotuskit::util::actor::setPosXYZ(actor, actor->mPosition.x, y, actor->mPosition.z); }
     void actor_pos_set_z(::engine::actor::ActorBase* actor, float z) { lotuskit::util::actor::setPosXYZ(actor, actor->mPosition.x, actor->mPosition.y, z); }
+    sead::BoundBox3f actor_aabb_get(::engine::actor::ActorBase* actor) { return actor->mAABB; }
+    std::string actor_name_get(::engine::actor::ActorBase* actor) { return actor->mActorName.cstr(); }
     sead::Matrix33f actor_rot_get(::engine::actor::ActorBase* actor) { return actor->mRotation; }
 
     void tas_input_vec2f_l(u32 duration, u64 nextButtons, const sead::Vector2f &nextLStick) {
@@ -278,6 +281,16 @@ namespace lotuskit::script::globals {
     void Matrix44fConstructor(sead::Matrix44f *self) { new(self) sead::Matrix44f(); }
     void Matrix44fAssignConstructor(float a0, float a1, float a2, float a3, float a4, float a5, float a6, float a7, float a8, float a9, float a10, float a11, float a12, float a13, float a14, float a15, sead::Matrix44f *self) { new(self) sead::Matrix44f(a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,a15); }
     void Matrix44fKopyKonstructor(const sead::Matrix44f &other, sead::Matrix44f *self) { new(self) sead::Matrix44f(other); }
+
+    void BoundBox2fConstructor(sead::BoundBox2f *self) { new(self) sead::BoundBox2f(); }
+    void BoundBox2fAssignConstructor(float min_x, float min_y, float max_x, float max_y, sead::BoundBox2f *self) { new(self) sead::BoundBox2f(min_x, min_y, max_x, max_y); }
+    void BoundBox2fAssignConstructorVecVec(const sead::Vector2f& min, const sead::Vector2f& max, sead::BoundBox2f *self) { new(self) sead::BoundBox2f(min, max); }
+    void BoundBox2fKopyKonstructor(const sead::BoundBox2f &other, sead::BoundBox2f *self) { new(self) sead::BoundBox2f(other); }
+
+    void BoundBox3fConstructor(sead::BoundBox3f *self) { new(self) sead::BoundBox3f(); }
+    void BoundBox3fAssignConstructor(float min_x, float min_y, float min_z, float max_x, float max_y, float max_z, sead::BoundBox3f *self) { new(self) sead::BoundBox3f(min_x, min_y, min_z, max_x, max_y, max_z); }
+    void BoundBox3fAssignConstructorVecVec(const sead::Vector3f& min, const sead::Vector3f& max, sead::BoundBox3f *self) { new(self) sead::BoundBox3f(min, max); }
+    void BoundBox3fKopyKonstructor(const sead::BoundBox3f &other, sead::BoundBox3f *self) { new(self) sead::BoundBox3f(other); }
 
 
     // Begin AS engine registrations
@@ -353,7 +366,7 @@ namespace lotuskit::script::globals {
         asErrno = engine->RegisterObjectMethod("Vector3f", "Vector3f opMul_r(float) const", AngelScript::asFUNCTIONPR(Vector3fMul_r, (float, const sead::Vector3f&), sead::Vector3f), AngelScript::asCALL_CDECL_OBJLAST); assert( asErrno >= 0 );
         asErrno = engine->RegisterObjectMethod("Vector3f", "Vector3f opDiv(float) const", AngelScript::asFUNCTIONPR(Vector3fDiv, (const sead::Vector3f&, float), sead::Vector3f), AngelScript::asCALL_CDECL_OBJFIRST); assert( asErrno >= 0 );
 
-        // TODO Vector4f, Quatf, doubles, ints? BoundBox3f
+        // TODO Vector4f, Quatf, doubles, ints?
 
         asErrno = engine->RegisterObjectType("Matrix22f", sizeof(sead::Matrix22f), AngelScript::asOBJ_VALUE | AngelScript::asOBJ_POD | AngelScript::asOBJ_APP_CLASS_CAK | AngelScript::asOBJ_APP_CLASS_ALLFLOATS); assert( asErrno >= 0 );
         asErrno = engine->RegisterObjectProperty("Matrix22f", "float a0", asOFFSET(sead::Matrix22f, a[0])); assert(asErrno >= 0);
@@ -415,6 +428,34 @@ namespace lotuskit::script::globals {
         asErrno = engine->RegisterObjectBehaviour("Matrix44f", AngelScript::asBEHAVE_CONSTRUCT, "void f()", AngelScript::asFUNCTION(Matrix44fConstructor), AngelScript::asCALL_CDECL_OBJLAST); assert( asErrno >= 0 );
         asErrno = engine->RegisterObjectBehaviour("Matrix44f", AngelScript::asBEHAVE_CONSTRUCT, "void f(float a0, float a1=0, float a2=0, float a3=0, float a4=0, float a5=0, float a6=0, float a7=0, float a8=0, float a9=0, float a10=0, float a11=0, float a12=0, float a13=0, float a14=0, float a15=0)", AngelScript::asFUNCTION(Matrix44fAssignConstructor), AngelScript::asCALL_CDECL_OBJLAST); assert( asErrno >= 0 );
         asErrno = engine->RegisterObjectBehaviour("Matrix44f", AngelScript::asBEHAVE_CONSTRUCT, "void f(const Matrix44f &in)", AngelScript::asFUNCTION(Matrix44fKopyKonstructor), AngelScript::asCALL_CDECL_OBJLAST); assert( asErrno >= 0 );
+
+        asErrno = engine->RegisterObjectType("BoundBox2f", sizeof(sead::BoundBox2f), AngelScript::asOBJ_VALUE | AngelScript::asOBJ_POD | AngelScript::asOBJ_APP_CLASS_CAK | AngelScript::asOBJ_APP_CLASS_ALLFLOATS); assert( asErrno >= 0 );
+        // TODO operator +- Vector2f, operator */ float, etc
+        asErrno = engine->RegisterObjectProperty("BoundBox2f", "Vector2f min", 0); assert(asErrno >= 0); // XXX private access
+        asErrno = engine->RegisterObjectProperty("BoundBox2f", "Vector2f max", 8); assert(asErrno >= 0);
+        asErrno = engine->RegisterObjectProperty("BoundBox2f", "float min_x",  0); assert(asErrno >= 0);
+        asErrno = engine->RegisterObjectProperty("BoundBox2f", "float min_y",  4); assert(asErrno >= 0);
+        asErrno = engine->RegisterObjectProperty("BoundBox2f", "float max_x",  8); assert(asErrno >= 0);
+        asErrno = engine->RegisterObjectProperty("BoundBox2f", "float max_y", 12); assert(asErrno >= 0);
+        asErrno = engine->RegisterObjectBehaviour("BoundBox2f", AngelScript::asBEHAVE_CONSTRUCT, "void f()", AngelScript::asFUNCTION(BoundBox2fConstructor), AngelScript::asCALL_CDECL_OBJLAST); assert( asErrno >= 0 );
+        asErrno = engine->RegisterObjectBehaviour("BoundBox2f", AngelScript::asBEHAVE_CONSTRUCT, "void f(float min_x, float min_y, float max_x, float max_y)", AngelScript::asFUNCTION(BoundBox2fAssignConstructor), AngelScript::asCALL_CDECL_OBJLAST); assert( asErrno >= 0 );
+        asErrno = engine->RegisterObjectBehaviour("BoundBox2f", AngelScript::asBEHAVE_CONSTRUCT, "void f(const Vector2f &in, const Vector2f &in)", AngelScript::asFUNCTION(BoundBox2fAssignConstructorVecVec), AngelScript::asCALL_CDECL_OBJLAST); assert( asErrno >= 0 );
+        asErrno = engine->RegisterObjectBehaviour("BoundBox2f", AngelScript::asBEHAVE_CONSTRUCT, "void f(const BoundBox2f &in)", AngelScript::asFUNCTION(BoundBox2fKopyKonstructor), AngelScript::asCALL_CDECL_OBJLAST); assert( asErrno >= 0 );
+
+        asErrno = engine->RegisterObjectType("BoundBox3f", sizeof(sead::BoundBox3f), AngelScript::asOBJ_VALUE | AngelScript::asOBJ_POD | AngelScript::asOBJ_APP_CLASS_CAK | AngelScript::asOBJ_APP_CLASS_ALLFLOATS); assert( asErrno >= 0 );
+        // TODO operator +- Vector3f, operator */ float, etc
+        asErrno = engine->RegisterObjectProperty("BoundBox3f", "Vector3f min", 0); assert(asErrno >= 0); // XXX private access
+        asErrno = engine->RegisterObjectProperty("BoundBox3f", "Vector3f max",12); assert(asErrno >= 0);
+        asErrno = engine->RegisterObjectProperty("BoundBox3f", "float min_x",  0); assert(asErrno >= 0);
+        asErrno = engine->RegisterObjectProperty("BoundBox3f", "float min_y",  4); assert(asErrno >= 0);
+        asErrno = engine->RegisterObjectProperty("BoundBox3f", "float min_z",  8); assert(asErrno >= 0);
+        asErrno = engine->RegisterObjectProperty("BoundBox3f", "float max_x", 12); assert(asErrno >= 0);
+        asErrno = engine->RegisterObjectProperty("BoundBox3f", "float max_y", 16); assert(asErrno >= 0);
+        asErrno = engine->RegisterObjectProperty("BoundBox3f", "float max_z", 20); assert(asErrno >= 0);
+        asErrno = engine->RegisterObjectBehaviour("BoundBox3f", AngelScript::asBEHAVE_CONSTRUCT, "void f()", AngelScript::asFUNCTION(BoundBox3fConstructor), AngelScript::asCALL_CDECL_OBJLAST); assert( asErrno >= 0 );
+        asErrno = engine->RegisterObjectBehaviour("BoundBox3f", AngelScript::asBEHAVE_CONSTRUCT, "void f(float min_x, float min_y, float min_z, float max_x, float max_y, float max_z)", AngelScript::asFUNCTION(BoundBox3fAssignConstructor), AngelScript::asCALL_CDECL_OBJLAST); assert( asErrno >= 0 );
+        asErrno = engine->RegisterObjectBehaviour("BoundBox3f", AngelScript::asBEHAVE_CONSTRUCT, "void f(const Vector3f &in, const Vector3f &in)", AngelScript::asFUNCTION(BoundBox3fAssignConstructorVecVec), AngelScript::asCALL_CDECL_OBJLAST); assert( asErrno >= 0 );
+        asErrno = engine->RegisterObjectBehaviour("BoundBox3f", AngelScript::asBEHAVE_CONSTRUCT, "void f(const BoundBox3f &in)", AngelScript::asFUNCTION(BoundBox3fKopyKonstructor), AngelScript::asCALL_CDECL_OBJLAST); assert( asErrno >= 0 );
 
         // TODO register matrix operations
 
@@ -509,6 +550,7 @@ namespace lotuskit::script::globals {
             asErrno = engine->RegisterGlobalFunction("void suspendCtx()", AngelScript::asFUNCTION(sys::suspendCtx), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
             asErrno = engine->RegisterGlobalFunction("ptr_t mainOffset()", AngelScript::asFUNCTION(sys::mainOffset), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
             asErrno = engine->RegisterGlobalFunction("u32 totkVersion()", AngelScript::asFUNCTION(sys::totkVersion), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+            asErrno = engine->RegisterGlobalFunction("u64 tick()", AngelScript::asFUNCTION(sys::tick), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
             asErrno = engine->RegisterGlobalFunction("void debugLog(const string &in)", AngelScript::asFUNCTION(sys::debugLog), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
         /// }
 
@@ -630,6 +672,8 @@ namespace lotuskit::script::globals {
             asErrno = engine->RegisterObjectMethod("ActorBase", "void setPosRot(float, float, float, float, float, float, float, float, float, float, float, float)", AngelScript::asFUNCTION(lotuskit::util::actor::setPosRot39), AngelScript::asCALL_CDECL_OBJFIRST); assert(asErrno >= 0);
             asErrno = engine->RegisterObjectMethod("ActorBase", "void setPosRot(const Vector3f &in, const Matrix33f &in)", AngelScript::asFUNCTION(lotuskit::util::actor::setPosRot), AngelScript::asCALL_CDECL_OBJFIRST); assert(asErrno >= 0);
 
+            asErrno = engine->RegisterObjectMethod("ActorBase", "BoundBox3f getAABB()", AngelScript::asFUNCTION(actor_aabb_get), AngelScript::asCALL_CDECL_OBJFIRST); assert(asErrno >= 0);
+            asErrno = engine->RegisterObjectMethod("ActorBase", "string getName()", AngelScript::asFUNCTION(actor_name_get), AngelScript::asCALL_CDECL_OBJFIRST); assert(asErrno >= 0);
             asErrno = engine->RegisterObjectMethod("ActorBase", "RigidBody@ getMainRigidBody()", AngelScript::asFUNCTION(lotuskit::util::actor::getMainRigidBody), AngelScript::asCALL_CDECL_OBJFIRST); assert(asErrno >= 0);
             //engine->SetDefaultNamespace("ResidentActors");
             asErrno = engine->RegisterGlobalProperty("ActorBase@ Player", &ResidentActors::Player); assert(asErrno >= 0);
@@ -694,6 +738,8 @@ namespace lotuskit::script::globals {
         asErrno = engine->RegisterObjectMethod("RigidBody", "void setVel(float, float, float)", AngelScript::asMETHOD(phive::RigidBodyBase, requestSetLinearVelocityXYZ), AngelScript::asCALL_THISCALL); assert(asErrno >= 0);
         asErrno = engine->RegisterObjectMethod("RigidBody", "void applyImpulse(const Vector3f &in)", AngelScript::asMETHOD(phive::RigidBodyBase, applyLinearImpulse), AngelScript::asCALL_THISCALL); assert(asErrno >= 0);
         asErrno = engine->RegisterObjectMethod("RigidBody", "void applyImpulse(float, float, float)", AngelScript::asMETHOD(phive::RigidBodyBase, applyLinearImpulseXYZ), AngelScript::asCALL_THISCALL); assert(asErrno >= 0);
+        asErrno = engine->RegisterObjectMethod("RigidBody", "BoundBox3f getAABB()", AngelScript::asMETHOD(phive::RigidBodyBase, getAABB), AngelScript::asCALL_THISCALL); assert(asErrno >= 0);
+        asErrno = engine->RegisterObjectMethod("RigidBody", "string getName()", AngelScript::asMETHOD(phive::RigidBodyBase, getName), AngelScript::asCALL_THISCALL); assert(asErrno >= 0);
     }
 
     void registerGlobals(AngelScript::asIScriptEngine* engine) {
