@@ -278,6 +278,27 @@ namespace lotuskit::script::globals {
     void Matrix34fAssignConstructor(float a0, float a1, float a2, float a3, float a4, float a5, float a6, float a7, float a8, float a9, float a10, float a11, sead::Matrix34f *self) { new(self) sead::Matrix34f(a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11); }
     void Matrix34fKopyKonstructor(const sead::Matrix34f &other, sead::Matrix34f *self) { new(self) sead::Matrix34f(other); }
 
+    sead::Vector3f matrix34f_pos_get(const sead::Matrix34f &m) { return sead::Vector3f{m.a[3], m.a[7], m.a[11]}; }
+    void matrix34f_pos_set(sead::Matrix34f &m, const sead::Vector3f &pos) { m.a[3] = pos.x; m.a[7] = pos.y; m.a[11] = pos.z; }
+    sead::Matrix33f matrix34f_rot_get(const sead::Matrix34f &m) {
+        sead::Matrix33f rot;
+        rot.m[0][0] = m.a[0]; rot.m[0][1] = m.a[1]; rot.m[0][2] = m.a[2];
+        rot.m[1][0] = m.a[4]; rot.m[1][1] = m.a[5]; rot.m[1][2] = m.a[6];
+        rot.m[2][0] = m.a[8]; rot.m[2][1] = m.a[9]; rot.m[2][2] = m.a[10];
+        return rot;
+    }
+    void matrix34f_rot_set(sead::Matrix34f &m, const sead::Matrix33f &rot) {
+        m.a[0] = rot.m[0][0]; m.a[1] = rot.m[0][1]; m.a[ 2] = rot.m[0][2];
+        m.a[4] = rot.m[1][0]; m.a[5] = rot.m[1][1]; m.a[ 6] = rot.m[1][2];
+        m.a[8] = rot.m[2][0]; m.a[9] = rot.m[2][1]; m.a[10] = rot.m[2][2];
+    }
+    void matrix34f_posrot_set(sead::Matrix34f &m, const sead::Vector3f &pos, const sead::Matrix33f &rot) {
+        m.a[3] = pos.x; m.a[7] = pos.y; m.a[11] = pos.z;
+        m.a[0] = rot.m[0][0]; m.a[1] = rot.m[0][1]; m.a[ 2] = rot.m[0][2];
+        m.a[4] = rot.m[1][0]; m.a[5] = rot.m[1][1]; m.a[ 6] = rot.m[1][2];
+        m.a[8] = rot.m[2][0]; m.a[9] = rot.m[2][1]; m.a[10] = rot.m[2][2];
+    }
+
     void Matrix44fConstructor(sead::Matrix44f *self) { new(self) sead::Matrix44f(); }
     void Matrix44fAssignConstructor(float a0, float a1, float a2, float a3, float a4, float a5, float a6, float a7, float a8, float a9, float a10, float a11, float a12, float a13, float a14, float a15, sead::Matrix44f *self) { new(self) sead::Matrix44f(a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,a15); }
     void Matrix44fKopyKonstructor(const sead::Matrix44f &other, sead::Matrix44f *self) { new(self) sead::Matrix44f(other); }
@@ -407,6 +428,12 @@ namespace lotuskit::script::globals {
         asErrno = engine->RegisterObjectBehaviour("Matrix34f", AngelScript::asBEHAVE_CONSTRUCT, "void f()", AngelScript::asFUNCTION(Matrix34fConstructor), AngelScript::asCALL_CDECL_OBJLAST); assert( asErrno >= 0 );
         asErrno = engine->RegisterObjectBehaviour("Matrix34f", AngelScript::asBEHAVE_CONSTRUCT, "void f(float a0, float a1=0, float a2=0, float a3=0, float a4=0, float a5=0, float a6=0, float a7=0, float a8=0, float a9=0, float a10=0, float a11=0)", AngelScript::asFUNCTION(Matrix34fAssignConstructor), AngelScript::asCALL_CDECL_OBJLAST); assert( asErrno >= 0 );
         asErrno = engine->RegisterObjectBehaviour("Matrix34f", AngelScript::asBEHAVE_CONSTRUCT, "void f(const Matrix34f &in)", AngelScript::asFUNCTION(Matrix34fKopyKonstructor), AngelScript::asCALL_CDECL_OBJLAST); assert( asErrno >= 0 );
+        // transform<->pos+rot conversions
+        asErrno = engine->RegisterObjectMethod("Matrix34f", "Vector3f get_pos() property", AngelScript::asFUNCTION(matrix34f_pos_get), AngelScript::asCALL_CDECL_OBJFIRST); assert(asErrno >= 0);
+        asErrno = engine->RegisterObjectMethod("Matrix34f", "void set_pos(const Vector3f &in) property", AngelScript::asFUNCTION(matrix34f_pos_set), AngelScript::asCALL_CDECL_OBJFIRST); assert(asErrno >= 0);
+        asErrno = engine->RegisterObjectMethod("Matrix34f", "Matrix33f get_rot() property", AngelScript::asFUNCTION(matrix34f_rot_get), AngelScript::asCALL_CDECL_OBJFIRST); assert(asErrno >= 0);
+        asErrno = engine->RegisterObjectMethod("Matrix34f", "void set_rot(const Matrix33f &in) property", AngelScript::asFUNCTION(matrix34f_rot_set), AngelScript::asCALL_CDECL_OBJFIRST); assert(asErrno >= 0);
+        asErrno = engine->RegisterObjectMethod("Matrix34f", "void setPosRot(const Vector3f &in, const Matrix33f &in)", AngelScript::asFUNCTION(matrix34f_posrot_set), AngelScript::asCALL_CDECL_OBJFIRST); assert(asErrno >= 0);
 
         asErrno = engine->RegisterObjectType("Matrix44f", sizeof(sead::Matrix44f), AngelScript::asOBJ_VALUE | AngelScript::asOBJ_POD | AngelScript::asOBJ_APP_CLASS_CAK | AngelScript::asOBJ_APP_CLASS_ALLFLOATS); assert( asErrno >= 0 );
         asErrno = engine->RegisterObjectProperty("Matrix44f", "float a0", asOFFSET(sead::Matrix44f, a[0])); assert(asErrno >= 0);
@@ -741,7 +768,10 @@ namespace lotuskit::script::globals {
         asErrno = engine->RegisterObjectMethod("RigidBody", "void applyImpulse(const Vector3f &in)", AngelScript::asMETHOD(phive::RigidBodyBase, applyLinearImpulse), AngelScript::asCALL_THISCALL); assert(asErrno >= 0);
         asErrno = engine->RegisterObjectMethod("RigidBody", "void applyImpulse(float, float, float)", AngelScript::asMETHOD(phive::RigidBodyBase, applyLinearImpulseXYZ), AngelScript::asCALL_THISCALL); assert(asErrno >= 0);
         asErrno = engine->RegisterObjectMethod("RigidBody", "BoundBox3f getAABB()", AngelScript::asMETHOD(phive::RigidBodyBase, getAABB), AngelScript::asCALL_THISCALL); assert(asErrno >= 0);
+        asErrno = engine->RegisterObjectMethod("RigidBody", "BoundBox3f getBoundingBoxWorld()", AngelScript::asMETHOD(phive::RigidBodyBase, getBoundingBoxWorld), AngelScript::asCALL_THISCALL); assert(asErrno >= 0);
         asErrno = engine->RegisterObjectMethod("RigidBody", "string getName()", AngelScript::asMETHOD(phive::RigidBodyBase, getName), AngelScript::asCALL_THISCALL); assert(asErrno >= 0);
+        asErrno = engine->RegisterObjectProperty("RigidBody", "Matrix34f lastTransform", asOFFSET(phive::RigidBodyBase, lastTransform)); assert(asErrno >= 0);
+        asErrno = engine->RegisterObjectProperty("RigidBody", "Matrix34f prevTransform", asOFFSET(phive::RigidBodyBase, prevTransform)); assert(asErrno >= 0);
     }
 
     void registerGlobals(AngelScript::asIScriptEngine* engine) {

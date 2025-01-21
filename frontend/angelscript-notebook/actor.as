@@ -84,6 +84,7 @@ ActorWatcher::doDrawRigidBodyPosFuture(0, 4+8); // flags -3 | -4
 
 // access ActorBase name, aabb, ...
 BoundBox3f aabb = Player.getAABB();
+BoundBox3f wrld = Player.getBoundingBoxWorld();
 TextWriter::toast(30, format(
     "{}: {} {} \n",
     Player.getName(), aabb.min_y, aabb.max_y
@@ -96,11 +97,11 @@ rbody.vel += Vector3f(0, 20.0, 0);
 rbody.applyImpulse(0, 5000.0, 0); // larger values, also no Player
 rbody.applyImpulse(Vector3f(0, 5000.0, 0));
 
-// access RigidBody name, aabb, ...
+// access RigidBody name, aabb, lastTransform, ...
 auto rbody = Player.getMainRigidBody();
 auto aabb = rbody.getAABB();
 TextWriter::toast(30, format(
-    "{}: {} {} \n",
-    rbody.getName(), aabb.min_y, aabb.max_y
+    "{}: {} {} : {} \n",
+    rbody.getName(), aabb.min_y, aabb.max_y, rbody.lastTransform.pos.y,
 ));
 
