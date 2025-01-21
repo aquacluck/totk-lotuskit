@@ -21,7 +21,7 @@
 - Don't leave ActorWatchers targeting dead/dying actors while you go through loading screens (especially title+shrine loads), this will eventually crash. Clear the watcher or target a resident actor like Player to avoid this.
 - Only 1 WebSocket connection to the mod per launch. There is no way to disconnect+reconnect to the game yet.
 - Polling options in the frontend aren't perfect -- if the browser tries to connect right as the mod is opening its socket, the frontend can get stuck unable to connect.
-- Actors may fail to spawn in some scripts with ifs/branches?
+- Actors may fail to spawn in some scripts with ifs/branches? or matrix constants unless assigned to an intermediate?
 - Script size is limited to ~8KB and crashes on overflow
 - camera "above" button may choose bad angles resulting in inverted controls. This state is prone to crashing when taking out devices + more
 - PrimitiveDrawer shapes may be stale or repeated/overlapping when drawn after a pause, because tools like ActorWatcher try to draw the entire time without clearing the FrameHeap

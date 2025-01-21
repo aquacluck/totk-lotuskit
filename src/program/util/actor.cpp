@@ -35,19 +35,25 @@ namespace lotuskit::util::actor {
     }
 
     void createSimpleXYZ(const std::string &actorName, float x, float y, float z) {
-        createSimplePos(actorName, sead::Vector3f{x, y, z});
+        createSimplePosRot(actorName, sead::Vector3f{x, y, z}, sead::Matrix33f{1,0,0, 0,1,0, 0,0,1});
     }
 
     void createSimplePos(const std::string &actorName, const sead::Vector3f &pos) {
+        createSimplePosRot(actorName, pos, sead::Matrix33f{1,0,0, 0,1,0, 0,0,1});
+    }
+
+    void createSimplePosRot(const std::string &actorName, const sead::Vector3f &pos, const sead::Matrix33f &rot) {
         bb::InitInfo<32> initInfo;
         //initInfo.setParam(sead::SafeString{"EquipmentUser_Bow"}, sead::SafeString{"Weapon_Bow_032"});
         //initInfo.setParam(sead::SafeString{"EquipmentUser_Shield"}, sead::SafeString{"Weapon_Shield_018"});
         //initInfo.setParam(sead::SafeString{"EquipmentUser_Weapon"}, sead::SafeString{"Weapon_Sword_124"});
         engine::actor::BaseProcMgr::CreateArg createArg;
         createArg.position = pos;
+        createArg.rotation = rot;
         createArg.scale = { 1.f, 1.f, 1.f };
         createArg.blackboard_info = &initInfo;
         createArg.transform_flags.set(engine::actor::BaseProcMgr::CreateArg::TransformFlags::UsePosition);
+        createArg.transform_flags.set(engine::actor::BaseProcMgr::CreateArg::TransformFlags::UseRotation);
         createArg.transform_flags.set(engine::actor::BaseProcMgr::CreateArg::TransformFlags::UseScale);
 
         CreateFunc* requestCreateActorAsync = EXL_SYM_RESOLVE<CreateFunc*>("engine::actor::ActorMgr::requestCreateActorAsync");
@@ -70,19 +76,25 @@ namespace lotuskit::util::actor {
     }
 
     void createAndWatchXYZ(size_t slotIndex, const std::string &actorName, float x, float y, float z) {
-        createAndWatchPos(slotIndex, actorName, sead::Vector3f{x, y, z});
+        createAndWatchPosRot(slotIndex, actorName, sead::Vector3f{x, y, z}, sead::Matrix33f{1,0,0, 0,1,0, 0,0,1});
     }
 
     void createAndWatchPos(size_t slotIndex, const std::string &actorName, const sead::Vector3f &pos) {
+        createAndWatchPosRot(slotIndex, actorName, pos, sead::Matrix33f{1,0,0, 0,1,0, 0,0,1});
+    }
+
+    void createAndWatchPosRot(size_t slotIndex, const std::string &actorName, const sead::Vector3f &pos, const sead::Matrix33f &rot) {
         bb::InitInfo<32> initInfo;
         //initInfo.setParam(sead::SafeString{"EquipmentUser_Bow"}, sead::SafeString{"Weapon_Bow_032"});
         //initInfo.setParam(sead::SafeString{"EquipmentUser_Shield"}, sead::SafeString{"Weapon_Shield_018"});
         //initInfo.setParam(sead::SafeString{"EquipmentUser_Weapon"}, sead::SafeString{"Weapon_Sword_124"});
         engine::actor::BaseProcMgr::CreateArg createArg;
         createArg.position = pos;
+        createArg.rotation = rot;
         createArg.scale = { 1.f, 1.f, 1.f };
         createArg.blackboard_info = &initInfo;
         createArg.transform_flags.set(engine::actor::BaseProcMgr::CreateArg::TransformFlags::UsePosition);
+        createArg.transform_flags.set(engine::actor::BaseProcMgr::CreateArg::TransformFlags::UseRotation);
         createArg.transform_flags.set(engine::actor::BaseProcMgr::CreateArg::TransformFlags::UseScale);
 
         CreateFunc* requestCreateActorAsync = EXL_SYM_RESOLVE<CreateFunc*>("engine::actor::ActorMgr::requestCreateActorAsync");

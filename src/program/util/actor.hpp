@@ -10,9 +10,12 @@ namespace lotuskit::util::actor {
     void createSimple(const std::string &actorName);
     void createSimpleXYZ(const std::string &actorName, float x, float y, float z);
     void createSimplePos(const std::string &actorName, const sead::Vector3f &pos);
+    void createSimplePosRot(const std::string &actorName, const sead::Vector3f &pos, const sead::Matrix33f &rot);
+
     void createAndWatch(size_t slotIndex, const std::string &actorName);
     void createAndWatchXYZ(size_t slotIndex, const std::string &actorName, float x, float y, float z);
     void createAndWatchPos(size_t slotIndex, const std::string &actorName, const sead::Vector3f &pos);
+    void createAndWatchPosRot(size_t slotIndex, const std::string &actorName, const sead::Vector3f &pos, const sead::Matrix33f &rot);
 
     void setPos(ActorBase* actor, const sead::Vector3f &pos);
     void setPosXYZ(ActorBase* actor, float x, float y, float z);
