@@ -18,6 +18,7 @@ namespace lotuskit::tas {
         // script scheduling
         inline static AngelScript::asIScriptContext* currentCtx = nullptr; // if state asEXECUTION_SUSPENDED, will be resumed when needed to produce next input
         inline static u32 currentInputTTL60 = 0; // remaining 30fps half-frames to apply scheduled TAS input
+        inline static u32 elapsedPlayback60 = 0; // 30fps half-frames elapsed this script execution (based on counting)
 
         // current input
         static PlaybackInput currentInput;
@@ -29,5 +30,8 @@ namespace lotuskit::tas {
             if (!isPlaybackActive || isSleepInput) { return; }
             std::memcpy((void*)&(dst->mButtons), (void*)&(currentInput.buttons), 24);
         }
+
+        // utility
+        static u32 duration60ToUIFrames(u32 duration60);
     };
 } // ns

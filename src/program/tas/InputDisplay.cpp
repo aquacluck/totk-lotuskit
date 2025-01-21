@@ -8,7 +8,7 @@ namespace lotuskit::tas {
         u64 buttons = 0;
         s32 LX, LY, RX, RY;
 
-        if (lotuskit::tas::Playback::isPlaybackActive) {
+        if (lotuskit::tas::Playback::isPlaybackActive && !lotuskit::tas::Playback::isSleepInput) {
             auto& input = lotuskit::tas::Playback::currentInput;
             buttons = *(u64*)&(input.buttons);
             LX = input.LStick.mX;

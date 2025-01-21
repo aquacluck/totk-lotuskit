@@ -11,40 +11,40 @@ namespace lotuskit::tas {
 
     void Playback::calc() {
         if (!isPlaybackActive) { return; } // not doing playback
-
-        // TODO elapsed frame count? system tick? this frame's delta time? rta? igt?
-        // (however its impossible to predict or progress-bar a script's frame duration -- halting problem)
-        lotuskit::TextWriter::printf(1, "[tas::Playback] TOTK_%d\n", TOTK_VERSION);
-        VFRMgr* vfrMgr = *EXL_SYM_RESOLVE<VFRMgr**>("engine::module::VFRMgr::sInstance");
+        s32 asErrno;
 
         // int 2 or 3 = float 1.0 (@30fps) or 1.5 (@20fps)
         // assert(mDeltaFrame == 1.0 || mDeltaFrame == 1.5); // precisely
+        VFRMgr* vfrMgr = *EXL_SYM_RESOLVE<VFRMgr**>("engine::module::VFRMgr::sInstance");
         const u32 deltaFrame60 = (u32)(vfrMgr->mDeltaFrame * 2);
 
         // should the current input state still be scheduled?
         if (currentInputTTL60 >= deltaFrame60) {
             // deduct frames from schedule
             currentInputTTL60 -= deltaFrame60;
+            elapsedPlayback60 += deltaFrame60;
         } else {
             // only 0/1/2 frames60 left on schedule and deltaFrame60 is larger
             // XXX is erring on one side or the other better, until i properly figure this out?
             //     ie playing out these closing frames and deferring or eating into subsequent inputs? sounds complicated in the dumb way
             currentInputTTL60 = 0; // abandon/truncate the remainder of this scheduled input and resume script
+            elapsedPlayback60 += deltaFrame60; // desync observable by user when elapsed time exceeds their expected schedule
         }
 
         if (currentInputTTL60 > 0) {
-            return; // keep using current scheduled input
+            goto PRINT_AND_RETURN; // keep using current scheduled input
         }
 
         if (currentCtx == nullptr || currentCtx->GetState() != AngelScript::asEXECUTION_SUSPENDED) {
             Logger::logText("[ERROR] tas script ctx missing, cannot advance input", "/tas/Playback");
-            return; //isPlaybackActive = false; // XXX is it better to repeat the last input or drop out? this has never happened yet
+            //isPlaybackActive = false; // XXX is it better to repeat the last input or drop out? this has never happened yet
+            goto PRINT_AND_RETURN;
         }
 
         // resume script, eventually getting a setCurrentInput call
         // XXX non-setCurrentInput yields will create input gaps during tas playback -- "pure" tas needs the inputs and can't be waiting around for other events.
         //     Experimental workflows can just manually resync/etc to work around this sort of thing.
-        s32 asErrno = currentCtx->Execute();
+        asErrno = currentCtx->Execute();
         if (asErrno == AngelScript::asEXECUTION_FINISHED) {
             isPlaybackActive = false; // XXX ensure this doesnt drop the last input
             currentCtx->Release();
@@ -56,11 +56,23 @@ namespace lotuskit::tas {
             char buf[1000];
             nn::util::SNPrintf(buf, sizeof(buf), "[angelscript] uncaught: %s", currentCtx->GetExceptionString());
             Logger::logText(buf, "/script/engine"); // TODO extract s32 script::engine::resumeCtx(asIScriptContext*)?
+            // TODO toast error
             currentCtx->Release();
             currentCtx = nullptr;
 
         } else if (asErrno == AngelScript::asEXECUTION_SUSPENDED) {
             // do not release ongoing async ctx
+        }
+
+        PRINT_AND_RETURN:
+        // TODO opts for system tick? this frame's delta time? rta? igt?
+        // (however its impossible to predict or progress-bar a script's frame duration -- halting problem)
+        if (!isPlaybackActive) {
+            lotuskit::TextWriter::printf(1, "tas::end TOTK_%d\n               fr:%6d\n",                                                 TOTK_VERSION, duration60ToUIFrames(elapsedPlayback60));
+        } else if (isSleepInput) {
+            lotuskit::TextWriter::printf(1, "tas::sleep(%3u) TOTK_%d\n               fr:%6d\n", duration60ToUIFrames(currentInputTTL60), TOTK_VERSION, duration60ToUIFrames(elapsedPlayback60));
+        } else {
+            lotuskit::TextWriter::printf(1, "tas::input(%3u) TOTK_%d\n               fr:%6d\n", duration60ToUIFrames(currentInputTTL60), TOTK_VERSION, duration60ToUIFrames(elapsedPlayback60));
         }
     }
 
@@ -99,6 +111,8 @@ namespace lotuskit::tas {
         if (nextRStickY >  16400) { nextButtons |= (1 << (u32)nn::hid::NpadButton::StickRUp); }
         if (nextRStickY < -16400) { nextButtons |= (1 << (u32)nn::hid::NpadButton::StickRDown); }
 
+        if (!isPlaybackActive) { elapsedPlayback60 = 0; }
+        isSleepInput = false;
         *(u64*)&(currentInput.buttons) = nextButtons; // These are expected to be
         isPlaybackActive = true;                      // written/observable in order
         // XXX and i'm not confident that's guaranteed, but it doesnt seem dangerous at least?
@@ -107,6 +121,18 @@ namespace lotuskit::tas {
         // yield execution from script back to game, to be resumed in n frames
         currentCtx = ctx;
         ctx->Suspend(); // assert ctx->GetState() == asEXECUTION_SUSPENDED
+    }
+
+    u32 Playback::duration60ToUIFrames(u32 duration60) {
+        // how many "frames" is the timespan
+        if (config::inputMode == config::InputDurationScalingStrategy::FPS60_1X) {
+            return duration60;
+        } else if (config::inputMode == config::InputDurationScalingStrategy::FPS30_2X) {
+            return duration60 / 2;
+        } else if (config::inputMode == config::InputDurationScalingStrategy::FPS20_3X) {
+            return duration60 / 3;
+        }
+        return 0xdeaddead;
     }
 
     void Playback::setSleepInput(u32 duration) {
