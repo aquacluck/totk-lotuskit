@@ -370,8 +370,11 @@ namespace lotuskit {
                 if (slot.doDrawAABB) {
                     if (!strcmp(actor->mName.cstr(), "Area")) {
                         // TODO when to draw by scale vs aabb vs something else?
-                        sead::Vector3f scale = actor->mScale;
-                        sead::BoundBox3f fakeAABB(scale * -1, scale);
+                        sead::Vector3f minFakeAABB = -1 * actor->mScale;
+                        sead::Vector3f maxFakeAABB = actor->mScale;
+                        minFakeAABB.y = 0;
+                        maxFakeAABB.y *= 2;
+                        sead::BoundBox3f fakeAABB(minFakeAABB, maxFakeAABB);
                         lotuskit::PrimitiveDrawer::drawWireCube(0, sead::PrimitiveDrawer::CubeArg(fakeAABB, RecallYellow));
                     } else {
                         auto* aabb = &(actor->mAABB);
