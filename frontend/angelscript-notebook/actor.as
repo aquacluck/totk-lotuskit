@@ -66,6 +66,12 @@ ActorWatcher::assignSlotAwaitSpawn(1, "");
 // next named spawn (exact match)
 ActorWatcher::assignSlotAwaitSpawn(1, "PouchPlayer");
 
+// next actor spawned as part of AIGroup
+ActorWatcher::assignSlotAwaitAIGroupHash(1, 0x49a68b1545195b54);
+
+// next actor spawned with banc entity hash
+ActorWatcher::assignSlotAwaitBancEntityHash(1, 0x07b4e71cd2536055);
+
 // ActorWatcher config
 ActorWatcher::doTextWriter(0, false);
 ActorWatcher::doWsLog(0, false);

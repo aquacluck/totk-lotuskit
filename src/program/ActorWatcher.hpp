@@ -26,8 +26,9 @@ namespace lotuskit {
         // state (freely cleared+mutated by the mod)
         bool isCalc; // enable this slot to run
         bool isPendingSelection;
-        u8 selectionType; // 0 = unused, 1 = next spawn, 2 = next dep to a given slot/actor (TODO?), 3 = preactor, 4 = recall hover
+        u8 selectionType; // 0 = unused, 1 = next spawn, 2 = next dep to a given slot/actor (TODO?), 3 = preactor, 4 = recall hover, 5=ai group hash, 6=banc entity(?) actor hash,
         std::string selectionStr;
+        u64 selectionVal64;
         engine::actor::ActorBase* actorSelectorBaseProcDep;
         engine::actor::ActorBase* actor;
         engine::actor::PreActor* preactor;
@@ -76,6 +77,7 @@ namespace lotuskit {
             this->isPendingSelection = false;
             this->selectionType = 0;
             this->selectionStr = "";
+            this->selectionVal64 = 0;
             this->actorSelectorBaseProcDep = nullptr;
             this->actor = nullptr;
             this->preactor = nullptr;
@@ -155,7 +157,27 @@ namespace lotuskit {
             slot.clear();
             slot.isCalc = true;
             slot.selectionStr = actorName;
-            slot.selectionType = 1; // spawn
+            slot.selectionType = 1; // watch for any actor spawn optionally filtered by name
+            slot.isPendingSelection = true;
+            slot.wsAnnounceState(i);
+            slot.wsAnnounceConfig(i);
+        }
+        inline static void assignSlotAwaitAIGroupHash(size_t i, u64 aiGroupHash) {
+            auto& slot = slots[i];
+            slot.clear();
+            slot.isCalc = true;
+            slot.selectionType = 5; // watch for any actor in specific AIGroup // TODO ability to select all in AIGroup, multi slot
+            slot.selectionVal64 = aiGroupHash;
+            slot.isPendingSelection = true;
+            slot.wsAnnounceState(i);
+            slot.wsAnnounceConfig(i);
+        }
+        inline static void assignSlotAwaitBancEntityHash(size_t i, u64 bancHash) {
+            auto& slot = slots[i];
+            slot.clear();
+            slot.isCalc = true;
+            slot.selectionType = 6; // watch for specific banc hash actor
+            slot.selectionVal64 = bancHash;
             slot.isPendingSelection = true;
             slot.wsAnnounceState(i);
             slot.wsAnnounceConfig(i);
@@ -240,6 +262,32 @@ namespace lotuskit {
             return -1;
         }
 
+        inline static s64 querySpawnAIGroupHashSlot(u64 aiHash) {
+            for (u8 i=0; i < MAX_WATCHER_SLOTS; i++) {
+                auto& slot = slots[i];
+                if (!slot.isCalc) { continue; }
+                if (slot.isPendingSelection && slot.selectionType == 5) {
+                    if (slot.selectionVal64 == aiHash) {
+                        return i;
+                    }
+                }
+            }
+            return -1;
+        }
+
+        inline static s64 querySpawnBancHashSlot(u64 bancHash) {
+            for (u8 i=0; i < MAX_WATCHER_SLOTS; i++) {
+                auto& slot = slots[i];
+                if (!slot.isCalc) { continue; }
+                if (slot.isPendingSelection && slot.selectionType == 6) {
+                    if (slot.selectionVal64 == bancHash) {
+                        return i;
+                    }
+                }
+            }
+            return -1;
+        }
+
         inline static void drawRigidBody(phive::RigidBodyEntity* rbody, bool doDrawRigidBodyAABB, bool doDrawRigidBodyPos, bool doDrawRigidBodyPosPast, bool doDrawRigidBodyPosFuture) {
             if (doDrawRigidBodyPos || doDrawRigidBodyAABB) {
                 lotuskit::PrimitiveDrawer::setModelMtx(0, rbody->lastTransform);
@@ -281,7 +329,9 @@ namespace lotuskit {
                 // - hook code covering specific cases (eg Recall)
                 // - scripts calling things like actor::createAndWatch or ActorWatcher::assignSlot
 
-                if (slot.isPendingSelection && slot.preactor != nullptr && slot.selectionType == 3) {
+                if (slot.isPendingSelection && slot.selectionType == 1) {
+                    lotuskit::TextWriter::printf(0, "ActorWatcher[%d] awaiting spawn(%s) \n\n", i, slot.selectionStr.c_str());
+                } else if (slot.isPendingSelection && slot.preactor != nullptr && slot.selectionType == 3) {
                     // Resolve pending actor selection via preactors
                     if (slot.preactor->mActor != nullptr) {
                         slot.actor = slot.preactor->mActor;
@@ -293,12 +343,12 @@ namespace lotuskit {
                             i, slot.preactor
                         );
                     }
-                }
-                if (slot.isPendingSelection && slot.selectionType == 4 && slot.doTextWriter) {
+                } else if (slot.isPendingSelection && slot.selectionType == 4 && slot.doTextWriter) {
                     lotuskit::TextWriter::printf(0, "ActorWatcher[%d] awaiting Recall \n\n", i);
-                }
-                if (slot.isPendingSelection && slot.selectionType == 1) {
-                    lotuskit::TextWriter::printf(0, "ActorWatcher[%d] awaiting spawn(%s) \n\n", i, slot.selectionStr.c_str());
+                } else if (slot.isPendingSelection && slot.selectionType == 5 && slot.doTextWriter) {
+                    lotuskit::TextWriter::printf(0, "ActorWatcher[%d] awaiting AIGroup(%p) \n\n", i, slot.selectionVal64);
+                } else if (slot.isPendingSelection && slot.selectionType == 6 && slot.doTextWriter) {
+                    lotuskit::TextWriter::printf(0, "ActorWatcher[%d] awaiting BancHash(%p) \n\n", i, slot.selectionVal64);
                 }
 
 

@@ -82,6 +82,36 @@ namespace engine::actor {
     class BaseProcLinkData;
     class PreActor;
 
+    class ActorAIGroupController {
+        public:
+        u64 mHash; // HACK object/actor hash
+        PreActor* mpPreActorLink;
+        void* idk;
+    };
+
+    class AIGroup {
+        public:
+        void* mVtable; // engine::actor::vft_engine_actor_AIGroup *mVtable;
+        u64 mHash;
+        u32 mPreActorCount;
+        u8 field3_0x14;
+        u8 field4_0x15;
+        u8 field5_0x16;
+        u8 field6_0x17;
+        engine::actor::ActorAIGroupController *mpAIControllerUnitArray;
+        /*
+        engine::actor::ActorLogic *mpActorLogic;
+        engine::actor::ActorAIGroupController *mpAIControllerUnit;
+        bb::Blackboard *mpSharedBlackboard;
+        engine::actor::SharedBlackboardAccessor *mpBlackboardAccessor;
+        engine::actor::AIGroupTransceiver mTransceiver;
+        u32 mAIGroupArrayIndex;
+        u32 mAIGroupIndex;
+        void* field15_0x98;
+        pp::PtrArray<Document> mBlackboardDocumentArray;
+        */
+    };
+
     struct CreateWatcher {
         u32 status;
         ActorBase* actor;
@@ -321,17 +351,67 @@ namespace engine::actor {
         u32 mPresenceFlagHash;
         float mExtraCreateRadius;
         u32 mPresenceFlags; // | 1 is DeleteAfterClearedSageOfFire, | 8 is spawn, | 0x10 is drop, | 0x20 is IsTreasureBoxOpen, | 0x40 is IsTreasureBoxUnlock. | 0x80 is IsAppearKorok
-        void* pSettings; //struct ActorSettings *mpSettings;
+
 #ifdef TOTK_100
-        u64 _idkman[8]; // XXX 0x40 extra somewhere before mActor, no idea where it goes or if it throws off later records
+        sead::Vector3f mPosition;
+        sead::Matrix33f mRotation;
+        sead::Vector3f mScale;
+        u8 _align8idk[4];
 #endif
+
+        void* pSettings; //struct ActorSettings *mpSettings; // XXX guessing this goes here?
         engine::actor::ActorBase* mActor;
         void* _7; // struct ActorParamMutexInfo *field7_0x28;
         u64 field8_0x30;
         u64 field9_0x38;
+
+#ifndef TOTK_100
         sead::Vector3f mPosition;
         sead::Matrix33f mRotation;
         sead::Vector3f mScale;
+        u8 _align8idk[4];
+#endif
+
+        void* mpActorLogicBinder; // engine::actor::ActorLogicBinder *mpActorLogicBinder;
+        u64 mInstanceId;
+        u32 field19_0x90;
+        u16 mFlags;
+        u8 field21_0x96; // 0 on 1.0, ff on 1.2.1?
+        u8 field22_0x97; // 0/ff?
+        u32 mStateFlags; // 0 = dead, 2 = spawn, 3 = culled maybe?, 6 = has linked actor, 7 = disable until untraverse, 0xd = unload?, 0x11 = traversing?, 0x16 = dynamic actor
+        u16 mDynamicFlags; // 0x1000 is IsCopyPresenceAtTakeOverPreActor
+        u8 field25_0x9e;
+        u8 mLoadPriority;
+
+#ifndef TOTK_100
+        u32 field27_0xa0; // this 0x10 is near the end in 100
+        s32 mGroupIndex;
+        u32 field29_0xa8;
+        s16 field30_0xac;
+        s16 field31_0xae;
+#endif
+
+        void* idk[2];// byaml::ByamlIter field32_0xb0; // len 0x10
+        void* field33_0xc0;
+        u32 field34_0xc8;
+        u8 field35_0xcc;
+        u8 field36_0xcd;
+        u8 field37_0xce;
+        u8 field38_0xcf;
+
+        void* mBBInitInfo; //  engine::bb::BBInitInfo *mBBInitInfo;
+        engine::actor::AIGroup* mpAIGroup; // game::actor::ActorAIGroup *mpAIGroup;
+
+        void* _idk2[4];
+
+#ifdef TOTK_100
+        u32 field27_0xa0; // XXX order might be wrong within this block + identifiers from 121 struct
+        s32 mGroupIndex;
+        u32 field29_0xa8;
+        s16 field30_0xac;
+        s16 field31_0xae;
+#endif
+
     };
 
 } // namespace actor
