@@ -171,6 +171,9 @@ namespace lotuskit::script::globals {
         }
         void memSearch(u64 needle) {
             // TODO better ptr+hex conversions for AS calls + json?
+            char needleStr[24];
+            nn::util::SNPrintf(needleStr, sizeof(needleStr), "%p", needle); // XXX trash conversions idk
+            sead::HeapMgr* heapMgr = *EXL_SYM_RESOLVE<sead::HeapMgr**>("_ZN4sead7HeapMgr12sInstancePtrE");
             const auto rootheap0 = sead::HeapMgr::sRootHeaps[0];
             //Logger::main->logf(NS_DEFAULT_TEXT, "\"searching for %p in root heap %p\"", needle_ptr, rootheap0);
             void** haystackPtr = (void**)(rootheap0->getStartAddress());
@@ -178,9 +181,19 @@ namespace lotuskit::script::globals {
             while (haystackPtr < haystackEnd) {
                 //if ((u64)haystackPtr % 0x800000 == 0) { Logger::main->logf(NS_DEFAULT_TEXT, "\"%p \"", haystackPtr); } // progress
                 if ((u64)(*haystackPtr) == needle) {
+                    char matchStr[24];
+                    nn::util::SNPrintf(matchStr, sizeof(matchStr), "%p", haystackPtr);
+
+                    const char* nullheap = "[no heap?]";
+                    char heapAddrStr[24];
+                    sead::Heap* heap = heapMgr->findContainHeap(haystackPtr);
+                    nn::util::SNPrintf(heapAddrStr, sizeof(heapAddrStr), "%p", heap);
+
                     Logger::logJson(json::object({
-                        {"match", (u64)haystackPtr},
-                        {"needle", needle}
+                        {"match", matchStr},
+                        {"needle", needleStr},
+                        {"heap", heapAddrStr},
+                        {"heapName", heap == nullptr ? nullheap : heap->getName().cstr() }
                     }), "/script/sys/memSearch");
                     lotuskit::TextWriter::toastf(5*30, "[match] found %p at %p\n", needle, haystackPtr);
                 }
