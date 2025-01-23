@@ -368,8 +368,15 @@ namespace lotuskit {
                     lotuskit::PrimitiveDrawer::drawSphere4x8(0, sead::Vector3f(0, 0, 0), radius, RecallYellow, RecallYellow);
                 }
                 if (slot.doDrawAABB) {
-                    auto* aabb = &(actor->mAABB);
-                    lotuskit::PrimitiveDrawer::drawWireCube(0, sead::PrimitiveDrawer::CubeArg(*aabb, RecallYellow));
+                    if (!strcmp(actor->mName.cstr(), "Area")) {
+                        // TODO when to draw by scale vs aabb vs something else?
+                        sead::Vector3f scale = actor->mScale;
+                        sead::BoundBox3f fakeAABB(scale * -1, scale);
+                        lotuskit::PrimitiveDrawer::drawWireCube(0, sead::PrimitiveDrawer::CubeArg(fakeAABB, RecallYellow));
+                    } else {
+                        auto* aabb = &(actor->mAABB);
+                        lotuskit::PrimitiveDrawer::drawWireCube(0, sead::PrimitiveDrawer::CubeArg(*aabb, RecallYellow));
+                    }
                 }
                 if (slot.doDrawVel) {
                     const float radius = 0.05;
