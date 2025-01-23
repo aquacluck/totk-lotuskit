@@ -792,7 +792,6 @@ namespace lotuskit::script::globals {
             //asErrno = engine->RegisterGlobalFunction("void assignSlotPreActor(index_t, PreActor@)", AngelScript::asFUNCTION(lotuskit::ActorWatcher::assignSlotPreActor), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
             asErrno = engine->RegisterGlobalFunction("void assignSlotAwaitSpawn(index_t, string &in)", AngelScript::asFUNCTION(lotuskit::ActorWatcher::assignSlotAwaitSpawn), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
             asErrno = engine->RegisterGlobalFunction("void assignSlotAwaitRecall(index_t)", AngelScript::asFUNCTION(lotuskit::ActorWatcher::assignSlotAwaitRecall), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
-            asErrno = engine->RegisterGlobalFunction("void assignSlotAwaitAIGroupHash(index_t, u64)", AngelScript::asFUNCTION(lotuskit::ActorWatcher::assignSlotAwaitAIGroupHash), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
             asErrno = engine->RegisterGlobalFunction("void assignSlotAwaitBancEntityHash(index_t, u64)", AngelScript::asFUNCTION(lotuskit::ActorWatcher::assignSlotAwaitBancEntityHash), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
 
             // config

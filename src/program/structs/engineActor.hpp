@@ -373,7 +373,7 @@ namespace engine::actor {
 #endif
 
         void* mpActorLogicBinder; // engine::actor::ActorLogicBinder *mpActorLogicBinder;
-        u64 mInstanceId;
+        u64 mInstanceId; // banc entity hash
         u32 field19_0x90;
         u16 mFlags;
         u8 field21_0x96; // 0 on 1.0, ff on 1.2.1?

@@ -427,13 +427,21 @@
             WSTransport.subscribe_ns(`/ActorWatcher/${this.props.slot_i}`, payload => this.setState(payload));
         }
 
+        assignSlotAwaitSpawn(slot_i) {
+            let name = this.selector_textbox_ref.current.value || "";
+            name = name.trim();
+            WSTransport.send({execScriptString: wrap_implicit_main(`ActorWatcher::assignSlotAwaitSpawn(${slot_i}, "${name}");`)});
+        }
+
         assignSlotAwaitRecall(slot_i) {
             WSTransport.send({execScriptString: wrap_implicit_main(`ActorWatcher::assignSlotAwaitRecall(${slot_i});`)});
         }
 
-        assignSlotAwaitSpawn(slot_i) {
-            const name = this.selector_textbox_ref.current.value || "";
-            WSTransport.send({execScriptString: wrap_implicit_main(`ActorWatcher::assignSlotAwaitSpawn(${slot_i}, "${name}");`)});
+        assignSlotAwaitBancEntityHash(slot_i) {
+            let hash = this.selector_textbox_ref.current.value || ""; // u64, needs BigInt for js numeric! leaving as string
+            hash = hash.trim();
+            if (!hash) { console.error(`assignSlotAwaitBancEntityHash: invalid hash ${hash}`); }
+            WSTransport.send({execScriptString: wrap_implicit_main(`ActorWatcher::assignSlotAwaitBancEntityHash(${slot_i}, ${hash});`)});
         }
 
         clear_slot(slot_i) {
@@ -564,8 +572,10 @@
                         Select:
                         <button title="ActorWatcher::clearSlot(${i})" onClick=${ () => this.clear_slot(i) } class="pushbutton selectNull">null</button>
                         <button title="ActorWatcher::assignSlotAwaitRecall(${i})" onClick=${ () => this.assignSlotAwaitRecall(i) } class="pushbutton selectRecall"><img src="assets/img/Obj_ReverseRecorder.png" /></button>
-                        <button title="ActorWatcher::assignSlotAwaitSpawn(${i}, string actorName); // optional filter by name" onClick=${ () => this.assignSlotAwaitSpawn(i) } class="pushbutton selectSpawn">spawn</button>
-                        <input placeholder="selector arg" size="20" ref=${this.selector_textbox_ref} />
+                        <button title="ActorWatcher::assignSlotAwaitSpawn(${i}, string actorName); // optional filter by name" onClick=${ () => this.assignSlotAwaitSpawn(i) } class="pushbutton">spawn</button>
+                        <button title="ActorWatcher::assignSlotAwaitBancEntityHash(${i}, u64 hash); // eg 0x07b4e71cd2536055" onClick=${ () => this.assignSlotAwaitBancEntityHash(i) } class="pushbutton">Banc</button>
+                        <br/>
+                        <input placeholder="selector arg" size="40" ref=${this.selector_textbox_ref} />
                         <!-- TODO on specific actor's next dep, ... -->
                         <!--<input type="number" placeholder="0" size="2" min="0" max="3" size=2 />-->
                     </div>

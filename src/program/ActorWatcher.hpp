@@ -26,7 +26,7 @@ namespace lotuskit {
         // state (freely cleared+mutated by the mod)
         bool isCalc; // enable this slot to run
         bool isPendingSelection;
-        u8 selectionType; // 0 = unused, 1 = next spawn, 2 = next dep to a given slot/actor (TODO?), 3 = preactor, 4 = recall hover, 5=ai group hash, 6=banc entity(?) actor hash,
+        u8 selectionType; // 0 = unused, 1 = next spawn, 2 = next dep to a given slot/actor (TODO?), 3 = preactor, 4 = recall hover, 5=free!, 6=banc entity mInstanceId actor hash,
         std::string selectionStr;
         u64 selectionVal64;
         engine::actor::ActorBase* actorSelectorBaseProcDep;
@@ -162,16 +162,6 @@ namespace lotuskit {
             slot.wsAnnounceState(i);
             slot.wsAnnounceConfig(i);
         }
-        inline static void assignSlotAwaitAIGroupHash(size_t i, u64 aiGroupHash) {
-            auto& slot = slots[i];
-            slot.clear();
-            slot.isCalc = true;
-            slot.selectionType = 5; // watch for any actor in specific AIGroup // TODO ability to select all in AIGroup, multi slot
-            slot.selectionVal64 = aiGroupHash;
-            slot.isPendingSelection = true;
-            slot.wsAnnounceState(i);
-            slot.wsAnnounceConfig(i);
-        }
         inline static void assignSlotAwaitBancEntityHash(size_t i, u64 bancHash) {
             auto& slot = slots[i];
             slot.clear();
@@ -262,19 +252,6 @@ namespace lotuskit {
             return -1;
         }
 
-        inline static s64 querySpawnAIGroupHashSlot(u64 aiHash) {
-            for (u8 i=0; i < MAX_WATCHER_SLOTS; i++) {
-                auto& slot = slots[i];
-                if (!slot.isCalc) { continue; }
-                if (slot.isPendingSelection && slot.selectionType == 5) {
-                    if (slot.selectionVal64 == aiHash) {
-                        return i;
-                    }
-                }
-            }
-            return -1;
-        }
-
         inline static s64 querySpawnBancHashSlot(u64 bancHash) {
             for (u8 i=0; i < MAX_WATCHER_SLOTS; i++) {
                 auto& slot = slots[i];
@@ -345,8 +322,6 @@ namespace lotuskit {
                     }
                 } else if (slot.isPendingSelection && slot.selectionType == 4 && slot.doTextWriter) {
                     lotuskit::TextWriter::printf(0, "ActorWatcher[%d] awaiting Recall \n\n", i);
-                } else if (slot.isPendingSelection && slot.selectionType == 5 && slot.doTextWriter) {
-                    lotuskit::TextWriter::printf(0, "ActorWatcher[%d] awaiting AIGroup(%p) \n\n", i, slot.selectionVal64);
                 } else if (slot.isPendingSelection && slot.selectionType == 6 && slot.doTextWriter) {
                     lotuskit::TextWriter::printf(0, "ActorWatcher[%d] awaiting BancHash(%p) \n\n", i, slot.selectionVal64);
                 }

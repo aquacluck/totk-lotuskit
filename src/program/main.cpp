@@ -73,39 +73,19 @@ HOOK_DEFINE_TRAMPOLINE(OnRequestCreateActorAsyncHook) {
         s64 slot_i = lotuskit::ActorWatcher::querySpawnSelectorSlot(*actorName);
         if (slot_i < 0) {
             // default case: no ActorWatcher name match
-            if (preActor == nullptr || preActor->mpAIGroup == nullptr) {
+            if (preActor == nullptr) {
                 // XXX banc entities/actors/??? always have preactor passed?
-                // early return, handling non-banc dynamic spawns etc
+                // early return, handling non-banc dynamic spawns ???
                 return Orig(actorMgr, actorName, pos, param_4, param_5, preActor, actorObserver, param_8, param_9, param_10, destPreActor);
             }
 
-            auto aig = preActor->mpAIGroup;
-            engine::actor::ActorAIGroupController* arr = aig->mpAIControllerUnitArray;
-            slot_i = lotuskit::ActorWatcher::querySpawnAIGroupHashSlot(aig->mHash);
-            if (slot_i >= 0) {
-                // ActorWatcher matched some/any actor of requested AIGroup
-                lotuskit::ActorWatcher::assignSlotPreActor(slot_i, preActor);
-            } else {
-                for (u32 group_j = 0; group_j < aig->mPreActorCount; group_j++) {
-                    if (arr == nullptr) { svcOutputDebugString("null arr", 8); break; } // invalid ptr? idk if this happens
-                    if (preActor != arr->mpPreActorLink) { continue; } // ignore other preactors in the AIGroup, only look for the one being created here
-                    //nn::util::SNPrintf(buf, sizeof(buf), "pa %p, aigroup %p, aigrouphash(%p), aiactorhash(%p), roundtrip-pa(%p) \n", preActor, aig, aig->mHash, arr->mHash, arr->mpPreActorLink);
-
-                    slot_i = lotuskit::ActorWatcher::querySpawnBancHashSlot(arr->mHash);
-                    if (slot_i >= 0) {
-                        // ActorWatcher matched banc hash
-                        lotuskit::ActorWatcher::assignSlotPreActor(slot_i, preActor);
-                        break;
-                    }
-
-                    arr++;
-                }
-            }
-
+            slot_i = -1;
+            if (preActor->mInstanceId) { slot_i = lotuskit::ActorWatcher::querySpawnBancHashSlot(preActor->mInstanceId); }
+            if (slot_i >= 0) { lotuskit::ActorWatcher::assignSlotPreActor(slot_i, preActor); }
             return Orig(actorMgr, actorName, pos, param_4, param_5, preActor, actorObserver, param_8, param_9, param_10, destPreActor);
         }
 
-        // ActorWatcher name match
+        // ActorWatcher name match: something with destPreActor seems crashy if we do it for everything? seems safe scoped down like this.
 
         // inject our own dest pointer if needed
         engine::actor::PreActor* pa = nullptr;
