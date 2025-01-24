@@ -15,6 +15,11 @@
     import { Actor_MasterList_prepare_fuzzysort } from "/assets/data/Actor_MasterList.mjs";
     const Actor_MasterList_fuzzysort = Actor_MasterList_prepare_fuzzysort(fuzzysort);
 
+    // prepare eventflow search
+    import { Event_NameList_prepare_fuzzysort } from "/assets/data/Event_NameList.mjs";
+    const Event_NameList_fuzzysort = Event_NameList_prepare_fuzzysort(fuzzysort);
+
+
     class WSTransport {
         static websock = undefined;
         static ns_subscriptions = {}; // {ns_json_pointer: [cbfunc, ...]}
@@ -753,6 +758,79 @@
         }
     };
 
+    class Event_NameList_Search extends Component {
+        constructor() {
+            super();
+            this.state = {
+                ui_size: "medium",
+                fuzzysort_query: "",
+                fuzzysort_results: [],
+            };
+            this.fuzzy_input_ref = createRef();
+        }
+
+        toggle_size() {
+            this.setState({ui_size: this.state.ui_size == "medium" ? "small" : "medium"});
+        }
+
+        do_search_clear = () => {
+            this.setState({fuzzysort_query: "", fuzzysort_results: []});
+        }
+
+        do_search_change = (e) => {
+            const q = e.currentTarget.value.toString().trim();
+            if (!q || q.length < 3) { return this.do_search_clear(); }
+
+            const fuzzysort_results = fuzzysort.go(q, Event_NameList_fuzzysort, {
+                keys: ["flowchartName"],
+                threshold: 0.4, // uses "score", different from the negative "_score"! https://github.com/farzher/fuzzysort/issues/135
+            });
+            //console.log(q, fuzzysort_results);
+            this.setState({fuzzysort_query: q, fuzzysort_results: fuzzysort_results});
+        }
+
+        do_request(flowchartName) { WSTransport.send({execScriptString: wrap_implicit_main(`event::requestSimple("${flowchartName}");`)}); } // TODO starter link
+
+        render_fuzzysort_results_dialog(props, state) {
+            if (!state.fuzzysort_query) { return ""; }
+
+            const items = state.fuzzysort_results.map(fz => {
+                // fz.obj is the (prepared) underlying matched object, so fz.obj.flowchartName.target is a const value like "DmF_SY_Camp"
+
+                const flowchartName = fz.obj.flowchartName.target;
+                const eventflow = fz[0].target ? html`<span class="copy_fake_target" dangerouslySetInnerHTML=${{ __html: fz[0].highlight() }}></span>` : html`<span class="copy_fake_target">${flowchartName}</span>`;
+
+                // HACK setting innerHTML violates vdom
+                const copy = html`<button class="copy" title="copy" onClick=${e => { navigator.clipboard.writeText(flowchartName); e.target.innerHTML = "✅"; }}>📋</button>`;
+                const req = html`<button title="event::requestSimple(string)" onClick=${() => this.do_request(flowchartName) }>req</button>`;
+
+                return html`<div key=${flowchartName} class="fuzzysort_results_item">
+                    <div class="eventflow">${flowchartName} ${copy}${req}</div>
+                    <hr />
+                </div>`;
+            });
+
+            return html`
+                <${SimpleWindow} onClose=${this.do_search_clear}>
+                    EventFlows like "${state.fuzzysort_query}" (${state.fuzzysort_results.length}):<br />
+                    <div class="fuzzysort_results content">${items}</div>
+                </${SimpleWindow}>
+            `;
+        }
+
+        render(props, state) {
+            const fuzzyWidth = state.ui_size == "medium" ? 20 : 4;
+            return html`
+                <div class="Event_NameList_Search size_${state.ui_size}">
+                    <button title="Expand/Collapse" onClick=${ () => this.toggle_size() }>${ state.ui_size == "medium" ? "[-]" : "[+]" }</button>
+                    <label class="size_small_hidden" for="Event_NameList_Search">EventDB </label>
+                    <input onInput=${this.do_search_change} placeholder="DmF_SY_Camp" size=${fuzzyWidth} ref=${this.fuzzy_input_ref} id="Event_NameList_Search__fuzzy_input_ref" />
+                    ${this.render_fuzzysort_results_dialog(props, state)}
+                </div>
+            `;
+        }
+    };
+
     class AngelScriptNotebook extends Component {
         constructor() {
             super();
@@ -967,6 +1045,7 @@
             <section class="toolset_quickcorner">
                 <div class="qc">
                     <${Actor_MasterList_Search} />
+                    <${Event_NameList_Search} />
                     <${AngelScriptNotebook} />
                     <${ModConnectionUI} />
                 </div>
