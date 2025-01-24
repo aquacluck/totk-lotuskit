@@ -31,7 +31,9 @@ def run_symbol_def_imports():
     import exking.engine.actor.ActorBase
     import exking.engine.actor.ActorMgr
     import exking.engine.actor.BaseProcCreateAndDeleteThread
+    import exking.engine.actor.BaseProcLink
     import exking.engine.actor.BaseProcMgr
+    import exking.engine.event.EventMgr
     import exking.engine.hacks
     import exking.engine.module.VFRMgr
 

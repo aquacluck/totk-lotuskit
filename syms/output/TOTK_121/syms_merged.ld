@@ -20,6 +20,7 @@ _ZN4sead12GlobalRandom9sInstanceE = __main_start + 0x04716f08;
 _ZN4sead7HeapMgr10sRootHeapsE    = __main_start + 0x04716c08;
 _ZN4sead7HeapMgr12sInstancePtrE  = __main_start + 0x04716ca0;
 _ZN4sead7HeapMgr15createRootHeap_Ev = __main_start + 0x00e7cdc4;
+_ZN6engine5actor12BaseProcLinkD2Ev = __main_start + 0x0076eb88;
 _ZNK4sead7HeapMgr15findContainHeapEPKv = __main_start + 0x007fe124;
 
 /* ======== END EX-King (nso main) ============== */
