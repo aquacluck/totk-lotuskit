@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
-import os.path
+import glob
+import os, os.path
 import pathlib
 
 
@@ -9,46 +10,12 @@ from build_types import *
 
 def run_symbol_def_imports():
     # these imports are registering symbols.
-    # TODO just crawl some top level folders, this is getting stupid already
-
-    # TODO eventflow
-
-    #import NintendoSDK.nn.socket # nop
-
-    import agl.agl_hacks
-    import agl.lyr.aglLayer
-
-    import sead.gfx.seadPrimitiveRenderer
-    import sead.gfx.seadTextWriter
-    import sead.random.seadGlobalRandom
-    import sead.random.seadRandom
-    import sead.heap.seadHeap # nop
-    import sead.heap.seadHeapMgr
-    import sead.thread.seadThread
-
-    #import zstd.lib.zstd # nop
-
-    import exking.engine.actor.ActorBase
-    import exking.engine.actor.ActorMgr
-    import exking.engine.actor.BaseProcCreateAndDeleteThread
-    import exking.engine.actor.BaseProcLink
-    import exking.engine.actor.BaseProcMgr
-    import exking.engine.event.EventMgr
-    import exking.engine.hacks
-    import exking.engine.module.VFRMgr
-
-    import exking.game.ai.execute.ExecutePlayerWhistle
-    import exking.game.ai.execute.ExecutePlayerReverseRecorder
-    import exking.game.wm.WorldManagerModule
-    import exking.game.component.GameCameraParam
-
-    import exking.phive.CharacterMatterRigidBodyEntity
-    import exking.phive.ControllerSet
-    import exking.phive.RigidBodyBase
-    import exking.phive.RigidBodyEntity
-
-    import havok.hk.hacks
-
+    for pymod in glob.glob("**/*.py", recursive = True):
+        if pymod == 'build.py' or pymod == 'build_types.py' or pymod[-3:] != '.py':
+            continue
+        pymod = pymod.replace("/", ".")
+        #print(pymod)
+        __import__(pymod[:-3], locals(), globals())
 
 class TrashCommands:
     @staticmethod
