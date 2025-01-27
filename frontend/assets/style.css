@@ -411,3 +411,75 @@ dialog {
 }
 
 
+
+::highlight(parameter) {
+    color: #1a1a1a;
+}
+
+::highlight(comment),
+::highlight(prolog),
+::highlight(doctype),
+::highlight(cdata) {
+    color: slategray;
+}
+
+::highlight(punctuation) {
+    color: #999;
+}
+
+::highlight(property),
+::highlight(tag),
+::highlight(boolean),
+::highlight(number),
+::highlight(constant),
+::highlight(symbol),
+::highlight(deleted),
+::highlight(class-name) {
+    color: #905;
+}
+
+::highlight(selector),
+::highlight(attr-name),
+::highlight(string),
+::highlight(char),
+::highlight(builtin),
+::highlight(inserted) {
+    color: #690;
+}
+
+::highlight(operator),
+::highlight(entity),
+::highlight(url) {
+    color: #a67f59;
+    background: hsla(0, 0%, 100%, 0.5);
+}
+
+::highlight(atrule),
+::highlight(attr-value),
+::highlight(keyword) {
+    color: #07a;
+}
+
+::highlight(function) {
+    color: #dd4a68;
+}
+
+::highlight(regex),
+::highlight(important),
+::highlight(variable) {
+    color: #e90;
+}
+
+::highlight(important),
+::highlight(bold) {
+    font-weight: bold;
+}
+
+::highlight(italic) {
+    font-style: italic;
+}
+
+::highlight(entity) {
+    cursor: help;
+}
+
