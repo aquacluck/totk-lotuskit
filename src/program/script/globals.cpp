@@ -33,6 +33,7 @@ namespace lotuskit::script::globals {
     } // ns
     namespace Vector2fStatic {
         // XXX AS RegisterGlobalProperty won't let these be const?
+        sead::Vector2f STICK_ZERO(0, 0);
         sead::Vector2f STICK_UP_MAX(0, 32767);
         sead::Vector2f STICK_UP_DIR(0, 1);
         sead::Vector2f STICK_DOWN_MAX(0, -32768);
@@ -629,7 +630,7 @@ namespace lotuskit::script::globals {
         engine->SetDefaultNamespace("HexDump"); /// {
             asErrno = engine->RegisterGlobalFunction("void clearSlot(index_t)", AngelScript::asFUNCTION(lotuskit::HexDump::clearSlot), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
             asErrno = engine->RegisterGlobalFunction("void pauseSlot(index_t)", AngelScript::asFUNCTION(lotuskit::HexDump::pauseSlot), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
-            asErrno = engine->RegisterGlobalFunction("void assignSlotAbsolute(index_t, ptr_t, u32, u32)", AngelScript::asFUNCTION(lotuskit::HexDump::assignSlotAbsolute), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+            asErrno = engine->RegisterGlobalFunction("void assignSlotAbsolute(index_t, ptr_t, u32, u32, const string &in = \"HexDump\")", AngelScript::asFUNCTION(lotuskit::HexDump::assignSlotAbsolute), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
         /// }
 
         engine->SetDefaultNamespace("TextWriter"); /// {
@@ -688,6 +689,7 @@ namespace lotuskit::script::globals {
             asErrno = engine->RegisterEnumValue("nxTASButton", "KEY_LSTICK", (1 << 4)); assert(asErrno >= 0);
             asErrno = engine->RegisterEnumValue("nxTASButton", "KEY_RSTICK", (1 << 5)); assert(asErrno >= 0);
 
+            asErrno = engine->RegisterGlobalProperty("const Vector2f STICK_ZERO", &Vector2fStatic::STICK_ZERO); assert(asErrno >= 0);
             asErrno = engine->RegisterGlobalProperty("const Vector2f STICK_UP_MAX", &Vector2fStatic::STICK_UP_MAX); assert(asErrno >= 0);
             asErrno = engine->RegisterGlobalProperty("const Vector2f STICK_UP", &Vector2fStatic::STICK_UP_DIR); assert(asErrno >= 0);
             asErrno = engine->RegisterGlobalProperty("const Vector2f STICK_DOWN_MAX", &Vector2fStatic::STICK_DOWN_MAX); assert(asErrno >= 0);

@@ -1,5 +1,5 @@
 #pragma once
-#include <cstring>
+#include <string>
 #include "TextWriter.hpp"
 
 namespace lotuskit {
@@ -15,7 +15,7 @@ namespace lotuskit {
         s32 dumpLen; // abs(dumpLen) capped at BUF_LEN, but +-2GB addressable. Should be a multiple of 0x10
         u16 drawLen; // capped at smallest of: abs(dumpLen) or BUF_LEN or about a screenful, to eg observe a large BUF_LEN but limit the output. default: about a screenful. Should be a multiple of 0x10
         u32 calcAge; // calc ticks since isCalc was last true / buf was refreshed
-        char label[33];
+        std::string label;
 
         void clear() {
             this->isCalc = false;
@@ -25,7 +25,7 @@ namespace lotuskit {
             this->dumpLen = 0x20;
             this->drawLen = 0x20;
             this->calcAge = 0;
-            strcpy(this->label, "HexDump");
+            this->label = "HexDump";
         }
     };
 
@@ -36,10 +36,10 @@ namespace lotuskit {
 
         inline static void clearSlot(size_t i) { slots[i].clear(); }
         inline static void pauseSlot(size_t i) { slots[i].isCalc = false; }
-        inline static void assignSlotAbsolute(size_t i, void* dumpSrc, u32 dumpLen, u32 drawLen) {
+        inline static void assignSlotAbsolute(size_t i, void* dumpSrc, u32 dumpLen, u32 drawLen, const std::string &label) {
             auto& slot = slots[i];
             slot.clear();
-            //strncpy(cmd.label, label, 33); // TODO AS string type
+            slot.label = label;
             slot.dumpLen = dumpLen;
             slot.drawLen = drawLen;
             slot.isCalc = true;
@@ -77,7 +77,7 @@ namespace lotuskit {
 
                 if (slot.isDraw) {
                     const char* live = slot.calcAge == 0 ? "[LIVE]" : ""; // visible when buf has been updated this frame, for slow/intermittent/triggered/discontinued/etc dumps
-                    lotuskit::TextWriter::printf(0, "%s[%d](dumpLen=%d, age=%d) %s\r\n", slot.label, i, slot.dumpLen, slot.calcAge, live);
+                    lotuskit::TextWriter::printf(0, "%s[%d](dumpLen=%d, age=%d) %s\r\n", slot.label.c_str(), i, slot.dumpLen, slot.calcAge, live);
 
                     u32 cap = reinterpret_cast<u32>((u32)slot.dumpLen > HexDumpEntry::BUF_LEN ? HexDumpEntry::BUF_LEN : slot.dumpLen);
                     u32 drawLen = slot.drawLen > cap ? cap : slot.drawLen;

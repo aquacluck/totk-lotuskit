@@ -95,9 +95,16 @@
     };
 
 
-    // script format stuff
-    function wrap_implicit_main(script_text) {
-        return `void main() { ${script_text} \n}`; // newline closes any trailing line comment
+    class AngelScript {
+        static wrap_implicit_main(script_text) {
+            // no begin newline preserves line numbers
+            // end newline closes any trailing line comment
+            return `void main() { ${script_text} \n}`;
+        }
+
+        static exec(snippet) {
+            WSTransport.send({execScriptString: AngelScript.wrap_implicit_main(snippet)});
+        }
     }
 
 
@@ -232,8 +239,8 @@
             this.up.current.value = `${v[0]}, ${v[1]}, ${v[2]}`;
         }
 
-        reqCameraLog() { WSTransport.send({execScriptString: wrap_implicit_main("camera::log();")}); }
-        reqToggleFreeze() { WSTransport.send({execScriptString: wrap_implicit_main("camera::toggleFreeze();")}); }
+        reqCameraLog() { AngelScript.exec("camera::log();"); }
+        reqToggleFreeze() { AngelScript.exec("camera::toggleFreeze();"); }
         reqFreezeAtRefs() {
             let pos = this.pos.current.value;
             pos = pos.replaceAll(",", "").split(" ").filter(x => x !== "").map(x => parseFloat(x));
@@ -244,7 +251,7 @@
             let up = this.up.current.value;
             up = up.replaceAll(",", "").split(" ").filter(x => x !== "").map(x => parseFloat(x));
 
-            WSTransport.send({execScriptString: wrap_implicit_main(`camera::freeze(${up[0]}, ${up[1]}, ${up[2]}, ${pos[0]}, ${pos[1]}, ${pos[2]}, ${at[0]}, ${at[1]}, ${at[2]});`)});
+            AngelScript.exec(`camera::freeze(${up[0]}, ${up[1]}, ${up[2]}, ${pos[0]}, ${pos[1]}, ${pos[2]}, ${at[0]}, ${at[1]}, ${at[2]});`);
         }
 
         reqAbove() {
@@ -256,7 +263,7 @@
             //const up = [0.000135, 0.707161, -0.707053] // just standing aiming down
             //-0.000103, 0.707161, -0.707053 // perfect throw-aim down, then ZL+rstick to max height... reversed z?
             //0.003695, 0.707161, -0.707043 // perfect dive+rstick, hangs on device drop lol
-            WSTransport.send({execScriptString: wrap_implicit_main(`auto a = ActorWatcher::get(${slot_i}); camera::freeze(${up[0]}, ${up[1]}, ${up[2]}, a.pos_x, a.pos_y+${dist}, a.pos_z, a.pos_x, a.pos_y, a.pos_z);`)});
+            AngelScript.exec(`auto a = ActorWatcher::get(${slot_i}); camera::freeze(${up[0]}, ${up[1]}, ${up[2]}, a.pos_x, a.pos_y+${dist}, a.pos_z, a.pos_x, a.pos_y, a.pos_z);`);
         }
 
         render(props, state) {
@@ -292,18 +299,18 @@
         do_absolute(i) {
             const drawLen = parseInt(this.drawLen.current.value) || 0x20;
             const dumpLen = drawLen;
-            const label = this.slotLabelRef.current.value.toString().slice(0, 32).replaceAll(" ", "-") || "_label";
+            const label = this.slotLabelRef.current.value.toString().slice(0, 32).replaceAll(" ", "-") || "HexDump";
             const ptr = this.slotTargetPtrRef.current.value || 0;
             if (!ptr) { console.log("hexdump user lookin sussy", i); return; }
-            WSTransport.send({execScriptString: wrap_implicit_main(`HexDump::assignSlotAbsolute(${i}, ${ptr}, ${dumpLen}, ${drawLen});`)}); // TODO label
+            AngelScript.exec(`HexDump::assignSlotAbsolute(${i}, ${ptr}, ${dumpLen}, ${drawLen}, "${label}");`);
             console.log("hexdump absolute", i, ptr, {dumpLen, drawLen, label});
         }
         do_pause(i) {
-            WSTransport.send({execScriptString: wrap_implicit_main(`HexDump::pauseSlot(${i});`)});
+            AngelScript.exec(`HexDump::pauseSlot(${i});`);
             console.log("hexdump pause", i);
         }
         do_clear(i) {
-            WSTransport.send({execScriptString: wrap_implicit_main(`HexDump::clearSlot(${i});`)});
+            AngelScript.exec(`HexDump::clearSlot(${i});`);
             console.log("hexdump clear", i);
         }
 
@@ -334,7 +341,7 @@
         do_search(haystack_name_UNUSED) {
             // TODO more search types
             const needle_ptr = this.needle_ptr_ref.current.value || 0;
-            WSTransport.send({execScriptString: wrap_implicit_main(`sys::memSearch(${needle_ptr});`)});
+            AngelScript.exec(`sys::memSearch(${needle_ptr});`);
         }
 
         render(props, state) {
@@ -351,9 +358,9 @@
 
     class QuickDumps extends Component {
         // TODO display output somewhere?
-        do_heapInfo() { WSTransport.send({execScriptString: wrap_implicit_main("sys::heapInfo();")}); }
-        do_threadInfo() { WSTransport.send({execScriptString: wrap_implicit_main("sys::threadInfo();")}); }
-        do_hookLimits() { WSTransport.send({execScriptString: wrap_implicit_main("sys::hookLimits();")}); }
+        do_heapInfo() { AngelScript.exec("sys::heapInfo();"); }
+        do_threadInfo() { AngelScript.exec("sys::threadInfo();"); }
+        do_hookLimits() { AngelScript.exec("sys::hookLimits();"); }
         render(props, state) {
             return html`
                 <div class="quickdumps">
@@ -380,13 +387,15 @@
         do_exec() {
             let script_text = this.script_text_ref.current.value;
             if (this.use_implicit_main_ref.current.checked) {
-                script_text = wrap_implicit_main(script_text);
+                AngelScript.exec(script_text); // snippet
+            } else {
+                // XXX extract AngelScript.exec_module?
+                WSTransport.send({execScriptString: script_text});
             }
-            WSTransport.send({execScriptString: script_text});
         }
 
         do_toggle_record() {
-            WSTransport.send({execScriptString: wrap_implicit_main("tas::toggleDump();")});
+            AngelScript.exec("tas::toggleDump();");
         }
 
         recv_tas_record(payload) {
@@ -404,6 +413,7 @@
                     <label title="Automatically wrap input into void main() {...} entry point" for="execscript_use_implicit_main">main:</label>
                     <input type="checkbox" id="execscript_use_implicit_main" ref=${this.use_implicit_main_ref} checked />
                     <button title="tas::toggleDump()" onClick=${ () => this.do_toggle_record() } class="pushbutton">tas dump</button>
+                    <button title="tas::input(1); // sending another script interrupts the running one" onClick=${ () => AngelScript.exec("tas::input(1);") } class="pushbutton">break</button>
                     <br/>
                     <textarea class="as_source" placeholder='// check the blue AS📖 button for help \nPlayer.pos += 100*Vector3f::UP;\n\ntas::input(30, KEY_A|KEY_B, 32767,-32768, 0,0);\ntas::input(15, KEY_B, 0.5*STICK_UP_MAX /*, 8000*STICK_LEFT */);\n\nactor::createAndWatch( \n    1, "SpObj_LiftGeneratorWing_A_01", \n    Player.pos + 5*Vector3f::DOWN\n);' ref=${this.script_text_ref}></textarea>
                     <textarea placeholder="[tas output]" ref=${this.output_text_ref}></textarea>
@@ -435,32 +445,32 @@
         assignSlotAwaitSpawn(slot_i) {
             let name = this.selector_textbox_ref.current.value || "";
             name = name.trim();
-            WSTransport.send({execScriptString: wrap_implicit_main(`ActorWatcher::assignSlotAwaitSpawn(${slot_i}, "${name}");`)});
+            AngelScript.exec(`ActorWatcher::assignSlotAwaitSpawn(${slot_i}, "${name}");`);
         }
 
         assignSlotAwaitRecall(slot_i) {
-            WSTransport.send({execScriptString: wrap_implicit_main(`ActorWatcher::assignSlotAwaitRecall(${slot_i});`)});
+            AngelScript.exec(`ActorWatcher::assignSlotAwaitRecall(${slot_i});`);
         }
 
         assignSlotAwaitBancEntityHash(slot_i) {
             let hash = this.selector_textbox_ref.current.value || ""; // u64, needs BigInt for js numeric! leaving as string
             hash = hash.trim();
             if (!hash) { console.error(`assignSlotAwaitBancEntityHash: invalid hash ${hash}`); }
-            WSTransport.send({execScriptString: wrap_implicit_main(`ActorWatcher::assignSlotAwaitBancEntityHash(${slot_i}, ${hash});`)});
+            AngelScript.exec(`ActorWatcher::assignSlotAwaitBancEntityHash(${slot_i}, ${hash});`);
         }
 
         clear_slot(slot_i) {
-            WSTransport.send({execScriptString: wrap_implicit_main(`ActorWatcher::clearSlot(${slot_i});`)});
+            AngelScript.exec(`ActorWatcher::clearSlot(${slot_i});`);
         }
 
         do_paste_coords(slot_i, pos, rot) {
             let r = rot;
             if (pos && r) {
-                WSTransport.send({execScriptString: wrap_implicit_main(`ActorWatcher::get(${slot_i}).setPosRot(${pos[0]}, ${pos[1]}, ${pos[2]}, ${r[0]}, ${r[1]}, ${r[2]}, ${r[3]}, ${r[4]}, ${r[5]}, ${r[6]}, ${r[7]}, ${r[8]});`)});
+                AngelScript.exec(`ActorWatcher::get(${slot_i}).setPosRot(${pos[0]}, ${pos[1]}, ${pos[2]}, ${r[0]}, ${r[1]}, ${r[2]}, ${r[3]}, ${r[4]}, ${r[5]}, ${r[6]}, ${r[7]}, ${r[8]});`);
             } else if (pos) {
-                WSTransport.send({execScriptString: wrap_implicit_main(`ActorWatcher::get(${slot_i}).setPos(${pos[0]}, ${pos[1]}, ${pos[2]});`)});
+                AngelScript.exec(`ActorWatcher::get(${slot_i}).setPos(${pos[0]}, ${pos[1]}, ${pos[2]});`);
             } else if (r) {
-                WSTransport.send({execScriptString: wrap_implicit_main(`ActorWatcher::get(${slot_i}).setRot(${r[0]}, ${r[1]}, ${r[2]}, ${r[3]}, ${r[4]}, ${r[5]}, ${r[6]}, ${r[7]}, ${r[8]});`)});
+                AngelScript.exec(`ActorWatcher::get(${slot_i}).setRot(${r[0]}, ${r[1]}, ${r[2]}, ${r[3]}, ${r[4]}, ${r[5]}, ${r[6]}, ${r[7]}, ${r[8]});`);
             }
         }
 
@@ -493,7 +503,7 @@
         do_send_toggle(slot_i, funcname, rawValue, translateFalseValue, translateTrueValue) {
             const v = ( rawValue && translateTrueValue  !== undefined) ? translateTrueValue  :
                       (!rawValue && translateFalseValue !== undefined) ? translateFalseValue : rawValue;
-            WSTransport.send({execScriptString: wrap_implicit_main(`ActorWatcher::${funcname}(${slot_i}, ${v});`)});
+            AngelScript.exec(`ActorWatcher::${funcname}(${slot_i}, ${v});`);
         }
 
         dump_pos_to_savestate_textbox() {
@@ -671,7 +681,7 @@
             this.setState({fuzzysort_query: q, fuzzysort_results: fuzzysort_results});
         }
 
-        do_spawn(actorName) { WSTransport.send({execScriptString: wrap_implicit_main(`actor::createSimple("${actorName}");`)}); }
+        do_spawn(actorName) { AngelScript.exec(`actor::createSimple("${actorName}");`); }
         do_objmap(actorName) { window.open(`https://objmap-totk.zeldamods.org/#/map/z2,0,0?q=%5E${actorName}`, "_blank").focus(); }
 
         render_fuzzysort_results_dialog(props, state) {
@@ -789,7 +799,7 @@
             this.setState({fuzzysort_query: q, fuzzysort_results: fuzzysort_results});
         }
 
-        do_request(flowchartName) { WSTransport.send({execScriptString: wrap_implicit_main(`event::requestSimple("${flowchartName}");`)}); } // TODO starter link
+        do_request(flowchartName) { AngelScript.exec(`event::requestSimple("${flowchartName}");`); } // TODO starter link
 
         render_fuzzysort_results_dialog(props, state) {
             if (!state.fuzzysort_query) { return ""; }
