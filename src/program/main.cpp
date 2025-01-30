@@ -165,8 +165,8 @@ HOOK_DEFINE_TRAMPOLINE(MainGetNpadStates) {
 
         constexpr u32 target_idk = 0; // styleset? iterates over 3?
         nn::hid::NpadBaseState* state = (nn::hid::NpadBaseState*)(param_1 + target_idk * 0xe98 + 0x58);
-        lotuskit::tas::Playback::applyCurrentInput(state);
         lotuskit::tas::Record::applyCurrentInput(state);
+        lotuskit::tas::Playback::applyCurrentInput(state);
     }
 };
 

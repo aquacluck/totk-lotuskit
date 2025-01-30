@@ -268,6 +268,30 @@ namespace lotuskit::script::globals {
     void tas_input_vec2f_0lr(u32 duration, const sead::Vector2f &nextLStick, const sead::Vector2f &nextRStick) {
         lotuskit::tas::Playback::setCurrentInput(duration, 0, nextLStick.x, nextLStick.y, nextRStick.x, nextRStick.y);
     }
+    void tas_inputor_vec2f_l(u32 duration, u64 nextButtons, const sead::Vector2f &nextLStick) {
+        lotuskit::tas::Playback::setCurrentInputOr(duration, nextButtons, nextLStick.x, nextLStick.y, 0, 0);
+    }
+    void tas_inputor_vec2f_lr(u32 duration, u64 nextButtons, const sead::Vector2f &nextLStick, const sead::Vector2f &nextRStick) {
+        lotuskit::tas::Playback::setCurrentInputOr(duration, nextButtons, nextLStick.x, nextLStick.y, nextRStick.x, nextRStick.y);
+    }
+    void tas_inputor_vec2f_0l(u32 duration, const sead::Vector2f &nextLStick) {
+        lotuskit::tas::Playback::setCurrentInputOr(duration, 0, nextLStick.x, nextLStick.y, 0, 0);
+    }
+    void tas_inputor_vec2f_0lr(u32 duration, const sead::Vector2f &nextLStick, const sead::Vector2f &nextRStick) {
+        lotuskit::tas::Playback::setCurrentInputOr(duration, 0, nextLStick.x, nextLStick.y, nextRStick.x, nextRStick.y);
+    }
+    void tas_inputxor_vec2f_l(u32 duration, u64 nextButtons, const sead::Vector2f &nextLStick) {
+        lotuskit::tas::Playback::setCurrentInputXor(duration, nextButtons, nextLStick.x, nextLStick.y, 0, 0);
+    }
+    void tas_inputxor_vec2f_lr(u32 duration, u64 nextButtons, const sead::Vector2f &nextLStick, const sead::Vector2f &nextRStick) {
+        lotuskit::tas::Playback::setCurrentInputXor(duration, nextButtons, nextLStick.x, nextLStick.y, nextRStick.x, nextRStick.y);
+    }
+    void tas_inputxor_vec2f_0l(u32 duration, const sead::Vector2f &nextLStick) {
+        lotuskit::tas::Playback::setCurrentInputXor(duration, 0, nextLStick.x, nextLStick.y, 0, 0);
+    }
+    void tas_inputxor_vec2f_0lr(u32 duration, const sead::Vector2f &nextLStick, const sead::Vector2f &nextRStick) {
+        lotuskit::tas::Playback::setCurrentInputXor(duration, 0, nextLStick.x, nextLStick.y, nextRStick.x, nextRStick.y);
+    }
 
     // asOBJ_APP_CLASS_CAK=Construct Assign Kopy
     void Vector2fConstructor(sead::Vector2f *self) { new(self) sead::Vector2f(); }
@@ -701,7 +725,6 @@ namespace lotuskit::script::globals {
         /// }
 
         engine->SetDefaultNamespace("tas"); /// {
-            // TODO tas::yieldInput(frameCount) -- consume time in tas scheduling but do not override input
             asErrno = engine->RegisterGlobalFunction(
                 "void input(u32 duration=1, u64 nextButtons=0, s32 nextLStickX=0, s32 nextLStickY=0, s32 nextRStickX=0, s32 nextRStickY=0)",
                 AngelScript::asFUNCTION(lotuskit::tas::Playback::setCurrentInput),
@@ -728,6 +751,63 @@ namespace lotuskit::script::globals {
                 AngelScript::asFUNCTION(tas_input_vec2f_0lr),
                 AngelScript::asCALL_CDECL
             ); assert( asErrno >= 0 );
+
+            // inputOr allows human input to add buttons
+            asErrno = engine->RegisterGlobalFunction(
+                "void inputOr(u32 duration=1, u64 nextButtons=0, s32 nextLStickX=0, s32 nextLStickY=0, s32 nextRStickX=0, s32 nextRStickY=0)",
+                AngelScript::asFUNCTION(lotuskit::tas::Playback::setCurrentInputOr),
+                AngelScript::asCALL_CDECL
+            ); assert( asErrno >= 0 );
+            asErrno = engine->RegisterGlobalFunction(
+                // note these floats still use s32 units, not 0...1! There's no Vector2i binding yet and this seems simpler anyways
+                "void inputOr(u32 duration, u64 nextButtons, const Vector2f &in)",
+                AngelScript::asFUNCTION(tas_inputor_vec2f_l),
+                AngelScript::asCALL_CDECL
+            ); assert( asErrno >= 0 );
+            asErrno = engine->RegisterGlobalFunction(
+                "void inputOr(u32 duration, u64 nextButtons, const Vector2f &in, const Vector2f &in)",
+                AngelScript::asFUNCTION(tas_inputor_vec2f_lr),
+                AngelScript::asCALL_CDECL
+            ); assert( asErrno >= 0 );
+            asErrno = engine->RegisterGlobalFunction(
+                "void inputOr(u32 duration, const Vector2f &in)",
+                AngelScript::asFUNCTION(tas_inputor_vec2f_0l),
+                AngelScript::asCALL_CDECL
+            ); assert( asErrno >= 0 );
+            asErrno = engine->RegisterGlobalFunction(
+                "void inputOr(u32 duration, const Vector2f &in, const Vector2f &in)",
+                AngelScript::asFUNCTION(tas_inputor_vec2f_0lr),
+                AngelScript::asCALL_CDECL
+            ); assert( asErrno >= 0 );
+
+            // inputXor allows human input to toggle buttons
+            asErrno = engine->RegisterGlobalFunction(
+                "void inputXor(u32 duration=1, u64 nextButtons=0, s32 nextLStickX=0, s32 nextLStickY=0, s32 nextRStickX=0, s32 nextRStickY=0)",
+                AngelScript::asFUNCTION(lotuskit::tas::Playback::setCurrentInputXor),
+                AngelScript::asCALL_CDECL
+            ); assert( asErrno >= 0 );
+            asErrno = engine->RegisterGlobalFunction(
+                // note these floats still use s32 units, not 0...1! There's no Vector2i binding yet and this seems simpler anyways
+                "void inputXor(u32 duration, u64 nextButtons, const Vector2f &in)",
+                AngelScript::asFUNCTION(tas_inputxor_vec2f_l),
+                AngelScript::asCALL_CDECL
+            ); assert( asErrno >= 0 );
+            asErrno = engine->RegisterGlobalFunction(
+                "void inputXor(u32 duration, u64 nextButtons, const Vector2f &in, const Vector2f &in)",
+                AngelScript::asFUNCTION(tas_inputxor_vec2f_lr),
+                AngelScript::asCALL_CDECL
+            ); assert( asErrno >= 0 );
+            asErrno = engine->RegisterGlobalFunction(
+                "void inputXor(u32 duration, const Vector2f &in)",
+                AngelScript::asFUNCTION(tas_inputxor_vec2f_0l),
+                AngelScript::asCALL_CDECL
+            ); assert( asErrno >= 0 );
+            asErrno = engine->RegisterGlobalFunction(
+                "void inputXor(u32 duration, const Vector2f &in, const Vector2f &in)",
+                AngelScript::asFUNCTION(tas_inputxor_vec2f_0lr),
+                AngelScript::asCALL_CDECL
+            ); assert( asErrno >= 0 );
+
             asErrno = engine->RegisterGlobalFunction(
                 "void sleep(u32 duration=1)",
                 AngelScript::asFUNCTION(lotuskit::tas::Playback::setSleepInput),

@@ -1,5 +1,6 @@
 #pragma once
 #include "exlaunch.hpp"
+#include "tas/config.hpp"
 #include <angelscript.h>
 #include <nn/hid.h>
 
@@ -23,12 +24,46 @@ namespace lotuskit::tas {
         // current input
         static PlaybackInput currentInput;
         static inline bool isPlaybackActive = false;
-        static inline bool isSleepInput = false; // passthrough human input
         static void setCurrentInput(u32 duration=1, u64 nextButtons=0, s32 nextLStickX=0, s32 nextLStickY=0, s32 nextRStickX=0, s32 nextRStickY=0);
+        static void setCurrentInputOr(u32 duration=1, u64 nextButtons=0, s32 nextLStickX=0, s32 nextLStickY=0, s32 nextRStickX=0, s32 nextRStickY=0);
+        static void setCurrentInputXor(u32 duration=1, u64 nextButtons=0, s32 nextLStickX=0, s32 nextLStickY=0, s32 nextRStickX=0, s32 nextRStickY=0);
         static void setSleepInput(u32 duration=1);
+
         inline static void applyCurrentInput(nn::hid::NpadBaseState* dst) {
-            if (!isPlaybackActive || isSleepInput) { return; }
-            std::memcpy((void*)&(dst->mButtons), (void*)&(currentInput.buttons), 24);
+            if (!isPlaybackActive) { return; }
+            switch(config::playbackInputPassthroughMode) {
+                case config::PlaybackInputPassthroughMode::NULL_VANILLA:
+                // passthrough all, do not alter input ("sleep")
+                break;
+
+                case config::PlaybackInputPassthroughMode::PLAYBACK_TAS_ONLY:
+                std::memcpy((void*)&(dst->mButtons), (void*)&(currentInput.buttons), 24);
+                break;
+
+                case config::PlaybackInputPassthroughMode::PASSTHROUGH_OR:
+                *((u64*)&(dst->mButtons)) |= *((u64*)&(currentInput.buttons));
+                // passthrough all non-zero axes
+                dst->mAnalogStickL.mX = (dst->mAnalogStickL.mX != 0) ? dst->mAnalogStickL.mX : currentInput.LStick.mX;
+                dst->mAnalogStickL.mY = (dst->mAnalogStickL.mY != 0) ? dst->mAnalogStickL.mY : currentInput.LStick.mY;
+                dst->mAnalogStickR.mX = (dst->mAnalogStickR.mX != 0) ? dst->mAnalogStickR.mX : currentInput.RStick.mX;
+                dst->mAnalogStickR.mY = (dst->mAnalogStickR.mY != 0) ? dst->mAnalogStickR.mY : currentInput.RStick.mY;
+                // FIXME axis button flags not updated
+                break;
+
+                case config::PlaybackInputPassthroughMode::PASSTHROUGH_XOR:
+                *((u64*)&(dst->mButtons)) ^= *((u64*)&(currentInput.buttons));
+                // toggle all non-zero axes
+                dst->mAnalogStickL.mX = (currentInput.LStick.mX == 0) ? dst->mAnalogStickL.mX :
+                                        ( dst->mAnalogStickL.mX == 0) ? currentInput.LStick.mX : 0;
+                dst->mAnalogStickL.mY = (currentInput.LStick.mY == 0) ? dst->mAnalogStickL.mY :
+                                        ( dst->mAnalogStickL.mY == 0) ? currentInput.LStick.mY : 0;
+                dst->mAnalogStickR.mX = (currentInput.RStick.mX == 0) ? dst->mAnalogStickR.mX :
+                                        ( dst->mAnalogStickR.mX == 0) ? currentInput.RStick.mX : 0;
+                dst->mAnalogStickR.mY = (currentInput.RStick.mY == 0) ? dst->mAnalogStickR.mY :
+                                        ( dst->mAnalogStickR.mY == 0) ? currentInput.RStick.mY : 0;
+                // FIXME axis button flags not updated
+                break;
+            }
         }
 
         // utility

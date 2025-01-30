@@ -1,3 +1,4 @@
+#include <nn/hid.h>
 #include "TextWriter.hpp"
 #include "tas/InputDisplay.hpp"
 #include "tas/Playback.hpp"
@@ -5,25 +6,19 @@
 
 namespace lotuskit::tas {
     void InputDisplay::draw() {
-        u64 buttons = 0;
-        s32 LX, LY, RX, RY;
+        // copy human input: contains latest polled input even when not recording
+        nn::hid::NpadBaseState input = {0};
+        std::memcpy((void*)&(input.mButtons), (void*)&(lotuskit::tas::Record::currentInput.buttons), 24);
 
-        if (lotuskit::tas::Playback::isPlaybackActive && !lotuskit::tas::Playback::isSleepInput) {
-            auto& input = lotuskit::tas::Playback::currentInput;
-            buttons = *(u64*)&(input.buttons);
-            LX = input.LStick.mX;
-            LY = input.LStick.mY;
-            RX = input.RStick.mX;
-            RY = input.RStick.mY;
-        } else {
-            // contains latest polled input even when not recording
-            auto& input = lotuskit::tas::Record::currentInput;
-            buttons = *(u64*)&(input.buttons);
-            LX = input.LStick.mX;
-            LY = input.LStick.mY;
-            RX = input.RStick.mX;
-            RY = input.RStick.mY;
-        }
+        // alter/override/passthrough according to current options
+        lotuskit::tas::Playback::applyCurrentInput(&input);
+
+        // display effective input values
+        u64 buttons = *((u64*)&(input.mButtons));
+        s32 LX = input.mAnalogStickL.mX;
+        s32 LY = input.mAnalogStickL.mY;
+        s32 RX = input.mAnalogStickR.mX;
+        s32 RY = input.mAnalogStickR.mY;
 
         const char* a       = buttons & (1 << (u32)nn::hid::NpadButton::A)     ? "A" : " ";
         const char* b       = buttons & (1 << (u32)nn::hid::NpadButton::B)     ? "B" : " ";

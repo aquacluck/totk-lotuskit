@@ -20,5 +20,13 @@ namespace lotuskit::tas::config {
     };
     extern VFRCopingStrategy vfrMode;
 
+    enum class PlaybackInputPassthroughMode {
+        NULL_VANILLA = 0,      // full passthrough ("sleep" or human only)
+        PLAYBACK_TAS_ONLY = 1, // input supplied verbatim by tas
+        PASSTHROUGH_OR = 2,    // human inputs added to tas inputs: human may add buttons or alter axes
+        PASSTHROUGH_XOR = 3    // human inputs invert tas inputs: human may toggle buttons or cancel out axes
+    };
+    extern PlaybackInputPassthroughMode playbackInputPassthroughMode;
+
 } // ns
 

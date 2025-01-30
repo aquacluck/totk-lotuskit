@@ -1,5 +1,4 @@
 #include <nn/util.h>
-#include "tas/config.hpp"
 #include "tas/Playback.hpp"
 #include "structs/VFRMgr.hpp"
 #include "Logger.hpp"
@@ -42,8 +41,6 @@ namespace lotuskit::tas {
         }
 
         // resume script, eventually getting a setCurrentInput call
-        // XXX non-setCurrentInput yields will create input gaps during tas playback -- "pure" tas needs the inputs and can't be waiting around for other events.
-        //     Experimental workflows can just manually resync/etc to work around this sort of thing.
         asErrno = currentCtx->Execute();
         if (asErrno == AngelScript::asEXECUTION_FINISHED) {
             isPlaybackActive = false; // XXX ensure this doesnt drop the last input
@@ -55,8 +52,8 @@ namespace lotuskit::tas {
             isPlaybackActive = false;
             char buf[1000];
             nn::util::SNPrintf(buf, sizeof(buf), "[angelscript] uncaught: %s", currentCtx->GetExceptionString());
-            Logger::logText(buf, "/script/engine"); // TODO extract s32 script::engine::resumeCtx(asIScriptContext*)?
-            // TODO toast error
+            Logger::logText(buf, "/script/engine");
+            TextWriter::toastf(30*5, "[error] %s \n", currentCtx->GetExceptionString());
             currentCtx->Release();
             currentCtx = nullptr;
 
@@ -69,10 +66,14 @@ namespace lotuskit::tas {
         // (however its impossible to predict or progress-bar a script's frame duration -- halting problem)
         if (!isPlaybackActive) {
             lotuskit::TextWriter::printf(1, "tas::end TOTK_%d\n               fr:%6d\n",                                                 TOTK_VERSION, duration60ToUIFrames(elapsedPlayback60));
-        } else if (isSleepInput) {
+        } else if (config::playbackInputPassthroughMode == config::PlaybackInputPassthroughMode::NULL_VANILLA) {
             lotuskit::TextWriter::printf(1, "tas::sleep(%3u) TOTK_%d\n               fr:%6d\n", duration60ToUIFrames(currentInputTTL60), TOTK_VERSION, duration60ToUIFrames(elapsedPlayback60));
-        } else {
+        } else if (config::playbackInputPassthroughMode == config::PlaybackInputPassthroughMode::PLAYBACK_TAS_ONLY) {
             lotuskit::TextWriter::printf(1, "tas::input(%3u) TOTK_%d\n               fr:%6d\n", duration60ToUIFrames(currentInputTTL60), TOTK_VERSION, duration60ToUIFrames(elapsedPlayback60));
+        } else if (config::playbackInputPassthroughMode == config::PlaybackInputPassthroughMode::PASSTHROUGH_OR) {
+            lotuskit::TextWriter::printf(1, "   inputOr(%3u) TOTK_%d\n               fr:%6d\n", duration60ToUIFrames(currentInputTTL60), TOTK_VERSION, duration60ToUIFrames(elapsedPlayback60));
+        } else if (config::playbackInputPassthroughMode == config::PlaybackInputPassthroughMode::PASSTHROUGH_XOR) {
+            lotuskit::TextWriter::printf(1, "  inputXor(%3u) TOTK_%d\n               fr:%6d\n", duration60ToUIFrames(currentInputTTL60), TOTK_VERSION, duration60ToUIFrames(elapsedPlayback60));
         }
     }
 
@@ -112,7 +113,7 @@ namespace lotuskit::tas {
         if (nextRStickY < -16400) { nextButtons |= (1 << (u32)nn::hid::NpadButton::StickRDown); }
 
         if (!isPlaybackActive) { elapsedPlayback60 = 0; }
-        isSleepInput = false;
+        config::playbackInputPassthroughMode = config::PlaybackInputPassthroughMode::PLAYBACK_TAS_ONLY;
         *(u64*)&(currentInput.buttons) = nextButtons; // These are expected to be
         isPlaybackActive = true;                      // written/observable in order
         // XXX and i'm not confident that's guaranteed, but it doesnt seem dangerous at least?
@@ -121,6 +122,22 @@ namespace lotuskit::tas {
         // yield execution from script back to game, to be resumed in n frames
         currentCtx = ctx;
         ctx->Suspend(); // assert ctx->GetState() == asEXECUTION_SUSPENDED
+    }
+
+    void Playback::setCurrentInputOr(u32 duration, u64 nextButtons, s32 nextLStickX, s32 nextLStickY, s32 nextRStickX, s32 nextRStickY) {
+        Playback::setCurrentInput(duration, nextButtons, nextLStickX, nextLStickY, nextRStickX, nextRStickY);
+        config::playbackInputPassthroughMode = config::PlaybackInputPassthroughMode::PASSTHROUGH_OR;
+    }
+
+    void Playback::setCurrentInputXor(u32 duration, u64 nextButtons, s32 nextLStickX, s32 nextLStickY, s32 nextRStickX, s32 nextRStickY) {
+        Playback::setCurrentInput(duration, nextButtons, nextLStickX, nextLStickY, nextRStickX, nextRStickY);
+        config::playbackInputPassthroughMode = config::PlaybackInputPassthroughMode::PASSTHROUGH_XOR;
+    }
+
+    void Playback::setSleepInput(u32 duration) {
+        // called by tas script to passthrough human input for next n frames
+        Playback::setCurrentInput(duration, 0, 0,0, 0,0);
+        config::playbackInputPassthroughMode = config::PlaybackInputPassthroughMode::NULL_VANILLA;
     }
 
     u32 Playback::duration60ToUIFrames(u32 duration60) {
@@ -133,34 +150,6 @@ namespace lotuskit::tas {
             return duration60 / 3;
         }
         return 0xdeaddead;
-    }
-
-    void Playback::setSleepInput(u32 duration) {
-        // called by tas script to passthrough human input for next n frames
-        if (duration == 0) { return; } // ignore
-
-        // what is "n frames" expected to mean?
-        u32 duration60 = 0;
-        if (config::inputMode == config::InputDurationScalingStrategy::FPS60_1X) {
-            duration60 = duration;
-        } else if (config::inputMode == config::InputDurationScalingStrategy::FPS30_2X) {
-            duration60 = duration * 2;
-        } else if (config::inputMode == config::InputDurationScalingStrategy::FPS20_3X) {
-            duration60 = duration * 3;
-        } else return;
-        // assert duration60 > 0
-
-        AngelScript::asIScriptContext *ctx = AngelScript::asGetActiveContext();
-        if (ctx == nullptr) { return; }
-
-        //TODO atomic toggle between double buffer currentInput+nextInput
-        currentInputTTL60 = duration60;
-        isSleepInput = true;
-        isPlaybackActive = true;
-
-        // yield execution from script back to game, to be resumed in n frames
-        currentCtx = ctx;
-        ctx->Suspend(); // assert ctx->GetState() == asEXECUTION_SUSPENDED
     }
 
 } // ns
