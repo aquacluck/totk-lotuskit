@@ -1,15 +1,16 @@
 #include "script/engine.hpp"
 #include "script/globals.hpp"
-#include "nn/util.h"
+#include <nn/util.h>
 #include "exlaunch.hpp"
 #include "Logger.hpp"
 using Logger = lotuskit::Logger;
+#include "TextWriter.hpp"
 
-#include "angelscript.h"
-#include "scriptarray.h"
-#include "scriptmath.h"
-//#include "scriptmathcomplex.h"
-#include "scriptstdstring.h"
+#include <angelscript.h>
+#include <scriptarray.h>
+#include <scriptmath.h>
+//#include <scriptmathcomplex.h>
+#include <scriptstdstring.h>
 
 namespace lotuskit::script::engine {
     // AngelScript-wide allocation
@@ -22,16 +23,17 @@ namespace lotuskit::script::engine {
     }
 
     void asMessageCallback(const AngelScript::asSMessageInfo* msg, void* param) {
-        const char *type = "ERR ";
+        const char *loglevel = "[error]";
         if (msg->type == AngelScript::asMSGTYPE_WARNING) {
-            type = "WARN ";
+            loglevel = "[warn ]";
         } else if(msg->type == AngelScript::asMSGTYPE_INFORMATION) {
-            type = "INFO ";
+            loglevel = "[info ]";
         }
 
         char buf[0x1000];
-        nn::util::SNPrintf(buf, sizeof(buf), "%s (%d, %d) : %s : %s\n", msg->section, msg->row, msg->col, type, msg->message);
+        nn::util::SNPrintf(buf, sizeof(buf), "%s %s(line %d, char %d): %s\n", loglevel, msg->section, msg->row, msg->col, msg->message);
         Logger::logText(buf, "/script/engine");
+        TextWriter::toastf(30*5, "%s %s(line %d, char %d): %s\n", loglevel, msg->section, msg->row, msg->col, msg->message);
     }
 
     void configureEngine(AngelScript::asIScriptEngine* engine) {
@@ -100,7 +102,8 @@ namespace lotuskit::script::engine {
         // Find the function that is to be called (mod+entryPoint -> funcptr)
         AngelScript::asIScriptFunction *asEntryPoint = mod->GetFunctionByDecl(entryPoint);
         if (asEntryPoint == nullptr) {
-            nn::util::SNPrintf(buf, sizeof(buf), "[angelscript] missing entry point %s", entryPoint);
+            TextWriter::toastf(30*5, "[error] missing entry point %s \n", entryPoint);
+            nn::util::SNPrintf(buf, sizeof(buf), "[error] missing entry point %s", entryPoint);
             Logger::logText(buf, "/script/engine");
             return;
         }
@@ -115,7 +118,8 @@ namespace lotuskit::script::engine {
 
         } else if (asErrno == AngelScript::asEXECUTION_EXCEPTION) {
             // TODO exceptions
-            nn::util::SNPrintf(buf, sizeof(buf), "[angelscript] uncaught: %s", asCtx->GetExceptionString());
+            TextWriter::toastf(30*5, "[error] %s \n", asCtx->GetExceptionString());
+            nn::util::SNPrintf(buf, sizeof(buf), "[error] %s", asCtx->GetExceptionString());
             Logger::logText(buf, "/script/engine");
             asCtx->Release();
 
