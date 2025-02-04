@@ -14,6 +14,7 @@
 #include "util/camera.hpp"
 #include "util/color.hpp"
 #include "util/event.hpp"
+#include "util/player.hpp"
 using json = nlohmann::json;
 using Logger = lotuskit::Logger;
 #include <gfx/seadColor.h>
@@ -848,6 +849,12 @@ namespace lotuskit::script::globals {
             asErrno = engine->RegisterObjectMethod("ActorBase", "BoundBox3f getAABB()", AngelScript::asFUNCTION(actor_aabb_get), AngelScript::asCALL_CDECL_OBJFIRST); assert(asErrno >= 0);
             asErrno = engine->RegisterObjectMethod("ActorBase", "string getName()", AngelScript::asFUNCTION(actor_name_get), AngelScript::asCALL_CDECL_OBJFIRST); assert(asErrno >= 0);
             asErrno = engine->RegisterObjectMethod("ActorBase", "RigidBody@ getMainRigidBody()", AngelScript::asFUNCTION(lotuskit::util::actor::getMainRigidBody), AngelScript::asCALL_CDECL_OBJFIRST); assert(asErrno >= 0);
+
+            // TODO bb access, but should we even bother with exposing bb inheritance? keeping things generic between ainb/asb just isnt gonna be feasible anyways
+            //asErrno = engine->RegisterObjectMethod("ActorBase", "AIBlackboard@ getAIBlackboard()", AngelScript::asFUNCTION(lotuskit::util::actor::getAIBlackboard), AngelScript::asCALL_CDECL_OBJFIRST); assert(asErrno >= 0);
+            //asErrno = engine->RegisterObjectMethod("ActorBase", "ASBlackboard@ getASBlackboard()", AngelScript::asFUNCTION(lotuskit::util::actor::getASBlackboard), AngelScript::asCALL_CDECL_OBJFIRST); assert(asErrno >= 0);
+            asErrno = engine->RegisterObjectMethod("ActorBase", "void dumpASBlackboard(u32=0)", AngelScript::asFUNCTION(lotuskit::util::actor::dumpASBlackboard), AngelScript::asCALL_CDECL_OBJFIRST); assert(asErrno >= 0);
+
             //engine->SetDefaultNamespace("ResidentActors");
             asErrno = engine->RegisterGlobalProperty("ActorBase@ Player", &ResidentActors::Player); assert(asErrno >= 0);
             asErrno = engine->RegisterGlobalProperty("ActorBase@ PlayerCamera", &ResidentActors::PlayerCamera); assert(asErrno >= 0);
@@ -928,14 +935,24 @@ namespace lotuskit::script::globals {
         asErrno = engine->RegisterGlobalFunction("void requestSimple(string &in, ActorBase@)", AngelScript::asFUNCTION(lotuskit::util::event::requestSimple), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
     }
 
+    void registerPlayerUtil(AngelScript::asIScriptEngine* engine) {
+        //s32 asErrno;
+        //engine->SetDefaultNamespace("PlayerUtil");
+        //asErrno = engine->RegisterGlobalFunction("void disableGloom(bool)", AngelScript::asFUNCTION(lotuskit::util::player::disableGloom), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        //asErrno = engine->RegisterGlobalFunction("void setVel(const Vector3f &in)", AngelScript::asFUNCTION(lotuskit::util::player::setLinearVelocity), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        //asErrno = engine->RegisterGlobalFunction("void setVel(float, float, float)", AngelScript::asFUNCTION(lotuskit::util::player::setLinearVelocityXYZ), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+    }
+
     void registerGlobals(AngelScript::asIScriptEngine* engine) {
         registerBaseTypes(engine);
         registerContainers(engine);
+        // TODO registerClassFwdDecls(engine); // avoid circular/mutual dep issues
         registerUtil(engine);
         registerTAS(engine);
         registerPhive(engine);
         registerActorSystem(engine);
         registerEvent(engine);
+        registerPlayerUtil(engine);
     }
 
 } // ns

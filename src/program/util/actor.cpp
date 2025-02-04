@@ -4,6 +4,9 @@
 #include "script/globals.hpp"
 #include <prim/seadSafeString.h>
 
+#include "HexDump.hpp"
+#include "TextWriter.hpp"
+
 namespace lotuskit::util::actor {
     using CreateFunc = bool (engine::actor::ActorMgr*, const sead::SafeString&, const engine::actor::BaseProcMgr::CreateArg&,
                              engine::actor::CreateWatcherRef*, engine::actor::CreatePriority, engine::actor::PreActor*,
@@ -145,6 +148,151 @@ namespace lotuskit::util::actor {
             return physCmp->controllerSet->mainRigidBody;
         }
         return nullptr;
+    }
+
+    as::Blackboard* getASBlackboard(ActorBase* actor) {
+        // XXX traversing this in angelscript would safer with builtin null checks... but perf + more plumbing
+        as::Blackboard* bb = actor->getASComponent()->mASResourceBinder.mpASControllerSet->mpCurrentController->mpBlackboard;
+        return bb;
+    }
+
+    void dumpASBlackboard(ActorBase* actor, u32 dumpMode) {
+        auto* const bb = getASBlackboard(actor);
+        if (bb == nullptr) { return; }
+        const BBDumpMode mode = static_cast<BBDumpMode>(dumpMode); // lol c++
+        const char* actorName = actor->mName.cstr();
+        char buf[512];
+
+        const auto n_string = bb->getStringCount();
+        if (mode == BBDumpMode::MEMBERS) {
+            nn::util::SNPrintf(buf, sizeof(buf), "%s(%p).ASBlackboard.String[%d]:", actorName, actor, n_string);
+        } else if (mode == BBDumpMode::ENUMCLS_FILE_DECL) {
+            nn::util::SNPrintf(buf, sizeof(buf), "enum class %s_StringASKey_FileIndex: u32 {", actorName);
+        }
+        svcOutputDebugString(buf, strlen(buf));
+        for (auto i=0; i < n_string; i++) {
+            const char* k = bb->getStringKeyByIndex(i);
+            const sead::SafeString& v = bb->getStringByIndex(i);
+            if (mode == BBDumpMode::MEMBERS) {
+                nn::util::SNPrintf(buf, sizeof(buf), "ASBlackboard.String[%d] {%s: %s}", i, k, v.cstr());
+            } else if (mode == BBDumpMode::ENUMCLS_FILE_DECL) {
+                nn::util::SNPrintf(buf, sizeof(buf), "    %s = 0x%x,", k, i); // emit enum
+            }
+            svcOutputDebugString(buf, strlen(buf));
+        }
+        if (mode == BBDumpMode::ENUMCLS_FILE_DECL) {
+            svcOutputDebugString("};", 2); // close enum
+        }
+
+        const auto n_int = bb->getIntCount();
+        if (mode == BBDumpMode::MEMBERS) {
+            nn::util::SNPrintf(buf, sizeof(buf), "%s(%p).ASBlackboard.Int[%d]:", actorName, actor, n_int);
+        } else if (mode == BBDumpMode::ENUMCLS_FILE_DECL) {
+            nn::util::SNPrintf(buf, sizeof(buf), "enum class %s_IntASKey_FileIndex: u32 {", actorName);
+        }
+        svcOutputDebugString(buf, strlen(buf));
+        for (auto i=0; i < n_int; i++) {
+            const char* k = bb->getIntKeyByIndex(i);
+            const s32 v = bb->getIntByIndex(i);
+            if (mode == BBDumpMode::MEMBERS) {
+                nn::util::SNPrintf(buf, sizeof(buf), "ASBlackboard.Int[%d] {%s: %d}", i, k, v);
+            } else if (mode == BBDumpMode::ENUMCLS_FILE_DECL) {
+                nn::util::SNPrintf(buf, sizeof(buf), "    %s = 0x%x,", k, i); // emit enum
+            }
+            svcOutputDebugString(buf, strlen(buf));
+        }
+        if (mode == BBDumpMode::ENUMCLS_FILE_DECL) {
+            svcOutputDebugString("};", 2); // close enum
+        }
+
+        const auto n_float = bb->getFloatCount();
+        if (mode == BBDumpMode::MEMBERS) {
+            nn::util::SNPrintf(buf, sizeof(buf), "%s(%p).ASBlackboard.Float[%d]:", actorName, actor, n_float);
+        } else if (mode == BBDumpMode::ENUMCLS_FILE_DECL) {
+            nn::util::SNPrintf(buf, sizeof(buf), "enum class %s_FloatASKey_FileIndex: u32 {", actorName);
+        }
+        svcOutputDebugString(buf, strlen(buf));
+        for (auto i=0; i < n_float; i++) {
+            const char* k = bb->getFloatKeyByIndex(i);
+            const float v = bb->getFloatByIndex(i);
+            if (mode == BBDumpMode::MEMBERS) {
+                nn::util::SNPrintf(buf, sizeof(buf), "ASBlackboard.Float[%d] {%s: %f}", i, k, v);
+            } else if (mode == BBDumpMode::ENUMCLS_FILE_DECL) {
+                nn::util::SNPrintf(buf, sizeof(buf), "    %s = 0x%x,", k, i); // emit enum
+            }
+            svcOutputDebugString(buf, strlen(buf));
+        }
+        if (mode == BBDumpMode::ENUMCLS_FILE_DECL) {
+            svcOutputDebugString("};", 2); // close enum
+        }
+
+        const auto n_bool = bb->getBoolCount();
+        if (mode == BBDumpMode::MEMBERS) {
+            nn::util::SNPrintf(buf, sizeof(buf), "%s(%p).ASBlackboard.Bool[%d]:", actorName, actor, n_bool);
+        } else if (mode == BBDumpMode::ENUMCLS_FILE_DECL) {
+            nn::util::SNPrintf(buf, sizeof(buf), "enum class %s_BoolASKey_FileIndex: u32 {", actorName);
+        }
+        svcOutputDebugString(buf, strlen(buf));
+        for (auto i=0; i < n_bool; i++) {
+            const char* k = bb->getBoolKeyByIndex(i);
+            const s32 v = bb->getBoolByIndex(i);
+            if (mode == BBDumpMode::MEMBERS) {
+                nn::util::SNPrintf(buf, sizeof(buf), "ASBlackboard.Bool[%d] {%s: %d}", i, k, v);
+            } else if (mode == BBDumpMode::ENUMCLS_FILE_DECL) {
+                nn::util::SNPrintf(buf, sizeof(buf), "    %s = 0x%x,", k, i); // emit enum
+            }
+            svcOutputDebugString(buf, strlen(buf));
+        }
+        if (mode == BBDumpMode::ENUMCLS_FILE_DECL) {
+            svcOutputDebugString("};", 2); // close enum
+        }
+
+        const auto n_vec3f = bb->getVec3fCount();
+        if (mode == BBDumpMode::MEMBERS) {
+            nn::util::SNPrintf(buf, sizeof(buf), "%s(%p).ASBlackboard.Vec3f[%d]:", actorName, actor, n_vec3f);
+        } else if (mode == BBDumpMode::ENUMCLS_FILE_DECL) {
+            nn::util::SNPrintf(buf, sizeof(buf), "enum class %s_Vec3fASKey_FileIndex: u32 {", actorName);
+        }
+        svcOutputDebugString(buf, strlen(buf));
+        for (auto i=0; i < n_vec3f; i++) {
+            const char* k = bb->getVec3fKeyByIndex(i);
+            const sead::Vector3f& v = bb->getVec3fByIndex(i);
+            if (mode == BBDumpMode::MEMBERS) {
+                nn::util::SNPrintf(buf, sizeof(buf), "ASBlackboard.Vec3f[%d] {%s: (%f, %f, %f)}", i, k, v.x, v.y, v.z);
+            } else if (mode == BBDumpMode::ENUMCLS_FILE_DECL) {
+                nn::util::SNPrintf(buf, sizeof(buf), "    %s = 0x%x,", k, i); // emit enum
+            }
+            svcOutputDebugString(buf, strlen(buf));
+        }
+        if (mode == BBDumpMode::ENUMCLS_FILE_DECL) {
+            svcOutputDebugString("};", 2); // close enum
+        }
+
+        const auto n_ptr = bb->getPtrCount();
+        if (mode == BBDumpMode::MEMBERS) {
+            nn::util::SNPrintf(buf, sizeof(buf), "%s(%p).ASBlackboard.Ptr[%d]:", actorName, actor, n_ptr);
+        } else if (mode == BBDumpMode::ENUMCLS_FILE_DECL) {
+            nn::util::SNPrintf(buf, sizeof(buf), "enum class %s_PtrASKey_FileIndex: u32 {", actorName);
+        }
+        svcOutputDebugString(buf, strlen(buf));
+        for (auto i=0; i < n_ptr; i++) {
+            const char* k = bb->getPtrKeyByIndex(i);
+            const void* v = bb->getPtrByIndex(i);
+            if (mode == BBDumpMode::MEMBERS) {
+                nn::util::SNPrintf(buf, sizeof(buf), "ASBlackboard.Ptr[%d] {%s: %p}", i, k, v);
+            } else if (mode == BBDumpMode::ENUMCLS_FILE_DECL) {
+                nn::util::SNPrintf(buf, sizeof(buf), "    %s = 0x%x,", k, i); // emit enum
+            }
+            svcOutputDebugString(buf, strlen(buf));
+        }
+        if (mode == BBDumpMode::ENUMCLS_FILE_DECL) {
+            svcOutputDebugString("};", 2); // close enum
+        }
+
+        //virtual const sead::SafeString& getFloatKeyByIndex(s32 index);
+        //virtual const sead::SafeString& getFloatFilenameByIndex(s32 index);
+        //virtual const sead::SafeString& getFloatDescriptionByIndex(s32 index);
+
     }
 
 }

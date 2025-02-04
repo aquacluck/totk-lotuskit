@@ -1,7 +1,9 @@
 #pragma once
 
+#include "structs/exkingEnums.hpp"
 #include "structs/bbBlackboard.hpp"
-#include "structs/phive.hpp"
+#include "structs/engineComponent.hpp"
+#include "structs/engineTransceiver.hpp"
 
 #include <cstddef>
 #include <container/seadPtrArray.h>
@@ -26,45 +28,11 @@ namespace sead {
     class Heap;
 } // namespace sead
 
-namespace engine::transceiver {
-    class Transceiver {
-        virtual ~Transceiver(); // for the vtable
+namespace engine::component { class Component; }
+namespace game::component { class PlayerComponent; }
+using EngineComponentIndex = engine::component::ComponentIndex;
+using   GameComponentIndex =   game::component::ComponentIndex;
 
-        protected:
-        u32 mIndex;
-        u32 mChannelMask;
-        char mMapNode[0x38]; // whatever
-    };
-} // namespace transceiver
-
-namespace engine::component {
-    //class IActorComponent; // XXX is this relevant as a category?
-    class Component {
-        public:
-        virtual ~Component(); // vtable i guess
-        sead::SafeString refPath;
-    };
-
-    class PhysicsComponent: public Component {
-        public:
-        u8 idkman[0x10];
-        phive::ControllerSet* controllerSet;
-    };
-    static_assert(offsetof(PhysicsComponent, controllerSet) == 0x20);
-
-    class Model { // XXX ns?
-        public:
-        char _00[0x1f8];
-        sead::Matrix34f modelMtx;
-    };
-    class ModelComponent : public Component {
-        public:
-        char _10[0x18];
-        Model* model;
-    };
-    static_assert(offsetof(ModelComponent, model) == 0x28);
-
-} // namespace component
 
 namespace engine::actor {
     enum class CreatePriority : u32 {
@@ -108,7 +76,7 @@ namespace engine::actor {
         u32 mAIGroupArrayIndex;
         u32 mAIGroupIndex;
         void* field15_0x98;
-        pp::PtrArray<Document> mBlackboardDocumentArray;
+        pp::PtrArray<pp::Document> mBlackboardDocumentArray;
         */
     };
 
@@ -159,11 +127,9 @@ namespace engine::actor {
     };
     static_assert(sizeof(BaseProc) == (TOTK_VERSION == 100 ? 0x210 : 0x218));
 
-    class ActorTransceiver : public transceiver::Transceiver {
+    class ActorTransceiver : public ::engine::transceiver::TransceiverBase {
         public:
         ~ActorTransceiver() override;
-
-        private:
         ActorBase* mActor;
     };
     static_assert(sizeof(ActorTransceiver) == 0x50);
@@ -279,12 +245,24 @@ namespace engine::actor {
             return sead::Matrix34f(mRotation, mPosition);
         }
 
-        engine::component::PhysicsComponent* getPhysicsComponent() const {
-            return reinterpret_cast<engine::component::PhysicsComponent*>(mComponents[0xa]);
+        engine::component::ModelComponent* getModelComponent() const {
+            u32 i = static_cast<u32>(EngineComponentIndex::ModelInfoRef);
+            return reinterpret_cast<engine::component::ModelComponent*>(mComponents[i]);
         }
 
-        engine::component::ModelComponent* getModelComponent() const {
-            return reinterpret_cast<engine::component::ModelComponent*>(mComponents[2]);
+        engine::component::ASComponent* getASComponent() const {
+            u32 i = static_cast<u32>(EngineComponentIndex::ASRef);
+            return reinterpret_cast<engine::component::ASComponent*>(mComponents[i]);
+        }
+
+        engine::component::PhysicsComponent* getPhysicsComponent() const {
+            u32 i = static_cast<u32>(EngineComponentIndex::PhysicsRef);
+            return reinterpret_cast<engine::component::PhysicsComponent*>(mComponents[i]);
+        }
+
+        game::component::PlayerComponent* getPlayerComponent() { // FIXME this belongs under GameActor?
+            u32 i = static_cast<u32>(GameComponentIndex::PlayerRef);
+            return reinterpret_cast<game::component::PlayerComponent*>(mComponents[i]);
         }
 
     };
