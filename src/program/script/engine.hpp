@@ -13,7 +13,9 @@ namespace lotuskit::script::engine {
     //void asMessageCallback(const AngelScript::asSMessageInfo*, void*);
     void configureEngine(AngelScript::asIScriptEngine*);
     void createAndConfigureEngine();
+    void doAutorun(); // triggered at bootup
 
+    void execRomfsFileInScratchModule(const char* filename);
     void execInScratchModule(const char* scriptText);
     AngelScript::asIScriptModule* compileToScratchModule(AngelScript::asIScriptEngine* engine, const char* scriptText);
     void execFuncInNewCtx(AngelScript::asIScriptEngine* engine, AngelScript::asIScriptModule* mod, const char* entryPoint);

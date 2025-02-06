@@ -10,6 +10,7 @@
 #include "Logger.hpp"
 #include "TextWriter.hpp"
 #include "PrimitiveDrawer.hpp"
+#include "server/WebSocket.hpp"
 #include "util/actor.hpp"
 #include "util/camera.hpp"
 #include "util/color.hpp"
@@ -236,6 +237,9 @@ namespace lotuskit::script::globals {
         }
         void debugLog(const std::string& msg) {
             svcOutputDebugString(msg.c_str(), msg.size());
+        }
+        void wsListen() {
+            lotuskit::server::WebSocket::isInternalReqListen = true;
         }
     } // ns
 
@@ -642,6 +646,7 @@ namespace lotuskit::script::globals {
             asErrno = engine->RegisterGlobalFunction("void memSearch(ptr_t)", AngelScript::asFUNCTION(sys::memSearch), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
             asErrno = engine->RegisterGlobalFunction("void threadInfo()", AngelScript::asFUNCTION(sys::threadInfo), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
             asErrno = engine->RegisterGlobalFunction("void suspendCtx()", AngelScript::asFUNCTION(sys::suspendCtx), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+            asErrno = engine->RegisterGlobalFunction("void wsListen()", AngelScript::asFUNCTION(sys::wsListen), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
             asErrno = engine->RegisterGlobalFunction("ptr_t mainOffset()", AngelScript::asFUNCTION(sys::mainOffset), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
             asErrno = engine->RegisterGlobalFunction("u32 totkVersion()", AngelScript::asFUNCTION(sys::totkVersion), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
             asErrno = engine->RegisterGlobalFunction("u64 tick()", AngelScript::asFUNCTION(sys::tick), AngelScript::asCALL_CDECL); assert(asErrno >= 0);

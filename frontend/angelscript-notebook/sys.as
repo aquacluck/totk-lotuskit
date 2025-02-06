@@ -6,6 +6,7 @@ TextWriter::toast(30, format("main {} \n", sys::mainOffset()));
 TextWriter::toast(30, format("v {} \n", sys::totkVersion()));
 TextWriter::toast(30, format("tick {} \n", sys::tick()));
 sys::debugLog("hello debug");
+sys::wsListen(); // start ws server
 
 // scripts are non-preemptive: `while(true){ }` will freeze your game,
 // and your scripts will never stop until they reach their end or you

@@ -2,8 +2,10 @@
 #include "script/globals.hpp"
 #include <nn/util.h>
 #include "exlaunch.hpp"
+#include "util/romfs.hpp"
 #include "Logger.hpp"
 using Logger = lotuskit::Logger;
+#include "ActorWatcher.hpp"
 #include "TextWriter.hpp"
 
 #include <angelscript.h>
@@ -76,6 +78,26 @@ namespace lotuskit::script::engine {
         configureEngine(asEngine);
         lotuskit::script::globals::registerGlobals(asEngine);
         // asEngine->ShutDownAndRelease();
+    }
+
+    void doAutorun() {
+        lotuskit::ActorWatcher::assignSlotAwaitSpawn(0, "Player");
+        const char* autorunFilename = "content:/totk_lotuskit/autorun.as";
+        if (lotuskit::util::romfs::fileExists(autorunFilename)) {
+            execRomfsFileInScratchModule(autorunFilename);
+            lotuskit::TextWriter::toastf(30*10, "[totk-lotuskit:%d] Ran autorun.as, main_offset=%p\nStart WS server anytime: L R ZL ZR + - \n", TOTK_VERSION, exl::util::GetMainModuleInfo().m_Total.m_Start);
+        } else {
+            lotuskit::TextWriter::toastf(30*10, "[totk-lotuskit:%d] No autorun.as, main_offset=%p\nStart WS server anytime: L R ZL ZR + - \n", TOTK_VERSION, exl::util::GetMainModuleInfo().m_Total.m_Start);
+        }
+    }
+
+    void execRomfsFileInScratchModule(const char* filename) {
+        if (!lotuskit::util::romfs::fileExists(filename)) { return; }
+        // FIXME fix larger scripts / text alloc
+        const char* autorunErrScript = "void main() { TextWriter::toast(30*10, \"error reading autorun.as\\n\"); }";
+        char scriptBuf[0x2000];
+        lotuskit::util::romfs::readTextFile(scriptBuf, filename, sizeof(scriptBuf), autorunErrScript);
+        execInScratchModule(scriptBuf);
     }
 
     void execInScratchModule(const char* scriptText) {

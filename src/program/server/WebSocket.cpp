@@ -149,7 +149,7 @@ namespace lotuskit::server {
         bool isWsEstablished = false;
 
         constexpr u64 SERVER_LISTEN_COMBO = (1 << 6) | (1 << 7) | (1 << 8) | (1 << 9) | (1 << 10) | (1 << 11); // L R ZL ZR + -
-        u32 listenComboDebounce = 0;
+        u32 listenReqDebounce = 0;
         u32 listenNotifDelay = 0;
 
 #if WEBSOCKET_DO_THREADED_SEND
@@ -464,11 +464,12 @@ namespace lotuskit::server {
         }
 
         const bool isCombo = *(u64*)&(lotuskit::tas::Record::currentInput.buttons) == SERVER_LISTEN_COMBO;
-        if (isCombo && listenComboDebounce == 0) {
-            listenComboDebounce = 15; // ignore button combo for n frames
+        if ((isCombo || isInternalReqListen) && listenReqDebounce == 0) {
+            isInternalReqListen = false;
+            listenReqDebounce = 15; // ignore button combo for n frames
             listenNotifDelay = 3; // defer server for n frames in order to display notice
         }
-        if (listenComboDebounce > 0) { listenComboDebounce--; }
+        if (listenReqDebounce > 0) { listenReqDebounce--; }
         if (listenNotifDelay > 0) {
             listenNotifDelay--;
             if (listenNotifDelay == 0) {

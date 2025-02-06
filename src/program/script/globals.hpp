@@ -18,6 +18,7 @@ namespace lotuskit::script::globals {
         void memSearch(u64 needle);
         void threadInfo();
         void suspendCtx();
+        void wsListen();
     } // ns
 
     void registerGlobals(AngelScript::asIScriptEngine* engine);

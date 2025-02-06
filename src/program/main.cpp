@@ -38,6 +38,7 @@ HOOK_DEFINE_INLINE(StealHeap) {
         lotuskit::PrimitiveImpl::assignHeap(stolenHeap);
         lotuskit::script::engine::assignHeap(stolenHeap);
         lotuskit::script::engine::createAndConfigureEngine();
+        lotuskit::script::engine::doAutorun();
     }
 };
 
@@ -126,7 +127,6 @@ HOOK_DEFINE_TRAMPOLINE(BaseProcMgr_addDependency) {
         if (!strcmp(parent.mName.cstr(), "Player") && lotuskit::script::globals::ResidentActors::Player != &parent) {
             lotuskit::script::globals::ResidentActors::Player = &parent;
             Logger::logJson(json::object({ {"Player", (u64)(&parent)} }), "/hook/sym/BaseProcMgr_addDependency");
-            lotuskit::ActorWatcher::assignSlot(0, &parent);
         }
         if (!strcmp(parent.mName.cstr(), "PlayerCamera") && lotuskit::script::globals::ResidentActors::PlayerCamera != &parent) {
             lotuskit::script::globals::ResidentActors::PlayerCamera = &parent;
@@ -175,13 +175,6 @@ HOOK_DEFINE_TRAMPOLINE(WorldManagerModuleBaseProcHook) {
     static constexpr auto s_name = "game::wm::WorldManagerModule::baseProcExe";
 
     static void Callback(double self, double param_2, double param_3, double param_4, void *wmmodule, void *param_6) {
-        //Logger::logText("ffffeeeeddddcccc", "/HexDump/0", true); // blocking ws
-        //Logger::logJson(json::object({{"kee", "vee"}, {"k2", 420}}));
-
-        if (lotuskit::ActorWatcher::slots[0].actor == nullptr) {
-            lotuskit::TextWriter::printf(0, "[totk-lotuskit:%d] awaiting Player, main_offset=%p\nStart WS server anytime: L R ZL ZR + - \n", TOTK_VERSION, exl::util::GetMainModuleInfo().m_Total.m_Start);
-        }
-
         // drawlist 0 near top-left (default)
         // drawlist 1 near top-right
         lotuskit::TextWriter::appendCallback(1, [](lotuskit::TextWriterExt* writer, sead::Vector2f* textPos) {
@@ -223,18 +216,6 @@ extern "C" void exl_main(void* x0, void* x1) {
 
     // hooks for textwriter+primitivedrawer overlay
     bool do_debugdraw = true; // XXX assert -- can't access fs here without sdk init?
-    /*
-    bool do_debugdraw = (
-        lotuskit::util::romfs::fileExists("content:/Lib/sead/nvn_font/nvn_font.ntx") &&
-        lotuskit::util::romfs::fileExists("content:/Lib/sead/nvn_font/nvn_font_jis1.ntx") &&
-        lotuskit::util::romfs::fileExists("content:/Lib/sead/nvn_font/nvn_font_jis1_mipmap.xtx") &&
-        lotuskit::util::romfs::fileExists("content:/Lib/sead/nvn_font/nvn_font_jis1_tbl.bin") &&
-        lotuskit::util::romfs::fileExists("content:/Lib/sead/nvn_font/nvn_font_shader.bin") &&
-        lotuskit::util::romfs::fileExists("content:/Lib/sead/nvn_font/nvn_font_shader_jis1.bin") &&
-        lotuskit::util::romfs::fileExists("content:/Lib/sead/nvn_font/nvn_font_shader_jis1_mipmap.bin") &&
-        lotuskit::util::romfs::fileExists("content:/Lib/sead/primitive_renderer/primitive_drawer_nvn_shader.bin")
-    );
-    */
     if (do_debugdraw) {
         lotuskit::DebugDrawHooks::BootupInitDebugDrawersHook::Install();
         lotuskit::DebugDrawHooks::DebugDrawLayerMaskHook::Install();

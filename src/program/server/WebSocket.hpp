@@ -20,6 +20,8 @@ namespace lotuskit::server {
             stolenHeap = heap;
         }
 
+        inline static bool isInternalReqListen = false; // set to request the server to listen
+
         private:
         static void listenAndWaitForFrontend(const char* bindIp, const u16 bindPort);
         static void recvNoblockAndProc();
