@@ -22,9 +22,9 @@ if [[ "$KEEP_TMPGIT" != "1" ]]; then
     rm -rf tmpgit
 
     # temp repo, clone ~1.5s
-    # last base: Version 2.38.0 WIP - 2024/12/16 - "Fixed incorrect attempt to convert to null handle in ternary condition"
-    #            https://github.com/codecat/angelscript-mirror/commit/387b48653eb0840765bcbf24773de50ed632ad59
-    #            https://sourceforge.net/p/angelscript/code/2989/log/
+    # last base: Version 2.38.0 WIP - 2025/1/30 - "Fixed use of auto@ in foreach loop"
+    #            https://github.com/codecat/angelscript-mirror/commit/4b972e610501bc1eef5b1fc96a0fdf7823fbf2fc
+    #            https://sourceforge.net/p/angelscript/code/2992/log/
     git clone --recursive --depth 1 https://github.com/codecat/angelscript-mirror tmpgit
     echo
     echo

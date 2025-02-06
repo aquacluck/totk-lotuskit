@@ -1,6 +1,6 @@
 /*
    AngelCode Scripting Library
-   Copyright (c) 2003-2024 Andreas Jonsson
+   Copyright (c) 2003-2025 Andreas Jonsson
 
    This software is provided 'as-is', without any express or implied
    warranty. In no event will the authors be held liable for any
@@ -3697,7 +3697,7 @@ bool asCCompiler::CompileInitializationWithAssignment(asCByteCode* bc, const asC
 				if (type.IsReadOnly() && rexpr->type.isConstant)
 				{
 					isConstantExpression = true;
-					*constantValue = rexpr->type.GetConstantQW();
+					*constantValue = rexpr->type.GetConstantData();
 				}
 
 				// Add expression code to bytecode
@@ -5132,7 +5132,7 @@ void asCCompiler::CompileForEachStatement(asCScriptNode* node, asCByteCode* bc)
 		asCDataType itemDt = builder->CreateDataTypeFromNode(rangeNode, script, outFunc->nameSpace, false, outFunc->objectType);
 		itemDataTypes.PushLast(itemDt);
 
-		// Indentifier
+		// Identifier
 		asASSERT(rangeNode->next->nodeType == snIdentifier);
 		itemNodes.PushLast(rangeNode->next);
 
@@ -5296,9 +5296,10 @@ void asCCompiler::CompileForEachStatement(asCScriptNode* node, asCByteCode* bc)
 					asDWORD retFlags;
 					int retTid = engine->scriptFunctions[opForValueIdN]->GetReturnTypeId(&retFlags);
 
-					bool isConst = itemDataTypes[i].IsReadOnly() || retFlags & asTM_CONST;
+					bool isConst = itemDataTypes[i].IsReadOnly() || (retFlags & asTM_CONST);
+					bool isHandle = itemDataTypes[i].IsObjectHandle() ;
 					asCDataType dt = asCDataType::CreateById(engine, retTid, isConst);
-
+					dt.MakeHandle(isHandle);
 					itemDataTypes[i] = dt;
 				}
 			}
@@ -5538,7 +5539,6 @@ void asCCompiler::CompileForEachStatement(asCScriptNode* node, asCByteCode* bc)
 		CompileInitializationWithAssignment(
 			&itemNBC, itemDt, itemNode->prev, itemOffset, NULL, asVGM_VARIABLE, rangeNode, &opForValueNExpr
 		);
-		ReleaseTemporaryVariable(opForValueNExpr.type, &itemNBC);
 
 		// Suppress the compiler warning of uninitialized variable
 		variables->GetVariableByOffset(itemOffset)->isInitialized = true;
@@ -17054,6 +17054,21 @@ void asCCompiler::PerformFunctionCall(int funcId, asCExprContext *ctx, bool isCo
 	}
 
 	int argSize = descr->GetSpaceNeededForArguments();
+	if (descr->IsVariadic())
+	{
+		// Compute the additional space used for the variadic args
+		asCDataType variadicType = descr->parameterTypes[descr->parameterTypes.GetLength() - 1];
+		int sizeOfVariadicArg = variadicType.GetSizeOnStackDWords();
+
+		// GetSpaceNeededForArguments already added one variadic arg for the ..., but there might not actually be any
+		argSize -= sizeOfVariadicArg;
+
+		// Add 1 for the arg count
+		argSize++;
+
+		// Add the actual space used for the variadic args
+		argSize += sizeOfVariadicArg * (args->GetLength() - descr->parameterTypes.GetLength() + 1);
+	}
 
 	// If we're calling a class method we must make sure the object is guaranteed to stay
 	// alive throughout the call by holding on to a reference in a local variable. This must
