@@ -19,6 +19,7 @@
 #include "util/camera.hpp"
 #include "util/romfs.hpp"
 #include "util/player.hpp"
+#include "util/pause.hpp"
 using Logger = lotuskit::Logger;
 
 
@@ -32,7 +33,11 @@ HOOK_DEFINE_INLINE(StealHeap) {
 #else
         stolenHeap = reinterpret_cast<sead::Heap*>(ctx->X[22]);
 #endif
-        svcOutputDebugString("yoink", 5);
+
+        char buf[32];
+        nn::util::SNPrintf(buf, sizeof(buf), "yoink(%p)", stolenHeap);
+        svcOutputDebugString(buf, strlen(buf));
+
         lotuskit::server::WebSocket::assignHeap(stolenHeap);
         lotuskit::TextWriter::assignHeap(stolenHeap);
         lotuskit::PrimitiveImpl::assignHeap(stolenHeap);
@@ -190,6 +195,7 @@ HOOK_DEFINE_TRAMPOLINE(WorldManagerModuleBaseProcHook) {
 
         Orig(self, param_2, param_3, param_4, wmmodule, param_6);
 
+        lotuskit::util::pause::drawPauses(); // FIXME doesnt really belong in here, observe from somewhere that cant be paused
         lotuskit::ActorWatcher::calc();
         lotuskit::HexDump::calc();
     }
@@ -210,6 +216,7 @@ extern "C" void exl_main(void* x0, void* x1) {
     BaseProcMgr_addDependency::Install();
     MainGetNpadStates::Install();
     lotuskit::util::player::InstallHooks();
+    lotuskit::util::pause::InstallHooks();
 
     //TODO check the branch we're overwriting -- ensure our "off" does the same thing
     exl::patch::CodePatcher(EXL_SYM_OFFSET("game::component::GameCameraParam::HACK_cameraCalc")).BranchLinkInst((void*)lotuskit::util::camera::disgustingCameraHook);

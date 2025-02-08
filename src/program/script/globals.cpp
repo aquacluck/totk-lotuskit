@@ -16,6 +16,7 @@
 #include "util/color.hpp"
 #include "util/event.hpp"
 #include "util/player.hpp"
+#include "util/pause.hpp"
 using json = nlohmann::json;
 using Logger = lotuskit::Logger;
 #include <gfx/seadColor.h>
@@ -948,6 +949,13 @@ namespace lotuskit::script::globals {
         //asErrno = engine->RegisterGlobalFunction("void setVel(float, float, float)", AngelScript::asFUNCTION(lotuskit::util::player::setLinearVelocityXYZ), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
     }
 
+    void registerPauseUtil(AngelScript::asIScriptEngine* engine) {
+        s32 asErrno;
+        engine->SetDefaultNamespace("pause");
+        asErrno = engine->RegisterGlobalFunction("void doTextWriter(bool)", AngelScript::asFUNCTION(lotuskit::util::pause::doTextWriter_set), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void doTextWriterExtended(bool)", AngelScript::asFUNCTION(lotuskit::util::pause::doTextWriterExtended_set), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+    }
+
     void registerGlobals(AngelScript::asIScriptEngine* engine) {
         registerBaseTypes(engine);
         registerContainers(engine);
@@ -958,6 +966,7 @@ namespace lotuskit::script::globals {
         registerActorSystem(engine);
         registerEvent(engine);
         registerPlayerUtil(engine);
+        registerPauseUtil(engine);
     }
 
 } // ns

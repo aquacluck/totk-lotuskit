@@ -47,6 +47,7 @@
 { util::ModuleIndex::Main, 0x00000000, "engine::module::VFRMgr::sInstance" },
 { util::ModuleIndex::Main, 0x00000000, "engine::nnMain_post_setup" },
 { util::ModuleIndex::Main, 0x00802bfc, "engine::steal_heap" },
+{ util::ModuleIndex::Main, 0x00803b40, "engine::system::PauseMgr::initialize" },
 { util::ModuleIndex::Main, 0x00000000, "game::actor::GameActor::getComponent<game::component::PlayerComponent>" },
 { util::ModuleIndex::Main, 0x00000000, "game::ai::execute::ExecutePlayerReverseRecorder::updateImpl_::state0" },
 { util::ModuleIndex::Main, 0x00000000, "game::ai::execute::ExecutePlayerWhistle::enterImpl_" },
