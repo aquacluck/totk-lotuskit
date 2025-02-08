@@ -954,6 +954,10 @@ namespace lotuskit::script::globals {
         engine->SetDefaultNamespace("pause");
         asErrno = engine->RegisterGlobalFunction("void doTextWriter(bool)", AngelScript::asFUNCTION(lotuskit::util::pause::doTextWriter_set), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
         asErrno = engine->RegisterGlobalFunction("void doTextWriterExtended(bool)", AngelScript::asFUNCTION(lotuskit::util::pause::doTextWriterExtended_set), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void requestPause(u32)", AngelScript::asFUNCTION(lotuskit::util::pause::requestPause), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void requestPause(const string &in)", AngelScript::asFUNCTION(lotuskit::util::pause::requestPauseStr), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void releasePause(u32)", AngelScript::asFUNCTION(lotuskit::util::pause::releasePause), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void releasePause(const string &in)", AngelScript::asFUNCTION(lotuskit::util::pause::releasePauseStr), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
     }
 
     void registerGlobals(AngelScript::asIScriptEngine* engine) {

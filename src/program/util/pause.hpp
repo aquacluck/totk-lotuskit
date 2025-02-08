@@ -1,4 +1,5 @@
 #pragma once
+#include <string>
 #include "structs/engineSystemPause.hpp"
 
 namespace lotuskit::util::pause {
@@ -10,6 +11,11 @@ namespace lotuskit::util::pause {
     inline bool doTextWriterExtended = false;
     inline void doTextWriterExtended_set(bool v) { doTextWriterExtended = v; }
     inline engine::system::PauseMgr* pauseMgr = nullptr;
+
+    void requestPause(u32 reqHash);
+    void requestPauseStr(const std::string&);
+    void releasePause(u32 reqHash);
+    void releasePauseStr(const std::string&);
 
 } // ns
 

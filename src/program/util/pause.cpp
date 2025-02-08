@@ -2,6 +2,7 @@
 #include <cstring>
 
 #include "exlaunch.hpp"
+#include "util/hash.hpp"
 #include "util/pause.hpp"
 #include "TextWriter.hpp"
 
@@ -88,6 +89,28 @@ namespace lotuskit::util::pause {
             }
             lotuskit::TextWriter::printf(0, "\n");
         }
+    }
+
+    void requestPause(u32 reqHash) {
+        using impl_t = void* (u32);
+        auto impl = EXL_SYM_RESOLVE<impl_t*>("engine::module::PauseMgr::requestPause");
+        impl(reqHash);
+    }
+
+    void requestPauseStr(const std::string& reqKey) {
+        u32 hash = lotuskit::util::hash::murmur32(reqKey);
+        requestPause(hash);
+    }
+
+    void releasePause(u32 reqHash) {
+        using impl_t = void* (u32);
+        auto impl = EXL_SYM_RESOLVE<impl_t*>("engine::module::PauseMgr::releasePause");
+        impl(reqHash);
+    }
+
+    void releasePauseStr(const std::string& reqKey) {
+        u32 hash = lotuskit::util::hash::murmur32(reqKey);
+        releasePause(hash);
     }
 
 } // ns
