@@ -195,7 +195,6 @@ namespace lotuskit::tas {
 
     void Playback::setCurrentInput(u32 duration, u64 nextButtons, s32 nextLStickX, s32 nextLStickY, s32 nextRStickX, s32 nextRStickY) {
         // called by tas script to specify input for next n frames
-        if (duration == 0) { return; } // ignore
 
         // what is "n frames" expected to mean?
         u32 duration60 = 0;
@@ -206,10 +205,9 @@ namespace lotuskit::tas {
         } else if (config::inputMode == config::InputDurationScalingStrategy::FPS20_3X) {
             duration60 = duration * 3;
         } else return;
-        // assert duration60 > 0
 
         AngelScript::asIScriptContext *ctx = AngelScript::asGetActiveContext();
-        if (ctx == nullptr) { return; }
+        if (ctx == nullptr && duration60 > 0) { return; }
 
         //TODO atomic toggle between double buffer currentInput+nextInput
         currentInputTTL60 = duration60;
@@ -237,9 +235,11 @@ namespace lotuskit::tas {
 
         isAwaitPauseTargetHash = 0; // clear any awaits TODO extract
         isAwaitPauseRequestHash = 0;
-        // yield execution from script back to game, to be resumed in n frames
-        currentCtx = ctx;
-        ctx->Suspend(); // assert ctx->GetState() == asEXECUTION_SUSPENDED
+        if (duration60 > 0) {
+            // yield execution from script back to game, to be resumed in n frames
+            currentCtx = ctx;
+            ctx->Suspend(); // assert ctx->GetState() == asEXECUTION_SUSPENDED
+        }
     }
 
     void Playback::setCurrentInputOr(u32 duration, u64 nextButtons, s32 nextLStickX, s32 nextLStickY, s32 nextRStickX, s32 nextRStickY) {
