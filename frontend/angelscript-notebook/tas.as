@@ -184,6 +184,11 @@ void example_cartslide1() {
     tas::input(1, KEY_L|KEY_ZL); // end recall
 }
 
+// pause request+target based scheduling
+tas::awaitPauseRequest("EventDisableController_Camera");
+tas::awaitUnpauseRequest("EventDisableController_Camera");
+tas::awaitPauseTarget("Custom_Footprint");
+tas::awaitUnpauseTarget("Custom_Footprint");
 
 // that is all :) ur doing great
 

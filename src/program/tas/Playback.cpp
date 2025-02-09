@@ -1,47 +1,160 @@
 #include <nn/util.h>
 #include "tas/Playback.hpp"
 #include "structs/VFRMgr.hpp"
+#include "util/hash.hpp"
+#include "util/pause.hpp"
 #include "Logger.hpp"
 #include "TextWriter.hpp"
 using Logger = lotuskit::Logger;
+constexpr auto murmur32 = lotuskit::util::hash::murmur32;
 
 namespace lotuskit::tas {
     PlaybackInput Playback::currentInput = {0};
 
+    /// pause scheduling {{{
+        // TODO extract some interface to register awaitable calls?
+
+        bool awaitPauseVal = false; // common: waiting for pause vs unpause
+        u32 awaitBegin60 = 0; // common: for time spent waiting, relative to elapsedPlayback60
+        u32 isAwaitPauseRequestHash = 0;
+        u32 isAwaitPauseTargetHash = 0;
+
+        bool Playback::calcScheduleIsAwaitPauseRequest() {
+            if (isAwaitPauseRequestHash == 0) { return false; }
+            const auto pauseMgr = lotuskit::util::pause::pauseMgr;
+            const auto name = pauseMgr->getPauseRequestKey(isAwaitPauseRequestHash);
+            const bool isPause = pauseMgr->getPauseRequestCount(isAwaitPauseRequestHash) > 0;
+            const bool ret = awaitPauseVal != isPause;
+            if (ret) {
+                // TODO display pause name
+                lotuskit::TextWriter::appendCallback(1, [](lotuskit::TextWriterExt* writer, sead::Vector2f* textPos) {
+                    textPos->x = 1280.0 - 350.0;
+                });
+                if (awaitPauseVal) {
+                    lotuskit::TextWriter::printf(1, "awaitPauseRequest(%s:%3u)\n               fr:%6d\n", name, duration60ToUIFrames(elapsedPlayback60-awaitBegin60), duration60ToUIFrames(elapsedPlayback60));
+                } else {
+                    lotuskit::TextWriter::printf(1, "awaitUnpauseRequest(%s:%3u)\n               fr:%6d\n", name, duration60ToUIFrames(elapsedPlayback60-awaitBegin60), duration60ToUIFrames(elapsedPlayback60));
+                }
+            } else {
+                isAwaitPauseRequestHash = 0; // end await
+            }
+            return ret;
+        }
+        void Playback::doScheduleAwaitPauseRequestStr(const std::string& requestKey) {
+            AngelScript::asIScriptContext *ctx = AngelScript::asGetActiveContext();
+            if (ctx == nullptr) { return; }
+
+            awaitPauseVal = true;
+            awaitBegin60 = elapsedPlayback60;
+            isAwaitPauseRequestHash = murmur32(requestKey);
+
+            // yield execution from script back to game
+            isPlaybackActive = true;
+            currentCtx = ctx;
+            ctx->Suspend(); // assert ctx->GetState() == asEXECUTION_SUSPENDED
+        }
+        void Playback::doScheduleAwaitUnpauseRequestStr(const std::string& requestKey) {
+            AngelScript::asIScriptContext *ctx = AngelScript::asGetActiveContext();
+            if (ctx == nullptr) { return; }
+
+            awaitPauseVal = false;
+            awaitBegin60 = elapsedPlayback60;
+            isAwaitPauseRequestHash = murmur32(requestKey);
+
+            // yield execution from script back to game
+            isPlaybackActive = true;
+            currentCtx = ctx;
+            ctx->Suspend(); // assert ctx->GetState() == asEXECUTION_SUSPENDED
+        }
+
+        bool Playback::calcScheduleIsAwaitPauseTarget() {
+            if (isAwaitPauseTargetHash == 0) { return false; }
+            const auto pauseMgr = lotuskit::util::pause::pauseMgr;
+            const auto name = pauseMgr->getPauseTargetKey(isAwaitPauseTargetHash);
+            const bool isPause = pauseMgr->isTargetPaused(isAwaitPauseTargetHash);
+            const bool ret = awaitPauseVal != isPause;
+            if (ret) {
+                lotuskit::TextWriter::appendCallback(1, [](lotuskit::TextWriterExt* writer, sead::Vector2f* textPos) {
+                    textPos->x = 1280.0 - 350.0;
+                });
+                if (awaitPauseVal) {
+                    lotuskit::TextWriter::printf(1, "tas::awaitPauseTarget(%s:%3u)\n               fr:%6d\n", name, duration60ToUIFrames(elapsedPlayback60-awaitBegin60), duration60ToUIFrames(elapsedPlayback60));
+                } else {
+                    lotuskit::TextWriter::printf(1, "tas::awaitUnpauseTarget(%s:%3u)\n               fr:%6d\n", name, duration60ToUIFrames(elapsedPlayback60-awaitBegin60), duration60ToUIFrames(elapsedPlayback60));
+                }
+            } else {
+                isAwaitPauseTargetHash = 0; // end await
+            }
+            return ret;
+        }
+        void Playback::doScheduleAwaitPauseTargetStr(const std::string& targetKey) {
+            AngelScript::asIScriptContext *ctx = AngelScript::asGetActiveContext();
+            if (ctx == nullptr) { return; }
+
+            awaitPauseVal = true;
+            awaitBegin60 = elapsedPlayback60;
+            isAwaitPauseTargetHash = murmur32(targetKey);
+
+            // yield execution from script back to game
+            isPlaybackActive = true;
+            currentCtx = ctx;
+            ctx->Suspend(); // assert ctx->GetState() == asEXECUTION_SUSPENDED
+        }
+        void Playback::doScheduleAwaitUnpauseTargetStr(const std::string& targetKey) {
+            AngelScript::asIScriptContext *ctx = AngelScript::asGetActiveContext();
+            if (ctx == nullptr) { return; }
+
+            awaitPauseVal = false;
+            awaitBegin60 = elapsedPlayback60;
+            isAwaitPauseTargetHash = murmur32(targetKey);
+
+            // yield execution from script back to game
+            isPlaybackActive = true;
+            currentCtx = ctx;
+            ctx->Suspend(); // assert ctx->GetState() == asEXECUTION_SUSPENDED
+        }
+    /// }}} pause scheduling
+
     void Playback::calc() {
-        if (!isPlaybackActive) { return; } // not doing playback
-        s32 asErrno;
+        /// begin frametime scheduling {{{
+            // TODO extract `bool calcScheduleIsScriptInputExhausted()`
+            if (!isPlaybackActive) { return; } // not doing playback
 
-        // int 2 or 3 = float 1.0 (@30fps) or 1.5 (@20fps)
-        // assert(mDeltaFrame == 1.0 || mDeltaFrame == 1.5); // precisely
-        VFRMgr* vfrMgr = *EXL_SYM_RESOLVE<VFRMgr**>("engine::module::VFRMgr::sInstance");
-        const u32 deltaFrame60 = (u32)(vfrMgr->mDeltaFrame * 2);
+            // int 2 or 3 = float 1.0 (@30fps) or 1.5 (@20fps)
+            // assert(mDeltaFrame == 1.0 || mDeltaFrame == 1.5); // precisely
+            VFRMgr* vfrMgr = *EXL_SYM_RESOLVE<VFRMgr**>("engine::module::VFRMgr::sInstance");
+            const u32 deltaFrame60 = (u32)(vfrMgr->mDeltaFrame * 2);
 
-        // should the current input state still be scheduled?
-        if (currentInputTTL60 >= deltaFrame60) {
-            // deduct frames from schedule
-            currentInputTTL60 -= deltaFrame60;
-            elapsedPlayback60 += deltaFrame60;
-        } else {
-            // only 0/1/2 frames60 left on schedule and deltaFrame60 is larger
-            // XXX is erring on one side or the other better, until i properly figure this out?
-            //     ie playing out these closing frames and deferring or eating into subsequent inputs? sounds complicated in the dumb way
-            currentInputTTL60 = 0; // abandon/truncate the remainder of this scheduled input and resume script
-            elapsedPlayback60 += deltaFrame60; // desync observable by user when elapsed time exceeds their expected schedule
-        }
+            // should the current input state still be scheduled?
+            if (currentInputTTL60 >= deltaFrame60) {
+                // deduct frames from schedule
+                currentInputTTL60 -= deltaFrame60;
+                elapsedPlayback60 += deltaFrame60;
+            } else {
+                // only 0/1/2 frames60 left on schedule and deltaFrame60 is larger
+                // XXX is erring on one side or the other better, until i properly figure this out?
+                //     ie playing out these closing frames and deferring or eating into subsequent inputs? sounds complicated in the dumb way
+                currentInputTTL60 = 0; // abandon/truncate the remainder of this scheduled input and resume script
+                elapsedPlayback60 += deltaFrame60; // desync observable by user when elapsed time exceeds their expected schedule
+            }
 
-        if (currentInputTTL60 > 0) {
-            goto PRINT_AND_RETURN; // keep using current scheduled input
-        }
+            if (currentInputTTL60 > 0) {
+                return Playback::drawTextWriterModeLine(); // keep using current scheduled input
+            }
 
-        if (currentCtx == nullptr || currentCtx->GetState() != AngelScript::asEXECUTION_SUSPENDED) {
-            Logger::logText("[ERROR] tas script ctx missing, cannot advance input", "/tas/Playback");
-            //isPlaybackActive = false; // XXX is it better to repeat the last input or drop out? this has never happened yet
-            goto PRINT_AND_RETURN;
-        }
+            if (currentCtx == nullptr || currentCtx->GetState() != AngelScript::asEXECUTION_SUSPENDED) {
+                Logger::logText("[ERROR] tas script ctx missing, cannot advance input", "/tas/Playback");
+                //isPlaybackActive = false; // XXX is it better to repeat the last input or drop out? this has never happened yet
+                return Playback::drawTextWriterModeLine();
+            }
+        /// }}} end frametime scheduling
+
+        // pause scheduling
+        if (Playback::calcScheduleIsAwaitPauseRequest()) { return; } // modeline drawn on wait
+        if (Playback::calcScheduleIsAwaitPauseTarget())  { return; } // modeline drawn on wait
 
         // resume script, eventually getting a setCurrentInput call
-        asErrno = currentCtx->Execute();
+        s32 asErrno = currentCtx->Execute();
         if (asErrno == AngelScript::asEXECUTION_FINISHED) {
             isPlaybackActive = false; // XXX ensure this doesnt drop the last input
             currentCtx->Release();
@@ -61,7 +174,10 @@ namespace lotuskit::tas {
             // do not release ongoing async ctx
         }
 
-        PRINT_AND_RETURN:
+        Playback::drawTextWriterModeLine();
+    }
+
+    void Playback::drawTextWriterModeLine() {
         // TODO opts for system tick? this frame's delta time? rta? igt?
         // (however its impossible to predict or progress-bar a script's frame duration -- halting problem)
         if (!isPlaybackActive) {
@@ -119,6 +235,8 @@ namespace lotuskit::tas {
         // XXX and i'm not confident that's guaranteed, but it doesnt seem dangerous at least?
         //     i do this sort of guard without locking a lot though, so i need to find out. std::memory_order or something?
 
+        isAwaitPauseTargetHash = 0; // clear any awaits TODO extract
+        isAwaitPauseRequestHash = 0;
         // yield execution from script back to game, to be resumed in n frames
         currentCtx = ctx;
         ctx->Suspend(); // assert ctx->GetState() == asEXECUTION_SUSPENDED
@@ -138,6 +256,43 @@ namespace lotuskit::tas {
         // called by tas script to passthrough human input for next n frames
         Playback::setCurrentInput(duration, 0, 0,0, 0,0);
         config::playbackInputPassthroughMode = config::PlaybackInputPassthroughMode::NULL_VANILLA;
+    }
+
+    void Playback::applyCurrentInput(nn::hid::NpadBaseState* dst) {
+        if (!isPlaybackActive) { return; }
+        switch(config::playbackInputPassthroughMode) {
+            case config::PlaybackInputPassthroughMode::NULL_VANILLA:
+            // passthrough all, do not alter input ("sleep")
+            break;
+
+            case config::PlaybackInputPassthroughMode::PLAYBACK_TAS_ONLY:
+            std::memcpy((void*)&(dst->mButtons), (void*)&(currentInput.buttons), 24);
+            break;
+
+            case config::PlaybackInputPassthroughMode::PASSTHROUGH_OR:
+            *((u64*)&(dst->mButtons)) |= *((u64*)&(currentInput.buttons));
+            // passthrough all non-zero axes
+            dst->mAnalogStickL.mX = (dst->mAnalogStickL.mX != 0) ? dst->mAnalogStickL.mX : currentInput.LStick.mX;
+            dst->mAnalogStickL.mY = (dst->mAnalogStickL.mY != 0) ? dst->mAnalogStickL.mY : currentInput.LStick.mY;
+            dst->mAnalogStickR.mX = (dst->mAnalogStickR.mX != 0) ? dst->mAnalogStickR.mX : currentInput.RStick.mX;
+            dst->mAnalogStickR.mY = (dst->mAnalogStickR.mY != 0) ? dst->mAnalogStickR.mY : currentInput.RStick.mY;
+            // FIXME axis button flags not updated
+            break;
+
+            case config::PlaybackInputPassthroughMode::PASSTHROUGH_XOR:
+            *((u64*)&(dst->mButtons)) ^= *((u64*)&(currentInput.buttons));
+            // toggle all non-zero axes
+            dst->mAnalogStickL.mX = (currentInput.LStick.mX == 0) ? dst->mAnalogStickL.mX :
+                                    ( dst->mAnalogStickL.mX == 0) ? currentInput.LStick.mX : 0;
+            dst->mAnalogStickL.mY = (currentInput.LStick.mY == 0) ? dst->mAnalogStickL.mY :
+                                    ( dst->mAnalogStickL.mY == 0) ? currentInput.LStick.mY : 0;
+            dst->mAnalogStickR.mX = (currentInput.RStick.mX == 0) ? dst->mAnalogStickR.mX :
+                                    ( dst->mAnalogStickR.mX == 0) ? currentInput.RStick.mX : 0;
+            dst->mAnalogStickR.mY = (currentInput.RStick.mY == 0) ? dst->mAnalogStickR.mY :
+                                    ( dst->mAnalogStickR.mY == 0) ? currentInput.RStick.mY : 0;
+            // FIXME axis button flags not updated
+            break;
+        }
     }
 
     u32 Playback::duration60ToUIFrames(u32 duration60) {

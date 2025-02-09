@@ -825,6 +825,29 @@ namespace lotuskit::script::globals {
                 AngelScript::asFUNCTION(lotuskit::tas::Record::trashToggleDump),
                 AngelScript::asCALL_CDECL
             ); assert( asErrno >= 0 );
+
+            // pause scheduling
+            asErrno = engine->RegisterGlobalFunction(
+                "void awaitPauseRequest(const string &in)",
+                AngelScript::asFUNCTION(lotuskit::tas::Playback::doScheduleAwaitPauseRequestStr),
+                AngelScript::asCALL_CDECL
+            ); assert( asErrno >= 0 );
+            asErrno = engine->RegisterGlobalFunction(
+                "void awaitUnpauseRequest(const string &in)",
+                AngelScript::asFUNCTION(lotuskit::tas::Playback::doScheduleAwaitUnpauseRequestStr),
+                AngelScript::asCALL_CDECL
+            ); assert( asErrno >= 0 );
+            asErrno = engine->RegisterGlobalFunction(
+                "void awaitPauseTarget(const string &in)",
+                AngelScript::asFUNCTION(lotuskit::tas::Playback::doScheduleAwaitPauseTargetStr),
+                AngelScript::asCALL_CDECL
+            ); assert( asErrno >= 0 );
+            asErrno = engine->RegisterGlobalFunction(
+                "void awaitUnpauseTarget(const string &in)",
+                AngelScript::asFUNCTION(lotuskit::tas::Playback::doScheduleAwaitUnpauseTargetStr),
+                AngelScript::asCALL_CDECL
+            ); assert( asErrno >= 0 );
+
         /// }
     }
 

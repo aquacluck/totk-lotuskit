@@ -3,6 +3,7 @@
 #include <container/seadBuffer.h>
 
 namespace engine::system {
+    inline static const char* NONESTR = "[none]";
 
     // TODO extract to exkingEnums/similar?
     // TODO generally only store strings we actually need in the binary (frontend can handle the full dataset)
@@ -175,13 +176,25 @@ namespace engine::system {
             return mRequestArray[index].mPauseMask;
         }
 
-        /*
-        inline char* getPauseRequestKey(u32 pauseHash) {
-            if (mRequestArray.getSize() == 0) { return 0; }
-            const s32 index = getPauseRequestIndex(pauseHash);
-            return mRequestArray[index].mKey;
+        inline const char* getPauseRequestKey(u32 pauseHash) {
+            for (const auto &value: engine::system::PauseHashes) {
+                const auto &hash = value.first;
+                const auto &name = value.second;
+                if (hash != pauseHash) { continue; }
+                return name;
+            }
+            return NONESTR;
         }
-        */
+
+        inline const char* getPauseTargetKey(u32 targetHash) {
+            for (const auto &value: engine::system::PauseTargetHashes) {
+                const auto &hash = value.first;
+                const auto &name = value.second;
+                if (hash != targetHash) { continue; }
+                return name;
+            }
+            return NONESTR;
+        }
 
         inline bool isTargetPaused(u32 pauseTargetHash) {
             const s32 cap = mTargetArray.mCapacity;
