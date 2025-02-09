@@ -22,15 +22,6 @@ EXKING("engine::steal_heap", {
     TOTK_121: 0x007f61d0,
 }, SymbolType.INSTRUCTION)
 
-EXKING("engine::system::PauseMgr::initialize", {
-    TOTK_100: 0x00812140,
-    TOTK_110: 0x0083d238,
-    TOTK_111: 0x00714aa8,
-    TOTK_112: 0x00803b40,
-    TOTK_120: 0x007a4364,
-    TOTK_121: 0x007f7114,
-})
-
 """
 # TODO register annotation/aliasing
 MODULE("sym", {ALL: 0x0}, {

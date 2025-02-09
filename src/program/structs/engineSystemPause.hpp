@@ -125,7 +125,7 @@ namespace engine::system {
         public:
         char* mKey;
         u32 mHash;
-        u8 mPauseMask[0x10];
+        u32 mPauseMask[4];
         u32 mPauseCount; // XXX atomic?
     };
 
@@ -145,7 +145,7 @@ namespace engine::system {
 
     class PauseContext {
         public:
-        u8 mPauseMask[0x10];
+        u32 mPauseMask[4];
         PauseTargetArray* mTargetArrayPtr;
     };
 
@@ -169,7 +169,7 @@ namespace engine::system {
             return mRequestArray[index].mPauseCount;
         }
 
-        inline u8* getPauseRequestMask(u32 pauseHash) {
+        inline u32* getPauseRequestMask(u32 pauseHash) {
             if (mRequestArray.getSize() == 0) { return 0; }
             const s32 index = getPauseRequestIndex(pauseHash);
             return mRequestArray[index].mPauseMask;
@@ -193,17 +193,16 @@ namespace engine::system {
                 }
 
                 const u8 index = mTargetArray.mIndexArray[i];
-                const u32 mask = *reinterpret_cast<const u32*>(&mContext.mPauseMask[(index >> 3) & 0x1c]);
+                const u32 mask = *(u32*)((u64)(mContext.mPauseMask) + ((index >> 3) & 0x1c));
                 return ((mask >> (index & 0x1f)) & 1) != 0;
             }
 
             return false;
         }
 
-        /*
         inline u8 getTargetIndexByHash(u32 pauseTargetHash) {
             const s32 cap = mTargetArray.mCapacity;
-            if (cap == 0) { return 0; } // not found
+            if (cap == 0) { return 0; } // XXX not found
 
             for (s32 i = pauseTargetHash % cap; i < cap; i++) {
                 if (mTargetArray.mHashArray[i] != pauseTargetHash) {
@@ -214,9 +213,8 @@ namespace engine::system {
                 return index; // found
             }
 
-            return 0; // not found
+            return 0; // XXX not found
         }
-        */
 
     };
     static_assert(sizeof(PauseMgr) == 0x60);
