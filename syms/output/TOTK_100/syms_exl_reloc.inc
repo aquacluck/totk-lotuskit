@@ -47,6 +47,7 @@
 { util::ModuleIndex::Main, 0x00812140, "engine::module::PauseMgr::initialize" },
 { util::ModuleIndex::Main, 0x007a89d4, "engine::module::PauseMgr::processRequests" },
 { util::ModuleIndex::Main, 0x007a7750, "engine::module::PauseMgr::processRequests_inlineModuleCalc" },
+{ util::ModuleIndex::Main, 0x008d3980, "engine::module::PauseMgr::processRequests_withQueryIsTargetPaused" },
 { util::ModuleIndex::Main, 0x00f56800, "engine::module::PauseMgr::releasePause" },
 { util::ModuleIndex::Main, 0x01092294, "engine::module::PauseMgr::requestPause" },
 { util::ModuleIndex::Main, 0x04661598, "engine::module::VFRMgr::sInstance" },

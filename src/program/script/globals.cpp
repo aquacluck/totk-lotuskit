@@ -962,6 +962,8 @@ namespace lotuskit::script::globals {
 
         asErrno = engine->RegisterGlobalFunction("void doFreezeMask(bool)", AngelScript::asFUNCTION(lotuskit::util::pause::doFreezeMask), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
         asErrno = engine->RegisterGlobalFunction("void freezeMask(u32, u32, u32, u32)", AngelScript::asFUNCTION(lotuskit::util::pause::freezeMask4x4), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void freezeRequest(u32 reqHash, bool val=true, bool clearOthers=true)", AngelScript::asFUNCTION(lotuskit::util::pause::freezeRequest), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void freezeRequest(const string &in, bool val=true, bool clearOthers=true)", AngelScript::asFUNCTION(lotuskit::util::pause::freezeRequestStr), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
         asErrno = engine->RegisterGlobalFunction("void freezeTarget(u32 targetHash, bool val=true, bool clearOthers=true)", AngelScript::asFUNCTION(lotuskit::util::pause::freezeTarget), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
         asErrno = engine->RegisterGlobalFunction("void freezeTarget(const string &in, bool val=true, bool clearOthers=true)", AngelScript::asFUNCTION(lotuskit::util::pause::freezeTargetStr), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
         asErrno = engine->RegisterGlobalFunction("void freezeTargetIndex(u8 targetIndex, bool val=true, bool clearOthers=true)", AngelScript::asFUNCTION(lotuskit::util::pause::freezeTargetIndex), AngelScript::asCALL_CDECL); assert(asErrno >= 0);

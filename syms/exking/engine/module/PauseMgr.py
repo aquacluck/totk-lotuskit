@@ -19,6 +19,12 @@ EXKING("engine::module::PauseMgr::processRequests", {
     TOTK_121: 0x007ee454,
 })
 
+EXKING("engine::module::PauseMgr::processRequests_withQueryIsTargetPaused", {
+    TOTK_100: 0x008d3980,
+    TOTK_110: 0x008fe918,
+    TOTK_121: 0x008ef280,
+})
+
 EXKING("engine::module::PauseMgr::processRequests_inlineModuleCalc", {
     TOTK_100: 0x007a7750,
     TOTK_110: 0x008331a8,

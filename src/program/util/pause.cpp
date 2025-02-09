@@ -20,6 +20,19 @@ namespace lotuskit::util::pause {
         }
     };
 
+    HOOK_DEFINE_TRAMPOLINE(PauseMgrProcessRequestsHook2) {
+        static constexpr auto s_name = "engine::module::PauseMgr::processRequests_withQueryIsTargetPaused";
+        static u32 Callback(u32 queryHashTargetIsPaused) {
+            // called from ActorAIGroupMgr::SetupJob
+            if (isFreezeMask) {
+                processFrozen(); // overwrite pauseMgr->mContext.mPauseMask
+                return pauseMgr->isTargetPaused(queryHashTargetIsPaused);
+            } else {
+                return Orig(queryHashTargetIsPaused);
+            }
+        }
+    };
+
     HOOK_DEFINE_INLINE(PauseMgrProcessRequestsHook3) {
         static constexpr auto s_name = "engine::module::PauseMgr::processRequests_inlineModuleCalc";
         static void Callback(exl::hook::InlineCtx* ctx) {
@@ -35,8 +48,8 @@ namespace lotuskit::util::pause {
 
     void InstallHooks() {
         PauseMgrInitializeHook::Install();
-        //PauseMgrProcessRequestsHook::Install();
-        //PauseMgrProcessRequestsHook2::InstallAtOffset(0x008ef280); // 121
+        //PauseMgrProcessRequestsHook::Install(); // XXX only called at bootup, maybe banc change?
+        PauseMgrProcessRequestsHook2::Install();
         PauseMgrProcessRequestsHook3::Install();
     }
 
@@ -137,9 +150,13 @@ namespace lotuskit::util::pause {
 
     void doFreezeMask(bool b) {
         if (b) {
+            // freeze current mask
             std::memcpy(freezeMaskVal, pauseMgr->mContext.mPauseMask, 0x10);
+            isFreezeMask = true;
+            // processFrozen(); // already equal
+        } else {
+            isFreezeMask = false;
         }
-        isFreezeMask = b;
     }
 
     void freezeMask4x4(u32 v0, u32 v1, u32 v2, u32 v3) {
@@ -148,6 +165,7 @@ namespace lotuskit::util::pause {
         freezeMaskVal[2] = v2;
         freezeMaskVal[3] = v3;
         isFreezeMask = true;
+        processFrozen();
     }
 
     void freezeTarget(u32 targetHash, bool val, bool clearOthers) {
@@ -175,6 +193,44 @@ namespace lotuskit::util::pause {
 
         std::memcpy(freezeMaskVal, v, 0x10);
         isFreezeMask = true;
+        // important to apply to context mask immediately so subsequent calls stack correctly.
+        // (generating an AS enum at runtime (so we can actually | flags together) might be simpler tho)
+        processFrozen();
+    }
+
+    void freezeRequest(u32 requestHash, bool val, bool clearOthers) {
+        u32 v[4] = {0};
+        if (!clearOthers) {
+            std::memcpy(v, pauseMgr->mContext.mPauseMask, 0x10);
+        }
+
+        const u32* reqMask = pauseMgr->getPauseRequestMask(requestHash);
+        if (val) {
+            v[0] |= reqMask[0];
+            v[1] |= reqMask[1];
+            v[2] |= reqMask[2];
+            v[3] |= reqMask[3];
+        } else {
+            v[0] &= ~(reqMask[0]);
+            v[1] &= ~(reqMask[1]);
+            v[2] &= ~(reqMask[2]);
+            v[3] &= ~(reqMask[3]);
+        }
+
+        std::memcpy(freezeMaskVal, v, 0x10);
+        isFreezeMask = true;
+        processFrozen();
+    }
+
+    void freezeRequestStr(const std::string& requestKey, bool val, bool clearOthers) {
+        u32 hash = lotuskit::util::hash::murmur32(requestKey);
+        freezeRequest(hash, val, clearOthers);
+    }
+
+    inline void processFrozen() {
+        if (isFreezeMask) {
+            std::memcpy(pauseMgr->mContext.mPauseMask, freezeMaskVal, 0x10);
+        }
     }
 
 } // ns
