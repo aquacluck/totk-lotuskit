@@ -28,6 +28,7 @@
 { util::ModuleIndex::Main, 0x00be8138, "agl::lyr::Renderer::draw" },
 { util::ModuleIndex::Main, 0x02a2c49c, "engine::MainGetNpadStates" },
 { util::ModuleIndex::Main, 0x0070e204, "engine::actor::ActorBase::forceSetMatrix" },
+{ util::ModuleIndex::Main, 0x00ec0718, "engine::actor::ActorBase::getRigidBodyEntityByName" },
 { util::ModuleIndex::Main, 0x00a2e240, "engine::actor::ActorBase::setPositionAndRotationDirect" },
 { util::ModuleIndex::Main, 0x009f1924, "engine::actor::ActorBase::updatePositionAndRotation" },
 { util::ModuleIndex::Main, 0x01181d94, "engine::actor::ActorMgr::createActorAndConnectSync" },

@@ -883,6 +883,7 @@ namespace lotuskit::script::globals {
             asErrno = engine->RegisterObjectMethod("ActorBase", "BoundBox3f getAABB()", AngelScript::asFUNCTION(actor_aabb_get), AngelScript::asCALL_CDECL_OBJFIRST); assert(asErrno >= 0);
             asErrno = engine->RegisterObjectMethod("ActorBase", "string getName()", AngelScript::asFUNCTION(actor_name_get), AngelScript::asCALL_CDECL_OBJFIRST); assert(asErrno >= 0);
             asErrno = engine->RegisterObjectMethod("ActorBase", "RigidBody@ getMainRigidBody()", AngelScript::asFUNCTION(lotuskit::util::actor::getMainRigidBody), AngelScript::asCALL_CDECL_OBJFIRST); assert(asErrno >= 0);
+            asErrno = engine->RegisterObjectMethod("ActorBase", "RigidBody@ getRigidBody(const string &in)", AngelScript::asFUNCTION(lotuskit::util::actor::getRigidBodyByName), AngelScript::asCALL_CDECL_OBJFIRST); assert(asErrno >= 0);
 
             // TODO bb access, but should we even bother with exposing bb inheritance? keeping things generic between ainb/asb just isnt gonna be feasible anyways
             //asErrno = engine->RegisterObjectMethod("ActorBase", "AIBlackboard@ getAIBlackboard()", AngelScript::asFUNCTION(lotuskit::util::actor::getAIBlackboard), AngelScript::asCALL_CDECL_OBJFIRST); assert(asErrno >= 0);
@@ -920,7 +921,7 @@ namespace lotuskit::script::globals {
 
             // config
             asErrno = engine->RegisterGlobalFunction("void doTextWriter(index_t, bool)", AngelScript::asFUNCTION(lotuskit::ActorWatcher::doTextWriter), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
-            asErrno = engine->RegisterGlobalFunction("void doWsLog(index_t, bool)", AngelScript::asFUNCTION(lotuskit::ActorWatcher::doWsLog), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+            asErrno = engine->RegisterGlobalFunction("void doWSLog(index_t, bool)", AngelScript::asFUNCTION(lotuskit::ActorWatcher::doWSLog), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
 
             asErrno = engine->RegisterGlobalFunction("void doDrawAABB(index_t, bool)", AngelScript::asFUNCTION(lotuskit::ActorWatcher::doDrawAABB), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
             asErrno = engine->RegisterGlobalFunction("void doDrawPos(index_t, bool)", AngelScript::asFUNCTION(lotuskit::ActorWatcher::doDrawPos), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
@@ -929,6 +930,9 @@ namespace lotuskit::script::globals {
 
             asErrno = engine->RegisterGlobalFunction("void doDrawModelPos(index_t, bool)", AngelScript::asFUNCTION(lotuskit::ActorWatcher::doDrawModelPos), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
 
+
+            asErrno = engine->RegisterGlobalFunction("void doWSRigidBody(index_t, flagset_t)", AngelScript::asFUNCTION(lotuskit::ActorWatcher::doWSRigidBody), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+            asErrno = engine->RegisterGlobalFunction("void doTextWriterRigidBody(index_t, flagset_t)", AngelScript::asFUNCTION(lotuskit::ActorWatcher::doTextWriterRigidBody), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
             asErrno = engine->RegisterGlobalFunction("void doDrawRigidBodyAABB(index_t, flagset_t)", AngelScript::asFUNCTION(lotuskit::ActorWatcher::doDrawRigidBodyAABB), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
             asErrno = engine->RegisterGlobalFunction("void doDrawRigidBodyPos(index_t, flagset_t)", AngelScript::asFUNCTION(lotuskit::ActorWatcher::doDrawRigidBodyPos), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
             asErrno = engine->RegisterGlobalFunction("void doDrawRigidBodyPosPast(index_t, flagset_t)", AngelScript::asFUNCTION(lotuskit::ActorWatcher::doDrawRigidBodyPosPast), AngelScript::asCALL_CDECL); assert(asErrno >= 0);

@@ -297,12 +297,12 @@ dialog {
     .row2 { margin-top: 12px; margin-bottom: 8px; }
 }
 
-.toolset_actor_watcher .faketoggle.doWsLog :not(:checked) ~ .fakebutton {
+.toolset_actor_watcher .faketoggle.doWSLog :not(:checked) ~ .fakebutton {
     color: #222;
     border-color: #222 #222 #222 #222;
     &:hover { color: inherit; }
 }
-.toolset_actor_watcher .faketoggle.doWsLog :checked ~ .fakebutton {
+.toolset_actor_watcher .faketoggle.doWSLog :checked ~ .fakebutton {
     color: inherit;
     border-color: #222 #666 #666 #222;
 }
@@ -379,6 +379,28 @@ dialog {
     background: hsl(0 0 30%);
     border-color: #222 #666 #666 #222;
     border-radius: 100%;
+}
+
+.toolset_actor_watcher .faketoggle.doWSRigidBody :not(:checked) ~ .fakebutton {
+    color: hsl(var(--hue-physical) 15% 70%);
+    &:hover {
+        color: hsl(var(--hue-physical) 45% 70%);
+    }
+}
+.toolset_actor_watcher .faketoggle.doWSRigidBody :checked ~ .fakebutton {
+    background: hsl(var(--hue-physical) 45% 30%);
+    border-color: #222 #666 #666 #222;
+}
+
+.toolset_actor_watcher .faketoggle.doTextWriterRigidBody :not(:checked) ~ .fakebutton {
+    color: hsl(var(--hue-physical) 15% 70%);
+    &:hover {
+        color: hsl(var(--hue-physical) 45% 70%);
+    }
+}
+.toolset_actor_watcher .faketoggle.doTextWriterRigidBody :checked ~ .fakebutton {
+    background: hsl(var(--hue-physical) 45% 30%);
+    border-color: #222 #666 #666 #222;
 }
 
 .toolset_actor_watcher .faketoggle.doDrawRigidBodyPos       :not(:checked) ~ .fakebutton,

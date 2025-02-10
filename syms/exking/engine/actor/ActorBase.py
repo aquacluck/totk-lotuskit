@@ -20,3 +20,9 @@ EXKING("engine::actor::ActorBase::forceSetMatrix", {
     TOTK_121: 0x006ba86c,
 })
 
+EXKING("engine::actor::ActorBase::getRigidBodyEntityByName", {
+    TOTK_100: 0x00ebb7d0,
+    TOTK_110: 0x00ec0718,
+    TOTK_121: 0x00e8a148,
+})
+

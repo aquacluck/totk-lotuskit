@@ -26,6 +26,7 @@ namespace lotuskit::util::actor {
     void setPosRot(ActorBase* actor, const sead::Vector3f &pos, const sead::Matrix33f &rot);
 
     phive::RigidBodyEntity* getMainRigidBody(ActorBase* actor);
+    phive::RigidBodyEntity* getRigidBodyByName(ActorBase* actor, const std::string& name);
 
     // TODO extract what we can to dedicated ns: as/ai/bb/util/??? (good time to split decl/member/etc into separate methods too)
     enum class BBDumpMode: u32 { MEMBERS = 0, ENUMCLS_FILE_DECL = 1 };

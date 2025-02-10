@@ -150,6 +150,12 @@ namespace lotuskit::util::actor {
         return nullptr;
     }
 
+    phive::RigidBodyEntity* getRigidBodyByName(ActorBase* actor, const std::string& name) {
+        using impl_t = phive::RigidBodyEntity* (ActorBase*, const sead::SafeString&);
+        auto impl = EXL_SYM_RESOLVE<impl_t*>("engine::actor::ActorBase::getRigidBodyEntityByName");
+        return impl(actor, name.c_str());
+    }
+
     as::Blackboard* getASBlackboard(ActorBase* actor) {
         // XXX traversing this in angelscript would safer with builtin null checks... but perf + more plumbing
         as::Blackboard* bb = actor->getASComponent()->mASResourceBinder.mpASControllerSet->mpCurrentController->mpBlackboard;

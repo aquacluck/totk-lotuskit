@@ -37,7 +37,7 @@ namespace lotuskit {
 
         // config (usually only changed on request)
         bool doTextWriter;
-        bool doWsLog; // (cannot suppress slot assign/clear messages, just target actor data)
+        bool doWSLog; // (cannot suppress slot assign/clear messages, just target actor data)
 
         bool doDrawAABB; // yellow wirecube
         bool doDrawPos; // yellow dot
@@ -46,6 +46,8 @@ namespace lotuskit {
                            //
         bool doDrawModelPos; // gray dot
 
+        u64 doWSRigidBody;
+        u64 doTextWriterRigidBody;
         u64 doDrawRigidBodyAABB; // green wirecube
         u64 doDrawRigidBodyPos; // green dot
         u64 doDrawRigidBodyPosPast; // faint green
@@ -56,7 +58,7 @@ namespace lotuskit {
 
             // config // TODO load defaults from json? generic kv settings api for ws?
             this->doTextWriter = true;
-            this->doWsLog = true;
+            this->doWSLog = true;
 
             this->doDrawAABB = false;
             this->doDrawPos = false;
@@ -65,6 +67,8 @@ namespace lotuskit {
 
             this->doDrawModelPos = false;
 
+            this->doWSRigidBody = 0;
+            this->doTextWriterRigidBody = 0;
             this->doDrawRigidBodyAABB = 0;
             this->doDrawRigidBodyPos = 0;
             this->doDrawRigidBodyPosPast = 0;
@@ -90,7 +94,7 @@ namespace lotuskit {
             ns[14] = '0' + this_i; // replace i
             Logger::logJson(json::object({
                 {"doTextWriter", this->doTextWriter},
-                {"doWsLog", this->doWsLog},
+                {"doWSLog", this->doWSLog},
 
                 {"doDrawAABB", this->doDrawAABB},
                 {"doDrawPos", this->doDrawPos},
@@ -99,6 +103,8 @@ namespace lotuskit {
 
                 {"doDrawModelPos", this->doDrawModelPos},
 
+                {"doWSRigidBody", this->doWSRigidBody},
+                {"doTextWriterRigidBody", this->doTextWriterRigidBody},
                 {"doDrawRigidBodyAABB", this->doDrawRigidBodyAABB},
                 {"doDrawRigidBodyPos", this->doDrawRigidBodyPos},
                 {"doDrawRigidBodyPosPast", this->doDrawRigidBodyPosPast},
@@ -182,8 +188,8 @@ namespace lotuskit {
             slots[i].doTextWriter = val;
             slots[i].wsAnnounceConfig(i);
         }
-        inline static void doWsLog(size_t i, bool val) {
-            slots[i].doWsLog = val;
+        inline static void doWSLog(size_t i, bool val) {
+            slots[i].doWSLog = val;
             slots[i].wsAnnounceConfig(i);
         }
         inline static void doDrawAABB(size_t i, bool val) {
@@ -204,6 +210,14 @@ namespace lotuskit {
         }
         inline static void doDrawModelPos(size_t i, bool val) {
             slots[i].doDrawModelPos = val;
+            slots[i].wsAnnounceConfig(i);
+        }
+        inline static void doWSRigidBody(size_t i, u64 val) {
+            slots[i].doWSRigidBody = val;
+            slots[i].wsAnnounceConfig(i);
+        }
+        inline static void doTextWriterRigidBody(size_t i, u64 val) {
+            slots[i].doTextWriterRigidBody = val;
             slots[i].wsAnnounceConfig(i);
         }
         inline static void doDrawRigidBodyAABB(size_t i, u64 val) {
@@ -265,7 +279,24 @@ namespace lotuskit {
             return -1;
         }
 
-        inline static void drawRigidBody(phive::RigidBodyEntity* rbody, bool doDrawRigidBodyAABB, bool doDrawRigidBodyPos, bool doDrawRigidBodyPosPast, bool doDrawRigidBodyPosFuture) {
+        inline static void drawRigidBody(phive::RigidBodyEntity* rbody, bool doWSRigidBody, bool doTextWriterRigidBody, bool doDrawRigidBodyAABB, bool doDrawRigidBodyPos, bool doDrawRigidBodyPosPast, bool doDrawRigidBodyPosFuture) {
+            if (doWSRigidBody) {
+                float* xxx = (float*)&(rbody->lastTransform); //float x = [3]; float y = [7]; float z = [11];
+                sead::Vector3f vel = rbody->getNextLinearVelocity();
+                char ns[28] = "/ActorWatcher/i/RigidBody/j"; // FIXME
+                //ns[14] = '0' + i; // replace i
+                Logger::logJson(json::object({
+                    {"rigidBodyName", rbody->getName().c_str()},
+                    {"rigidBodyPtr", (u64)rbody},
+                    {"pos", json::array({ xxx[3], xxx[7], xxx[11] })},
+                    {"vel", json::array({ vel.x, vel.y, vel.z })},
+                }), ns, false, false); // noblock, no debug log
+            }
+            if (doTextWriterRigidBody) {
+                float* xxx = (float*)&(rbody->lastTransform); //float x = [3]; float y = [7]; float z = [11];
+                sead::Vector3f vel = rbody->getNextLinearVelocity();
+                lotuskit::TextWriter::printf(0, "RigidBody %s(%p): pos %f %f %f, vel %f %f %f \n", rbody->getName().c_str(), rbody, xxx[3], xxx[7], xxx[11], vel.x, vel.y, vel.z );
+            }
             if (doDrawRigidBodyPos || doDrawRigidBodyAABB) {
                 lotuskit::PrimitiveDrawer::setModelMtx(0, rbody->lastTransform);
             }
@@ -273,11 +304,6 @@ namespace lotuskit {
                 lotuskit::PrimitiveDrawer::drawSphere8x16(0, sead::Vector3f(0,0,0), 0.1, PhysicalGreen, PhysicalGreen);
             }
             if (doDrawRigidBodyAABB) {
-                //TODO TextWriter config, its too much
-                float* xxx = (float*)&(rbody->lastTransform); //float x = [3]; float y = [7]; float z = [11];
-                sead::Vector3f vel = rbody->getNextLinearVelocity();
-                lotuskit::TextWriter::printf(0, "RigidBody %s(%p): pos %f %f %f, vel %f %f %f \n", rbody->getName().c_str(), rbody, xxx[3], xxx[7], xxx[11], vel.x, vel.y, vel.z );
-
                 sead::BoundBox3f aabb = rbody->getAABB();
                 lotuskit::PrimitiveDrawer::drawWireCube(0, sead::PrimitiveDrawer::CubeArg(aabb, PhysicalGreen));
             }
@@ -332,7 +358,7 @@ namespace lotuskit {
                 const auto actor = slot.actor;
                 const auto rot = actor->mRotation;
 
-                if (slot.doWsLog) {
+                if (slot.doWSLog) {
                     char ns[16] = "/ActorWatcher/i";
                     ns[14] = '0' + i; // replace i
                     Logger::logJson(json::object({
@@ -449,21 +475,6 @@ namespace lotuskit {
 
                 auto physCmp = actor->getPhysicsComponent();
                 if (physCmp && physCmp->controllerSet && physCmp->controllerSet->mainRigidBody) {
-
-                    if (false) {
-                        // TODO ws log rigidbodies for frontend?
-                        const auto rbody = physCmp->controllerSet->mainRigidBody;
-                        sead::BoundBox3f aabb = rbody->getAABB();
-                        sead::BoundBox3f wrld = rbody->getBoundingBoxWorld();
-
-                        lotuskit::TextWriter::printf(
-                            0, "RigidBody %s(%p) \naabb : [%f, %f] [%f, %f] [%f, %f] \nworld: [%f, %f] [%f, %f] [%f, %f] \n\n",
-                            rbody->getName().c_str(), rbody,
-                            aabb.getMin().x, aabb.getMax().x, aabb.getMin().y, aabb.getMax().y, aabb.getMin().z, aabb.getMax().z,
-                            wrld.getMin().x, wrld.getMax().x, wrld.getMin().y, wrld.getMax().y, wrld.getMin().z, wrld.getMax().z
-                        );
-                    }
-
                     // XXX not capturing, just using statics for now -- unsafe to run bitflag decider stuff concurrently
                     //     (i dont think i can pass capturing lambdas for the hook callback? maybe if its a sead::Function or something idk)
                     static u8 bitIndex;
@@ -473,18 +484,16 @@ namespace lotuskit {
                     static phive::RigidBodyEntity* _rbodyMain;
                     _rbodyMain = physCmp->controllerSet->mainRigidBody;
 
-                    //drawRigidBody(physCmp->controllerSet->mainRigidBody, true, false, false, false);
                     physCmp->controllerSet->visitRigidBodyEntities([](auto* thisfn, auto* rbody, char* idk) {
-                        //drawRigidBody(rbody, true, false, false, false);
-
                         if (bitIndex == 0) {
                             // main body is always first flag -- character matter(?) main bodies on actors like Player
                             // do not show up in visitRigidBodyEntities, so hacking this in is inevitable
+                            bool doWSRigidBody = _slot->doWSRigidBody & (1LL << (63-bitIndex));
+                            bool doTextWriterRigidBody = _slot->doTextWriterRigidBody & (1LL << (63-bitIndex));
                             bool doDrawRigidBodyAABB = _slot->doDrawRigidBodyAABB & (1LL << (63-bitIndex));
                             bool doDrawRigidBodyPos = _slot->doDrawRigidBodyPos & (1LL << (63-bitIndex));
                             bool doDrawRigidBodyPosPast = _slot->doDrawRigidBodyPosPast & (1LL << (63-bitIndex));
                             bool doDrawRigidBodyPosFuture = _slot->doDrawRigidBodyPosFuture & (1LL << (63-bitIndex));
-                            // TODO textwriter config
 
                             /*// XXX actorlink testing
                             engine::actor::ActorBaseLink* alink =  rbody->getActorLink();
@@ -496,7 +505,7 @@ namespace lotuskit {
                             }
                             */
 
-                            drawRigidBody(_rbodyMain, doDrawRigidBodyAABB, doDrawRigidBodyPos, doDrawRigidBodyPosPast, doDrawRigidBodyPosFuture);
+                            drawRigidBody(_rbodyMain, doWSRigidBody, doTextWriterRigidBody, doDrawRigidBodyAABB, doDrawRigidBodyPos, doDrawRigidBodyPosPast, doDrawRigidBodyPosFuture);
                             bitIndex++;
                             // no return: continue processing first visited body
                         }
@@ -508,16 +517,16 @@ namespace lotuskit {
                             return;
                         }
 
+                        bool doWSRigidBody = _slot->doWSRigidBody & (1LL << (63-bitIndex));
+                        bool doTextWriterRigidBody = _slot->doTextWriterRigidBody & (1LL << (63-bitIndex));
                         bool doDrawRigidBodyAABB = _slot->doDrawRigidBodyAABB & (1LL << (63-bitIndex));
                         bool doDrawRigidBodyPos = _slot->doDrawRigidBodyPos & (1LL << (63-bitIndex));
                         bool doDrawRigidBodyPosPast = _slot->doDrawRigidBodyPosPast & (1LL << (63-bitIndex));
                         bool doDrawRigidBodyPosFuture = _slot->doDrawRigidBodyPosFuture & (1LL << (63-bitIndex));
 
-                        drawRigidBody(rbody, doDrawRigidBodyAABB, doDrawRigidBodyPos, doDrawRigidBodyPosPast, doDrawRigidBodyPosFuture);
+                        drawRigidBody(rbody, doWSRigidBody, doTextWriterRigidBody, doDrawRigidBodyAABB, doDrawRigidBodyPos, doDrawRigidBodyPosPast, doDrawRigidBodyPosFuture);
                         bitIndex++;
-
                     });
-                    //lotuskit::TextWriter::printf(0, "\n");
 
                 } // draw rigidbodys
 
