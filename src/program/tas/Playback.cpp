@@ -120,6 +120,10 @@ namespace lotuskit::tas {
 
         const bool isLoadingPause = lotuskit::util::pause::isPauseRequest(0x0eafe200);
         if (isLoadingPause && skipLoadingPause) {
+            if (isAwaitPauseRequestHash == 0x0eafe200 && awaitPauseVal == true) {
+                // do not resume, but if script is awaiting LoadingPause request, clear the blocking condition
+                isAwaitPauseRequestHash = 0;
+            }
             lotuskit::TextWriter::printf(1, "tas::nop(LoadingPause)\n               fr:%6d\n", duration60ToUIFrames(elapsedPlayback60));
             return;
         }
