@@ -287,6 +287,65 @@
         }
     };
 
+    class PauseHacks extends Component {
+        constructor() {
+            super();
+            this.pausenameref = createRef();
+            //WSTransport.subscribe_ns("/camera/log", this.recvCameraLog.bind(this))
+        }
+
+        static PauseReqAll = ["ResetGimmickFromScript", "LoadingPause", "UpdateBancResource", "DebugPause", "SceneBeginning", "EventPlayMovie", "EventDisableController_Camera", "EventSetupOrRestore", "PostGamePause", "GamePauseWithoutEvent", "SystemPauseWhileLoading", "UpdateResourcePause", "EventBancChangePause", "ResetGimmick", "AutoBuilderPause", "PreGamePause", "GameOverPause", "GamePause", "EventDisableController", "SceneTransition", "ClickPause", "ReverseRecorderPause"];
+
+        static PauseTargetAll = ["AI", "AS", "Actor", "Blackboard", "CSharp", "Camera", "Controller", "Custom_ASGlobalFrame", "Custom_ActorCalcDrawExceptPouchActor", "Custom_ActorCalcExceptAutoBuilderActor", "Custom_ActorCalcExceptFarDelete", "Custom_ActorCalcExceptOpeningEventActor", "Custom_ActorCalcExceptPlayerEquipment", "Custom_ActorCalcExceptPlayer", "Custom_ActorCalc", "Custom_ActorDraw", "Custom_ActorRenderingProxy", "Custom_AllowCalcScript", "Custom_AllowStartScript", "Custom_AmiiboMgr", "Custom_AttentionSystem", "Custom_AutoPlacementMgr", "Custom_AutoSaveCount", "Custom_AutoSave", "Custom_BancLoadMgrCheckGameData", "Custom_BancRealtimeEdit", "Custom_ChallengeFollowerMgr", "Custom_Chemical", "Custom_CompanionMgrSummon", "Custom_Controller_Camera", "Custom_Controller_Player", "Custom_Controller_UI", "Custom_CraftSignboardMgr", "Custom_DragonMgr", "Custom_DynamicResolution", "Custom_EffectAutoBuild", "Custom_EffectReverseRecorder", "Custom_EffectSystem", "Custom_EnergyGaugeMgr", "Custom_Footprint", "Custom_ForbidLoadingPause", "Custom_GSysAndController", "Custom_GSysPauseMenu", "Custom_GSys", "Custom_GameBalance", "Custom_GameEffect", "Custom_LaunchParameterMgr", "Custom_LightBallBudMgr", "Custom_Logic", "Custom_NpcPhysicsProcOnReset", "Custom_PerceptionCalc", "Custom_PhysicsUpdateWorld", "Custom_PlayReportCount", "Custom_Player", "Custom_ReverseRecorder", "Custom_SceneDraw", "Custom_Sequence", "Custom_SkipDamageCalc", "Custom_SoundBgm", "Custom_SoundEnv", "Custom_SoundPauseAll", "Custom_SoundWorldExceptEnv", "Custom_SpecialPowerFilter", "Custom_StopCotrollerRumble", "Custom_StopSaveLiveToGameData", "Custom_TimerMgr", "Custom_UpdateBancResource", "Custom_WaitLoadForUI", "Custom_WorldMgrImm", "Custom_WorldMgr", "Dengu", "Ecpp", "Effect", "Error", "Event", "GameData", "Graphics", "LOD", "ProgramHotReload", "Reaction", "Resource", "Rumble", "Scene", "Tool", "UI", "Visualize", "XLink"];
+
+        static PauseReqOptions = PauseHacks.PauseReqAll.map(v => html`<option>${v}</option>`);
+        static PauseTargetOptions = PauseHacks.PauseTargetAll.map(v => html`<option>${v}</option>`);
+
+        on_select_pause = (e) => {
+            const name = e.currentTarget.value;
+            const isreq = PauseHacks.PauseReqAll.indexOf(name) !== -1;
+            this.setState({pauseName: name, isPauseReq: isreq});
+        }
+
+        do_requestPause() { AngelScript.exec(`pause::requestPause("${this.pausenameref.current.value}");`); }
+        do_releasePause() { AngelScript.exec(`pause::releasePause("${this.pausenameref.current.value}");`); }
+        do_unfreeze() { AngelScript.exec("pause::doFreezeMask(false);"); }
+        do_freeze_nopause() { AngelScript.exec("pause::freezeMask(0, 0, 0, 0);"); }
+        do_freeze_selection() {
+            const name = this.pausenameref.current.value;
+            const isreq = PauseHacks.PauseReqAll.indexOf(name) !== -1;
+            if (isreq) {
+                AngelScript.exec(`pause::freezeRequest("${this.pausenameref.current.value}");`);
+            } else {
+                AngelScript.exec(`pause::freezeTarget("${this.pausenameref.current.value}");`);
+            }
+        }
+
+        render(props, state) {
+            const reqStyle = state.isPauseReq ? "" : "background: #666; color: #aaa;";
+            const reqFreezeTitle = state.isPauseReq ? "pause::freezeRequest(string)" : "pause::freezeTarget(string)";
+            const reqTitle = state.isPauseReq ? "pause::requestPause(string)" : "[invalid for PauseTargets]";
+            const relTitle = state.isPauseReq ? "pause::releasePause(string)" : "[invalid for PauseTargets]";
+
+            return html`
+                <div class="pause">
+                    Pause:
+                    <button title="pause::doFreezeMask(false); // end pause freezing" onClick=${() => this.do_unfreeze() } class="pushbutton">\u23f5</button>
+                    <button title="pause::freezeMask(0, 0, 0, 0); // force unpause" onClick=${() => this.do_freeze_nopause() } class="pushbutton">0</button>
+                    <select ref=${this.pausenameref} onChange=${this.on_select_pause}>
+                        <option disabled>[PauseRequest]</option>
+                        ${PauseHacks.PauseReqOptions}
+                        <option disabled>[PauseTarget]</option>
+                        ${PauseHacks.PauseTargetOptions}
+                    </select>
+                    <button title=${reqFreezeTitle} onClick=${() => this.do_freeze_selection() } class="pushbutton">\u23f8</button>
+                    <button style=${reqStyle} title=${reqTitle} onClick=${() => this.do_requestPause() } class="pushbutton inc">+</button>
+                    <button style=${reqStyle} title=${relTitle} onClick=${() => this.do_releasePause() } class="pushbutton dec">-</button>
+                </div>
+            `;
+        }
+    };
+
     class HexDumpSlot extends Component {
         constructor() {
             super();
@@ -1039,6 +1098,7 @@
             <${ActorWatcher} slot_i=2 />
             <${ActorWatcher} slot_i=3 />
             <section class="toolset_memutils_controller">
+                <${PauseHacks} />
                 <${CameraHacks} />
                 <div class="hexdump">
                     HexDump
