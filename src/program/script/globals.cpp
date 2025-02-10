@@ -990,6 +990,11 @@ namespace lotuskit::script::globals {
         asErrno = engine->RegisterGlobalFunction("void freezeTarget(u32 targetHash, bool val=true, bool clearOthers=true)", AngelScript::asFUNCTION(lotuskit::util::pause::freezeTarget), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
         asErrno = engine->RegisterGlobalFunction("void freezeTarget(const string &in, bool val=true, bool clearOthers=true)", AngelScript::asFUNCTION(lotuskit::util::pause::freezeTargetStr), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
         asErrno = engine->RegisterGlobalFunction("void freezeTargetIndex(u8 targetIndex, bool val=true, bool clearOthers=true)", AngelScript::asFUNCTION(lotuskit::util::pause::freezeTargetIndex), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+
+        asErrno = engine->RegisterGlobalFunction("bool isPauseRequest(u32)", AngelScript::asFUNCTION(lotuskit::util::pause::isPauseRequest), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("bool isPauseRequest(const string &in)", AngelScript::asFUNCTION(lotuskit::util::pause::isPauseRequestStr), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("bool isPauseTarget(u32)", AngelScript::asFUNCTION(lotuskit::util::pause::isPauseTarget), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("bool isPauseTarget(const string &in)", AngelScript::asFUNCTION(lotuskit::util::pause::isPauseTargetStr), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
     }
 
     void registerGlobals(AngelScript::asIScriptEngine* engine) {

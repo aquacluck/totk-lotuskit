@@ -27,6 +27,11 @@ namespace lotuskit::util::pause {
     void freezeTargetStr(const std::string&, bool val=true, bool clearOthers=true);
     void freezeTargetIndex(u8 targetIndex, bool val=true, bool clearOthers=true);
 
+    bool isPauseRequest(u32);
+    bool isPauseRequestStr(const std::string&);
+    bool isPauseTarget(u32);
+    bool isPauseTargetStr(const std::string&);
+
     void processFrozen(); // reapply freezeMaskVal to context mask
 
 } // ns

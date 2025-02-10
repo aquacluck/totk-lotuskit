@@ -28,3 +28,7 @@ pause::freezeTarget("Custom_PhysicsUpdateWorld", false, false);
 pause::freezeTargetIndex( 0, true, true ); // freezeMask(1,0,0,0) equiv
 pause::freezeTargetIndex(32, true, false); // stacks to freezeMask(1,1,0,0) equiv
 
+// query current pause state
+if (pause::isPauseRequest("EventDisableController")) { }
+if (pause::isPauseTarget("Custom_Footprint")) { }
+

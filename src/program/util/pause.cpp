@@ -227,6 +227,11 @@ namespace lotuskit::util::pause {
         freezeRequest(hash, val, clearOthers);
     }
 
+    bool isPauseRequest(u32 hash) { return pauseMgr->getPauseRequestCount(hash) > 0; }
+    bool isPauseTarget(u32 hash)  { return pauseMgr->isTargetPaused(hash); }
+    bool isPauseRequestStr(const std::string& key) { return isPauseRequest(lotuskit::util::hash::murmur32(key)); }
+    bool isPauseTargetStr(const std::string& key)  { return isPauseTarget(lotuskit::util::hash::murmur32(key)); }
+
     inline void processFrozen() {
         if (isFreezeMask) {
             std::memcpy(pauseMgr->mContext.mPauseMask, freezeMaskVal, 0x10);

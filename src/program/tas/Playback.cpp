@@ -207,7 +207,7 @@ namespace lotuskit::tas {
         } else return;
 
         AngelScript::asIScriptContext *ctx = AngelScript::asGetActiveContext();
-        if (ctx == nullptr && duration60 > 0) { return; }
+        if (ctx == nullptr && duration60 > 0) { return; } // XXX err
 
         //TODO atomic toggle between double buffer currentInput+nextInput
         currentInputTTL60 = duration60;
