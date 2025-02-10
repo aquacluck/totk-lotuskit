@@ -29,10 +29,12 @@ namespace lotuskit::tas {
         static bool calcScheduleIsAwaitPauseTarget();
         static void doScheduleAwaitPauseTargetStr(const std::string& targetKey);
         static void doScheduleAwaitUnpauseTargetStr(const std::string& targetKey);
+        inline static bool skipLoadingPause = true; // frames with LoadingPause do not count toward input timing
+        inline static void doSkipLoadingPause(bool v) { skipLoadingPause = v; }
 
         // current input
         static PlaybackInput currentInput;
-        static inline bool isPlaybackActive = false;
+        inline static bool isPlaybackActive = false;
         static void setCurrentInput(u32 duration=1, u64 nextButtons=0, s32 nextLStickX=0, s32 nextLStickY=0, s32 nextRStickX=0, s32 nextRStickY=0);
         static void setCurrentInputOr(u32 duration=1, u64 nextButtons=0, s32 nextLStickX=0, s32 nextLStickY=0, s32 nextRStickX=0, s32 nextRStickY=0);
         static void setCurrentInputXor(u32 duration=1, u64 nextButtons=0, s32 nextLStickX=0, s32 nextLStickY=0, s32 nextRStickX=0, s32 nextRStickY=0);

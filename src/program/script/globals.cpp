@@ -847,6 +847,11 @@ namespace lotuskit::script::globals {
                 AngelScript::asFUNCTION(lotuskit::tas::Playback::doScheduleAwaitUnpauseTargetStr),
                 AngelScript::asCALL_CDECL
             ); assert( asErrno >= 0 );
+            asErrno = engine->RegisterGlobalFunction(
+                "void doSkipLoadingPause(bool)",
+                AngelScript::asFUNCTION(lotuskit::tas::Playback::doSkipLoadingPause),
+                AngelScript::asCALL_CDECL
+            ); assert( asErrno >= 0 );
 
         /// }
     }

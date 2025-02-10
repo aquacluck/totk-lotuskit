@@ -190,5 +190,9 @@ tas::awaitUnpauseRequest("EventDisableController_Camera");
 tas::awaitPauseTarget("Custom_Footprint");
 tas::awaitUnpauseTarget("Custom_Footprint");
 
+// Keep running tas through LoadingPause,
+// which is completely skipped by default
+tas::doSkipLoadingPause(false);
+
 // that is all :) ur doing great
 

@@ -116,9 +116,16 @@ namespace lotuskit::tas {
     /// }}} pause scheduling
 
     void Playback::calc() {
+        if (!isPlaybackActive) { return; } // not doing playback
+
+        const bool isLoadingPause = lotuskit::util::pause::isPauseRequest(0x0eafe200);
+        if (isLoadingPause && skipLoadingPause) {
+            lotuskit::TextWriter::printf(1, "tas::nop(LoadingPause)\n               fr:%6d\n", duration60ToUIFrames(elapsedPlayback60));
+            return;
+        }
+
         /// begin frametime scheduling {{{
             // TODO extract `bool calcScheduleIsScriptInputExhausted()`
-            if (!isPlaybackActive) { return; } // not doing playback
 
             // int 2 or 3 = float 1.0 (@30fps) or 1.5 (@20fps)
             // assert(mDeltaFrame == 1.0 || mDeltaFrame == 1.5); // precisely
