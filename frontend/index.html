@@ -291,7 +291,7 @@
         constructor() {
             super();
             this.pausenameref = createRef();
-            //WSTransport.subscribe_ns("/camera/log", this.recvCameraLog.bind(this))
+            WSTransport.subscribe_ns("/pause/log", payload => { this.setState(payload) });
         }
 
         static PauseReqAll = ["ResetGimmickFromScript", "LoadingPause", "UpdateBancResource", "DebugPause", "SceneBeginning", "EventPlayMovie", "EventDisableController_Camera", "EventSetupOrRestore", "PostGamePause", "GamePauseWithoutEvent", "SystemPauseWhileLoading", "UpdateResourcePause", "EventBancChangePause", "ResetGimmick", "AutoBuilderPause", "PreGamePause", "GameOverPause", "GamePause", "EventDisableController", "SceneTransition", "ClickPause", "ReverseRecorderPause"];
@@ -320,6 +320,7 @@
                 AngelScript.exec(`pause::freezeTarget("${this.pausenameref.current.value}");`);
             }
         }
+        do_send_toggle(opt) { const v = this.state[opt] ? "false" : "true"; AngelScript.exec(`pause::${opt}(${v});`); }
 
         render(props, state) {
             const reqStyle = state.isPauseReq ? "" : "background: #666; color: #aaa;";
@@ -330,6 +331,16 @@
             return html`
                 <div class="pause">
                     Pause:
+                    <label title="pause::doTextWriter(checked)" class="faketoggle doTextWriter" for="pause_doTextWriter">
+                        <input type="checkbox" id="pause_doTextWriter" checked=${state.doTextWriter} onChange=${ e => this.do_send_toggle("doTextWriter") } />
+                        <span class="fakebutton pushbutton">txt</span>
+                    </label>
+                    <label title="pause::doTextWriterExtended(checked)" class="faketoggle doTextWriterExtended" for="pause_doTextWriterExtended">
+                        <input type="checkbox" id="pause_doTextWriterExtended" checked=${state.doTextWriterExtended} onChange=${ e => this.do_send_toggle("doTextWriterExtended") } />
+                        <span class="fakebutton pushbutton">ext</span>
+                    </label>
+                    <br />
+
                     <button title="pause::doFreezeMask(false); // end pause freezing" onClick=${() => this.do_unfreeze() } class="pushbutton">\u23f5</button>
                     <button title="pause::freezeMask(0, 0, 0, 0); // force unpause" onClick=${() => this.do_freeze_nopause() } class="pushbutton">0</button>
                     <select ref=${this.pausenameref} onChange=${this.on_select_pause}>
@@ -573,8 +584,8 @@
                         ${actorName}(${ptr})
                         <div class="actor_toggles">
                             <div>
-                                <label title="ActorWatcher::doWSLog(${i}, checked)" class="faketoggle doWSLog" for="aw${i}_doWsLog">
-                                    <input type="checkbox" id="aw${i}_doWsLog" checked=${state.doWSLog} onChange=${ e => this.do_send_toggle(i, "doWSLog", e.target.checked) } />
+                                <label title="ActorWatcher::doWSLog(${i}, checked)" class="faketoggle doWSLog" for="aw${i}_doWSLog">
+                                    <input type="checkbox" id="aw${i}_doWSLog" checked=${state.doWSLog} onChange=${ e => this.do_send_toggle(i, "doWSLog", e.target.checked) } />
                                     <span class="fakebutton pushbutton">ws</span>
                                 </label>
                                 <label title="ActorWatcher::doTextWriter(${i}, checked)" class="faketoggle doTextWriter" for="aw${i}_doTextWriter">

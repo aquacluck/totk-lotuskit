@@ -238,5 +238,12 @@ namespace lotuskit::util::pause {
         }
     }
 
+    void wsAnnounceConfig() {
+        Logger::logJson(json::object({
+            {"doTextWriter", doTextWriter},
+            {"doTextWriterExtended", doTextWriterExtended}
+        }), "/pause/log", false, false); // noblock, no debug log
+    }
+
 } // ns
 

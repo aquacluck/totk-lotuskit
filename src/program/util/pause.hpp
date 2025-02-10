@@ -5,11 +5,6 @@
 namespace lotuskit::util::pause {
     void InstallHooks();
     void drawPauses();
-
-    inline bool doTextWriter = false;
-    inline void doTextWriter_set(bool v) { doTextWriter = v; }
-    inline bool doTextWriterExtended = false;
-    inline void doTextWriterExtended_set(bool v) { doTextWriterExtended = v; }
     inline engine::system::PauseMgr* pauseMgr = nullptr;
 
     void requestPause(u32 reqHash);
@@ -33,6 +28,12 @@ namespace lotuskit::util::pause {
     bool isPauseTargetStr(const std::string&);
 
     void processFrozen(); // reapply freezeMaskVal to context mask
+    void wsAnnounceConfig();
+
+    inline bool doTextWriter = false;
+    inline void doTextWriter_set(bool v) { doTextWriter = v; wsAnnounceConfig(); }
+    inline bool doTextWriterExtended = false;
+    inline void doTextWriterExtended_set(bool v) { doTextWriterExtended = v; wsAnnounceConfig(); }
 
 } // ns
 
