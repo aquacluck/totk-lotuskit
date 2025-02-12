@@ -155,7 +155,7 @@ textarea {
 
 .toolbox_main { position: relative; }
 .toolbox_main > .toolset_quickcorner { right:0px; bottom:0px; }
-.toolbox_main > .toolset_memutils_controller { right:18px; top:0px; }
+.toolbox_main > .toolset_rightbar { right:18px; top:0px; }
 
 /* https://drafts.csswg.org/css-values-5/#tree-counting */
 /*.toolbox_main > .toolset_actor_watcher { left: 0px; top: calc(sibling-index() * 400px); } */
@@ -165,28 +165,35 @@ textarea {
 .toolbox_main > .toolset_actor_watcher:nth-of-type(4) { left: 0px; top:1200px; }
 
 
-.toolset_memutils_controller {
+.toolset_rightbar {
     position: absolute;
-    height: 460px;
+    height: 460px; /* FIXME trash layout -- visually holds the group before execscript and everything after just spills out */
     padding: 8px;
+    background: #000;
     border: 1px solid #444;
 
     display: inline-grid;
     grid-template-rows: 1fr 1fr 1fr 1fr 1fr;
     grid-template-columns: 1fr 1fr;
     grid-template-areas:
-    'pause     pause'
-    'camera    camera'
-    'hexdump   hexdump'
+    'pausehacks pausehacks'
+    'camerahacks camerahacks'
+    'hexdump hexdump'
     'memsearch quickdumps'
     'execscript execscript'
     'execscript execscript';
 }
-.toolset_memutils_controller > .camera { grid-area: camera; }
-.toolset_memutils_controller > .pause { grid-area: pause; }
-.toolset_memutils_controller > .hexdump { grid-area: hexdump; }
-.toolset_memutils_controller > .memsearch { grid-area: memsearch; }
-.toolset_memutils_controller > .execscript { grid-area: execscript; }
+.toolset_rightbar > .camerahacks { grid-area: camerahacks; }
+.toolset_rightbar > .pausehacks { grid-area: pausehacks; }
+.toolset_rightbar > .hexdump { grid-area: hexdump; }
+.toolset_rightbar > .memsearch { grid-area: memsearch; }
+.toolset_rightbar > .execscript { grid-area: execscript; }
+.toolset_rightbar > .execscript {
+    /* XXX distinct region but we dont really know the height */
+    margin-top: 20px;
+    background: #000;
+    height: 300px;
+}
 
 
 .toolset_quickcorner {

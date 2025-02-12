@@ -277,9 +277,10 @@
 
         render(props, state) {
             const rel = state.relative === true;
+            const titleAW = "camera::freezeAtActorWatcher(slot_i, dist, Vector3f, elev, follow, relative)";
 
             return html`
-                <div class="camera" style="margin-top: 8px;">
+                <div class="camerahacks" style="margin-top: 8px;">
                     Camera
                     <button title="camera::toggleFreeze()" onClick=${() => this.reqToggleFreeze() } class="pushbutton" style="font-size:1.5rem;">\u23ef</button>
                     <label title="update with ActorWatcher position" for="camerahacks_follow">follow:</label>
@@ -297,25 +298,25 @@
                     </div>
                     <br/>
 
-                    <button onClick=${() => this.reqFreezeAtActorWatcher("NW") } class="pushbutton">${rel ? "↘"  : "NW"}</button>
-                    <button onClick=${() => this.reqFreezeAtActorWatcher("N" ) } class="pushbutton">${rel ? "12" : "N" }</button>
-                    <button onClick=${() => this.reqFreezeAtActorWatcher("NE") } class="pushbutton">${rel ? "↙"  : "NE"}</button>
+                    <button title=${titleAW} onClick=${() => this.reqFreezeAtActorWatcher("NW") } class="pushbutton">${rel ? "↘"  : "NW"}</button>
+                    <button title=${titleAW} onClick=${() => this.reqFreezeAtActorWatcher("N" ) } class="pushbutton">${rel ? "12" : "N" }</button>
+                    <button title=${titleAW} onClick=${() => this.reqFreezeAtActorWatcher("NE") } class="pushbutton">${rel ? "↙"  : "NE"}</button>
                     <button inert class="pushbutton pushbutton_null">__</button>
-                    <span>ActorWatcher[<input style="width: 35px" type="number" placeholder="0" size="2" min="0" step="any" ref=${this.slot_i} />]</span>
+                    <span><label title="target camera to selected actor slot" for="camerahacks_slot_i">ActorWatcher[</label><input id="camerahacks_slot_i" style="width: 35px" type="number" placeholder="0" size="2" min="0" step="any" ref=${this.slot_i} />]</span>
 
                     <br/>
-                    <button onClick=${() => this.reqFreezeAtActorWatcher("W" ) } class="pushbutton">${rel ? "9" : "W" }</button>
+                    <button title=${titleAW} onClick=${() => this.reqFreezeAtActorWatcher("W" ) } class="pushbutton">${rel ? "9" : "W" }</button>
                     <button inert class="pushbutton pushbutton_null">🌐</button>
-                    <button onClick=${() => this.reqFreezeAtActorWatcher("E" ) } class="pushbutton">${rel ? "3" : "E "}</button>
+                    <button title=${titleAW} onClick=${() => this.reqFreezeAtActorWatcher("E" ) } class="pushbutton">${rel ? "3" : "E "}</button>
                     <button inert class="pushbutton pushbutton_null">__</button>
-                    <span>dist: <input style="width: 60px;" type="number" placeholder="20" size="4" min="-10000" max="10000" step="any" ref=${this.dist} />m</span>
+                    <span><label title="xz distance from target (offset = dist * direction)" for="camerahacks_dist">dist: </label><input id="camerahacks_dist" style="width: 60px;" type="number" placeholder="20" size="4" min="-10000" max="10000" step="any" ref=${this.dist} />m</span>
 
                     <br/>
-                    <button onClick=${() => this.reqFreezeAtActorWatcher("SW") } class="pushbutton">${rel ? "↗" : "SW"}</button>
-                    <button onClick=${() => this.reqFreezeAtActorWatcher("S" ) } class="pushbutton">${rel ? "6" : "S" }</button>
-                    <button onClick=${() => this.reqFreezeAtActorWatcher("SE") } class="pushbutton">${rel ? "↖" : "SE"}</button>
+                    <button title=${titleAW} onClick=${() => this.reqFreezeAtActorWatcher("SW") } class="pushbutton">${rel ? "↗" : "SW"}</button>
+                    <button title=${titleAW} onClick=${() => this.reqFreezeAtActorWatcher("S" ) } class="pushbutton">${rel ? "6" : "S" }</button>
+                    <button title=${titleAW} onClick=${() => this.reqFreezeAtActorWatcher("SE") } class="pushbutton">${rel ? "↖" : "SE"}</button>
                     <button inert class="pushbutton pushbutton_null">__</button>
-                    <span>elev: <input style="width: 60px;" type="number" placeholder="5" size="4" min="-10000" max="10000" step="any" ref=${this.elev} />m</span>
+                    <span><label title="camera.pos_y = target.pos_y + elev" for="camerahacks_elev">elev: </label><input id="camerahacks_elev" style="width: 60px;" type="number" placeholder="5" size="4" min="-10000" max="10000" step="any" ref=${this.elev} />m</span>
 
                     <!--<button title="camera::toggleFreeze()" onClick=${() => this.reqToggleFreeze() } class="pushbutton" style="transform: rotate(-45deg);">⟵45°</button>-->
                 </div>
@@ -365,7 +366,7 @@
             const relTitle = state.isPauseReq ? "pause::releasePause(string)" : "[invalid for PauseTargets]";
 
             return html`
-                <div class="pause">
+                <div class="pausehacks">
                     Pause:
                     <label title="pause::doTextWriter(checked)" class="faketoggle doTextWriter" for="pause_doTextWriter">
                         <input type="checkbox" id="pause_doTextWriter" checked=${state.doTextWriter} onChange=${ e => this.do_send_toggle("doTextWriter") } />
@@ -516,7 +517,7 @@
             // TODO ctrl+enter do_exec()
             return html`
                 <div class="execscript">
-                    <br/>AngelScript
+                    AngelScript
                     <button title="Run the script below" onClick=${ () => this.do_exec() } class="pushbutton cta_blue" style="margin-right:16px;">exec</button>
                     <label title="Automatically wrap input into void main() {...} entry point" for="execscript_use_implicit_main">main:</label>
                     <input type="checkbox" id="execscript_use_implicit_main" ref=${this.use_implicit_main_ref} checked />
@@ -1146,7 +1147,7 @@
             <${ActorWatcher} slot_i=1 />
             <${ActorWatcher} slot_i=2 />
             <${ActorWatcher} slot_i=3 />
-            <section class="toolset_memutils_controller">
+            <section class="toolset_rightbar">
                 <${PauseHacks} />
                 <${CameraHacks} />
                 <div class="hexdump" style="margin-top: 8px;">
