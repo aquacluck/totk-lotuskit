@@ -222,9 +222,20 @@
     class CameraHacks extends Component {
         constructor() {
             super();
+
+            // dump
             this.pos = createRef();
             this.at = createRef();
             this.up = createRef();
+
+            // ActorWatcher relative
+            this.slot_i = createRef();
+            this.dist = createRef();
+            this.elev = createRef();
+            this.follow = createRef();
+            this.relative = createRef();
+            this.setState({relative: false}); // XXX should just bind state to input
+
             WSTransport.subscribe_ns("/camera/log", this.recvCameraLog.bind(this))
         }
 
@@ -241,7 +252,7 @@
 
         reqCameraLog() { AngelScript.exec("camera::log();"); }
         reqToggleFreeze() { AngelScript.exec("camera::toggleFreeze();"); }
-        reqFreezeAtRefs() {
+        reqFreezeAtDumpRefs() {
             let pos = this.pos.current.value;
             pos = pos.replaceAll(",", "").split(" ").filter(x => x !== "").map(x => parseFloat(x));
 
@@ -254,34 +265,59 @@
             AngelScript.exec(`camera::freeze(${up[0]}, ${up[1]}, ${up[2]}, ${pos[0]}, ${pos[1]}, ${pos[2]}, ${at[0]}, ${at[1]}, ${at[2]});`);
         }
 
-        reqAbove() {
-            let slot_i = 0;
-            let dist = 50.0;
-            // FIXME sometimes z-axis inputs get reversed? doesnt seem consistent
-            //const up = [0, 0.707161, -0.707161]
-            const up = [0, 0.73, -0.73];
-            //const up = [0.000135, 0.707161, -0.707053] // just standing aiming down
-            //-0.000103, 0.707161, -0.707053 // perfect throw-aim down, then ZL+rstick to max height... reversed z?
-            //0.003695, 0.707161, -0.707043 // perfect dive+rstick, hangs on device drop lol
-            AngelScript.exec(`auto a = ActorWatcher::get(${slot_i}); camera::freeze(${up[0]}, ${up[1]}, ${up[2]}, a.pos_x, a.pos_y+${dist}, a.pos_z, a.pos_x, a.pos_y, a.pos_z);`);
+        reqFreezeAtActorWatcher(staticvec) {
+            let slot_i = this.slot_i.current.value || 0;
+            let dist = this.dist.current.value || 20;
+            let elev = this.elev.current.value || 5;
+            let follow = this.follow.current.checked;
+            let relative = this.relative.current.checked;
+            //console.log(`camera::freezeAtActorWatcher(${slot_i}, ${dist}, Vector3f::${staticvec}, ${elev}, ${follow}, ${relative});`);
+            AngelScript.exec(`camera::freezeAtActorWatcher(${slot_i}, ${dist}, Vector3f::${staticvec}, ${elev}, ${follow}, ${relative});`);
         }
 
         render(props, state) {
-            return html`
-                <div class="camera">
-                    Camera
-                    <div style="float:right;">
-                        pos: <input placeholder="x, y, z" ref=${this.pos} size=40 /><br />
-                        at\xa0: <input placeholder="x, y, z" ref=${this.at} size=40 /><br />
-                        up\xa0: <input placeholder="0, 0.707161, -0.707161" ref=${this.up} size=40 /><br />
-                    </div>
-                    <br />
-                    <button title="camera::log()" onClick=${() => this.reqCameraLog() } class="pushbutton">dump</button>
-                    <button title="camera::freeze(up, pos, at)" onClick=${() => this.reqFreezeAtRefs() } class="pushbutton">assign</button>
-                    <button title="camera::toggleFreeze()" onClick=${() => this.reqToggleFreeze() } class="pushbutton">freeze</button>
-                    <br />
-                    <button title="fixed north above target (bugged)" onClick=${() => this.reqAbove() } class="pushbutton">above</button>
+            const rel = state.relative === true;
 
+            return html`
+                <div class="camera" style="margin-top: 8px;">
+                    Camera
+                    <button title="camera::toggleFreeze()" onClick=${() => this.reqToggleFreeze() } class="pushbutton" style="font-size:1.5rem;">\u23ef</button>
+                    <label title="update with ActorWatcher position" for="camerahacks_follow">follow:</label>
+                    <input type="checkbox" id="camerahacks_follow" ref=${this.follow} checked />
+                    <label title="rotate relative to actor" for="camerahacks_relative">rel:</label>
+                    <input type="checkbox" id="camerahacks_relative" ref=${this.relative} onChange=${() => this.setState({relative: this.relative.current.checked}) } />
+
+                    <div style="float:right;">
+                        <button title="camera::log()" onClick=${() => this.reqCameraLog() } class="pushbutton">dump</button>
+                        <button title="camera::freeze(up, pos, at)" onClick=${() => this.reqFreezeAtDumpRefs() } class="pushbutton">assign</button>
+                        <br/>
+                        pos: <input placeholder="x, y, z" ref=${this.pos} size=20 /><br />
+                        at\xa0: <input placeholder="x, y, z" ref=${this.at} size=20 /><br />
+                        up\xa0: <input placeholder="0, 0.707161, -0.707161" ref=${this.up} size=20 /><br />
+                    </div>
+                    <br/>
+
+                    <button onClick=${() => this.reqFreezeAtActorWatcher("NW") } class="pushbutton">${rel ? "↘"  : "NW"}</button>
+                    <button onClick=${() => this.reqFreezeAtActorWatcher("N" ) } class="pushbutton">${rel ? "12" : "N" }</button>
+                    <button onClick=${() => this.reqFreezeAtActorWatcher("NE") } class="pushbutton">${rel ? "↙"  : "NE"}</button>
+                    <button inert class="pushbutton pushbutton_null">__</button>
+                    <span>ActorWatcher[<input style="width: 35px" type="number" placeholder="0" size="2" min="0" step="any" ref=${this.slot_i} />]</span>
+
+                    <br/>
+                    <button onClick=${() => this.reqFreezeAtActorWatcher("W" ) } class="pushbutton">${rel ? "9" : "W" }</button>
+                    <button inert class="pushbutton pushbutton_null">🌐</button>
+                    <button onClick=${() => this.reqFreezeAtActorWatcher("E" ) } class="pushbutton">${rel ? "3" : "E "}</button>
+                    <button inert class="pushbutton pushbutton_null">__</button>
+                    <span>dist: <input style="width: 60px;" type="number" placeholder="20" size="4" min="-10000" max="10000" step="any" ref=${this.dist} />m</span>
+
+                    <br/>
+                    <button onClick=${() => this.reqFreezeAtActorWatcher("SW") } class="pushbutton">${rel ? "↗" : "SW"}</button>
+                    <button onClick=${() => this.reqFreezeAtActorWatcher("S" ) } class="pushbutton">${rel ? "6" : "S" }</button>
+                    <button onClick=${() => this.reqFreezeAtActorWatcher("SE") } class="pushbutton">${rel ? "↖" : "SE"}</button>
+                    <button inert class="pushbutton pushbutton_null">__</button>
+                    <span>elev: <input style="width: 60px;" type="number" placeholder="5" size="4" min="-10000" max="10000" step="any" ref=${this.elev} />m</span>
+
+                    <!--<button title="camera::toggleFreeze()" onClick=${() => this.reqToggleFreeze() } class="pushbutton" style="transform: rotate(-45deg);">⟵45°</button>-->
                 </div>
             `;
         }
@@ -341,17 +377,19 @@
                     </label>
                     <br />
 
-                    <button title="pause::doFreezeMask(false); // end pause freezing" onClick=${() => this.do_unfreeze() } class="pushbutton">\u23f5</button>
-                    <button title="pause::freezeMask(0, 0, 0, 0); // force unpause" onClick=${() => this.do_freeze_nopause() } class="pushbutton">0</button>
                     <select ref=${this.pausenameref} onChange=${this.on_select_pause}>
-                        <option disabled>[PauseRequest]</option>
+                        <optgroup label="PauseRequest">
                         ${PauseHacks.PauseReqOptions}
-                        <option disabled>[PauseTarget]</option>
+                        </optgroup>
+                        <optgroup label="PauseTarget">
                         ${PauseHacks.PauseTargetOptions}
+                        </optgroup>
                     </select>
                     <button title=${reqFreezeTitle} onClick=${() => this.do_freeze_selection() } class="pushbutton">\u23f8</button>
-                    <button style=${reqStyle} title=${reqTitle} onClick=${() => this.do_requestPause() } class="pushbutton inc">+</button>
+                    <button title="pause::doFreezeMask(false); // end pause freezing" onClick=${() => this.do_unfreeze() } class="pushbutton">\u23f5</button>
+                    <button title="pause::freezeMask(0, 0, 0, 0); // force unpause" onClick=${() => this.do_freeze_nopause() } class="pushbutton">0</button>
                     <button style=${reqStyle} title=${relTitle} onClick=${() => this.do_releasePause() } class="pushbutton dec">-</button>
+                    <button style=${reqStyle} title=${reqTitle} onClick=${() => this.do_requestPause() } class="pushbutton inc">+</button>
                 </div>
             `;
         }
@@ -1111,7 +1149,7 @@
             <section class="toolset_memutils_controller">
                 <${PauseHacks} />
                 <${CameraHacks} />
-                <div class="hexdump">
+                <div class="hexdump" style="margin-top: 8px;">
                     HexDump
                     <${HexDumpSlot} slot_i=0 />
                     <${HexDumpSlot} slot_i=1 />

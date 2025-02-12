@@ -674,7 +674,7 @@ namespace lotuskit::script::globals {
             // camera hacks
             asErrno = engine->RegisterGlobalFunction("void toggleFreeze()", AngelScript::asFUNCTION(lotuskit::util::camera::toggleFreeze), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
             asErrno = engine->RegisterGlobalFunction("void freeze(float, float, float, double, double, double, double, double, double)", AngelScript::asFUNCTION(lotuskit::util::camera::freeze333), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
-            // FIXME trash freeze binding
+            asErrno = engine->RegisterGlobalFunction("void freezeAtActorWatcher(index_t, float, const Vector3f &in, float, bool, bool)", AngelScript::asFUNCTION(lotuskit::util::camera::freezeAtActorWatcher), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
             asErrno = engine->RegisterGlobalFunction("void log()", AngelScript::asFUNCTION(lotuskit::util::camera::log), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
         /// }
 
