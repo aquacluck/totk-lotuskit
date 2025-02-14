@@ -17,6 +17,7 @@
 #include "util/event.hpp"
 #include "util/player.hpp"
 #include "util/pause.hpp"
+#include "util/world.hpp"
 using json = nlohmann::json;
 using Logger = lotuskit::Logger;
 #include <gfx/seadColor.h>
@@ -981,6 +982,18 @@ namespace lotuskit::script::globals {
         //asErrno = engine->RegisterGlobalFunction("void setVel(float, float, float)", AngelScript::asFUNCTION(lotuskit::util::player::setLinearVelocityXYZ), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
     }
 
+    void registerWorldUtil(AngelScript::asIScriptEngine* engine) {
+        s32 asErrno;
+        engine->SetDefaultNamespace("world");
+        asErrno = engine->RegisterGlobalFunction("void setWeather(u32 weather, bool isImmTrans=true)", AngelScript::asFUNCTION(lotuskit::util::world::setWeather), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void setFogDensity(float fogDensity, float fogNear, float fogFar, bool isImmTrans=true)", AngelScript::asFUNCTION(lotuskit::util::world::setFogDensity), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void doHackFogDisable(bool)", AngelScript::asFUNCTION(lotuskit::util::world::doHackFogDisable_set), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void setTime(float seconds)", AngelScript::asFUNCTION(lotuskit::util::world::setTime), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void setTimeHM(float hours, float minutes=0)", AngelScript::asFUNCTION(lotuskit::util::world::setTimeHM), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void setTimeDHMS(float days, float hours=0, float minutes=0, float seconds=0)", AngelScript::asFUNCTION(lotuskit::util::world::setTimeDHMS), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void setWind(float azimuth, float elevation, float speed, bool isImmTrans=true)", AngelScript::asFUNCTION(lotuskit::util::world::setWind), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+    }
+
     void registerPauseUtil(AngelScript::asIScriptEngine* engine) {
         s32 asErrno;
         engine->SetDefaultNamespace("pause");
@@ -1017,6 +1030,7 @@ namespace lotuskit::script::globals {
         registerEvent(engine);
         registerPlayerUtil(engine);
         registerPauseUtil(engine);
+        registerWorldUtil(engine);
     }
 
 } // ns
