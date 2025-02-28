@@ -923,7 +923,7 @@
                 const req = html`<button title="event::requestSimple(string)" onClick=${() => this.do_request(flowchartName) }>req</button>`;
 
                 return html`<div key=${flowchartName} class="fuzzysort_results_item">
-                    <div class="eventflow">${flowchartName} ${copy}${req}</div>
+                    <div class="eventflow">${eventflow} ${copy}${req}</div>
                     <hr />
                 </div>`;
             });
@@ -941,8 +941,110 @@
             return html`
                 <div class="Event_NameList_Search size_${state.ui_size}">
                     <button title="Expand/Collapse" onClick=${ () => this.toggle_size() }>${ state.ui_size == "medium" ? "[-]" : "[+]" }</button>
-                    <label class="size_small_hidden" for="Event_NameList_Search">EventDB </label>
+                    <label class="size_small_hidden" for="Event_NameList_Search__fuzzy_input_ref">EventDB </label>
                     <input onInput=${this.do_search_change} placeholder="DmF_SY_Camp" size=${fuzzyWidth} ref=${this.fuzzy_input_ref} id="Event_NameList_Search__fuzzy_input_ref" />
+                    ${this.render_fuzzysort_results_dialog(props, state)}
+                </div>
+            `;
+        }
+    };
+
+    class GMDHash_InfoList_Search extends Component {
+        constructor() {
+            super();
+            this.fuzzysort_impl = undefined;
+            this.state = {
+                ui_size: "medium",
+                fuzzysort_query: "",
+                fuzzysort_results: [],
+            };
+            this.fuzzy_input_ref = createRef();
+        }
+
+        async get_fuzzysort() {
+            if (!this.fuzzysort_impl) {
+                const mod = await import("/assets/data/GMDHash_InfoList.mjs");
+                this.fuzzysort_impl = mod.GMDHash_InfoList_prepare_fuzzysort(fuzzysort);
+            }
+            return this.fuzzysort_impl;
+        }
+
+        toggle_size() {
+            this.setState({ui_size: this.state.ui_size == "medium" ? "small" : "medium"});
+        }
+
+        do_search_clear = () => {
+            this.setState({fuzzysort_query: "", fuzzysort_results: []});
+        }
+
+        do_search_change = async (e) => {
+            let q = e.currentTarget.value.toString().trim();
+            if (!q || q.length < 3) { return this.do_search_clear(); }
+            if (parseInt(q, 10) == q) { q = "0x" + parseInt(q, 10).toString(16); } // map ints to hex
+
+            const fzimpl = await this.get_fuzzysort(); // defer preparing search until first use
+            const fuzzysort_results = fuzzysort.go(q, fzimpl, {
+                keys: ["hex", "key"],
+                threshold: 0.4, // uses "score", different from the negative "_score"! https://github.com/farzher/fuzzysort/issues/135
+            });
+            //console.log(q, fuzzysort_results);
+            this.setState({fuzzysort_query: q, fuzzysort_results: fuzzysort_results});
+        }
+
+        //do_request(flowchartName) { console.log("uhh"); return; AngelScript.exec(`event::requestSimple("${flowchartName}");`); }
+
+        render_fuzzysort_results_dialog(props, state) {
+            if (!state.fuzzysort_query) { return ""; }
+
+            const items = state.fuzzysort_results.map(fz => {
+                // fz.obj is the (prepared) underlying matched object, so fz.obj.key.target is a const value like "Pouch"
+
+                const hash = fz.obj.hash.target;
+                const hexLabel = fz[0].target ? html`<label class="copy_fake_target" dangerouslySetInnerHTML=${{ __html: fz[0].highlight() }}></label>` : html`<label class="copy_fake_target">${fz.obj.hex.target}</label>`;
+
+                const key = fz.obj.key ? fz.obj.key.target : undefined;
+                let keyLabel = key || "[unknown]";
+                keyLabel = fz[1].target ? html`<span class="copy_fake_target" dangerouslySetInnerHTML=${{ __html: fz[1].highlight() }}></span>` : html`<span class="copy_fake_target">${keyLabel}</span>`;
+
+                // HACK setting innerHTML violates vdom
+                const copyHex = html`<button class="copy" title="copy" onClick=${e => { navigator.clipboard.writeText(fz.obj.hex.target); e.target.innerHTML = "✅"; }}>📋</button>`;
+                const copyKey = html`<button class="copy" title="copy" onClick=${e => { navigator.clipboard.writeText(key); e.target.innerHTML = "✅"; }}>📋</button>`;
+                //const req = html`<button title="uhh" onClick=${() => this.do_request(keyLabel) }>req</button>`;
+
+                const commentDiv = fz.obj.comment ? html`<div><label>// ${fz.obj.comment.target}</label></div>` : "";
+                const typesDiv = fz.obj.types ? html`<div><label>Types: ${fz.obj.types.target}</label></div>` : "";
+                const owners = fz.obj.owners ? fz.obj.owners.target : undefined;
+                const members = fz.obj.members ? fz.obj.members.target : undefined;
+                const ownersDiv = owners ? html`<div><label>Owners: </label>${owners}</div>` : "";
+                const membersDiv = members ? html`<div><label>Members: </label>${members}</div>` : "";
+
+                return html`<div key=${fz.obj.hash.target} class="fuzzysort_results_item">
+                    <div class="hashinfo">
+                        ${hexLabel} ${copyHex} ${keyLabel} ${copyKey}
+                        ${commentDiv}
+                        ${typesDiv}
+                        ${ownersDiv}
+                        ${membersDiv}
+                    </div>
+                    <hr />
+                </div>`;
+            });
+
+            return html`
+                <${SimpleWindow} onClose=${this.do_search_clear}>
+                    GameData hashes like "${state.fuzzysort_query}" (${state.fuzzysort_results.length}):<br />
+                    <div class="fuzzysort_results content">${items}</div>
+                </${SimpleWindow}>
+            `;
+        }
+
+        render(props, state) {
+            const fuzzyWidth = state.ui_size == "medium" ? 20 : 4;
+            return html`
+                <div class="GMDHash_InfoList_Search size_${state.ui_size}">
+                    <button title="Expand/Collapse" onClick=${ () => this.toggle_size() }>${ state.ui_size == "medium" ? "[-]" : "[+]" }</button>
+                    <label class="size_small_hidden" for="GMDHash_InfoList_Search__fuzzy_input_ref">GMDHash </label>
+                    <input onInput=${this.do_search_change} placeholder="TripMaster" size=${fuzzyWidth} ref=${this.fuzzy_input_ref} id="GMDHash_InfoList_Search__fuzzy_input_ref" />
                     ${this.render_fuzzysort_results_dialog(props, state)}
                 </div>
             `;
@@ -1165,6 +1267,7 @@
                 <div class="qc">
                     <${Actor_MasterList_Search} />
                     <${Event_NameList_Search} />
+                    <${GMDHash_InfoList_Search} />
                     <${AngelScriptNotebook} />
                     <${ModConnectionUI} />
                 </div>

@@ -52,7 +52,7 @@
 - Watertoon's type+symbol+ainb documentation, and so much more
 - build + hooking + much more thanks to [exlaunch](https://github.com/shadowninja108/exlaunch) by shadow, licensed under GPL2
 - build + name thanks to [LunaKit](https://github.com/Amethyst-szs/smo-lunakit) by Amethyst, licensed under GPL2. Thanks [CraftyBoss](https://github.com/CraftyBoss), [Sanae](https://github.com/Sanae6), [exlaunch-cmake](https://github.com/EngineLessCC/exlaunch-cmake/), [oss-rtld](https://github.com/Thog/oss-rtld) for their contributions or references used in LunaKit.
-- Phil + TOTK Data Collection community for: actor list, recall+camera+lotus icons
+- TOTK Data Collection community (including Phil, savage13, Echocolat, MrCheeze, McSpazzy, Marc Robledo, leoetlino, Exincracci, HylianLZ, Karlos007, and more) for: actor list, recall+camera+lotus icons, gamedata hashes
 - lessons from inspecting MaxLastBreath's [UltraCam](https://github.com/MaxLastBreath/TOTK-mods/) binaries
 - influences from the [baritone](https://github.com/cabaletta/baritone) and [STROOP](https://github.com/SM64-TAS-ABC/STROOP) projects
 - socket bits+pieces+reference from the [Atmosphere project](https://github.com/Atmosphere-NX/Atmosphere) licensed under GPL2

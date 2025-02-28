@@ -14,6 +14,8 @@
 #include "util/actor.hpp"
 #include "util/camera.hpp"
 #include "util/color.hpp"
+#include "util/gamedata.hpp"
+#include "util/hash.hpp"
 #include "util/event.hpp"
 #include "util/player.hpp"
 #include "util/pause.hpp"
@@ -994,6 +996,73 @@ namespace lotuskit::script::globals {
         asErrno = engine->RegisterGlobalFunction("void setWind(float azimuth, float elevation, float speed, bool isImmTrans=true)", AngelScript::asFUNCTION(lotuskit::util::world::setWind), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
     }
 
+    void registerGameDataUtil(AngelScript::asIScriptEngine* engine) {
+        s32 asErrno;
+        engine->SetDefaultNamespace("gamedata");
+
+        asErrno = engine->RegisterGlobalFunction("u32 getEnum(u32 hash, u32 default_=0, bool direct=false)", AngelScript::asFUNCTION(lotuskit::util::gamedata::getEnum), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("u32 getEnum(const string &in key, u32 default_=0, bool direct=false)", AngelScript::asFUNCTION(lotuskit::util::gamedata::getEnumKey), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void setEnum(u32, u32)", AngelScript::asFUNCTION(lotuskit::util::gamedata::setEnum), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void setEnum(const string &in, u32)", AngelScript::asFUNCTION(lotuskit::util::gamedata::setEnumKey), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+
+        // TODO EnumArray?
+        // TODO Structs
+        // TODO Binary, BinaryArray?
+
+        asErrno = engine->RegisterGlobalFunction("bool getBool(u32 hash, bool default_=false, bool direct=false)", AngelScript::asFUNCTION(lotuskit::util::gamedata::getBool), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("bool getBool(const string &in key, bool default_=false, bool direct=false)", AngelScript::asFUNCTION(lotuskit::util::gamedata::getBoolKey), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void setBool(u32, bool)", AngelScript::asFUNCTION(lotuskit::util::gamedata::setBool), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void setBool(const string &in, bool)", AngelScript::asFUNCTION(lotuskit::util::gamedata::setBoolKey), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+
+        // TODO BoolArray?
+
+        // TODO
+        //bool getBool64bitKey(u64 hash, bool default_=false, bool direct=false);
+        //bool getBool64bitKeyKey(const std::string& key, bool default_=false, bool direct=false);
+        //void setBool64bitKey(u64 hash, bool value);
+        //void setBool64bitKeyKey(const std::string& key, bool value);
+
+        // TODO boolexp
+
+        // TODO SaveTypeHash?
+
+        asErrno = engine->RegisterGlobalFunction("s32 getInt(u32 hash, s32 default_=0, bool direct=false)", AngelScript::asFUNCTION(lotuskit::util::gamedata::getInt), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("s32 getInt(const string &in key, s32 default_=0, bool direct=false)", AngelScript::asFUNCTION(lotuskit::util::gamedata::getIntKey), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void setInt(u32, s32)", AngelScript::asFUNCTION(lotuskit::util::gamedata::setInt), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void setInt(const string &in, s32)", AngelScript::asFUNCTION(lotuskit::util::gamedata::setIntKey), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+
+        // TODO IntArray
+
+        asErrno = engine->RegisterGlobalFunction("u32 getUInt(u32 hash, u32 default_=0, bool direct=false)", AngelScript::asFUNCTION(lotuskit::util::gamedata::getUInt), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("u32 getUInt(const string &in key, u32 default_=0, bool direct=false)", AngelScript::asFUNCTION(lotuskit::util::gamedata::getUIntKey), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void setUInt(u32, u32)", AngelScript::asFUNCTION(lotuskit::util::gamedata::setUInt), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void setUInt(const string &in, u32)", AngelScript::asFUNCTION(lotuskit::util::gamedata::setUIntKey), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+
+        // TODO UIntArray
+
+        // TODO Int64, Int64Array?
+
+        asErrno = engine->RegisterGlobalFunction("float getFloat(u32 hash, float default_=0, bool direct=false)", AngelScript::asFUNCTION(lotuskit::util::gamedata::getFloat), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("float getFloat(const string &in key, float default_=0, bool direct=false)", AngelScript::asFUNCTION(lotuskit::util::gamedata::getFloatKey), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void setFloat(u32, float)", AngelScript::asFUNCTION(lotuskit::util::gamedata::setFloat), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void setFloat(const string &in, float)", AngelScript::asFUNCTION(lotuskit::util::gamedata::setFloatKey), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+
+        // TODO FloatArray
+        // TODO Vector2, Vector2Array, Vector3, Vector3Array?
+        // TODO Vector3f
+        // TODO StringArray, String16, String16Array, String32, String32Array?
+        // TODO String64, String64Array
+        // TODO WString16, WString16Array, WString32, WString32Array, WString64, WString64Array?
+
+    }
+
+    void registerHashUtil(AngelScript::asIScriptEngine* engine) {
+        s32 asErrno;
+        engine->SetDefaultNamespace(""); // root
+
+        asErrno = engine->RegisterGlobalFunction("u32 murmur32(const string &in)", AngelScript::asFUNCTION(lotuskit::util::hash::murmur32), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+    }
+
     void registerPauseUtil(AngelScript::asIScriptEngine* engine) {
         s32 asErrno;
         engine->SetDefaultNamespace("pause");
@@ -1030,6 +1099,8 @@ namespace lotuskit::script::globals {
         registerEvent(engine);
         registerPlayerUtil(engine);
         registerPauseUtil(engine);
+        registerGameDataUtil(engine);
+        registerHashUtil(engine);
         registerWorldUtil(engine);
     }
 
