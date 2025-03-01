@@ -37,6 +37,9 @@ namespace lotuskit::script::globals {
         ::engine::actor::ActorBase* PlayerCamera = nullptr;
         ::engine::actor::ActorBase* EventCamera = nullptr;
     } // ns
+    namespace MathConst {
+        double PI = M_PI;
+    }
     namespace Vector2fStatic {
         // XXX AS RegisterGlobalProperty won't let these be const?
         sead::Vector2f STICK_ZERO(0, 0);
@@ -394,6 +397,9 @@ namespace lotuskit::script::globals {
         asErrno = engine->RegisterTypedef("flagset_t", "uint64"); assert(asErrno >= 0);
         asErrno = engine->RegisterTypedef("f16", "uint16"); assert(asErrno >= 0); // AS has no half floats, just to preserve context/compat
         asErrno = engine->RegisterTypedef("f16_fake", "uint16"); assert(asErrno >= 0);
+
+        asErrno = engine->RegisterGlobalProperty("const double PI", &MathConst::PI); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalProperty("const double M_PI", &MathConst::PI); assert(asErrno >= 0);
     }
 
     void registerContainers(AngelScript::asIScriptEngine* engine) {
@@ -855,6 +861,12 @@ namespace lotuskit::script::globals {
                 AngelScript::asFUNCTION(lotuskit::tas::Playback::doSkipLoadingPause),
                 AngelScript::asCALL_CDECL
             ); assert( asErrno >= 0 );
+
+            // camera-independent movement
+            asErrno = engine->RegisterGlobalFunction("void doLStickAbsoluteVanilla()", AngelScript::asFUNCTION(lotuskit::util::player::doLStickAbsoluteVanilla), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+            asErrno = engine->RegisterGlobalFunction("void doLStickAbsoluteRadOffset(float=PI)", AngelScript::asFUNCTION(lotuskit::util::player::doLStickAbsoluteRadOffset_set), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+            asErrno = engine->RegisterGlobalFunction("void doLStickAbsoluteTargetPos(const Vector3f& in)", AngelScript::asFUNCTION(lotuskit::util::player::doLStickAbsoluteTargetPos_set), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+            asErrno = engine->RegisterGlobalFunction("void doLStickAbsoluteTargetActorWatcher(index_t)", AngelScript::asFUNCTION(lotuskit::util::player::doLStickAbsoluteTargetActorWatcher_set), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
 
         /// }
     }

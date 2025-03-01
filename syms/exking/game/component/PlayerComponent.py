@@ -13,3 +13,9 @@ EXKING("game::component::PlayerComponent::setLinearVelocity", {
     TOTK_121: 0x01621cbc,
 })
 
+EXKING("game::component::PlayerComponent::getLeftStickRadianCameraStandard", {
+    TOTK_100: 0x00bf476c,
+    TOTK_110: 0x00c1a99c,
+    TOTK_121: 0x00c4fd6c,
+})
+

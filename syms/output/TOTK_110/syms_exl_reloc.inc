@@ -60,6 +60,7 @@
 { util::ModuleIndex::Main, 0x01d9d014, "game::ai::execute::ExecutePlayerWhistle::enterImpl_" },
 { util::ModuleIndex::Main, 0x00cdb894, "game::component::GameCameraParam::HACK_cameraCalc" },
 { util::ModuleIndex::Main, 0x00803640, "game::component::PlayerComponent::checkContactMiasma" },
+{ util::ModuleIndex::Main, 0x00c1a99c, "game::component::PlayerComponent::getLeftStickRadianCameraStandard" },
 { util::ModuleIndex::Main, 0x0163066c, "game::component::PlayerComponent::setLinearVelocity" },
 { util::ModuleIndex::Main, 0x00af225c, "game::wm::WorldManagerModule::baseProcExe" },
 { util::ModuleIndex::Main, 0x0096a528, "game::wm::WorldManagerModule::fogDisable_HACK" },

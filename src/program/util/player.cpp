@@ -1,14 +1,16 @@
 #include "exlaunch.hpp"
+#include <nn/hid.h>
+#include "ActorWatcher.hpp"
 #include "HexDump.hpp"
 #include "TextWriter.hpp"
 #include "script/globals.hpp"
 #include "structs/engineActor.hpp"
 #include "structs/gameComponent.hpp"
+#include "tas/Playback.hpp"
+#include "tas/Record.hpp"
 #include "util/actor.hpp"
 #include "util/player.hpp"
 
-
-// XXX WIP nothing in here is very useful yet
 
 namespace lotuskit::util::player {
 
@@ -269,7 +271,52 @@ namespace lotuskit::util::player {
         }
     } // ns
 
+    HOOK_DEFINE_TRAMPOLINE(PlayerComponentGetLeftStickRadianCameraStandardHook) {
+        static constexpr auto s_name = "game::component::PlayerComponent::getLeftStickRadianCameraStandard";
+        static float Callback(void* pc) {
+            float vanilla = Orig(pc); // TODO overwrite this or find where it's assigned? idk if this func is the only reader
+            //lotuskit::TextWriter::printf(0, "mLeftStickRadianCameraStandard: %f\n", vanilla);
+            if (doLStickAbsoluteMode == 0) {
+                return vanilla;
+            }
+
+            /// XXX copypasta from InputDisplay: get effective LStick
+            // copy human input: contains latest polled input even when not recording
+            nn::hid::NpadBaseState input = {0};
+            std::memcpy((void*)&(input.mButtons), (void*)&(lotuskit::tas::Record::currentInput.buttons), 24);
+            // alter/override/passthrough according to current options
+            lotuskit::tas::Playback::applyCurrentInput(&input);
+            s32 LX = input.mAnalogStickL.mX;
+            s32 LY = input.mAnalogStickL.mY;
+            /// XXX end tasty pasta
+            const float lrad = atan2(-LX, LY);
+
+            if (doLStickAbsoluteMode == 1) {
+                //lotuskit::TextWriter::printf(0, "lrad %f, doLStickAbsoluteRadOffset %f\n", lrad, doLStickAbsoluteRadOffset);
+                return lrad + doLStickAbsoluteRadOffset;
+            }
+            if (doLStickAbsoluteMode == 2) {
+                auto player = lotuskit::script::globals::ResidentActors::Player;
+                float dx = doLStickAbsoluteTargetPos.x - player->mPosition.x;
+                float dz = -(doLStickAbsoluteTargetPos.z - player->mPosition.z);
+                return lrad + atan2(-dx, dz) + M_PI;
+            }
+            if (doLStickAbsoluteMode == 3) {
+                auto player = lotuskit::script::globals::ResidentActors::Player;
+                auto target = lotuskit::ActorWatcher::getSlotActor(doLStickAbsoluteTargetActorWatcher);
+                if (target == nullptr) { return vanilla; } // XXX warn?
+                float dx = target->mPosition.x - player->mPosition.x;
+                float dz = -(target->mPosition.z - player->mPosition.z);
+                return lrad + atan2(-dx, dz) + M_PI;
+            }
+
+            //lotuskit::TextWriter::printf(0, "[assert] unreachable, using vanilla %f\n", vanilla);
+            return vanilla;
+        }
+    };
+
     void InstallHooks() {
+        PlayerComponentGetLeftStickRadianCameraStandardHook::Install();
         //MovementDebugHooks::Install();
     }
 
