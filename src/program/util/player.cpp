@@ -331,6 +331,12 @@ namespace lotuskit::util::player {
                 float dx = target->mPosition.x - player->mPosition.x;
                 float dz = -(target->mPosition.z - player->mPosition.z);
                 ctx->S[si] = lrad + atan2(-dx, dz) + M_PI;
+
+            } else if (doLStickAbsoluteMode == 5) {
+                auto player = lotuskit::script::globals::ResidentActors::Player;
+                sead::Vector3f rot = {0, 0, 0};
+                player->mRotation.makeR(rot);
+                ctx->S[si] = lrad + rot.y;
             }
         }
     };

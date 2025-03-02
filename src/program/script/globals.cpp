@@ -868,6 +868,7 @@ namespace lotuskit::script::globals {
             asErrno = engine->RegisterGlobalFunction("void doLStickAbsoluteTargetPos(const Vector3f& in)", AngelScript::asFUNCTION(lotuskit::util::player::doLStickAbsoluteTargetPos_set), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
             asErrno = engine->RegisterGlobalFunction("void doLStickAbsoluteTargetActorWatcher(index_t)", AngelScript::asFUNCTION(lotuskit::util::player::doLStickAbsoluteTargetActorWatcher_set), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
             asErrno = engine->RegisterGlobalFunction("void doLStickAbsoluteCameraFreeze()", AngelScript::asFUNCTION(lotuskit::util::player::doLStickAbsoluteCameraFreeze), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+            asErrno = engine->RegisterGlobalFunction("void doLStickAbsolutePlayer()", AngelScript::asFUNCTION(lotuskit::util::player::doLStickAbsolutePlayer), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
 
         /// }
     }
