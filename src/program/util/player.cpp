@@ -271,14 +271,37 @@ namespace lotuskit::util::player {
         }
     } // ns
 
-    HOOK_DEFINE_TRAMPOLINE(PlayerComponentGetLeftStickRadianCameraStandardHook) {
-        static constexpr auto s_name = "game::component::PlayerComponent::getLeftStickRadianCameraStandard";
-        static float Callback(void* pc) {
-            float vanilla = Orig(pc); // TODO overwrite this or find where it's assigned? idk if this func is the only reader
-            //lotuskit::TextWriter::printf(0, "mLeftStickRadianCameraStandard: %f\n", vanilla);
-            if (doLStickAbsoluteMode == 0) {
-                return vanilla;
+    HOOK_DEFINE_INLINE(ExecutePlayerCalcStick_CameraHook) {
+        static constexpr auto s_name = "game::ai::execute::ExecutePlayerCalcStick::updateImpl_::HACK_Camera";
+        static void Callback(exl::hook::InlineFloatCtx* ctx) {
+            constexpr auto sx = 11; // for 100, 110, 121
+            constexpr auto sz = 8; // for 100, 110, 121
+
+            // dump
+            doLStickAbsoluteCameraFreezeXDump = ctx->S[sx];
+            doLStickAbsoluteCameraFreezeZDump = ctx->S[sz];
+            if (doLStickAbsoluteMode == 4) {
+                // freeze
+                ctx->S[sx] = doLStickAbsoluteCameraFreezeX;
+                ctx->S[sz] = doLStickAbsoluteCameraFreezeZ;
             }
+        }
+    };
+
+    HOOK_DEFINE_INLINE(ExecutePlayerCalcStick_WriteLeftStickRadianCameraStandardHook) {
+        static constexpr auto s_name = "game::ai::execute::ExecutePlayerCalcStick::updateImpl_::HACK_WriteLeftStickRadianCameraStandard";
+        static void Callback(exl::hook::InlineFloatCtx* ctx) {
+            if (doLStickAbsoluteMode == 0) { return; } // vanilla/nop
+            if (doLStickAbsoluteMode == 4) { return; } // nop here, done in CameraHook
+#ifdef TOTK_100
+            constexpr auto si = 15;
+#endif
+#ifdef TOTK_110
+            constexpr auto si = 15;
+#endif
+#ifdef TOTK_121
+            constexpr auto si = 2;
+#endif
 
             /// XXX copypasta from InputDisplay: get effective LStick
             // copy human input: contains latest polled input even when not recording
@@ -293,30 +316,28 @@ namespace lotuskit::util::player {
 
             if (doLStickAbsoluteMode == 1) {
                 //lotuskit::TextWriter::printf(0, "lrad %f, doLStickAbsoluteRadOffset %f\n", lrad, doLStickAbsoluteRadOffset);
-                return lrad + doLStickAbsoluteRadOffset;
-            }
-            if (doLStickAbsoluteMode == 2) {
+                ctx->S[si] = lrad + doLStickAbsoluteRadOffset;
+
+            } else if (doLStickAbsoluteMode == 2) {
                 auto player = lotuskit::script::globals::ResidentActors::Player;
                 float dx = doLStickAbsoluteTargetPos.x - player->mPosition.x;
                 float dz = -(doLStickAbsoluteTargetPos.z - player->mPosition.z);
-                return lrad + atan2(-dx, dz) + M_PI;
-            }
-            if (doLStickAbsoluteMode == 3) {
+                ctx->S[si] = lrad + atan2(-dx, dz) + M_PI;
+
+            } else if (doLStickAbsoluteMode == 3) {
                 auto player = lotuskit::script::globals::ResidentActors::Player;
                 auto target = lotuskit::ActorWatcher::getSlotActor(doLStickAbsoluteTargetActorWatcher);
-                if (target == nullptr) { return vanilla; } // XXX warn?
+                if (target == nullptr) { return; } // XXX warn?
                 float dx = target->mPosition.x - player->mPosition.x;
                 float dz = -(target->mPosition.z - player->mPosition.z);
-                return lrad + atan2(-dx, dz) + M_PI;
+                ctx->S[si] = lrad + atan2(-dx, dz) + M_PI;
             }
-
-            //lotuskit::TextWriter::printf(0, "[assert] unreachable, using vanilla %f\n", vanilla);
-            return vanilla;
         }
     };
 
     void InstallHooks() {
-        PlayerComponentGetLeftStickRadianCameraStandardHook::Install();
+        ExecutePlayerCalcStick_CameraHook::Install();
+        ExecutePlayerCalcStick_WriteLeftStickRadianCameraStandardHook::Install();
         //MovementDebugHooks::Install();
     }
 

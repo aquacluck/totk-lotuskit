@@ -56,6 +56,8 @@
 { util::ModuleIndex::Main, 0x008111a8, "engine::steal_heap" },
 { util::ModuleIndex::Main, 0x006feea8, "engine::util::HashMurmur32" },
 { util::ModuleIndex::Main, 0x008ce618, "game::actor::GameActor::getComponent<game::component::PlayerComponent>" },
+{ util::ModuleIndex::Main, 0x01cd04e8, "game::ai::execute::ExecutePlayerCalcStick::updateImpl_::HACK_Camera" },
+{ util::ModuleIndex::Main, 0x01cd0798, "game::ai::execute::ExecutePlayerCalcStick::updateImpl_::HACK_WriteLeftStickRadianCameraStandard" },
 { util::ModuleIndex::Main, 0x01d151a0, "game::ai::execute::ExecutePlayerReverseRecorder::updateImpl_::state0" },
 { util::ModuleIndex::Main, 0x01d2e1c4, "game::ai::execute::ExecutePlayerWhistle::enterImpl_" },
 { util::ModuleIndex::Main, 0x00c7de84, "game::component::GameCameraParam::HACK_cameraCalc" },

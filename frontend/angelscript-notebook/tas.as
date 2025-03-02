@@ -200,6 +200,7 @@ tas::doLStickAbsoluteVanilla(); // nop
 tas::doLStickAbsoluteRadOffset(PI); // up is north (default arg)
 tas::doLStickAbsoluteTargetPos(Vector3f(26, 0, 1500));
 tas::doLStickAbsoluteTargetActorWatcher(1); // up is toward ActorWatcher[i].pos
+tas::doLStickAbsoluteCameraFreeze(); // up is where the camera is pointed
 
 // that is all :) ur doing great
 
