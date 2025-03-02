@@ -1,0 +1,25 @@
+diff --git a/exlaunch/source/lib/hook/nx64/inline_impl.hpp b/exlaunch/source/lib/hook/nx64/inline_impl.hpp
+index ed3a44b..aea4ace 100644
+--- a/exlaunch/source/lib/hook/nx64/inline_impl.hpp
++++ b/exlaunch/source/lib/hook/nx64/inline_impl.hpp
+@@ -79,12 +79,19 @@ namespace exl::hook::nx64 {
+         ACCESSOR(FloatRegisterAccessor, Vector64,   Vec64,  32, m_Fr, V64);
+         ACCESSOR(FloatRegisterAccessor, Float128,   f128,   32, m_Fr, Q);
+         ACCESSOR(FloatRegisterAccessor, Float64,    f64,    32, m_Fr, D);
+-        ACCESSOR(FloatRegisterAccessor, Float32,    f32,    32, m_Fr, S);
++        //ACCESSOR(FloatRegisterAccessor, Float32,    f32,    32, m_Fr, S); // HACK for https://github.com/shadowninja108/exlaunch/issues/28
+         ACCESSOR(FloatRegisterAccessor, Float16,    f16,    32, m_Fr, H);
+         /* TODO: 8-bit floats? That's a thing? */
+         //ACCESSOR(FloatRegisterAccessor, Float8,    f8,    32, m_Fr, B);
+ 
+         #undef ACCESSOR
++        struct Float32RegisterAccessor : public FloatRegisterAccessorImpl {
++            f32& operator[](int index) {
++                EXL_ASSERT(0 <= index && index < 32, "Register index must not be out of bounds!");
++                FloatRegisters* fr = (FloatRegisters*)(((void*)&Get()) - 0x100); // rewind into m_Gpr, where asm actually stored regs
++                return fr->m_Fr[index].S;
++            }
++        };
+     }
+ 
+     struct InlineCtx {
