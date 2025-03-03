@@ -38,7 +38,20 @@ namespace lotuskit::script::globals {
         ::engine::actor::ActorBase* EventCamera = nullptr;
     } // ns
     namespace MathConst {
+        // https://www.gnu.org/software/libc/manual/html_node/Mathematical-Constants.html
+        double E = M_E;
+        double LOG2E = M_LOG2E;
+        double LOG10E = M_LOG10E;
+        double LN2 = M_LN2;
+        double LN10 = M_LN10;
         double PI = M_PI;
+        double PI_2 = M_PI_2;
+        double PI_4 = M_PI_4;
+        double m_1_PI = M_1_PI;
+        double m_2_PI = M_2_PI;
+        double m_2_SQRTPI = M_2_SQRTPI;
+        double SQRT2 = M_SQRT2;
+        double SQRT1_2 = M_SQRT1_2;
     }
     namespace Vector2fStatic {
         // XXX AS RegisterGlobalProperty won't let these be const?
@@ -398,8 +411,20 @@ namespace lotuskit::script::globals {
         asErrno = engine->RegisterTypedef("f16", "uint16"); assert(asErrno >= 0); // AS has no half floats, just to preserve context/compat
         asErrno = engine->RegisterTypedef("f16_fake", "uint16"); assert(asErrno >= 0);
 
+        // TODO extract scalar/base const registrations
+        asErrno = engine->RegisterGlobalProperty("const double E", &MathConst::E); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalProperty("const double LOG2E", &MathConst::LOG2E); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalProperty("const double LOG10E", &MathConst::LOG10E); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalProperty("const double LN2", &MathConst::LN2); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalProperty("const double LN10", &MathConst::LN10); assert(asErrno >= 0);
         asErrno = engine->RegisterGlobalProperty("const double PI", &MathConst::PI); assert(asErrno >= 0);
-        asErrno = engine->RegisterGlobalProperty("const double M_PI", &MathConst::PI); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalProperty("const double PI_2", &MathConst::PI_2); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalProperty("const double PI_4", &MathConst::PI_4); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalProperty("const double M_1_PI", &MathConst::m_1_PI); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalProperty("const double M_2_PI", &MathConst::m_2_PI); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalProperty("const double M_2_SQRTPI", &MathConst::m_2_SQRTPI); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalProperty("const double SQRT2", &MathConst::SQRT2); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalProperty("const double SQRT1_2", &MathConst::SQRT1_2); assert(asErrno >= 0);
     }
 
     void registerContainers(AngelScript::asIScriptEngine* engine) {
@@ -862,14 +887,6 @@ namespace lotuskit::script::globals {
                 AngelScript::asCALL_CDECL
             ); assert( asErrno >= 0 );
 
-            // camera-independent movement
-            asErrno = engine->RegisterGlobalFunction("void doLStickAbsoluteVanilla()", AngelScript::asFUNCTION(lotuskit::util::player::doLStickAbsoluteVanilla), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
-            asErrno = engine->RegisterGlobalFunction("void doLStickAbsoluteRadOffset(float=PI)", AngelScript::asFUNCTION(lotuskit::util::player::doLStickAbsoluteRadOffset_set), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
-            asErrno = engine->RegisterGlobalFunction("void doLStickAbsoluteTargetPos(const Vector3f& in)", AngelScript::asFUNCTION(lotuskit::util::player::doLStickAbsoluteTargetPos_set), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
-            asErrno = engine->RegisterGlobalFunction("void doLStickAbsoluteTargetActorWatcher(index_t)", AngelScript::asFUNCTION(lotuskit::util::player::doLStickAbsoluteTargetActorWatcher_set), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
-            asErrno = engine->RegisterGlobalFunction("void doLStickAbsoluteCameraFreeze()", AngelScript::asFUNCTION(lotuskit::util::player::doLStickAbsoluteCameraFreeze), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
-            asErrno = engine->RegisterGlobalFunction("void doLStickAbsolutePlayer()", AngelScript::asFUNCTION(lotuskit::util::player::doLStickAbsolutePlayer), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
-
         /// }
     }
 
@@ -991,8 +1008,17 @@ namespace lotuskit::script::globals {
     }
 
     void registerPlayerUtil(AngelScript::asIScriptEngine* engine) {
-        //s32 asErrno;
-        //engine->SetDefaultNamespace("PlayerUtil");
+        s32 asErrno;
+        engine->SetDefaultNamespace("PlayerUtil");
+
+        // camera-independent movement
+        asErrno = engine->RegisterGlobalFunction("void doLStickAbsoluteVanilla()", AngelScript::asFUNCTION(lotuskit::util::player::doLStickAbsoluteVanilla), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void doLStickAbsoluteRadOffset(float=PI)", AngelScript::asFUNCTION(lotuskit::util::player::doLStickAbsoluteRadOffset_set), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void doLStickAbsoluteTargetPos(const Vector3f& in)", AngelScript::asFUNCTION(lotuskit::util::player::doLStickAbsoluteTargetPos_set), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void doLStickAbsoluteTargetActorWatcher(index_t)", AngelScript::asFUNCTION(lotuskit::util::player::doLStickAbsoluteTargetActorWatcher_set), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void doLStickAbsoluteCameraFreeze()", AngelScript::asFUNCTION(lotuskit::util::player::doLStickAbsoluteCameraFreeze), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void doLStickAbsolutePlayer()", AngelScript::asFUNCTION(lotuskit::util::player::doLStickAbsolutePlayer), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+
         //asErrno = engine->RegisterGlobalFunction("void disableGloom(bool)", AngelScript::asFUNCTION(lotuskit::util::player::disableGloom), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
         //asErrno = engine->RegisterGlobalFunction("void setVel(const Vector3f &in)", AngelScript::asFUNCTION(lotuskit::util::player::setLinearVelocity), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
         //asErrno = engine->RegisterGlobalFunction("void setVel(float, float, float)", AngelScript::asFUNCTION(lotuskit::util::player::setLinearVelocityXYZ), AngelScript::asCALL_CDECL); assert(asErrno >= 0);

@@ -236,6 +236,11 @@
             this.relative = createRef();
             this.setState({relative: false}); // XXX should just bind state to input
 
+            // PlayerUtil LStick hacks
+            this.lstick_slot_i = createRef();
+            this.lstick_pos = createRef();
+            this.lstick_rad = createRef();
+
             WSTransport.subscribe_ns("/camera/log", this.recvCameraLog.bind(this))
         }
 
@@ -273,6 +278,26 @@
             let relative = this.relative.current.checked;
             //console.log(`camera::freezeAtActorWatcher(${slot_i}, ${dist}, Vector3f::${staticvec}, ${elev}, ${follow}, ${relative});`);
             AngelScript.exec(`camera::freezeAtActorWatcher(${slot_i}, ${dist}, Vector3f::${staticvec}, ${elev}, ${follow}, ${relative});`);
+        }
+
+        reqLStickAbsVanilla() { AngelScript.exec("PlayerUtil::doLStickAbsoluteVanilla();"); }
+        reqLStickAbsCam() { AngelScript.exec("PlayerUtil::doLStickAbsoluteCameraFreeze();"); }
+        reqLStickAbsPlayer() { AngelScript.exec("PlayerUtil::doLStickAbsolutePlayer();"); }
+        reqLStickAbsPos() {
+            let pos = this.lstick_pos.current.value || "Player.pos";
+            // promote number lists to vec, else passthrough expr
+            if(/^[0-9a-fA-Fx ,.]+$/.test(pos)) {
+                pos = `Vector3f(${pos})`;
+            }
+            AngelScript.exec(`PlayerUtil::doLStickAbsoluteTargetPos(${pos});`);
+        }
+        reqLStickAbsRad() {
+            let rad = this.lstick_rad.current.value || "PI";
+            AngelScript.exec(`PlayerUtil::doLStickAbsoluteRadOffset(${rad});`);
+        }
+        reqLStickAbsAW() {
+            let slot_i = this.lstick_slot_i.current.value || 0;
+            AngelScript.exec(`PlayerUtil::doLStickAbsoluteTargetActorWatcher(${slot_i});`);
         }
 
         render(props, state) {
@@ -319,6 +344,15 @@
                     <span><label title="camera.pos_y = target.pos_y + elev" for="camerahacks_elev">elev: </label><input id="camerahacks_elev" style="width: 60px;" type="number" placeholder="5" size="4" min="-10000" max="10000" step="any" ref=${this.elev} />m</span>
 
                     <!--<button title="camera::toggleFreeze()" onClick=${() => this.reqToggleFreeze() } class="pushbutton" style="transform: rotate(-45deg);">⟵45°</button>-->
+
+                    <br /><span style="margin-top: 12px; display: inline-block;">LStick:</span>
+                    <button title="PlayerUtil::doLStickAbsoluteVanilla(); // reset/default" onClick=${() => this.reqLStickAbsVanilla() }>\u23f5</button>
+                    <button title="PlayerUtil::doLStickAbsoluteCameraFreeze(); // hold controls based on current view" onClick=${() => this.reqLStickAbsCam() }>🎥</button>
+                    <button title="PlayerUtil::doLStickAbsolutePlayer(); // up is Link's forward" onClick=${() => this.reqLStickAbsPlayer() } style="color: #f9fc31; transform: scaleY(1.5); line-height: 14px;">⮝</button>
+                    <button style="margin-left: 8px;" class="hover_hasargs" title="PlayerUtil::doLStickAbsoluteRadOffset(rad); // up is: 0 south, PI north, -PI_2 west, +PI_2 east" onClick=${() => this.reqLStickAbsRad() }>🌐</button><input class="hover_isarg" placeholder="PI" ref=${this.lstick_rad} size=4 />
+                    <button style="margin-left: 8px;" class="hover_hasargs" title="PlayerUtil::doLStickAbsoluteTargetActorWatcher(slot_i);" onClick=${() => this.reqLStickAbsAW() }>AW[</button><input class="hover_isarg" style="width: 35px" type="number" placeholder="0" size="2" min="0" step="any" ref=${this.lstick_slot_i} /><span class="hover_isarg">]</span>
+                    <button style="margin-left: 8px;" class="hover_hasargs" title="PlayerUtil::doLStickAbsoluteTargetPos(Vector3f);" onClick=${() => this.reqLStickAbsPos() }>pos:</button><input class="hover_isarg" placeholder="x, y, z" ref=${this.lstick_pos} size=20 />
+
                 </div>
             `;
         }

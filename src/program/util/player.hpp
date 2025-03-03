@@ -7,7 +7,6 @@ namespace lotuskit::util::player {
     void InstallHooks();
     game::component::PlayerComponent* getPlayerComponent();
 
-    // XXX LStick helpers are exposed to script in tas ns, but the hooks are more appropriate in here, idk
     inline u8 doLStickAbsoluteMode = 0; // 0: vanilla, 1: radOffset, 2: targetPos, 3: targetActorWatcher, 4: freezeAtCurrentCamera, 5: Player
     inline float doLStickAbsoluteRadOffset = 0;
     inline sead::Vector3f doLStickAbsoluteTargetPos = {0, 0, 0};

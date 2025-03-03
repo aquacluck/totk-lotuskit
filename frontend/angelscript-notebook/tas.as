@@ -194,16 +194,5 @@ tas::awaitUnpauseTarget("Custom_Footprint");
 // which is completely skipped by default
 tas::doSkipLoadingPause(false);
 
-// WARNING: These are not vanilla/pure tas, they modify values in ram!
-// Hacks to adjust movement direction independent of camera/etc
-tas::doLStickAbsoluteVanilla(); // nop
-tas::doLStickAbsoluteRadOffset(PI); // up is north (default arg)
-tas::doLStickAbsoluteTargetPos(Vector3f(26, 0, 1500));
-tas::doLStickAbsoluteTargetActorWatcher(1); // up is toward ActorWatcher[i].pos
-tas::doLStickAbsoluteCameraFreeze(); // up is where the camera is pointed
-
-// (interferes with aim turn, dive turn, ...)
-tas::doLStickAbsolutePlayer(); // up is Player forward
-
 // that is all :) ur doing great
 

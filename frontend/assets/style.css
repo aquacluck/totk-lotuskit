@@ -87,6 +87,23 @@ textarea {
     background: #222;
 }
 
+.hover_hasargs:hover {
+    /* just keep extending if we need >3 args on a control */
+    outline: 1px solid #115588;
+    &+ .hover_isarg { outline: 1px solid #115588; }
+    &+ .hover_isarg + .hover_isarg { outline: 1px solid #115588; }
+    &+ .hover_isarg + .hover_isarg + .hover_isarg { outline: 1px solid #115588; }
+}
+.hover_hasargs:has(+ .hover_isarg:hover),
+.hover_hasargs:has(+ .hover_isarg + .hover_isarg:hover),
+.hover_hasargs:has(+ .hover_isarg + .hover_isarg + .hover_isarg:hover)
+{
+    outline: 1px solid #115588;
+    &+ .hover_isarg { outline: 1px solid #115588; }
+    &+ .hover_isarg + .hover_isarg { outline: 1px solid #115588; }
+    &+ .hover_isarg + .hover_isarg + .hover_isarg { outline: 1px solid #115588; }
+}
+
 :root {
     --hue-recall: 48.6; /* yellow */
     --hue-motion: 228.6; /* blue */
@@ -167,7 +184,7 @@ textarea {
 
 .toolset_rightbar {
     position: absolute;
-    height: 460px; /* FIXME trash layout -- visually holds the group before execscript and everything after just spills out */
+    height: 490px; /* FIXME trash layout -- visually holds the group before execscript and everything after just spills out */
     padding: 8px;
     background: #000;
     border: 1px solid #444;

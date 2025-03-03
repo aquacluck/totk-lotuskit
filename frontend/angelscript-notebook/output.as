@@ -41,3 +41,6 @@ HexDump::pauseSlot(0);
 // stop all dumping+drawing for slot 0
 HexDump::clearSlot(0);
 
+// see globals.cpp for all shapes+types
+PrimitiveDrawer::drawSphere4x8(0, Player.pos, 5, Color4f(0, 1, 0, 0.1), Color4f(0, 0, 1, 1));
+

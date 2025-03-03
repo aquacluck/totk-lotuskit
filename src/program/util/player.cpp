@@ -293,15 +293,7 @@ namespace lotuskit::util::player {
         static void Callback(exl::hook::InlineFloatCtx* ctx) {
             if (doLStickAbsoluteMode == 0) { return; } // vanilla/nop
             if (doLStickAbsoluteMode == 4) { return; } // nop here, done in CameraHook
-#ifdef TOTK_100
-            constexpr auto si = 15;
-#endif
-#ifdef TOTK_110
-            constexpr auto si = 15;
-#endif
-#ifdef TOTK_121
-            constexpr auto si = 2;
-#endif
+            constexpr auto si = TOTK_VERSION == 121 ? 2 : 15; // for 100, 110, 121
 
             /// XXX copypasta from InputDisplay: get effective LStick
             // copy human input: contains latest polled input even when not recording

@@ -28,12 +28,8 @@ HOOK_DEFINE_INLINE(StealHeap) {
     static constexpr auto s_name = "engine::steal_heap"; // hacks
     inline static sead::Heap* stolenHeap = nullptr;
     static void Callback(exl::hook::InlineCtx* ctx) {
-#ifdef TOTK_100
-        // TODO register annotation/aliasing instead
-        stolenHeap = reinterpret_cast<sead::Heap*>(ctx->X[19]);
-#else
-        stolenHeap = reinterpret_cast<sead::Heap*>(ctx->X[22]);
-#endif
+        constexpr auto xi = TOTK_VERSION == 100 ? 19 : 22;
+        stolenHeap = reinterpret_cast<sead::Heap*>(ctx->X[xi]);
 
         char buf[32];
         nn::util::SNPrintf(buf, sizeof(buf), "yoink(%p)", stolenHeap);
