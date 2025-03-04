@@ -261,6 +261,59 @@ namespace lotuskit::script::globals {
         void wsListen() {
             lotuskit::server::WebSocket::isInternalReqListen = true;
         }
+
+        // unchecked memory access
+        u64 ptr_from_sym(const std::string& name) {
+            return EXL_SYM_RESOLVE<u64>(name); // FIXME crashes on sym not found
+        }
+        u64 ptr_from_ActorBase(::engine::actor::ActorBase* ptr) { return (u64)ptr; }
+        u64 ptr_from_RigidBody(phive::RigidBodyBase* ptr) { return (u64)ptr; }
+        ::engine::actor::ActorBase* ptr_deref_ActorBase(::engine::actor::ActorBase* ptr) { return ptr; }
+        phive::RigidBodyBase* ptr_deref_RigidBody(phive::RigidBodyBase* ptr) { return ptr; }
+        u8  ptr_deref_u8(  u8* ptr) { return *ptr; }
+        u16 ptr_deref_u16(u16* ptr) { return *ptr; }
+        u32 ptr_deref_u32(u32* ptr) { return *ptr; }
+        u64 ptr_deref_u64(u64* ptr) { return *ptr; }
+        s8  ptr_deref_s8(  s8* ptr) { return *ptr; }
+        s16 ptr_deref_s16(s16* ptr) { return *ptr; }
+        s32 ptr_deref_s32(s32* ptr) { return *ptr; }
+        s64 ptr_deref_s64(s64* ptr) { return *ptr; }
+        float ptr_deref_float(float* ptr) { return *ptr; }
+        double ptr_deref_double(double* ptr) { return *ptr; }
+        u64 ptr_deref_ptr(u64* ptr) { return *ptr; }
+        sead::Vector2f ptr_deref_Vector2f(sead::Vector2f* ptr) { return *ptr; }
+        sead::Vector3f ptr_deref_Vector3f(sead::Vector3f* ptr) { return *ptr; }
+        sead::Matrix22f ptr_deref_Matrix22f(sead::Matrix22f* ptr) { return *ptr; }
+        sead::Matrix33f ptr_deref_Matrix33f(sead::Matrix33f* ptr) { return *ptr; }
+        sead::Matrix34f ptr_deref_Matrix34f(sead::Matrix34f* ptr) { return *ptr; }
+        sead::Matrix44f ptr_deref_Matrix44f(sead::Matrix44f* ptr) { return *ptr; }
+        sead::BoundBox2f ptr_deref_BoundBox2f(sead::BoundBox2f* ptr) { return *ptr; }
+        sead::BoundBox3f ptr_deref_BoundBox3f(sead::BoundBox3f* ptr) { return *ptr; }
+        void ptr_write_u8(  u8* ptr,  u8 v) { *ptr = v; }
+        void ptr_write_u16(u16* ptr, u16 v) { *ptr = v; }
+        void ptr_write_u32(u32* ptr, u32 v) { *ptr = v; }
+        void ptr_write_u64(u64* ptr, u64 v) { *ptr = v; }
+        void ptr_write_s8(  s8* ptr,  s8 v) { *ptr = v; }
+        void ptr_write_s16(s16* ptr, s16 v) { *ptr = v; }
+        void ptr_write_s32(s32* ptr, s32 v) { *ptr = v; }
+        void ptr_write_s64(s64* ptr, s64 v) { *ptr = v; }
+        void ptr_write_float(float* ptr, float v) { *ptr = v; }
+        void ptr_write_double(double* ptr, double v) { *ptr = v; }
+        void ptr_write_ptr(u64* ptr, u64 v) { *ptr = v; }
+        void ptr_write_Vector2f(sead::Vector2f* ptr, const sead::Vector2f& v) { *ptr = v; }
+        void ptr_write_Vector3f(sead::Vector3f* ptr, const sead::Vector3f& v) { *ptr = v; }
+        void ptr_write_Matrix22f(sead::Matrix22f* ptr, const sead::Matrix22f& v) { *ptr = v; }
+        void ptr_write_Matrix33f(sead::Matrix33f* ptr, const sead::Matrix33f& v) { *ptr = v; }
+        void ptr_write_Matrix34f(sead::Matrix34f* ptr, const sead::Matrix34f& v) { *ptr = v; }
+        void ptr_write_Matrix44f(sead::Matrix44f* ptr, const sead::Matrix44f& v) { *ptr = v; }
+        void ptr_write_BoundBox2f(sead::BoundBox2f* ptr, const sead::BoundBox2f& v) { *ptr = v; }
+        void ptr_write_BoundBox3f(sead::BoundBox3f* ptr, const sead::BoundBox3f& v) { *ptr = v; }
+        void ptr_write_string(u8* ptr, const std::string& v, bool nullTerminate) {
+            const auto n = v.length();
+            std::memcpy(ptr, v.c_str(), n);
+            if (nullTerminate) { *(ptr+n) = 0; }
+        }
+
     } // ns
 
     void textwriter_as_print(size_t drawList_i, const std::string& msg) { lotuskit::TextWriter::printf(drawList_i, msg.c_str()); }
@@ -1128,6 +1181,57 @@ namespace lotuskit::script::globals {
         asErrno = engine->RegisterGlobalFunction("bool isPauseTarget(const string &in)", AngelScript::asFUNCTION(lotuskit::util::pause::isPauseTargetStr), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
     }
 
+    void registerPtr(AngelScript::asIScriptEngine* engine) {
+        s32 asErrno;
+        engine->SetDefaultNamespace(""); // root
+
+        // unchecked memory access
+        asErrno = engine->RegisterGlobalFunction("ptr_t ptr_from_sym(const string &in)", AngelScript::asFUNCTION(sys::ptr_from_sym), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("ptr_t ptr_from_ActorBase(ActorBase@)", AngelScript::asFUNCTION(sys::ptr_from_ActorBase), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("ptr_t ptr_from_RigidBody(RigidBody@)", AngelScript::asFUNCTION(sys::ptr_from_RigidBody), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("ActorBase@ ptr_deref_ActorBase(ptr_t)", AngelScript::asFUNCTION(sys::ptr_deref_ActorBase), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("RigidBody@ ptr_deref_RigidBody(ptr_t)", AngelScript::asFUNCTION(sys::ptr_deref_RigidBody), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction( "u8 ptr_deref_u8(ptr_t)",  AngelScript::asFUNCTION(sys::ptr_deref_u8),  AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("u16 ptr_deref_u16(ptr_t)", AngelScript::asFUNCTION(sys::ptr_deref_u16), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("u32 ptr_deref_u32(ptr_t)", AngelScript::asFUNCTION(sys::ptr_deref_u32), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("u64 ptr_deref_u64(ptr_t)", AngelScript::asFUNCTION(sys::ptr_deref_u64), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction( "s8 ptr_deref_s8(ptr_t)",  AngelScript::asFUNCTION(sys::ptr_deref_s8),  AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("s16 ptr_deref_s16(ptr_t)", AngelScript::asFUNCTION(sys::ptr_deref_s16), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("s32 ptr_deref_s32(ptr_t)", AngelScript::asFUNCTION(sys::ptr_deref_s32), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("s64 ptr_deref_s64(ptr_t)", AngelScript::asFUNCTION(sys::ptr_deref_s64), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("float ptr_deref_float(ptr_t)", AngelScript::asFUNCTION(sys::ptr_deref_float), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("double ptr_deref_double(ptr_t)", AngelScript::asFUNCTION(sys::ptr_deref_double), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("ptr_t ptr_deref_ptr(ptr_t)", AngelScript::asFUNCTION(sys::ptr_deref_ptr), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("Vector2f ptr_deref_Vector2f(ptr_t)", AngelScript::asFUNCTION(sys::ptr_deref_Vector2f), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("Vector3f ptr_deref_Vector3f(ptr_t)", AngelScript::asFUNCTION(sys::ptr_deref_Vector3f), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("Matrix22f ptr_deref_Matrix22f(ptr_t)", AngelScript::asFUNCTION(sys::ptr_deref_Matrix22f), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("Matrix33f ptr_deref_Matrix33f(ptr_t)", AngelScript::asFUNCTION(sys::ptr_deref_Matrix33f), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("Matrix34f ptr_deref_Matrix34f(ptr_t)", AngelScript::asFUNCTION(sys::ptr_deref_Matrix34f), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("Matrix44f ptr_deref_Matrix44f(ptr_t)", AngelScript::asFUNCTION(sys::ptr_deref_Matrix44f), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("BoundBox2f ptr_deref_BoundBox2f(ptr_t)", AngelScript::asFUNCTION(sys::ptr_deref_BoundBox2f), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("BoundBox3f ptr_deref_BoundBox3f(ptr_t)", AngelScript::asFUNCTION(sys::ptr_deref_BoundBox3f), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void ptr_write_u8(ptr_t, u8)",   AngelScript::asFUNCTION(sys::ptr_write_u8),  AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void ptr_write_u16(ptr_t, u16)", AngelScript::asFUNCTION(sys::ptr_write_u16), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void ptr_write_u32(ptr_t, u32)", AngelScript::asFUNCTION(sys::ptr_write_u32), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void ptr_write_u64(ptr_t, u64)", AngelScript::asFUNCTION(sys::ptr_write_u64), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void ptr_write_s8(ptr_t, s8)",   AngelScript::asFUNCTION(sys::ptr_write_s8),  AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void ptr_write_s16(ptr_t, s16)", AngelScript::asFUNCTION(sys::ptr_write_s16), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void ptr_write_s32(ptr_t, s32)", AngelScript::asFUNCTION(sys::ptr_write_s32), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void ptr_write_s64(ptr_t, s64)", AngelScript::asFUNCTION(sys::ptr_write_s64), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void ptr_write_float(ptr_t, float)", AngelScript::asFUNCTION(sys::ptr_write_float), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void ptr_write_double(ptr_t, double)", AngelScript::asFUNCTION(sys::ptr_write_double), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void ptr_write_ptr(ptr_t, ptr_t)", AngelScript::asFUNCTION(sys::ptr_write_ptr), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void ptr_write_Vector2f(ptr_t, const Vector2f &in)", AngelScript::asFUNCTION(sys::ptr_write_Vector2f), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void ptr_write_Vector3f(ptr_t, const Vector3f &in)", AngelScript::asFUNCTION(sys::ptr_write_Vector3f), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void ptr_write_Matrix22f(ptr_t, const Matrix22f &in)", AngelScript::asFUNCTION(sys::ptr_write_Matrix22f), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void ptr_write_Matrix33f(ptr_t, const Matrix33f &in)", AngelScript::asFUNCTION(sys::ptr_write_Matrix33f), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void ptr_write_Matrix34f(ptr_t, const Matrix34f &in)", AngelScript::asFUNCTION(sys::ptr_write_Matrix34f), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void ptr_write_Matrix44f(ptr_t, const Matrix44f &in)", AngelScript::asFUNCTION(sys::ptr_write_Matrix44f), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void ptr_write_BoundBox2f(ptr_t, const BoundBox2f &in)", AngelScript::asFUNCTION(sys::ptr_write_BoundBox2f), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void ptr_write_BoundBox3f(ptr_t, const BoundBox3f &in)", AngelScript::asFUNCTION(sys::ptr_write_BoundBox3f), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void ptr_write_string(ptr_t, const string &in, bool nullTerminate=false)", AngelScript::asFUNCTION(sys::ptr_write_string), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+    }
+
     void registerGlobals(AngelScript::asIScriptEngine* engine) {
         registerBaseTypes(engine);
         registerContainers(engine);
@@ -1142,6 +1246,7 @@ namespace lotuskit::script::globals {
         registerGameDataUtil(engine);
         registerHashUtil(engine);
         registerWorldUtil(engine);
+        registerPtr(engine);
     }
 
 } // ns
