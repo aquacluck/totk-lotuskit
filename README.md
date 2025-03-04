@@ -61,6 +61,7 @@
 - [frontend font](https://github.com/adobe-fonts/source-code-pro) licensed under OFL
 - [preact](https://github.com/preactjs/preact) licensed under MIT and [htm](https://github.com/developit/htm) licensed under Apache2.0, sourced from [esm builds](https://esm.sh)
 - [fuzzysort](https://github.com/farzher/fuzzysort) licensed under MIT
+- aarch64 instruction decoding table from [Kito Cheng](https://kitoslab-eng.blogspot.com/2012/10/armv8-aarch64-instruction-encoding.html)
 - https://github.com/whitequark/python-itanium_demangler
 - https://github.com/fruityloops1/zeldar
 - Nintendo for the good game

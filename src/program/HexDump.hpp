@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include "TextWriter.hpp"
+#include "util/disasm.hpp"
 
 namespace lotuskit {
     enum class HexDumpDataType: u32 {
@@ -210,19 +211,20 @@ namespace lotuskit {
 
         inline static void textwriter_printf_code_aarch64(size_t drawList_i, void* backingSrc, void* src_, u32 lines=1, bool formatHex=true) { // XXX formatHex nop
             u8* src = (u8*)src_;
-            //char inst[65]; inst[64] = 0;
-            const char* inst = "tbnz   w8,#0x0,LAB_NZNUTS_GOTTEM_LMAO"; // TODO
+            const auto n = lotuskit::util::disasm::MNM_OUT_MAX_SIZE;
+            char inst[n+1]; inst[n] = 0;
             s64 lineMainOffset = (s64)(backingSrc - exl::util::GetMainModuleInfo().m_Total.m_Start);
             while (lines--) {
+                lotuskit::util::disasm::u32_to_str_mnemonic(*((u32*)src), (char*)inst);
                 if (lineMainOffset >= 0 && lineMainOffset <= 0xffffffff) {
                     lotuskit::TextWriter::printf(drawList_i,
                         "main+%08x | %02x %02x %02x %02x  %s\n",
-                        lineMainOffset, src[0], src[1], src[2], src[3], inst
+                        lineMainOffset, src[0], src[1], src[2], src[3], (char*)inst
                     );
                 } else {
                     lotuskit::TextWriter::printf(drawList_i,
                         "%p | %02x %02x %02x %02x  %s\n",
-                        backingSrc, src[0], src[1], src[2], src[3], inst
+                        backingSrc, src[0], src[1], src[2], src[3], (char*)inst
                     );
                 }
                 lineMainOffset += 4;
