@@ -33,6 +33,7 @@ ptr_t somewhere = 0x3331337; // pointers are fake
 
 // 4 lines dumped+drawn each frame (sizes must be multiples of 0x10 or 16)
 // dump and draw sizes should usually be the same
+// (not shown) opt args string label, u32 dataType, bool formatHex
 HexDump::assignSlotAbsolute(0, sys::mainOffset()+somewhere, 0x40, 0x40);
 
 // stop dumping targeted region, but keep drawing the last dumped contents

@@ -200,27 +200,27 @@ namespace lotuskit::util::player {
                 engine::component::ASComponent* ascomp = player->getASComponent();
                 void* dump = (void*)ascomp - 0x20;
                 lotuskit::TextWriter::printf(0, "ASComponent(%p) \n", ascomp);
-                lotuskit::HexDump::textwriter_printf_raw(0, dump, dump, 5);
+                lotuskit::HexDump::textwriter_printf_u8(0, dump, dump, 5);
 
                 engine::component::ASResourceBinder* arby = &(ascomp->mASResourceBinder);
                 dump = (void*)arby - 0x20;
                 lotuskit::TextWriter::printf(0, "mASResourceBinder(%p) \n", arby);
-                lotuskit::HexDump::textwriter_printf_raw(0, dump, dump, 5);
+                lotuskit::HexDump::textwriter_printf_u8(0, dump, dump, 5);
 
                 as::ControllerSet* cs = (*arby).mpASControllerSet;
                 dump = (void*)cs - 0x20;
                 lotuskit::TextWriter::printf(0, "mpASControllerSet(%p) \n", cs);
-                lotuskit::HexDump::textwriter_printf_raw(0, dump, dump, 5);
+                lotuskit::HexDump::textwriter_printf_u8(0, dump, dump, 5);
 
                 as::Controller* cc = cs->mpCurrentController;
                 dump = (void*)cc - 0x20;
                 lotuskit::TextWriter::printf(0, "mpCurrentController(%p) \n", cc);
-                lotuskit::HexDump::textwriter_printf_raw(0, dump, dump, 5);
+                lotuskit::HexDump::textwriter_printf_u8(0, dump, dump, 5);
 
                 as::Blackboard** bb_ptr_member = &(cc->mpBlackboard);
                 dump = (void*)bb_ptr_member - 0x10;
                 lotuskit::TextWriter::printf(0, "Controller(%p) + mpBlackboard(%02x) = %p -> bb(%p) \n", cc, offsetof(as::Controller, mpBlackboard), bb_ptr_member, bb);
-                lotuskit::HexDump::textwriter_printf_raw(0, dump, dump, 3);
+                lotuskit::HexDump::textwriter_printf_u8(0, dump, dump, 3);
 
                 nn::util::SNPrintf(buf, sizeof(buf), "ExecutePlayerMove::updateImpl_::sub_scaleForBBPerimeterGrade: player(%p) bb(%p) pg(%f)", player, bb, pg);
                 //nn::util::SNPrintf(buf, sizeof(buf), "ExecutePlayerMove::updateImpl_::sub_scaleForBBPerimeterGrade: bb(%p vtbl %p) ", bb, bb_vtbl_offset);

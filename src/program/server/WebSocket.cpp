@@ -183,7 +183,7 @@ namespace lotuskit::server {
             // FIXME better queue impl? its leaking. this still might drop 1 char messages? oh well
             if (fLen > 3) {
                 //lotuskit::TextWriter::printf(0, "\n[ws::send] fLen %d at %p (sendq %p - %p): \n", fLen, WebSocketImpl::SendQueue::sendQueueTail, WebSocketImpl::SendQueue::sendQueueBuf, WebSocketImpl::SendQueue::sendQueueBufEnd);
-                //lotuskit::HexDump::textwriter_printf_raw(0, WebSocketImpl::SendQueue::sendQueueTail, WebSocketImpl::SendQueue::sendQueueTail, 20); // 0x200 after
+                //lotuskit::HexDump::textwriter_printf_u8(0, WebSocketImpl::SendQueue::sendQueueTail, WebSocketImpl::SendQueue::sendQueueTail, 20); // 0x200 after
                 nn::socket::Send(clientSocketFd, WebSocketImpl::SendQueue::sendQueueTail, fLen, 0); // blocking
             }
 

@@ -435,17 +435,21 @@
             super();
             this.slotLabelRef = createRef();
             this.slotTargetPtrRef = createRef();
+            this.slotFormatHexRef = createRef();
+            this.slotDataTypeRef = createRef();
             this.dumpLen = createRef();
             this.drawLen = createRef();
         }
 
         do_absolute(i) {
             const drawLen = parseInt(this.drawLen.current.value) || 0x20;
-            const dumpLen = drawLen;
-            const label = this.slotLabelRef.current.value.toString().slice(0, 32).replaceAll(" ", "-") || "HexDump";
+            const dumpLen = drawLen; // XXX prob dont need it
+            const label = this.slotLabelRef.current.value.toString() || "HexDump";
             const ptr = this.slotTargetPtrRef.current.value || 0;
+            const dataType = this.slotDataTypeRef.current.value || 0; // default u8
+            const formatHex = this.slotFormatHexRef.current.checked;
             if (!ptr) { console.log("hexdump user lookin sussy", i); return; }
-            AngelScript.exec(`HexDump::assignSlotAbsolute(${i}, ${ptr}, ${dumpLen}, ${drawLen}, "${label}");`);
+            AngelScript.exec(`HexDump::assignSlotAbsolute(${i}, ${ptr}, ${dumpLen}, ${drawLen}, "${label}", ${dataType}, ${formatHex});`);
             console.log("hexdump absolute", i, ptr, {dumpLen, drawLen, label});
         }
         do_pause(i) {
@@ -456,17 +460,42 @@
             AngelScript.exec(`HexDump::clearSlot(${i});`);
             console.log("hexdump clear", i);
         }
+        on_select_datatype = (e) => {
+            const datatype = parseInt(e.currentTarget.value);
+            // flip formatHex to a reasonable default for the type (float, double ignored)
+            // hex default: u8, u16, u32, u64, text, code
+            if ([0, 1, 2, 3, 10, 11].indexOf(datatype) !== -1) { this.slotFormatHexRef.current.checked = true; }
+            // dec default: s8, s16, s32, s64
+            if ([4, 5, 6, 7].indexOf(datatype) !== -1) {   this.slotFormatHexRef.current.checked = false; }
+        }
 
         render({slot_i}, state) {
-            // TODO symbol picker
+            // TODO symbol picker? ptr_from_sym("farts") in the box works already tho
+            // enum HexDumpDataType: U8=0, U16, U32, U64, S8, S16, S32, S64, FLOAT, DOUBLE, TEXT, CODE_AARCH64
             return html`
                 <div class="hexdump_slot">
                     ${slot_i}${"\xa0"}
-                    <input placeholder="any label, max 32" ref=${this.slotLabelRef} />
+                    <input placeholder="label" size="6" ref=${this.slotLabelRef} />
                     <!-- TODO <select>absolute, main, ...</select> -->
-                    <input placeholder="target ptr" size="20" ref=${this.slotTargetPtrRef} />
+                    <input placeholder="target ptr" size="30" ref=${this.slotTargetPtrRef} />
                     <!--<input placeholder="0x20" size="6" ref=${this.dumpLen} />-->
                     <input placeholder="0x20" size="6" ref=${this.drawLen} />
+                    <label title="format as hex or decimal" for="hexdump_fmthex_${slot_i}">0x</label>
+                    <input title="format as hex or decimal"  id="hexdump_fmthex_${slot_i}" type="checkbox" ref=${this.slotFormatHexRef} checked />
+                    <select style="max-width: 64px;" ref=${this.slotDataTypeRef} onChange=${this.on_select_datatype}>
+                        <option value="0">\xa0u8</option>
+                        <option value="1">u16</option>
+                        <option value="2">u32</option>
+                        <option value="3">u64</option>
+                        <option value="4">\xa0s8</option>
+                        <option value="5">s16</option>
+                        <option value="6">s32</option>
+                        <option value="7">s64</option>
+                        <option value="8">float</option>
+                        <option value="9">double</option>
+                        <option value="10">text</option>
+                        <option value="11">code</option>
+                    </select>
                     <button onClick=${ () => this.do_absolute(slot_i) } class="pushbutton">dump</button>
                     <button onClick=${ () => this.do_pause(slot_i) } class="pushbutton">pause</button>
                     <button onClick=${ () => this.do_clear(slot_i) } class="pushbutton">clear</button>

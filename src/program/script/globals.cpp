@@ -748,7 +748,7 @@ namespace lotuskit::script::globals {
         engine->SetDefaultNamespace("HexDump"); /// {
             asErrno = engine->RegisterGlobalFunction("void clearSlot(index_t)", AngelScript::asFUNCTION(lotuskit::HexDump::clearSlot), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
             asErrno = engine->RegisterGlobalFunction("void pauseSlot(index_t)", AngelScript::asFUNCTION(lotuskit::HexDump::pauseSlot), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
-            asErrno = engine->RegisterGlobalFunction("void assignSlotAbsolute(index_t, ptr_t, u32, u32, const string &in = \"HexDump\")", AngelScript::asFUNCTION(lotuskit::HexDump::assignSlotAbsolute), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+            asErrno = engine->RegisterGlobalFunction("void assignSlotAbsolute(index_t, ptr_t, u32, u32, const string &in = \"HexDump\", u32 dataType=0, bool formatHex=true)", AngelScript::asFUNCTION(lotuskit::HexDump::assignSlotAbsolute), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
         /// }
 
         engine->SetDefaultNamespace("TextWriter"); /// {
