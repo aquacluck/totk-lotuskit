@@ -45,5 +45,9 @@ if (honk == Vector2f(donk.x, donk.z)) {
     honk *= 2 + donk.length();
 }
 
+// crash the game by setting vtable=nullptr :D
+// see globals.cpp for all pointer helpers
+ptr_write_ptr(ptr_from_ActorBase(Player), 0);
+
 // ok thats it bye
 

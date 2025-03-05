@@ -209,22 +209,24 @@ namespace lotuskit {
             }
         }
 
-        inline static void textwriter_printf_code_aarch64(size_t drawList_i, void* backingSrc, void* src_, u32 lines=1, bool formatHex=true) { // XXX formatHex nop
+        inline static void textwriter_printf_code_aarch64(size_t drawList_i, void* backingSrc, void* src_, u32 lines=1, bool formatHex=false) {
             u8* src = (u8*)src_;
             const auto n = lotuskit::util::disasm::MNM_OUT_MAX_SIZE;
-            char inst[n+1]; inst[n] = 0;
+            char mnm[n+1]; mnm[n] = 0;
             s64 lineMainOffset = (s64)(backingSrc - exl::util::GetMainModuleInfo().m_Total.m_Start);
             while (lines--) {
-                lotuskit::util::disasm::u32_to_str_mnemonic(*((u32*)src), (char*)inst);
-                if (lineMainOffset >= 0 && lineMainOffset <= 0xffffffff) {
+                u32 inst = *((u32*)src);
+                lotuskit::util::disasm::u32_to_str_mnemonic(inst, (char*)mnm);
+                if (lineMainOffset >= 0 && lineMainOffset <= 0xffffffff && !formatHex) {
+                    // formatHex inhibits main+offset formatting
                     lotuskit::TextWriter::printf(drawList_i,
                         "main+%08x | %02x %02x %02x %02x  %s\n",
-                        lineMainOffset, src[0], src[1], src[2], src[3], (char*)inst
+                        lineMainOffset, src[0], src[1], src[2], src[3], (char*)mnm
                     );
                 } else {
                     lotuskit::TextWriter::printf(drawList_i,
                         "%p | %02x %02x %02x %02x  %s\n",
-                        backingSrc, src[0], src[1], src[2], src[3], (char*)inst
+                        backingSrc, src[0], src[1], src[2], src[3], (char*)mnm
                     );
                 }
                 lineMainOffset += 4;

@@ -463,10 +463,10 @@
         on_select_datatype = (e) => {
             const datatype = parseInt(e.currentTarget.value);
             // flip formatHex to a reasonable default for the type (float, double ignored)
-            // hex default: u8, u16, u32, u64, text, code
-            if ([0, 1, 2, 3, 10, 11].indexOf(datatype) !== -1) { this.slotFormatHexRef.current.checked = true; }
-            // dec default: s8, s16, s32, s64
-            if ([4, 5, 6, 7].indexOf(datatype) !== -1) {   this.slotFormatHexRef.current.checked = false; }
+            // hex or raw default: u8, u16, u32, u64, text
+            if ([0, 1, 2, 3, 10].indexOf(datatype) !== -1) { this.slotFormatHexRef.current.checked = true; }
+            // dec or formatted default: s8, s16, s32, s64, code (prefer addr formatting instead of raw hex)
+            if ([4, 5, 6, 7, 11].indexOf(datatype) !== -1) {   this.slotFormatHexRef.current.checked = false; }
         }
 
         render({slot_i}, state) {
