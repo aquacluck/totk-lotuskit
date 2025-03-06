@@ -264,7 +264,7 @@ namespace lotuskit::script::globals {
 
         // unchecked memory access
         u64 ptr_from_sym(const std::string& name) {
-            return EXL_SYM_RESOLVE<u64>(name); // FIXME crashes on sym not found
+            return (u64)EXL_SYM_RESOLVE<void*>(name);
         }
         u64 ptr_from_ActorBase(::engine::actor::ActorBase* ptr) { return (u64)ptr; }
         u64 ptr_from_RigidBody(phive::RigidBodyBase* ptr) { return (u64)ptr; }

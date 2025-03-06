@@ -64,6 +64,10 @@ namespace lotuskit {
             slot.drawLen = drawLen;
             slot.dataType = HexDumpDataType(dataType);
             slot.formatHex = formatHex;
+            if (dumpSrc == nullptr) {
+                lotuskit::TextWriter::toastf(30*5, "[error] nullptr HexDump requested for %s[%d]\n", label.c_str(), i);
+                return;
+            }
             slot.isCalc = true;
             slot.dumpSrc = dumpLen >= 0 ? dumpSrc : dumpSrc + dumpLen; // negative lengths aim behind ptr
         }
