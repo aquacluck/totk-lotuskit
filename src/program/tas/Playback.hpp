@@ -43,7 +43,7 @@ namespace lotuskit::tas {
         static void setCurrentInputXor(u32 duration=1, u64 nextButtons=0, s32 nextLStickX=0, s32 nextLStickY=0, s32 nextRStickX=0, s32 nextRStickY=0);
         static void setSleepInput(u32 duration=1);
         static void applyCurrentInput(nn::hid::NpadBaseState* dst);
-        static void drawTextWriterModeLine();
+
         // current gyro input: these calls do not schedule frames! you must call tas::input(n) to begin+continue tas playback!
         static void applyCurrentGyro(nn::hid::SixAxisSensorState* dst_gyro);
         inline static void setCurrentGyroLinearAcceleration(const sead::Vector3f& linearAcceleration) { currentInput.gyro.linearAcceleration = linearAcceleration; }
@@ -56,8 +56,14 @@ namespace lotuskit::tas {
             currentInput.gyro.angularVelocitySum = angularVelocitySum;
             currentInput.gyro.rotation           = rotation;
         }
+        inline static void setCurrentGyroAllZero() {
+            auto v = sead::Vector3f{0, 0, 0};
+            auto m = sead::Matrix33f{0,0,0, 0,0,0, 0,0,0};
+            setCurrentGyroAll(v, v, v, m);
+        }
 
         // utility
+        static void drawTextWriterModeLine();
         static u32 duration60ToUIFrames(u32 duration60);
     };
 } // ns

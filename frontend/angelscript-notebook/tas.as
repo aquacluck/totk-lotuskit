@@ -204,9 +204,8 @@ tas::setGyroLinearAcceleration(Vector3f linearAcceleration);
 tas::setGyroAngularVelocity(Vector3f angularVelocity);
 tas::setGyroAngularVelocitySum(Vector3f angularVelocitySum);
 tas::setGyroRotation(Matrix33f rotation); // TODO tas::getGyro* getters
-// set gyro fields to 0 so tas::input stops disrupting camera
+tas::clearGyro(); // set gyro fields to 0 so tas::input stops disrupting camera, ie:
 tas::setGyroAll(Vector3f::ZERO, Vector3f::ZERO, Vector3f::ZERO, Matrix33f::ZERO);
-// tas::clearGyro(); // TODO equiv ^
 
 // that is all :) ur doing great
 

@@ -8,7 +8,7 @@
 #include <lyr/aglLayer.h>
 #include <lyr/aglRenderInfo.h>
 #include <math/seadMatrix.h>
-#include <math/seadVector.hpp>
+#include <math/seadVector.h>
 #include <cstring>
 
 namespace sead {

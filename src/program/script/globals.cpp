@@ -936,6 +936,11 @@ namespace lotuskit::script::globals {
                 AngelScript::asFUNCTION(lotuskit::tas::Playback::setCurrentGyroAll),
                 AngelScript::asCALL_CDECL
             ); assert( asErrno >= 0 );
+            asErrno = engine->RegisterGlobalFunction(
+                "void clearGyro()",
+                AngelScript::asFUNCTION(lotuskit::tas::Playback::setCurrentGyroAllZero),
+                AngelScript::asCALL_CDECL
+            ); assert( asErrno >= 0 );
 
             // log inputs, sort of a minmal record
             asErrno = engine->RegisterGlobalFunction(

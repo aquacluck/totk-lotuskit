@@ -9,7 +9,7 @@ using Logger = lotuskit::Logger;
 #include <nn/util.h>
 #include <heap/seadHeap.h>
 #include <heap/seadFrameHeap.h>
-#include <math/seadVector.hpp>
+#include <math/seadVector.h>
 
 // agl+gfx include
 #include <common/aglDrawContext.h>
