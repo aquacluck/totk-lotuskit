@@ -306,6 +306,22 @@ namespace lotuskit::tas {
         }
     }
 
+    void Playback::applyCurrentGyro(nn::hid::SixAxisSensorState* dst_gyro) {
+        if (!isPlaybackActive) { return; }
+        switch(config::playbackInputPassthroughMode) {
+            case config::PlaybackInputPassthroughMode::NULL_VANILLA:
+            // passthrough all, do not alter input ("sleep")
+            break;
+
+            case config::PlaybackInputPassthroughMode::PASSTHROUGH_OR: // gyro unsupported
+            case config::PlaybackInputPassthroughMode::PASSTHROUGH_XOR: // gyro unsupported
+            case config::PlaybackInputPassthroughMode::PLAYBACK_TAS_ONLY:
+            // XXX hack dont clobber sample header
+            std::memcpy((void*)&(dst_gyro->linearAcceleration), (void*)&(currentInput.gyro.linearAcceleration), sizeof(nn::hid::SixAxisSensorState) - 0x10);
+            break;
+        }
+    }
+
     u32 Playback::duration60ToUIFrames(u32 duration60) {
         // how many "frames" is the timespan
         if (config::inputMode == config::InputDurationScalingStrategy::FPS60_1X) {

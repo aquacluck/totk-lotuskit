@@ -194,5 +194,19 @@ tas::awaitUnpauseTarget("Custom_Footprint");
 // which is completely skipped by default
 tas::doSkipLoadingPause(false);
 
+// toggle input display
+tas::doTextWriterInputDisplay(false);
+tas::doTextWriterGyro(true);
+
+// setting gyro does not schedule frames!
+// you must call tas::input(n) to begin+continue tas playback
+tas::setGyroLinearAcceleration(Vector3f linearAcceleration);
+tas::setGyroAngularVelocity(Vector3f angularVelocity);
+tas::setGyroAngularVelocitySum(Vector3f angularVelocitySum);
+tas::setGyroRotation(Matrix33f rotation); // TODO tas::getGyro* getters
+// set gyro fields to 0 so tas::input stops disrupting camera
+tas::setGyroAll(Vector3f::ZERO, Vector3f::ZERO, Vector3f::ZERO, Matrix33f::ZERO);
+// tas::clearGyro(); // TODO equiv ^
+
 // that is all :) ur doing great
 

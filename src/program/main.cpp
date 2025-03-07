@@ -5,6 +5,7 @@
 #include <heap/seadHeap.h>
 
 #include "structs/engineActor.hpp"
+#include "structs/nnSixAxis.hpp"
 #include "Logger.hpp"
 #include "ActorWatcher.hpp"
 #include "HexDump.hpp"
@@ -157,8 +158,8 @@ HOOK_DEFINE_TRAMPOLINE(BaseProcMgr_addDependency) {
     }
 };
 
-HOOK_DEFINE_TRAMPOLINE(MainGetNpadStates) {
-    static constexpr auto s_name = "engine::MainGetNpadStates"; // hacks
+HOOK_DEFINE_TRAMPOLINE(NinJoyNpadDevice_calcHook) {
+    static constexpr auto s_name = "sead::NinJoyNpadDevice::calc"; // hacks
 
     static void Callback(void* param_1) {
         // TODO option to lock/snap inputs to 90d/45d while ZL is held?
@@ -168,8 +169,12 @@ HOOK_DEFINE_TRAMPOLINE(MainGetNpadStates) {
 
         constexpr u32 target_idk = 0; // styleset? iterates over 3?
         nn::hid::NpadBaseState* state = (nn::hid::NpadBaseState*)(param_1 + target_idk * 0xe98 + 0x58);
-        lotuskit::tas::Record::applyCurrentInput(state);
-        lotuskit::tas::Playback::applyCurrentInput(state);
+        nn::hid::SixAxisSensorState* state_gyro = (nn::hid::SixAxisSensorState*)(param_1 + target_idk * 0xe98 + 0x2e8);
+        //lotuskit::TextWriter::printf(0, "[NinJoyNpadDevice::calc] gyro ptr %p\n", state_gyro);
+        lotuskit::tas::Record::applyCurrentInput(state); // keep track of latest human inputs regardless of record state
+        lotuskit::tas::Record::applyCurrentGyro(state_gyro);
+        lotuskit::tas::Playback::applyCurrentInput(state); // mutate input states for tas if applicable
+        lotuskit::tas::Playback::applyCurrentGyro(state_gyro);
     }
 };
 
@@ -211,7 +216,7 @@ extern "C" void exl_main(void* x0, void* x1) {
     OnRecallUpdateHighlightActorHook::Install();
     OnRequestCreateActorAsyncHook::Install();
     BaseProcMgr_addDependency::Install();
-    MainGetNpadStates::Install();
+    NinJoyNpadDevice_calcHook::Install();
     lotuskit::util::player::InstallHooks();
     lotuskit::util::pause::InstallHooks();
     lotuskit::util::world::InstallHooks();

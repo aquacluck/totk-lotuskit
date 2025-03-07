@@ -5,6 +5,7 @@
 #include <lib/json.hpp>
 #include "tas/Playback.hpp"
 #include "tas/Record.hpp"
+#include "tas/InputDisplay.hpp"
 #include "ActorWatcher.hpp"
 #include "HexDump.hpp"
 #include "Logger.hpp"
@@ -902,18 +903,48 @@ namespace lotuskit::script::globals {
                 AngelScript::asCALL_CDECL
             ); assert( asErrno >= 0 );
 
+            // schedule frames for tas script to wait, passing through human input verbatim
             asErrno = engine->RegisterGlobalFunction(
                 "void sleep(u32 duration=1)",
                 AngelScript::asFUNCTION(lotuskit::tas::Playback::setSleepInput),
                 AngelScript::asCALL_CDECL
             ); assert( asErrno >= 0 );
+
+            // manipulate gyro/motion input (does not schedule frames or begin playback)
+            asErrno = engine->RegisterGlobalFunction(
+                "void setGyroLinearAcceleration(const Vector3f &in)",
+                AngelScript::asFUNCTION(lotuskit::tas::Playback::setCurrentGyroLinearAcceleration),
+                AngelScript::asCALL_CDECL
+            ); assert( asErrno >= 0 );
+            asErrno = engine->RegisterGlobalFunction(
+                "void setGyroAngularVelocity(const Vector3f &in)",
+                AngelScript::asFUNCTION(lotuskit::tas::Playback::setCurrentGyroAngularVelocity),
+                AngelScript::asCALL_CDECL
+            ); assert( asErrno >= 0 );
+            asErrno = engine->RegisterGlobalFunction(
+                "void setGyroAngularVelocitySum(const Vector3f &in)",
+                AngelScript::asFUNCTION(lotuskit::tas::Playback::setCurrentGyroAngularVelocitySum),
+                AngelScript::asCALL_CDECL
+            ); assert( asErrno >= 0 );
+            asErrno = engine->RegisterGlobalFunction(
+                "void setGyroRotation(const Matrix33f &in)",
+                AngelScript::asFUNCTION(lotuskit::tas::Playback::setCurrentGyroRotation),
+                AngelScript::asCALL_CDECL
+            ); assert( asErrno >= 0 );
+            asErrno = engine->RegisterGlobalFunction(
+                "void setGyroAll(const Vector3f &in, const Vector3f &in, const Vector3f &in, const Matrix33f &in)",
+                AngelScript::asFUNCTION(lotuskit::tas::Playback::setCurrentGyroAll),
+                AngelScript::asCALL_CDECL
+            ); assert( asErrno >= 0 );
+
+            // log inputs, sort of a minmal record
             asErrno = engine->RegisterGlobalFunction(
                 "void toggleDump()",
                 AngelScript::asFUNCTION(lotuskit::tas::Record::trashToggleDump),
                 AngelScript::asCALL_CDECL
             ); assert( asErrno >= 0 );
 
-            // pause scheduling
+            // pause scheduling, to make the script wait for certain game pause events
             asErrno = engine->RegisterGlobalFunction(
                 "void awaitPauseRequest(const string &in)",
                 AngelScript::asFUNCTION(lotuskit::tas::Playback::doScheduleAwaitPauseRequestStr),
@@ -937,6 +968,18 @@ namespace lotuskit::script::globals {
             asErrno = engine->RegisterGlobalFunction(
                 "void doSkipLoadingPause(bool)",
                 AngelScript::asFUNCTION(lotuskit::tas::Playback::doSkipLoadingPause),
+                AngelScript::asCALL_CDECL
+            ); assert( asErrno >= 0 );
+
+            // input display
+            asErrno = engine->RegisterGlobalFunction(
+                "void doTextWriterInputDisplay(bool)",
+                AngelScript::asFUNCTION(lotuskit::tas::InputDisplay::doTextWriterInputDisplay_set),
+                AngelScript::asCALL_CDECL
+            ); assert( asErrno >= 0 );
+            asErrno = engine->RegisterGlobalFunction(
+                "void doTextWriterGyro(bool)",
+                AngelScript::asFUNCTION(lotuskit::tas::InputDisplay::doTextWriterGyro_set),
                 AngelScript::asCALL_CDECL
             ); assert( asErrno >= 0 );
 

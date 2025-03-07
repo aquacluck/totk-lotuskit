@@ -58,6 +58,9 @@ namespace lotuskit::tas {
             outputDurationLogicalFrames = outputDuration60 / 3; // XXX what if not divisible by 3?
         } else return;
 
+        // TODO how/should we dump gyro? definitely not by default, and it's gonna be extremely noisy the entire time it's enabled,
+        //      it interferes with input accumulation, etc... I'd rather not try to support recording this tbh
+
         // TODO option to queue to bg file writer thread, instead of wasting time with socket send?
         //constexpr bool useFormat_nxTASAll = false; // TODO option for pure nx-TAS output? tsv?
         constexpr bool useFormat_nxTASButtons = true;

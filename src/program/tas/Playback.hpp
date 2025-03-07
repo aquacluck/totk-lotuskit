@@ -4,13 +4,16 @@
 #include "tas/config.hpp"
 #include <angelscript.h>
 #include <nn/hid.h>
+#include "structs/nnSixAxis.hpp"
 
 namespace lotuskit::tas {
     struct PlaybackInput {
-        // 24B payload TODO gyro, merge with RecordInput?
+        // 24B main input payload
         nn::hid::NpadButtonSet buttons; // u64
         nn::hid::AnalogStickState LStick; // s32 s32
         nn::hid::AnalogStickState RStick; // s32 s32
+        // 0x60
+        nn::hid::SixAxisSensorState gyro;
     };
 
     class Playback {
@@ -41,6 +44,18 @@ namespace lotuskit::tas {
         static void setSleepInput(u32 duration=1);
         static void applyCurrentInput(nn::hid::NpadBaseState* dst);
         static void drawTextWriterModeLine();
+        // current gyro input: these calls do not schedule frames! you must call tas::input(n) to begin+continue tas playback!
+        static void applyCurrentGyro(nn::hid::SixAxisSensorState* dst_gyro);
+        inline static void setCurrentGyroLinearAcceleration(const sead::Vector3f& linearAcceleration) { currentInput.gyro.linearAcceleration = linearAcceleration; }
+        inline static void setCurrentGyroAngularVelocity(const sead::Vector3f& angularVelocity) {       currentInput.gyro.angularVelocity    = angularVelocity; }
+        inline static void setCurrentGyroAngularVelocitySum(const sead::Vector3f& angularVelocitySum) { currentInput.gyro.angularVelocitySum = angularVelocitySum; }
+        inline static void setCurrentGyroRotation(const sead::Matrix33f& rotation) {                    currentInput.gyro.rotation           = rotation; }
+        inline static void setCurrentGyroAll(const sead::Vector3f& linearAcceleration, const sead::Vector3f& angularVelocity, const sead::Vector3f& angularVelocitySum, const sead::Matrix33f& rotation) {
+            currentInput.gyro.linearAcceleration = linearAcceleration;
+            currentInput.gyro.angularVelocity    = angularVelocity;
+            currentInput.gyro.angularVelocitySum = angularVelocitySum;
+            currentInput.gyro.rotation           = rotation;
+        }
 
         // utility
         static u32 duration60ToUIFrames(u32 duration60);

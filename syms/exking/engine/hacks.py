@@ -7,7 +7,7 @@ EXKING("engine::nnMain_post_setup", {
     TOTK_121: 0x00e7ac48, # strb w8 ,[x21 , #0x8 ]. blr at 7100e7ac60 is point of no return? not sure what that call is
 }, SymbolType.INSTRUCTION)
 
-EXKING("engine::MainGetNpadStates", {
+EXKING("sead::NinJoyNpadDevice::calc", {
     TOTK_100: 0x029b442c,
     TOTK_110: 0x02a2c49c,
     TOTK_121: 0x02a267bc,

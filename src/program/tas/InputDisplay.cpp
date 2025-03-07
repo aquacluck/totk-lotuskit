@@ -4,21 +4,32 @@
 #include "tas/Playback.hpp"
 #include "tas/Record.hpp"
 
-namespace lotuskit::tas {
-    void InputDisplay::draw() {
-        // copy human input: contains latest polled input even when not recording
-        nn::hid::NpadBaseState input = {0};
-        std::memcpy((void*)&(input.mButtons), (void*)&(lotuskit::tas::Record::currentInput.buttons), 24);
+namespace lotuskit::tas::InputDisplay {
+    void draw() {
+        if (doTextWriterInputDisplay) {
+            // copy human input: tas::Record contains latest polled input even when not recording
+            nn::hid::NpadBaseState input = {0};
+            std::memcpy((void*)&(input.mButtons), (void*)&(lotuskit::tas::Record::currentInput.buttons), 24);
+            drawInputDisplay(&input);
+        }
 
+        if (doTextWriterGyro) {
+            nn::hid::SixAxisSensorState gyro = {0};
+            std::memcpy((void*)&(gyro), (void*)&(lotuskit::tas::Record::currentInput.gyro), sizeof(nn::hid::SixAxisSensorState));
+            drawGyro(&gyro);
+        }
+    }
+
+    void drawInputDisplay(nn::hid::NpadBaseState* input) {
         // alter/override/passthrough according to current options
-        lotuskit::tas::Playback::applyCurrentInput(&input);
+        lotuskit::tas::Playback::applyCurrentInput(input);
 
         // display effective input values
-        u64 buttons = *((u64*)&(input.mButtons));
-        s32 LX = input.mAnalogStickL.mX;
-        s32 LY = input.mAnalogStickL.mY;
-        s32 RX = input.mAnalogStickR.mX;
-        s32 RY = input.mAnalogStickR.mY;
+        u64 buttons = *((u64*)&(input->mButtons));
+        s32 LX = input->mAnalogStickL.mX;
+        s32 LY = input->mAnalogStickL.mY;
+        s32 RX = input->mAnalogStickR.mX;
+        s32 RY = input->mAnalogStickR.mY;
 
         const char* a       = buttons & (1 << (u32)nn::hid::NpadButton::A)     ? "A" : " ";
         const char* b       = buttons & (1 << (u32)nn::hid::NpadButton::B)     ? "B" : " ";
@@ -61,6 +72,20 @@ namespace lotuskit::tas {
             l_left, stick_l, l_right, d_up, r_left, stick_r, r_right, y, a,
             l_down, d_left, d_down, d_right, r_down, b
         );
-        return;
+    }
+
+    void drawGyro(nn::hid::SixAxisSensorState* gyro) {
+        // alter/override/passthrough according to current options
+        lotuskit::tas::Playback::applyCurrentGyro(gyro);
+
+        sead::Vector3f& acc = gyro->linearAcceleration;
+        sead::Vector3f& angvel = gyro->angularVelocity;
+        sead::Vector3f& angsum = gyro->angularVelocitySum;
+        sead::Matrix33f& rot = gyro->rotation;
+        lotuskit::TextWriter::appendCallback(1, [](lotuskit::TextWriterExt* writer, sead::Vector2f* textPos) {
+            textPos->x -= 90.0; // pull left to make some more space
+        });
+        lotuskit::TextWriter::printf(1, "[gyro]\nlinacc: %f, %f, %f\nangvel: %f, %f, %f\nangsum: %f, %f, %f\n", acc.x, acc.y, acc.z, angvel.x, angvel.y, angvel.z, angsum.x, angsum.y, angsum.z);
+        lotuskit::TextWriter::printf(1, "rot: %f, %f, %f\n     %f, %f, %f\n     %f, %f, %f\n\n", rot.a[0], rot.a[1], rot.a[2], rot.a[3], rot.a[4], rot.a[5], rot.a[6], rot.a[7], rot.a[8]);
     }
 }
