@@ -1,7 +1,7 @@
-diff --git a/angelscript/source/as_callfunc_arm64.cpp b/angelscript/source/as_callfunc_arm64.cpp
+diff --git a/subrepo/angelscript/source/as_callfunc_arm64.cpp b/subrepo/angelscript/source/as_callfunc_arm64.cpp
 index ccb054a..c990953 100644
---- a/angelscript/source/as_callfunc_arm64.cpp
-+++ b/angelscript/source/as_callfunc_arm64.cpp
+--- a/subrepo/angelscript/source/as_callfunc_arm64.cpp
++++ b/subrepo/angelscript/source/as_callfunc_arm64.cpp
 @@ -403,7 +403,7 @@ asQWORD CallSystemFunctionNative(asCContext *context, asCScriptFunction *descr,
  		CallARM64(gpRegArgs, numGPRegArgs, floatRegArgs, numFloatRegArgs, stackArgs, numStackArgs, func);
  		if( (retTypeInfo->flags & asOBJ_APP_CLASS_ALIGN8) != 0 )

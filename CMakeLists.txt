@@ -14,11 +14,11 @@ set(CMAKE_C_STANDARD 23)
 set(CMAKE_CXX_STANDARD 26)
 
 # angelscript sources
-include_directories(${PROJECT_SOURCE_DIR}/angelscript/include)
+include_directories(${PROJECT_SOURCE_DIR}/subrepo/angelscript/include)
 add_compile_definitions(AS_NO_EXCEPTIONS=1 AS_USE_NAMESPACE=1 AS_64BIT_PTR=1 AS_USE_STLNAMES=1 __SWITCH__=1) # implied: AS_NO_THREADS=1
-file(GLOB_RECURSE AS_SOURCES_ASM ${PROJECT_SOURCE_DIR}/angelscript/source/*.S)
-file(GLOB_RECURSE AS_SOURCES_H ${PROJECT_SOURCE_DIR}/angelscript/source/*.h)
-file(GLOB_RECURSE AS_SOURCES_CXX ${PROJECT_SOURCE_DIR}/angelscript/source/*.cpp)
+file(GLOB_RECURSE AS_SOURCES_ASM ${PROJECT_SOURCE_DIR}/subrepo/angelscript/source/*.S)
+file(GLOB_RECURSE AS_SOURCES_H ${PROJECT_SOURCE_DIR}/subrepo/angelscript/source/*.h)
+file(GLOB_RECURSE AS_SOURCES_CXX ${PROJECT_SOURCE_DIR}/subrepo/angelscript/source/*.cpp)
 
 # exlaunch sources + module config
 set(TITLE_ID 0100F2C0115B6000) # TOTK, all versions
@@ -26,11 +26,11 @@ set(CONFIG_TITLE_ID 0x${TITLE_ID})
 set(CMAKE_EXECUTABLE_SUFFIX ".elf")
 add_compile_definitions(EXL_PROGRAM_ID=${CONFIG_TITLE_ID} EXL_LOAD_KIND=Module EXL_LOAD_KIND_ENUM=2)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/module/subsdk9.json.template ${CMAKE_CURRENT_BINARY_DIR}/subsdk9.json)
-include_directories(${PROJECT_SOURCE_DIR}/exlaunch/source)
-include_directories(${PROJECT_SOURCE_DIR}/exlaunch/source/lib)
-file(GLOB_RECURSE EXL_SOURCES_ASM ${PROJECT_SOURCE_DIR}/exlaunch/source/*.s)
-file(GLOB_RECURSE EXL_SOURCES_H ${PROJECT_SOURCE_DIR}/exlaunch/source/*.h ${PROJECT_SOURCE_DIR}/exlaunch/source/*.hpp)
-file(GLOB_RECURSE EXL_SOURCES_CXX ${PROJECT_SOURCE_DIR}/exlaunch/source/*.cpp ${PROJECT_SOURCE_DIR}/exlaunch/source/*.c)
+include_directories(${PROJECT_SOURCE_DIR}/subrepo/exlaunch/source)
+include_directories(${PROJECT_SOURCE_DIR}/subrepo/exlaunch/source/lib)
+file(GLOB_RECURSE EXL_SOURCES_ASM ${PROJECT_SOURCE_DIR}/subrepo/exlaunch/source/*.s)
+file(GLOB_RECURSE EXL_SOURCES_H ${PROJECT_SOURCE_DIR}/subrepo/exlaunch/source/*.h ${PROJECT_SOURCE_DIR}/subrepo/exlaunch/source/*.hpp)
+file(GLOB_RECURSE EXL_SOURCES_CXX ${PROJECT_SOURCE_DIR}/subrepo/exlaunch/source/*.cpp ${PROJECT_SOURCE_DIR}/subrepo/exlaunch/source/*.c)
 
 # lotuskit mod sources
 include_directories(${PROJECT_SOURCE_DIR}/src)

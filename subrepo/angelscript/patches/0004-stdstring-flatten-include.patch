@@ -1,0 +1,12 @@
+diff --git a/subrepo/angelscript/source/scriptstdstring_utils.cpp b/subrepo/angelscript/source/scriptstdstring_utils.cpp
+index 672c31a..afb7c55 100644
+--- a/subrepo/angelscript/source/scriptstdstring_utils.cpp
++++ b/subrepo/angelscript/source/scriptstdstring_utils.cpp
+@@ -1,6 +1,6 @@
+ #include <assert.h>
+ #include "scriptstdstring.h"
+-#include "../scriptarray/scriptarray.h"
++#include "scriptarray.h"
+ #include <stdio.h>
+ #include <string.h>
+ 

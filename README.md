@@ -39,9 +39,8 @@
 
 ## Repo overview
 - `.github` automatically builds and [releases](https://github.com/aquacluck/totk-lotuskit/releases) each commit. You could reproduce the build with this or set it up in your own repo clone.
-- `angelscript` contains a patched mirror of the lib
+- `subrepo` contains mirroring+patching for several libs: angelscript, exlaunch
 - `dt_totk` contains many patched C++ headers for libs used in the game
-- `exlaunch` contains a patched mirror
 - `frontend` is an optional web frontend copied into every release zip. A quickie python http server is provided, and you can serve this however you like, but non-http `file://` access will not work!
 - `romfs` is a skeleton/template for files which should be installed with the mod, copied into every release zip
 - `src/program` is the C++ mod source

@@ -1,7 +1,6 @@
 build/*
-angelscript/tmpgit
+subrepo/*/tmpgit
 dt_totk/tmpgit
-exlaunch/tmpgit
 
 __pycache__
 

@@ -1,7 +1,7 @@
-diff --git a/exlaunch/source/lib/hook/nx64/inline_impl.hpp b/exlaunch/source/lib/hook/nx64/inline_impl.hpp
+diff --git a/subrepo/exlaunch/source/lib/hook/nx64/inline_impl.hpp b/subrepo/exlaunch/source/lib/hook/nx64/inline_impl.hpp
 index ed3a44b..aea4ace 100644
---- a/exlaunch/source/lib/hook/nx64/inline_impl.hpp
-+++ b/exlaunch/source/lib/hook/nx64/inline_impl.hpp
+--- a/subrepo/exlaunch/source/lib/hook/nx64/inline_impl.hpp
++++ b/subrepo/exlaunch/source/lib/hook/nx64/inline_impl.hpp
 @@ -79,12 +79,19 @@ namespace exl::hook::nx64 {
          ACCESSOR(FloatRegisterAccessor, Vector64,   Vec64,  32, m_Fr, V64);
          ACCESSOR(FloatRegisterAccessor, Float128,   f128,   32, m_Fr, Q);

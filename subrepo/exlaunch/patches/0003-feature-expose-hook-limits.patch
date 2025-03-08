@@ -1,7 +1,7 @@
-diff --git a/exlaunch/source/lib/hook/nx64/hook_impl.cpp b/exlaunch/source/lib/hook/nx64/hook_impl.cpp
+diff --git a/subrepo/exlaunch/source/lib/hook/nx64/hook_impl.cpp b/subrepo/exlaunch/source/lib/hook/nx64/hook_impl.cpp
 index ed19ff5..e915f36 100644
---- a/exlaunch/source/lib/hook/nx64/hook_impl.cpp
-+++ b/exlaunch/source/lib/hook/nx64/hook_impl.cpp
+--- a/subrepo/exlaunch/source/lib/hook/nx64/hook_impl.cpp
++++ b/subrepo/exlaunch/source/lib/hook/nx64/hook_impl.cpp
 @@ -52,13 +52,17 @@ namespace exl::hook::nx64 {
  
      namespace {
@@ -48,10 +48,10 @@ index ed19ff5..e915f36 100644
 -};
 \ No newline at end of file
 +};
-diff --git a/exlaunch/source/lib/hook/nx64/inline_impl.cpp b/exlaunch/source/lib/hook/nx64/inline_impl.cpp
+diff --git a/subrepo/exlaunch/source/lib/hook/nx64/inline_impl.cpp b/subrepo/exlaunch/source/lib/hook/nx64/inline_impl.cpp
 index 65ae384..edf97d9 100644
---- a/exlaunch/source/lib/hook/nx64/inline_impl.cpp
-+++ b/exlaunch/source/lib/hook/nx64/inline_impl.cpp
+--- a/subrepo/exlaunch/source/lib/hook/nx64/inline_impl.cpp
++++ b/subrepo/exlaunch/source/lib/hook/nx64/inline_impl.cpp
 @@ -21,10 +21,10 @@ namespace exl::hook::nx64 {
          uintptr_t m_Callback;
      };
@@ -90,10 +90,10 @@ index 65ae384..edf97d9 100644
 -}
 \ No newline at end of file
 +}
-diff --git a/exlaunch/source/lib/hook/nx64/inline_impl.hpp b/exlaunch/source/lib/hook/nx64/inline_impl.hpp
+diff --git a/subrepo/exlaunch/source/lib/hook/nx64/inline_impl.hpp b/subrepo/exlaunch/source/lib/hook/nx64/inline_impl.hpp
 index 7080efa..ed3a44b 100644
---- a/exlaunch/source/lib/hook/nx64/inline_impl.hpp
-+++ b/exlaunch/source/lib/hook/nx64/inline_impl.hpp
+--- a/subrepo/exlaunch/source/lib/hook/nx64/inline_impl.hpp
++++ b/subrepo/exlaunch/source/lib/hook/nx64/inline_impl.hpp
 @@ -151,5 +151,11 @@ namespace exl::hook::nx64 {
          }
      };

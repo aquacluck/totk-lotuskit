@@ -1,7 +1,7 @@
-diff --git a/angelscript/source/as_symboltable.h b/angelscript/source/as_symboltable.h
+diff --git a/subrepo/angelscript/source/as_symboltable.h b/subrepo/angelscript/source/as_symboltable.h
 index 261b4f3..0ce7cf6 100644
---- a/angelscript/source/as_symboltable.h
-+++ b/angelscript/source/as_symboltable.h
+--- a/subrepo/angelscript/source/as_symboltable.h
++++ b/subrepo/angelscript/source/as_symboltable.h
 @@ -125,6 +125,7 @@ public:
  	const T* GetLast() const;
  

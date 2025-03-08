@@ -1,7 +1,7 @@
-diff --git a/angelscript/source/as_restore.cpp b/angelscript/source/as_restore.cpp
+diff --git a/subrepo/angelscript/source/as_restore.cpp b/subrepo/angelscript/source/as_restore.cpp
 index 26dcaaa..18bc87b 100644
---- a/angelscript/source/as_restore.cpp
-+++ b/angelscript/source/as_restore.cpp
+--- a/subrepo/angelscript/source/as_restore.cpp
++++ b/subrepo/angelscript/source/as_restore.cpp
 @@ -3227,7 +3227,7 @@ void asCReader::TranslateFunction(asCScriptFunction *func)
  }
  
