@@ -22,9 +22,9 @@ if [[ "$KEEP_TMPGIT" != "1" ]]; then
     rm -rf tmpgit
 
     # temp repo, clone ~1.5s
-    # last base: Version 2.38.0 WIP - 2025/2/26 - "Minor improvements on E2K native code"
-    #            https://github.com/codecat/angelscript-mirror/commit/09e3cd9d2a24a6c118527fc9cf3374ead35d55a2
-    #            https://sourceforge.net/p/angelscript/code/3004/
+    # last base: Version 2.38.0 WIP - 2025/3/7 - "Refactoring the code for better code reuse"
+    #            https://github.com/codecat/angelscript-mirror/commit/2f88f658834658455051e57b66c70cd345752569
+    #            https://sourceforge.net/p/angelscript/code/3007/
     git clone --recursive --depth 1 https://github.com/codecat/angelscript-mirror tmpgit
     echo
     echo

@@ -1751,7 +1751,7 @@ int asCCompiler::PrepareArgument(asCDataType *paramType, asCExprContext *ctx, as
 
 		// Since the function is expecting a var type ?, then we don't want to convert the argument to anything else
 		param = ctx->type.dataType;
-		param.MakeHandle(ctx->type.isExplicitHandle || ctx->type.IsNullConstant());
+		param.MakeHandle(ctx->type.isExplicitHandle || ctx->type.IsNullConstant() || CastToFuncdefType(ctx->type.dataType.GetTypeInfo()));
 
 		// Treat the void expression like a null handle when working with var types
 		if( ctx->IsVoidExpression() )
@@ -1764,6 +1764,9 @@ int asCCompiler::PrepareArgument(asCDataType *paramType, asCExprContext *ctx, as
 		{
 			param.MakeHandle(true);
 		}
+		
+		// Ensure the expression is treated as an explicit handle
+		ctx->type.isExplicitHandle = param.IsObjectHandle();
 
 		param.MakeReference(paramType->IsReference());
 		param.MakeReadOnly(paramType->IsReadOnly());
@@ -1789,6 +1792,13 @@ int asCCompiler::PrepareArgument(asCDataType *paramType, asCExprContext *ctx, as
 			if( paramType->GetTokenType() == ttQuestion )
 			{
 				asCByteCode tmpBC(engine);
+
+				// Make sure the type is deterministic
+				if (param.GetTypeInfo() == &engine->functionBehaviours)
+				{
+					Error(TXT_INVALID_EXPRESSION_LAMBDA, node);
+					return -1;
+				}
 
 				// Place the type id on the stack as a hidden parameter
 				tmpBC.InstrDWORD(asBC_TYPEID, engine->GetTypeIdFromDataType(param));
@@ -4087,6 +4097,13 @@ int asCCompiler::CompileInitListElement(asSListPatternNode *&patternNode, asCScr
 					// When value assignment for reference types us disabled, make sure all ref types are passed in as handles
 					if (engine->ep.disallowValueAssignForRefType && dt.SupportHandles())
 						dt.MakeHandle(true);
+
+					// Make sure the type is deterministic
+					if (dt.GetTypeInfo() == &engine->functionBehaviours)
+					{
+						Error(TXT_INVALID_EXPRESSION_LAMBDA, valueNode);
+						return -1;
+					}
 
 					// Place the type id in the buffer
 					bcInit.InstrSHORT_DW_DW(asBC_SetListType, bufferVar, bufferSize, engine->GetTypeIdFromDataType(dt));
@@ -10655,33 +10672,33 @@ asCCompiler::SYMBOLTYPE asCCompiler::SymbolLookup(const asCString &name, const a
 
 			// If the scope contains ::identifier, then use the last identifier as the class name and the rest of it as the namespace
 			// TODO: child funcdef: A scope can include a template type, e.g. array<ns::type>
-				int n = currScope.FindLast("::");
-				asCString typeName = n >= 0 ? currScope.SubString(n + 2) : currScope;
-				asCString nsName = n >= 0 ? currScope.SubString(0, n) : asCString("");
+			int n = currScope.FindLast("::");
+			asCString typeName = n >= 0 ? currScope.SubString(n + 2) : currScope;
+			asCString nsName = n >= 0 ? currScope.SubString(0, n) : asCString("");
 
-				// If the scope represents a type that the current class inherits
-				// from then that should be used instead of going through the namespaces
-				if (nsName == "" && (outFunc && outFunc->objectType))
+			// If the scope represents a type that the current class inherits
+			// from then that should be used instead of going through the namespaces
+			if (nsName == "" && (outFunc && outFunc->objectType))
+			{
+				asCObjectType* ot = outFunc->objectType;
+				while (ot)
 				{
-					asCObjectType* ot = outFunc->objectType;
-					while (ot)
+					if (ot->name == typeName)
 					{
-						if (ot->name == typeName)
+						SYMBOLTYPE r = SymbolLookupMember(name, ot, outResult);
+						if (r != 0)
 						{
-							SYMBOLTYPE r = SymbolLookupMember(name, ot, outResult);
-							if (r != 0)
-							{
-								if (!checkAmbiguousSymbols)
-									return r;
+							if (!checkAmbiguousSymbols)
+								return r;
 
-								if (isAmbiguousSymbol(name, errNode, resultSymbolType, r))
-									return SL_ERROR;
-							}
+							if (isAmbiguousSymbol(name, errNode, resultSymbolType, r))
+								return SL_ERROR;
 						}
-
-						ot = ot->derivedFrom;
 					}
+
+					ot = ot->derivedFrom;
 				}
+			}
 
 			// If the scope starts with :: then search from the global scope
 			if (currScope.GetLength() < 2 || currScope[0] != ':')
