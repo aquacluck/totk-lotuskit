@@ -1,0 +1,13 @@
+diff --git a/subrepo/nnheaders/include/nn/nex/socket.h b/subrepo/nnheaders/include/nn/nex/socket.h
+index 5faba4c..622a591 100644
+--- a/subrepo/nnheaders/include/nn/nex/socket.h
++++ b/subrepo/nnheaders/include/nn/nex/socket.h
+@@ -20,7 +20,7 @@ public:
+ 
+ class SocketDriver : nn::nex::RootObject {
+ public:
+-    typedef in_addr_t InetAddress;
++    typedef uint32_t InetAddress;
+ 
+     enum _SocketFlag : int32_t {
+         Msg_None = 0,

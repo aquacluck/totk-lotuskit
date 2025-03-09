@@ -31,16 +31,14 @@
 
 ## Building the mod from source
 - Manual preprocessing for certain work/changes:
-    - Many headers are mirrored+patched from https://github.com/dt-12345/totk , see `dt_totk/CLOBBER_mirror.sh` to update or further patch them. tldr it rewrites the folder with upstream + local patches, which we commit into this repo.
-    - angelscript source is similarly mirrored, and often receives nice new features
+    - Many headers are mirrored+patched see `subrepo/*/CLOBBER_mirror.sh` to update or further patch them. tldr it rewrites the folder with upstream + local patches, which we commit into this repo.
     - `syms/build.py` is a symbol map+metadata build pipeline, keep this in sync! A header include file for each game version holding symbols prepared for exlaunch's lookup utilities will be generated. Symbols supplied mangled will also be included in the linker script.
 - Run `make` in a suitable build environment (such as [devkitPro](https://devkitpro.org/wiki/Getting_Started) or a [docker container](https://hub.docker.com/r/devkitpro/devkita64)) with cmake installed
 - Mod `exefs` files are at `build/main.npdm` and `build/subsdk9`, copy `romfs` configs from the repo
 
 ## Repo overview
 - `.github` automatically builds and [releases](https://github.com/aquacluck/totk-lotuskit/releases) each commit. You could reproduce the build with this or set it up in your own repo clone.
-- `subrepo` contains mirroring+patching for several libs: angelscript, exlaunch
-- `dt_totk` contains many patched C++ headers for libs used in the game
+- `subrepo` contains mirroring+patching for several libs and header repos
 - `frontend` is an optional web frontend copied into every release zip. A quickie python http server is provided, and you can serve this however you like, but non-http `file://` access will not work!
 - `romfs` is a skeleton/template for files which should be installed with the mod, copied into every release zip
 - `src/program` is the C++ mod source

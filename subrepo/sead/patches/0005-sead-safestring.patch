@@ -1,0 +1,27 @@
+diff --git a/subrepo/sead/include/prim/seadSafeString.h b/subrepo/sead/include/prim/seadSafeString.h
+index 468884d..64b5489 100644
+--- a/subrepo/sead/include/prim/seadSafeString.h
++++ b/subrepo/sead/include/prim/seadSafeString.h
+@@ -133,8 +133,8 @@ public:
+     bool startsWith(const SafeStringBase<T>& prefix) const;
+     bool endsWith(const SafeStringBase<T>& suffix) const;
+ 
+-    static const T cNullChar;
+-    static const T cLineBreakChar;
++    static const T cNullChar = '\0';
++    static const T cLineBreakChar = '\n';
+     static const SafeStringBase cEmptyString;
+     static const s32 cMaximumLength = 0x80000;
+ 
+@@ -293,7 +293,10 @@ public:
+     inline void clear() { getMutableStringTop_()[0] = this->cNullChar; }
+ 
+ protected:
+-    void assureTerminationImpl_() const;
++    void assureTerminationImpl_() const {
++        auto* mutable_str = const_cast<BufferedSafeStringBase<T>*>(this);
++        mutable_str->getMutableStringTop_()[this->mBufferSize - 1] = this->cNullChar;
++    }
+ 
+     T* getMutableStringTop_() { return const_cast<T*>(this->mStringTop); }
+ 

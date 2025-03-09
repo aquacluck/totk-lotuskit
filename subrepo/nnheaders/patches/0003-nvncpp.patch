@@ -1,0 +1,20 @@
+diff --git a/subrepo/nnheaders/include/nvn/nvn_Cpp.h b/subrepo/nnheaders/include/nvn/nvn_Cpp.h
+index abd7305..202499b 100644
+--- a/subrepo/nnheaders/include/nvn/nvn_Cpp.h
++++ b/subrepo/nnheaders/include/nvn/nvn_Cpp.h
+@@ -1562,7 +1562,7 @@ public:
+ 
+ class Program {
+ protected:
+-    char reserved[192];
++    char reserved[128];
+ 
+     Program(const Program&) = delete;
+     const Program& operator=(const Program&) = delete;
+@@ -2544,4 +2544,4 @@ typedef void (*CommandBufferSignalEventFunc)(CommandBuffer*, const Event*, Event
+                                              EventSignalLocation::Enum, int, uint32_t);
+ typedef void (*CommandBufferSetStencilCullCriteriaFunc)(CommandBuffer*, StencilFunc::Enum, int,
+                                                         int);
+-}  // namespace nvn
+\ No newline at end of file
++}  // namespace nvn

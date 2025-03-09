@@ -1,0 +1,20 @@
+diff --git a/subrepo/sead/include/gfx/seadTextWriter.h b/subrepo/sead/include/gfx/seadTextWriter.h
+index f5a03e3..6a5b185 100644
+--- a/subrepo/sead/include/gfx/seadTextWriter.h
++++ b/subrepo/sead/include/gfx/seadTextWriter.h
+@@ -44,12 +44,14 @@ public:
+     void printImpl_(const char16_t*, int, bool, BoundBox2f*);
+     void printImpl_(const char*, int, bool, BoundBox2f*);
+ 
++#if not LOTUSKIT_HACK_SKIP_PRIVATE
+ private:
++#endif
+     Viewport* mViewport;
+     Projection* mProjection;
+     Camera* mCamera;
+     FontBase* mFont;
+-    sead::Vector2i mCursor;
++    Vector2f mCursor;
+     Vector2f mScale;
+     Color4f mColor;
+     int _48;

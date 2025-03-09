@@ -54,36 +54,38 @@ add_compile_definitions(LOTUSKIT_HACK_SKIP_PRIVATE=1)
 
 # TODO EventFlow
 
-# NintendoSDK
+# nnheaders (NintendoSDK)
 add_compile_definitions(
   NNSDK=1
+  NN_SDK="15.3.1"
   NN_SDK_MAJOR=15
   NN_SDK_MINOR=3
   NN_SDK_PATCH=1
   NN_SDK_TYPE="Release"
+  NN_WARE="1.6.1"
   NN_WARE_MAJOR=1
   NN_WARE_MINOR=6
   NN_WARE_PATCH=1
 )
-include_directories(${PROJECT_SOURCE_DIR}/dt_totk/lib/NintendoSDK/include) # headers
+include_directories(${PROJECT_SOURCE_DIR}/subrepo/nnheaders/include) # headers
 
 # agl
-include_directories(${PROJECT_SOURCE_DIR}/dt_totk/lib/agl/include) # headers
+include_directories(${PROJECT_SOURCE_DIR}/subrepo/agl/include) # headers
 
 # sead
 add_compile_definitions(SEAD_ZSTD=1)
-include_directories(${PROJECT_SOURCE_DIR}/dt_totk/lib/sead/include) # headers
+include_directories(${PROJECT_SOURCE_DIR}/subrepo/sead/include) # headers
 
 # zstd
-include_directories(${PROJECT_SOURCE_DIR}/dt_totk/lib/zstd/lib) # headers
-#include_directories(${PROJECT_SOURCE_DIR}/dt_totk/lib/zstd/lib/common)
-#include_directories(${PROJECT_SOURCE_DIR}/dt_totk/lib/zstd/lib/compress)
-#include_directories(${PROJECT_SOURCE_DIR}/dt_totk/lib/zstd/lib/decompress)
+include_directories(${PROJECT_SOURCE_DIR}/subrepo/zstd_include/lib) # headers
+#include_directories(${PROJECT_SOURCE_DIR}/subrepo/zstd_include/lib/common)
+#include_directories(${PROJECT_SOURCE_DIR}/subrepo/zstd_include/lib/compress)
+#include_directories(${PROJECT_SOURCE_DIR}/subrepo/zstd_include/lib/decompress)
 
 # havok
 
 # TODO structured exking header folder (game, engine, ...)
-# game, engine, ... -- symbols from the game where I don't have a well-defined header structure (ie not (yet) from dt_totk) are treated as an "exking" lib
+# game, engine, ... -- symbols from the game where I don't have a well-defined header structure are treated as an "exking" lib
 
 
 

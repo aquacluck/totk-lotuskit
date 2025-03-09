@@ -1,0 +1,67 @@
+diff --git a/subrepo/sead/include/gfx/seadPrimitiveRenderer.h b/subrepo/sead/include/gfx/seadPrimitiveRenderer.h
+index 0a00b99..eafd870 100644
+--- a/subrepo/sead/include/gfx/seadPrimitiveRenderer.h
++++ b/subrepo/sead/include/gfx/seadPrimitiveRenderer.h
+@@ -140,10 +140,11 @@ class PrimitiveRendererBase
+ public:
+     virtual void prepareFromBinaryImpl(Heap* heap, const void* bin_data, u32 bin_size) = 0;
+     virtual void prepareImpl(Heap* heap, const SafeString& path) = 0;
++    virtual void m3() = 0;
+     virtual void setCameraImpl(const Camera& camera) = 0;
+     virtual void setProjectionImpl(const Projection& projection) = 0;
+-    virtual void beginImpl() = 0;
+-    virtual void endImpl() = 0;
++    virtual void beginImpl(DrawContext*, const Matrix34f&, const Matrix44f&) = 0;
++    virtual void endImpl(DrawContext*) = 0;
+     virtual void drawQuadImpl(const Matrix34f& model_mtx, const Color4f& colorL,
+                               const Color4f& colorR) = 0;
+     virtual void drawQuadImpl(const Matrix34f& model_mtx, const Texture& texture,
+@@ -224,6 +225,8 @@ public:
+ 
+     void drawAxis(const Vector3f&, float);
+ 
++    PrimitiveDrawer* getPrimitiveDrawer() { return &mDrawer; }
++
+ private:
+     void doPrepare_(Heap* heap);
+ 
+diff --git a/subrepo/sead/include/gfx/seadProjection.h b/subrepo/sead/include/gfx/seadProjection.h
+index 0ccc4f2..e973110 100644
+--- a/subrepo/sead/include/gfx/seadProjection.h
++++ b/subrepo/sead/include/gfx/seadProjection.h
+@@ -26,8 +26,24 @@ public:
+     virtual void doUpdateDeviceMatrix(Matrix44f*, const Matrix44f&, Graphics::DevicePosture) const;
+     virtual void doScreenPosToCameraPosTo(Vector3f*, const Vector3f&) const = 0;
+ 
+-    void updateMatrixImpl_() const;
+-    const Matrix44f& getDeviceProjectionMatrix() const;
++    void updateMatrixImpl_() const {
++        if (mDirty) {
++            doUpdateMatrix(const_cast<Matrix44f*>(&mMatrix));
++            mDirty = false;
++
++            mDeviceDirty = true;
++            doUpdateDeviceMatrix(const_cast<Matrix44f*>(&mDeviceMatrix), mMatrix, mDevicePosture);
++            mDeviceDirty = false;
++        }
++        else if (mDeviceDirty) {
++            doUpdateDeviceMatrix(const_cast<Matrix44f*>(&mDeviceMatrix), mMatrix, mDevicePosture);
++            mDeviceDirty = false;
++        }
++    }
++    const Matrix44f& getDeviceProjectionMatrix() const {
++        updateMatrixImpl_();
++        return mDeviceMatrix;
++    }
+ 
+     void setDirty() { mDirty = true; }
+     void setDeviceDirty() { mDeviceDirty = true; }
+
+     void setDevicePosture(Graphics::DevicePosture pose)
+     {
+         mDevicePosture = pose;
+         setDeviceDirty();
+     }
+ 
+ private:
+     mutable bool mDirty;
