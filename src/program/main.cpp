@@ -25,23 +25,18 @@
 using Logger = lotuskit::Logger;
 
 
-HOOK_DEFINE_INLINE(StealHeap) {
+HOOK_DEFINE_INLINE(StealHeapHook) {
     static constexpr auto s_name = "engine::steal_heap"; // hacks
     inline static sead::Heap* stolenHeap = nullptr;
     static void Callback(exl::hook::InlineCtx* ctx) {
         constexpr auto xi = TOTK_VERSION == 100 ? 19 : 22;
         stolenHeap = reinterpret_cast<sead::Heap*>(ctx->X[xi]);
+        lotuskit::TextWriter::assignHeap(StealHeapHook::stolenHeap);
+        lotuskit::PrimitiveImpl::assignHeap(StealHeapHook::stolenHeap);
 
         char buf[32];
         nn::util::SNPrintf(buf, sizeof(buf), "yoink(%p)", stolenHeap);
         svcOutputDebugString(buf, strlen(buf));
-
-        lotuskit::server::WebSocket::assignHeap(stolenHeap);
-        lotuskit::TextWriter::assignHeap(stolenHeap);
-        lotuskit::PrimitiveImpl::assignHeap(stolenHeap);
-        lotuskit::script::engine::assignHeap(stolenHeap);
-        lotuskit::script::engine::createAndConfigureEngine();
-        lotuskit::script::engine::doAutorun();
     }
 };
 
@@ -129,6 +124,7 @@ HOOK_DEFINE_TRAMPOLINE(BaseProcMgr_addDependency) {
         // register ResidentActors for use everywhere
         if (!strcmp(parent.mName.cstr(), "Player") && lotuskit::script::globals::ResidentActors::Player != &parent) {
             lotuskit::script::globals::ResidentActors::Player = &parent;
+            lotuskit::ActorWatcher::assignSlot(0, &parent);
             Logger::logJson(json::object({ {"Player", (u64)(&parent)} }), "/hook/sym/BaseProcMgr_addDependency");
         }
         if (!strcmp(parent.mName.cstr(), "PlayerCamera") && lotuskit::script::globals::ResidentActors::PlayerCamera != &parent) {
@@ -203,6 +199,43 @@ HOOK_DEFINE_TRAMPOLINE(WorldManagerModuleBaseProcHook) {
     }
 };
 
+HOOK_DEFINE_INLINE(SendEventPlayReportHook) {
+    static constexpr auto s_name = "game::event::EventActorController::sendEventPlayReport";
+    static inline s8 defer_init_callcount = 1; // XXX 0 never fires oops
+
+    static void Callback(exl::hook::InlineCtx* ctx) {
+        // ignore n calls, proc once, ignore all further calls
+        if (defer_init_callcount < 0) { return; }
+        if (--defer_init_callcount != 0) { return; }
+
+        // main mod init
+        lotuskit::server::WebSocket::assignHeap(StealHeapHook::stolenHeap);
+        lotuskit::TextWriter::createFrameHeap();
+        lotuskit::PrimitiveImpl::createFrameHeap();
+        lotuskit::script::engine::assignHeap(StealHeapHook::stolenHeap);
+        lotuskit::script::engine::createAndConfigureEngine();
+        lotuskit::script::engine::doAutorun();
+
+        WorldManagerModuleBaseProcHook::Install(); // "main loop"
+        //FrameworkProcCalcHook::Install(); // TODO run observation/ActorWatcher/etc after calc
+        //FrameworkProcDrawHook::Install(); // TODO run tas/script before draw
+
+        //OnWhistleHook::Install();
+        OnRecallUpdateHighlightActorHook::Install();
+        OnRequestCreateActorAsyncHook::Install();
+        NinJoyNpadDevice_calcHook::Install();
+        lotuskit::util::player::InstallHooks();
+        lotuskit::util::world::InstallHooks();
+
+        //TODO check the branch we're overwriting -- ensure our "off" does the same thing
+        exl::patch::CodePatcher(EXL_SYM_OFFSET("game::component::GameCameraParam::HACK_cameraCalc")).BranchLinkInst((void*)lotuskit::util::camera::disgustingCameraHook);
+
+        lotuskit::DebugDrawHooks::DebugDrawLayerMaskHook::Install();
+        lotuskit::DebugDrawHooks::DebugDrawHook::Install();
+        lotuskit::PrimitiveImpl::setupStatic();
+    }
+};
+
 extern "C" void exl_main(void* x0, void* x1) {
     exl::hook::Initialize();
 
@@ -210,31 +243,13 @@ extern "C" void exl_main(void* x0, void* x1) {
     nn::util::SNPrintf(buf, sizeof(buf), "[totk-lotuskit:%d] exl_main main_offset=%p", TOTK_VERSION, exl::util::GetMainModuleInfo().m_Total.m_Start);
     svcOutputDebugString(buf, strlen(buf));
 
-    WorldManagerModuleBaseProcHook::Install(); // "main loop"
-    StealHeap::Install(); // called once, a bit later during bootup
-    //OnWhistleHook::Install();
-    OnRecallUpdateHighlightActorHook::Install();
-    OnRequestCreateActorAsyncHook::Install();
-    BaseProcMgr_addDependency::Install();
-    NinJoyNpadDevice_calcHook::Install();
-    lotuskit::util::player::InstallHooks();
-    lotuskit::util::pause::InstallHooks();
-    lotuskit::util::world::InstallHooks();
-
-    //TODO check the branch we're overwriting -- ensure our "off" does the same thing
-    exl::patch::CodePatcher(EXL_SYM_OFFSET("game::component::GameCameraParam::HACK_cameraCalc")).BranchLinkInst((void*)lotuskit::util::camera::disgustingCameraHook);
-
-    // hooks for textwriter+primitivedrawer overlay
-    bool do_debugdraw = true; // XXX assert -- can't access fs here without sdk init?
-    if (do_debugdraw) {
-        lotuskit::DebugDrawHooks::BootupInitDebugDrawersHook::Install();
-        lotuskit::DebugDrawHooks::DebugDrawLayerMaskHook::Install();
-        lotuskit::DebugDrawHooks::DebugDrawHook::Install();
-        lotuskit::PrimitiveImpl::setupStatic();
-    }
-
-    //InputHelper::initKBM();
-    //InputHelper::setPort(0); // default controller port
+    // memory is tight until engine+game init is settled, so we defer most initialization until then
+    StealHeapHook::Install(); // called once mid bootup
+    SendEventPlayReportHook::Install(); // first called on title screen, used for mod init
+    BaseProcMgr_addDependency::Install(); // XXX used to locate Player globally, could be deferred otherwise
+    // XXX assert textwriter+primitivedrawer deps available
+    lotuskit::DebugDrawHooks::BootupInitDebugDrawersHook::Install();
+    lotuskit::util::pause::InstallHooks(); // XXX hooks PauseMgr init, could be deferred otherwise
 }
 
 // Note: this is only applicable in the context of applets/sysmodules

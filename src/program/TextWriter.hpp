@@ -112,10 +112,12 @@ namespace lotuskit {
         inline static void assignHeap(sead::Heap* heap) {
             // assert only called once
             debugDrawerInternalHeap = heap;
-
+        }
+        inline static void createFrameHeap() {
+            // assert only called once
             using impl_t = sead::FrameHeap* (size_t, const sead::SafeString&, sead::Heap*, s32, sead::Heap::HeapDirection, bool);
             auto impl = EXL_SYM_RESOLVE<impl_t*>("sead::FrameHeap::create");
-            frame.heap = impl(0x4000, "lotuskit::TextWriter", heap, 8, (sead::Heap::HeapDirection)1, 0); // 1 = forward XXX what are args 4+6?
+            frame.heap = impl(0x4000, "lotuskit::TextWriter", debugDrawerInternalHeap, 8, (sead::Heap::HeapDirection)1, 0); // 1 = forward XXX what are args 4+6?
 
             nn::os::InitializeMutex(&frame.drawLock, true, 0);
         }
@@ -159,6 +161,10 @@ namespace lotuskit {
         HOOK_DEFINE_TRAMPOLINE(DebugDrawHook) {
             static constexpr auto s_name = "agl::lyr::Layer::drawDebugInfo_";
             static void Callback(agl::lyr::Layer* layer, const agl::lyr::RenderInfo& info) {
+                // do nothing until initialized
+                if (lotuskit::TextWriter::frame.heap == nullptr) { return; }
+                if (lotuskit::PrimitiveImpl::frame.heap == nullptr) { return; }
+
                 // draw onto the given layer: PrimitiveDrawer for 3D, TextWriter for 2D
                 auto* sead_draw_ctx = dynamic_cast<sead::DrawContext*>(info.draw_ctx);
 

@@ -11,6 +11,7 @@ namespace lotuskit {
 
         PrimitiveDrawerDrawNode* appendNewDrawNode(size_t drawList_i) {
             // alloc
+            if (frame.heap == nullptr) { return nullptr; }
             PrimitiveDrawerDrawNode* newNode = (PrimitiveDrawerDrawNode*)frame.heap->alloc(sizeof(PrimitiveDrawerDrawNode));
             if (newNode == nullptr) { return nullptr; } // heap full (this can happen anytime Main 3D is blocked from drawing, eg quickmenu)
             newNode->primCallType = 0;

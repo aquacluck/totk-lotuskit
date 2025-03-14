@@ -115,10 +115,12 @@ namespace lotuskit {
         inline static void assignHeap(sead::Heap* heap) {
             // assert only called once
             debugDrawerInternalHeap = heap;
-
+        }
+        inline static void createFrameHeap() {
+            // assert only called once
             using impl_t = sead::FrameHeap* (size_t, const sead::SafeString&, sead::Heap*, s32, sead::Heap::HeapDirection, bool);
             auto impl = EXL_SYM_RESOLVE<impl_t*>("sead::FrameHeap::create");
-            frame.heap = impl(0x4000, "lotuskit::PrimitiveDrawer", heap, 8, (sead::Heap::HeapDirection)1, 0); // 1 = forward XXX what are args 4+6?
+            frame.heap = impl(0x4000, "lotuskit::PrimitiveDrawer", debugDrawerInternalHeap, 8, (sead::Heap::HeapDirection)1, 0); // 1 = forward XXX what are args 4+6?
 
             nn::os::InitializeMutex(&frame.drawLock, true, 0);
         }

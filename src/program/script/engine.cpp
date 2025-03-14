@@ -81,7 +81,6 @@ namespace lotuskit::script::engine {
     }
 
     void doAutorun() {
-        lotuskit::ActorWatcher::assignSlotAwaitSpawn(0, "Player");
         const char* autorunFilename = "content:/totk_lotuskit/autorun.as";
         if (lotuskit::util::romfs::fileExists(autorunFilename)) {
             execRomfsFileInScratchModule(autorunFilename);
