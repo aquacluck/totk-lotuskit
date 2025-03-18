@@ -35,7 +35,7 @@ namespace lotuskit {
         static constexpr size_t MAX_DRAWLISTS = 8;
         inline static std::atomic<TextWriterDrawNode*> drawLists[MAX_DRAWLISTS] = {0}; // independent chains of calls (eg for different relative positionings)
         inline static sead::FrameHeap* heap = nullptr; // draw state is wiped each frame
-        nn::os::MutexType drawLock;
+        nn::os::MutexType drawListLock;
     };
 
     struct TextWriterToastNode {
@@ -75,21 +75,12 @@ namespace lotuskit {
         public:
         inline static void printf(size_t drawList_i, const char* fmt, auto&&... args) {
             // FIXME some symbol export issue if placed in cpp? [rtld] Unresolved symbol: _ZN8lotuskit10TextWriter6printfIJRA4_KcEEEvmPS2_DpOT_
-            // FIXME early return if textwriter disabled?
-            TextWriterDrawNode* newNode = appendNewDrawNode(drawList_i);
-            if (newNode == nullptr) { return; }
-
-            // set outputText
-            char buf[2000]; // TODO std::format etc with proper allocator?
+            char buf[2000];
             nn::util::SNPrintf(buf, sizeof(buf), fmt, std::forward<decltype(args)>(args)...);
-            newNode->outputText = (char*)frame.heap->alloc(strlen(buf)+1);
-            if (newNode->outputText == nullptr) { return; }
-            std::memcpy(newNode->outputText, buf, strlen(buf)+1);
+            appendNewDrawNode(drawList_i, buf, nullptr);
         }
         inline static void appendCallback(size_t drawList_i, TextWriterDrawCallback* fn) {
-            TextWriterDrawNode* newNode = appendNewDrawNode(drawList_i);
-            if (newNode == nullptr) { return; }
-            newNode->fn = fn;
+            appendNewDrawNode(drawList_i, nullptr, fn); // caller owns fn lifetime
         }
         inline static void toastf(u32 ttlFrames, const char* fmt, auto&&... args) {
             TextWriterToastNode* newNode = appendNewToastNode(ttlFrames);
@@ -117,11 +108,11 @@ namespace lotuskit {
             // assert only called once
             using impl_t = sead::FrameHeap* (size_t, const sead::SafeString&, sead::Heap*, s32, sead::Heap::HeapDirection, bool);
             auto impl = EXL_SYM_RESOLVE<impl_t*>("sead::FrameHeap::create");
-            frame.heap = impl(0x4000, "lotuskit::TextWriter", debugDrawerInternalHeap, 8, (sead::Heap::HeapDirection)1, 0); // 1 = forward XXX what are args 4+6?
+            frame.heap = impl(0x4000, "lotuskit::TextWriter", debugDrawerInternalHeap, 8, (sead::Heap::HeapDirection)1, /* doThreadsafeImpl? */ false); // 1 = forward XXX what are args 4+6?
 
-            nn::os::InitializeMutex(&frame.drawLock, true, 0);
+            nn::os::InitializeMutex(&frame.drawListLock, true, 0);
         }
-        static TextWriterDrawNode* appendNewDrawNode(size_t drawList_i);
+        static void appendNewDrawNode(size_t drawList_i, const char* text = nullptr, TextWriterDrawCallback* fn = nullptr);
         static TextWriterToastNode* appendNewToastNode(u32 ttlFrames);
         static void drawFrame(TextWriterExt*);
         static void drawToasts(TextWriterExt*);

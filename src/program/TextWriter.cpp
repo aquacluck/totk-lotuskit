@@ -1,34 +1,50 @@
 #include "TextWriter.hpp"
 
 namespace lotuskit {
-    TextWriterFrame TextWriter::frame = {0};
+    TextWriterFrame TextWriter::frame = {};
 
-    TextWriterDrawNode* TextWriter::appendNewDrawNode(size_t drawList_i) {
-        // alloc
-        if (frame.heap == nullptr) { return nullptr; }
-        TextWriterDrawNode* newNode = (TextWriterDrawNode*)frame.heap->alloc(sizeof(TextWriterDrawNode));
-        if (newNode == nullptr) { return nullptr; } // heap full (this could happen if Tool 2D was blocked from drawing)
+    void TextWriter::appendNewDrawNode(size_t drawList_i, const char* text, TextWriterDrawCallback* fn) {
+        if (frame.heap == nullptr) { return; } // uninitialized
+        TextWriterDrawNode* newNode = nullptr;
+        TextWriterDrawNode* cmpNode = nullptr;
+        TextWriterDrawNode* node = nullptr; // for traversal
+
+        // drop concurrent + mid-draw requests
+        // TODO lock free appends are possible (although current impl may be bad under contention?), but unclear how lock free alloc+freeAll would work (eg FrameHeap behavior)
+        if (!nn::os::TryLockMutex(&frame.drawListLock)) { return; } // lock or fail
+
+        // alloc + store
+        newNode = (TextWriterDrawNode*)frame.heap->alloc(sizeof(TextWriterDrawNode));
+        if (newNode == nullptr) { goto RELEASE_AND_RETURN; } // alloc fail (eg too many writes piled up)
         newNode->outputText = nullptr;
-        newNode->fn = nullptr;
+        newNode->fn = fn; // fn lifetime managed by caller
         newNode->next.store(nullptr);
+        if (text != nullptr) {
+            auto n = strlen(text) + 1;
+            newNode->outputText = (char*)frame.heap->alloc(n);
+            // don't even bother appending partially allocated nodes, just drop the node/call
+            if (newNode->outputText == nullptr) { goto RELEASE_AND_RETURN; }
+            std::memcpy(newNode->outputText, text, n);
+        }
 
         // append
-        TextWriterDrawNode* cmpNode = nullptr; // ensure null at time of write
-        if (frame.drawLists[drawList_i].compare_exchange_weak(cmpNode, newNode)) { return newNode; } // success -- appended to empty list
+        cmpNode = nullptr; // ensure null at time of write
+        if (frame.drawLists[drawList_i].compare_exchange_strong(cmpNode, newNode, std::memory_order_acq_rel)) { goto RELEASE_AND_RETURN; } // success -- appended to empty list
         // not null, enter the list
-        TextWriterDrawNode* node = frame.drawLists[drawList_i].load();
+        node = frame.drawLists[drawList_i].load();
         while (node) {
-            cmpNode = nullptr; // ensure null at time of write // FIXME can't node be freed rn?
-            if (node->next.compare_exchange_weak(cmpNode, newNode)) { return newNode; } // success
+            cmpNode = nullptr; // ensure null at time of write
+            if (node->next.compare_exchange_strong(cmpNode, newNode, std::memory_order_acq_rel)) { break; } // success
             // not null, traverse into next
             node = cmpNode;
         }
 
-        return nullptr; // XXX frame completed after first compare, just abandon this draw node, its data is probably stale anyways
+        RELEASE_AND_RETURN:
+        nn::os::UnlockMutex(&frame.drawListLock); // release
     }
 
     void TextWriter::drawFrame(TextWriterExt* writer) {
-        nn::os::LockMutex(&frame.drawLock); // FIXME useless locking
+        nn::os::LockMutex(&frame.drawListLock);
 
         for (size_t i=0; i < TextWriterFrame::MAX_DRAWLISTS; i++) {
             TextWriterDrawNode* node = frame.drawLists[i].load();
@@ -48,15 +64,15 @@ namespace lotuskit {
                 if (node->outputText != nullptr) {
                     writer->pprintf(textPos, node->outputText);
                 }
-                node = node->next.load();
 
+                node = node->next.load();
             } while (node != nullptr);
 
             frame.drawLists[i].store(nullptr); // wipe for next frame
         }
 
         frame.heap->freeAll();
-        nn::os::UnlockMutex(&frame.drawLock);
+        nn::os::UnlockMutex(&frame.drawListLock);
     }
 
     void TextWriter::drawToasts(TextWriterExt* writer) {
@@ -98,7 +114,7 @@ namespace lotuskit {
         for(size_t i=0; i < MAX_TOASTS; i++) {
             //if (toasts[i] == nullptr) { toasts[i] = newNode; }
             cmpNode = nullptr; // ensure null at time of write
-            if (toasts[i].compare_exchange_weak(cmpNode, newNode)) { return newNode; } // success -- inserted
+            if (toasts[i].compare_exchange_strong(cmpNode, newNode)) { return newNode; } // success -- inserted
         }
 
         // fail

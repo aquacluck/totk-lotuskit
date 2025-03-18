@@ -93,7 +93,7 @@ namespace lotuskit {
         static constexpr size_t MAX_DRAWLISTS = 2;
         inline static std::atomic<PrimitiveDrawerDrawNode*> drawLists[MAX_DRAWLISTS] = {0};
         inline static sead::FrameHeap* heap = nullptr; // draw state is wiped each frame
-        nn::os::MutexType drawLock;
+        nn::os::MutexType drawListLock;
     };
 
     /*
@@ -120,12 +120,12 @@ namespace lotuskit {
             // assert only called once
             using impl_t = sead::FrameHeap* (size_t, const sead::SafeString&, sead::Heap*, s32, sead::Heap::HeapDirection, bool);
             auto impl = EXL_SYM_RESOLVE<impl_t*>("sead::FrameHeap::create");
-            frame.heap = impl(0x4000, "lotuskit::PrimitiveDrawer", debugDrawerInternalHeap, 8, (sead::Heap::HeapDirection)1, 0); // 1 = forward XXX what are args 4+6?
+            frame.heap = impl(0x4000, "lotuskit::PrimitiveDrawer", debugDrawerInternalHeap, 8, (sead::Heap::HeapDirection)1, /* doThreadsafeImpl? */ false); // 1 = forward XXX what are args 4+6?
 
-            nn::os::InitializeMutex(&frame.drawLock, true, 0);
+            nn::os::InitializeMutex(&frame.drawListLock, true, 0);
         }
 
-        PrimitiveDrawerDrawNode* appendNewDrawNode(size_t drawList_i);
+        void appendNewDrawNode(size_t drawList_i, u8 primCallType, size_t primCallArgsSize, void* primCallArgs);
         void drawFrame(agl::lyr::Layer* layer, const agl::lyr::RenderInfo& info);
         void dispatch(u8 primCallType, void* node);
     } // ns

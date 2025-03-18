@@ -9,44 +9,42 @@ namespace lotuskit {
     namespace PrimitiveImpl {
         PrimitiveDrawerFrame frame = {0};
 
-        PrimitiveDrawerDrawNode* appendNewDrawNode(size_t drawList_i) {
-            // alloc
-            if (frame.heap == nullptr) { return nullptr; }
-            PrimitiveDrawerDrawNode* newNode = (PrimitiveDrawerDrawNode*)frame.heap->alloc(sizeof(PrimitiveDrawerDrawNode));
-            if (newNode == nullptr) { return nullptr; } // heap full (this can happen anytime Main 3D is blocked from drawing, eg quickmenu)
-            newNode->primCallType = 0;
-            newNode->primCallArgs = nullptr;
+        void appendNewDrawNode(size_t drawList_i, u8 primCallType, size_t primCallArgsSize, void* primCallArgs) {
+            if (frame.heap == nullptr) { return; } // uninitialized
+            PrimitiveDrawerDrawNode* newNode = nullptr;
+            PrimitiveDrawerDrawNode* cmpNode = nullptr;
+            PrimitiveDrawerDrawNode* node = nullptr; // for traversal
+
+            // drop concurrent + mid-draw requests
+            if (!nn::os::TryLockMutex(&frame.drawListLock)) { return; } // lock or fail
+
+            // alloc + store
+            newNode = (PrimitiveDrawerDrawNode*)frame.heap->alloc(sizeof(PrimitiveDrawerDrawNode));
+            if (newNode == nullptr) { goto RELEASE_AND_RETURN; } // heap full (this can happen anytime Main 3D is blocked from drawing, eg quickmenu)
+            newNode->primCallType = primCallType;
+            newNode->primCallArgs = frame.heap->alloc(primCallArgsSize);
+            if (newNode->primCallArgs == nullptr) { goto RELEASE_AND_RETURN; }
+            std::memcpy(newNode->primCallArgs, primCallArgs, primCallArgsSize);
             newNode->next.store(nullptr);
 
             // append
-            PrimitiveDrawerDrawNode* cmpNode = nullptr; // ensure null at time of write
-            if (frame.drawLists[drawList_i].compare_exchange_weak(cmpNode, newNode)) { return newNode; } // success -- appended to empty list
+            cmpNode = nullptr; // ensure null at time of write
+            if (frame.drawLists[drawList_i].compare_exchange_strong(cmpNode, newNode, std::memory_order_acq_rel)) { goto RELEASE_AND_RETURN; } // success -- appended to empty list
             // not null, enter the list
-            PrimitiveDrawerDrawNode* node = frame.drawLists[drawList_i].load();
+            node = frame.drawLists[drawList_i].load();
             while (node) {
-                cmpNode = nullptr; // ensure null at time of write // FIXME can't node be freed rn?
-                if (node->next.compare_exchange_weak(cmpNode, newNode)) { return newNode; } // success
+                cmpNode = nullptr; // ensure null at time of write
+                if (node->next.compare_exchange_strong(cmpNode, newNode, std::memory_order_acq_rel)) { break; } // success
                 // not null, traverse into next
                 node = cmpNode;
             }
 
-            return nullptr; // XXX frame completed after first compare, just abandon this draw node, its data is probably stale anyways
-        }
-
-        template <typename T>
-        T* allocNodeArgs(PrimitiveDrawerDrawNode* node) {
-            if (node == nullptr) { return nullptr; }
-            auto ret = (T*)frame.heap->alloc(sizeof(T));
-            if (ret == nullptr) { return nullptr; }
-            node->primCallArgs = (void*)ret;
-            return ret;
+            RELEASE_AND_RETURN:
+            nn::os::UnlockMutex(&frame.drawListLock);
         }
 
         void drawFrame(agl::lyr::Layer* layer, const agl::lyr::RenderInfo& info) {
-            nn::os::LockMutex(&frame.drawLock); // FIXME useless locking -- needs condition var or something:
-            // appends should inc then block if drawLock is set/held, but not acquire it
-            // appends should inc+dec an atomic counter freely as they enter+leave
-            // draws should acquire drawLock, wait for counter to reach 0, then proceed
+            nn::os::LockMutex(&frame.drawListLock);
 
             lotuskit::PrimitiveImpl::setupRenderer(info);
             lotuskit::PrimitiveImpl::begin();
@@ -59,8 +57,8 @@ namespace lotuskit {
                     if (node->primCallType != 0) {
                         PrimitiveImpl::dispatch(node->primCallType, node->primCallArgs);
                     }
-                    node = node->next.load();
 
+                    node = node->next.load();
                 } while (node != nullptr);
 
                 frame.drawLists[i].store(nullptr); // wipe for next frame
@@ -70,7 +68,7 @@ namespace lotuskit {
             lotuskit::PrimitiveImpl::end();
 
             frame.heap->freeAll();
-            nn::os::UnlockMutex(&frame.drawLock);
+            nn::os::UnlockMutex(&frame.drawListLock);
         }
 
         void dispatch(u8 primCallType, void* node) {
@@ -145,135 +143,66 @@ namespace lotuskit {
 
     namespace PrimitiveDrawer {
         void setModelMtx(size_t drawList_i, const sead::Matrix34f &mtx) {
-            auto* newNode = PrimitiveImpl::appendNewDrawNode(drawList_i);
-            auto* args = PrimitiveImpl::allocNodeArgs<PrimitiveDrawerDrawNodeArgs::SetModelMtx>(newNode);
-            if (newNode == nullptr || args == nullptr) { return; }
-            newNode->primCallType = 1;
-            args->mtx = mtx;
+            auto args = PrimitiveDrawerDrawNodeArgs::SetModelMtx{.mtx = mtx};
+            PrimitiveImpl::appendNewDrawNode(drawList_i, 1, sizeof(args), &args);
         }
         void setProjection(size_t drawList_i, sead::Projection* projection) {
-            auto* newNode = PrimitiveImpl::appendNewDrawNode(drawList_i);
-            auto* args = PrimitiveImpl::allocNodeArgs<PrimitiveDrawerDrawNodeArgs::SetProjection>(newNode);
-            if (newNode == nullptr || args == nullptr) { return; }
-            newNode->primCallType = 2;
-            args->projection = projection;
+            auto args = PrimitiveDrawerDrawNodeArgs::SetProjection{.projection = projection};
+            PrimitiveImpl::appendNewDrawNode(drawList_i, 2, sizeof(args), &args);
         }
         void setCamera(size_t drawList_i, sead::Camera* camera) {
-            auto* newNode = PrimitiveImpl::appendNewDrawNode(drawList_i);
-            auto* args = PrimitiveImpl::allocNodeArgs<PrimitiveDrawerDrawNodeArgs::SetCamera>(newNode);
-            if (newNode == nullptr || args == nullptr) { return; }
-            newNode->primCallType = 3;
-            args->camera = camera;
+            auto args = PrimitiveDrawerDrawNodeArgs::SetCamera{.camera = camera};
+            PrimitiveImpl::appendNewDrawNode(drawList_i, 3, sizeof(args), &args);
         }
         void setDrawCtx(size_t drawList_i, sead::DrawContext* draw_ctx) {
-            auto* newNode = PrimitiveImpl::appendNewDrawNode(drawList_i);
-            auto* args = PrimitiveImpl::allocNodeArgs<PrimitiveDrawerDrawNodeArgs::SetDrawCtx>(newNode);
-            if (newNode == nullptr || args == nullptr) { return; }
-            newNode->primCallType = 4;
-            args->draw_ctx = draw_ctx;
+            auto args = PrimitiveDrawerDrawNodeArgs::SetDrawCtx{.draw_ctx = draw_ctx};
+            PrimitiveImpl::appendNewDrawNode(drawList_i, 4, sizeof(args), &args);
         }
         /*
         void drawQuad(size_t drawList_i, const sead::PrimitiveDrawer::QuadArg& arg) { // TODO de-overload these? cpp overloads in AS bindings can be painful
-            auto* newNode = PrimitiveImpl::appendNewDrawNode(drawList_i);
-            auto* args = PrimitiveImpl::allocNodeArgs<PrimitiveDrawerDrawNodeArgs::Quad>(newNode);
-            if (newNode == nullptr || args == nullptr) { return; }
-            newNode->primCallType = 5;
-            args->arg = arg;
+            auto args = PrimitiveDrawerDrawNodeArgs::Quad{.arg = arg};
+            PrimitiveImpl::appendNewDrawNode(drawList_i, 5, sizeof(args), &args);
         }
         */
         void drawQuad(size_t drawList_i, const sead::Color4f& c0, const sead::Color4f& c1) {
-            auto* newNode = PrimitiveImpl::appendNewDrawNode(drawList_i);
-            auto* args = PrimitiveImpl::allocNodeArgs<PrimitiveDrawerDrawNodeArgs::Quad2>(newNode);
-            if (newNode == nullptr || args == nullptr) { return; }
-            newNode->primCallType = 6;
-            args->c0 = c0;
-            args->c1 = c1;
+            auto args = PrimitiveDrawerDrawNodeArgs::Quad2{.c0 = c0, .c1 = c1};
+            PrimitiveImpl::appendNewDrawNode(drawList_i, 6, sizeof(args), &args);
         }
         void drawBox(size_t drawList_i, const sead::Color4f& c0, const sead::Color4f& c1) {
-            auto* newNode = PrimitiveImpl::appendNewDrawNode(drawList_i);
-            auto* args = PrimitiveImpl::allocNodeArgs<PrimitiveDrawerDrawNodeArgs::Box>(newNode);
-            if (newNode == nullptr || args == nullptr) { return; }
-            newNode->primCallType = 7;
-            args->c0 = c0;
-            args->c1 = c1;
+            auto args = PrimitiveDrawerDrawNodeArgs::Box{.c0 = c0, .c1 = c1};
+            PrimitiveImpl::appendNewDrawNode(drawList_i, 7, sizeof(args), &args);
         }
         void drawWireCube(size_t drawList_i, const sead::PrimitiveDrawer::CubeArg& arg) {
-            auto* newNode = PrimitiveImpl::appendNewDrawNode(drawList_i);
-            auto* args = PrimitiveImpl::allocNodeArgs<PrimitiveDrawerDrawNodeArgs::WireCube>(newNode);
-            if (newNode == nullptr || args == nullptr) { return; }
-            newNode->primCallType = 8;
-            args->arg = arg;
+            auto args = PrimitiveDrawerDrawNodeArgs::WireCube{.arg = arg};
+            PrimitiveImpl::appendNewDrawNode(drawList_i, 8, sizeof(args), &args);
         }
         void drawLine(size_t drawList_i, const sead::Vector3f& start, const sead::Vector3f& end, const sead::Color4f& c0, const sead::Color4f& c1) {
-            auto* newNode = PrimitiveImpl::appendNewDrawNode(drawList_i);
-            auto* args = PrimitiveImpl::allocNodeArgs<PrimitiveDrawerDrawNodeArgs::Line>(newNode);
-            if (newNode == nullptr || args == nullptr) { return; }
-            newNode->primCallType = 9;
-            args->start = start;
-            args->end = end;
-            args->c0 = c0;
-            args->c1 = c1;
+            auto args = PrimitiveDrawerDrawNodeArgs::Line{.start = start, .end = end, .c0 = c0, .c1 = c1};
+            PrimitiveImpl::appendNewDrawNode(drawList_i, 9, sizeof(args), &args);
         }
         void drawSphere4x8(size_t drawList_i, const sead::Vector3f& pos, float radius, const sead::Color4f& north, const sead::Color4f& south) {
-            auto* newNode = PrimitiveImpl::appendNewDrawNode(drawList_i);
-            auto* args = PrimitiveImpl::allocNodeArgs<PrimitiveDrawerDrawNodeArgs::Sphere4x8>(newNode);
-            if (newNode == nullptr || args == nullptr) { return; }
-            newNode->primCallType = 10;
-            args->pos = pos;
-            args->radius = radius;
-            args->north = north;
-            args->south = south;
+            auto args = PrimitiveDrawerDrawNodeArgs::Sphere4x8{.pos = pos, .radius = radius, .north = north, .south = south};
+            PrimitiveImpl::appendNewDrawNode(drawList_i, 10, sizeof(args), &args);
         }
         void drawSphere8x16(size_t drawList_i, const sead::Vector3f& pos, float radius, const sead::Color4f& north, const sead::Color4f& south) {
-            auto* newNode = PrimitiveImpl::appendNewDrawNode(drawList_i);
-            auto* args = PrimitiveImpl::allocNodeArgs<PrimitiveDrawerDrawNodeArgs::Sphere8x16>(newNode);
-            if (newNode == nullptr || args == nullptr) { return; }
-            newNode->primCallType = 11;
-            args->pos = pos;
-            args->radius = radius;
-            args->north = north;
-            args->south = south;
+            auto args = PrimitiveDrawerDrawNodeArgs::Sphere8x16{.pos = pos, .radius = radius, .north = north, .south = south};
+            PrimitiveImpl::appendNewDrawNode(drawList_i, 11, sizeof(args), &args);
         }
         void drawDisk32(size_t drawList_i, const sead::Vector3f& pos, float radius, const sead::Color4f& center, const sead::Color4f& edge) {
-            auto* newNode = PrimitiveImpl::appendNewDrawNode(drawList_i);
-            auto* args = PrimitiveImpl::allocNodeArgs<PrimitiveDrawerDrawNodeArgs::Disk32>(newNode);
-            if (newNode == nullptr || args == nullptr) { return; }
-            newNode->primCallType = 12;
-            args->pos = pos;
-            args->radius = radius;
-            args->center = center;
-            args->edge = edge;
+            auto args = PrimitiveDrawerDrawNodeArgs::Disk32{.pos = pos, .radius = radius, .center = center, .edge = edge};
+            PrimitiveImpl::appendNewDrawNode(drawList_i, 12, sizeof(args), &args);
         }
         void drawCircle32(size_t drawList_i, const sead::Vector3f& pos, float radius, const sead::Color4f& color) {
-            auto* newNode = PrimitiveImpl::appendNewDrawNode(drawList_i);
-            auto* args = PrimitiveImpl::allocNodeArgs<PrimitiveDrawerDrawNodeArgs::Circle32>(newNode);
-            if (newNode == nullptr || args == nullptr) { return; }
-            newNode->primCallType = 13;
-            args->pos = pos;
-            args->radius = radius;
-            args->color = color;
+            auto args = PrimitiveDrawerDrawNodeArgs::Circle32{.pos = pos, .radius = radius, .color = color};
+            PrimitiveImpl::appendNewDrawNode(drawList_i, 13, sizeof(args), &args);
         }
         void drawCylinder16(size_t drawList_i, const sead::Vector3f& pos, float radius, float height, const sead::Color4f& top, const sead::Color4f& btm) {
-            auto* newNode = PrimitiveImpl::appendNewDrawNode(drawList_i);
-            auto* args = PrimitiveImpl::allocNodeArgs<PrimitiveDrawerDrawNodeArgs::Cylinder16>(newNode);
-            if (newNode == nullptr || args == nullptr) { return; }
-            newNode->primCallType = 14;
-            args->pos = pos;
-            args->radius = radius;
-            args->height = height;
-            args->top = top;
-            args->btm = btm;
+            auto args = PrimitiveDrawerDrawNodeArgs::Cylinder16{.pos = pos, .radius = radius, .height = height, .top = top, .btm = btm};
+            PrimitiveImpl::appendNewDrawNode(drawList_i, 14, sizeof(args), &args);
         }
         void drawCylinder32(size_t drawList_i, const sead::Vector3f& pos, float radius, float height, const sead::Color4f& top, const sead::Color4f& btm) {
-            auto* newNode = PrimitiveImpl::appendNewDrawNode(drawList_i);
-            auto* args = PrimitiveImpl::allocNodeArgs<PrimitiveDrawerDrawNodeArgs::Cylinder32>(newNode);
-            if (newNode == nullptr || args == nullptr) { return; }
-            newNode->primCallType = 15;
-            args->pos = pos;
-            args->radius = radius;
-            args->height = height;
-            args->top = top;
-            args->btm = btm;
+            auto args = PrimitiveDrawerDrawNodeArgs::Cylinder32{.pos = pos, .radius = radius, .height = height, .top = top, .btm = btm};
+            PrimitiveImpl::appendNewDrawNode(drawList_i, 15, sizeof(args), &args);
         }
 
     } // ns

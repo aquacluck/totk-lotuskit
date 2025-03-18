@@ -174,30 +174,47 @@ HOOK_DEFINE_TRAMPOLINE(NinJoyNpadDevice_calcHook) {
     }
 };
 
-HOOK_DEFINE_TRAMPOLINE(WorldManagerModuleBaseProcHook) {
-    static constexpr auto s_name = "game::wm::WorldManagerModule::baseProcExe";
+HOOK_DEFINE_TRAMPOLINE(FrameworkProcCalcHook) {
+    static constexpr auto s_name = "engine::framework::Framework::procCalc_";
 
-    static void Callback(double self, double param_2, double param_3, double param_4, void *wmmodule, void *param_6) {
-        // drawlist 0 near top-left (default)
-        // drawlist 1 near top-right
-        lotuskit::TextWriter::appendCallback(1, [](lotuskit::TextWriterExt* writer, sead::Vector2f* textPos) {
-            textPos->x = 1280.0 - 155.0;
-            textPos->y = 2.0;
-        });
+    static void Callback(void* self) {
+        Orig(self); // perform observations after calc for fresh results
 
-        lotuskit::tas::Playback::calc(); // may re-enter script when currently scheduled input is complete
-        lotuskit::tas::Record::calc();
-        lotuskit::tas::InputDisplay::draw();
-
-        lotuskit::server::WebSocket::calc(); // noblock recv, but blocking processing if enabled
-
-        Orig(self, param_2, param_3, param_4, wmmodule, param_6);
-
-        lotuskit::util::pause::drawPauses(); // FIXME doesnt really belong in here, observe from somewhere that cant be paused
+        lotuskit::util::pause::drawPauses();
         lotuskit::ActorWatcher::calc();
         lotuskit::HexDump::calc();
     }
 };
+
+HOOK_DEFINE_TRAMPOLINE(FrameworkProcDrawHook) {
+    static constexpr auto s_name = "engine::framework::Framework::procDraw_";
+
+    static void Callback(void* self) {
+        // drawlist 1 near top-right for tas
+        lotuskit::TextWriter::appendCallback(1, [](lotuskit::TextWriterExt* writer, sead::Vector2f* textPos) {
+            textPos->x = 1280.0 - 155.0;
+            textPos->y = 2.0;
+        });
+        lotuskit::tas::Playback::calc(); // may re-enter script when currently scheduled input is complete
+        lotuskit::tas::Record::calc();
+        lotuskit::tas::InputDisplay::draw();
+        lotuskit::server::WebSocket::calc(); // noblock recv, but blocking processing if enabled
+
+        Orig(self); // perform tas+script+scheduling before draw for synced display
+    }
+};
+
+/*
+HOOK_DEFINE_TRAMPOLINE(WorldManagerModuleBaseProcHook) {
+    static constexpr auto s_name = "game::wm::WorldManagerModule::baseProcExe";
+    inline static u64 ctr = 0;
+
+    static void Callback(double self, double param_2, double param_3, double param_4, void *wmmodule, void *param_6) {
+        lotuskit::TextWriter::printf(0, "[wm::baseProcExe] ctr %llu \n", ctr++);
+        Orig(self, param_2, param_3, param_4, wmmodule, param_6);
+    }
+};
+*/
 
 HOOK_DEFINE_INLINE(SendEventPlayReportHook) {
     static constexpr auto s_name = "game::event::EventActorController::sendEventPlayReport";
@@ -216,9 +233,9 @@ HOOK_DEFINE_INLINE(SendEventPlayReportHook) {
         lotuskit::script::engine::createAndConfigureEngine();
         lotuskit::script::engine::doAutorun();
 
-        WorldManagerModuleBaseProcHook::Install(); // "main loop"
-        //FrameworkProcCalcHook::Install(); // TODO run observation/ActorWatcher/etc after calc
-        //FrameworkProcDrawHook::Install(); // TODO run tas/script before draw
+        //WorldManagerModuleBaseProcHook::Install(); // "main loop"
+        FrameworkProcCalcHook::Install();
+        FrameworkProcDrawHook::Install();
 
         //OnWhistleHook::Install();
         OnRecallUpdateHighlightActorHook::Install();
