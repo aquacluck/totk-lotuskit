@@ -3,7 +3,7 @@
 namespace lotuskit {
     TextWriterFrame TextWriter::frame = {};
 
-    void TextWriter::appendNewDrawNode(size_t drawList_i, const char* text, TextWriterDrawCallback* fn) {
+    void TextWriter::appendNewDrawNode(size_t drawList_i, const char* text, TextWriterDrawCallback* fn, float scale, const sead::Color4f* color) {
         if (frame.heap == nullptr) { return; } // uninitialized
         TextWriterDrawNode* newNode = nullptr;
         TextWriterDrawNode* cmpNode = nullptr;
@@ -18,6 +18,8 @@ namespace lotuskit {
         if (newNode == nullptr) { goto RELEASE_AND_RETURN; } // alloc fail (eg too many writes piled up)
         newNode->outputText = nullptr;
         newNode->fn = fn; // fn lifetime managed by caller
+        newNode->scale = scale;
+        newNode->color = color ? *color : sead::Color4f{0.85, 0.85, 0.85, 1.0}; // white ish
         newNode->next.store(nullptr);
         if (text != nullptr) {
             auto n = strlen(text) + 1;
@@ -51,18 +53,28 @@ namespace lotuskit {
             if (node == nullptr) { continue; }
 
             sead::Vector2f textPos; // screen is always represented as 1280x720, upscaled for 1080p
-            // scale: 0.665 @ 1080p = 1.0 at 720p. The re-up-scaling means reducing size here looks bad fast, 0.8 is legible
-            writer->mScale.x = 0.8;
-            writer->mScale.y = 0.8;
             textPos.x = 2.0;
             textPos.y = 2.0;
 
             do {
+                if (node->scale == 0.0) {
+                    // default
+                    // scale: 0.665 @ 1080p = 1.0 at 720p. The re-up-scaling means reducing size here looks bad fast, 0.8 is legible
+                    writer->mScale.x = 0.8;
+                    writer->mScale.y = 0.8;
+                } else if (node->scale == -1.0) {
+                    // no change
+                } else {
+                    // assign
+                    writer->mScale.x = node->scale;
+                    writer->mScale.y = node->scale;
+                }
+
                 if (node->fn != nullptr) {
                     node->fn(writer, &textPos);
                 }
                 if (node->outputText != nullptr) {
-                    writer->pprintf(textPos, node->outputText);
+                    writer->pprintf(textPos, node->color, node->outputText);
                 }
 
                 node = node->next.load();
@@ -99,7 +111,8 @@ namespace lotuskit {
                 node->fn(writer, &textPos);
             }
             if (node->outputText != nullptr) {
-                writer->pprintf(textPos, node->outputText);
+                auto color = sead::Color4f{0.85, 0.85, 0.85, 1.0}; // white ish TODO toast color/scale?
+                writer->pprintf(textPos, color, node->outputText);
             }
         }
     }

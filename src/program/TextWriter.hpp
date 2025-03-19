@@ -29,6 +29,8 @@ namespace lotuskit {
         char* outputText;
         TextWriterDrawCallback* fn;
         std::atomic<TextWriterDrawNode*> next;
+        sead::Color4f color;
+        float scale;
     };
 
     struct TextWriterFrame {
@@ -51,14 +53,14 @@ namespace lotuskit {
             pos->x = this->mCursor.x + 640.0;
             pos->y = 360.0 - this->mCursor.y;
         }
-        void pprintf(sead::Vector2f &pos, const char* fmt, auto&&... args) {
+        void pprintf(sead::Vector2f &pos, const sead::Color4f& color, const char* fmt, auto&&... args) {
             // pretty print: text shadow drawn first
             this->mColor.r = 0.0; this->mColor.g = 0.0; this->mColor.b = 0.0; this->mColor.a = 1.0; // black
             this->setCursorFromTopLeft(pos);
             this->printf(fmt, std::forward<decltype(args)>(args)...); // javascript lookin ass bullshit
 
             // main draw
-            this->mColor.r = 0.85; this->mColor.g = 0.85; this->mColor.b = 0.85; this->mColor.a = 1.0; // white ish
+            this->mColor = color;
             pos.x -= 1.0;
             pos.y -= 1.0;
             this->setCursorFromTopLeft(pos);
@@ -74,10 +76,14 @@ namespace lotuskit {
     class TextWriter {
         public:
         inline static void printf(size_t drawList_i, const char* fmt, auto&&... args) {
-            // FIXME some symbol export issue if placed in cpp? [rtld] Unresolved symbol: _ZN8lotuskit10TextWriter6printfIJRA4_KcEEEvmPS2_DpOT_
             char buf[2000];
             nn::util::SNPrintf(buf, sizeof(buf), fmt, std::forward<decltype(args)>(args)...);
             appendNewDrawNode(drawList_i, buf, nullptr);
+        }
+        inline static void printf(size_t drawList_i, float scale, const sead::Color4f& color, const char* fmt, auto&&... args) {
+            char buf[2000];
+            nn::util::SNPrintf(buf, sizeof(buf), fmt, std::forward<decltype(args)>(args)...);
+            appendNewDrawNode(drawList_i, buf, nullptr, scale, &color);
         }
         inline static void appendCallback(size_t drawList_i, TextWriterDrawCallback* fn) {
             appendNewDrawNode(drawList_i, nullptr, fn); // caller owns fn lifetime
@@ -112,7 +118,7 @@ namespace lotuskit {
 
             nn::os::InitializeMutex(&frame.drawListLock, true, 0);
         }
-        static void appendNewDrawNode(size_t drawList_i, const char* text = nullptr, TextWriterDrawCallback* fn = nullptr);
+        static void appendNewDrawNode(size_t drawList_i, const char* text = nullptr, TextWriterDrawCallback* fn = nullptr, float scale = 0, const sead::Color4f* color = nullptr);
         static TextWriterToastNode* appendNewToastNode(u32 ttlFrames);
         static void drawFrame(TextWriterExt*);
         static void drawToasts(TextWriterExt*);

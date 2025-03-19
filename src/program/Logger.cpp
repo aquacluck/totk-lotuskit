@@ -1,20 +1,20 @@
 #include "Logger.hpp"
 #include "server/WebSocket.hpp"
-#include <thread/seadThread.h>
+//#include <thread/seadThread.h>
 using json = nlohmann::json;
 
 namespace lotuskit {
     // TODO filters/flags/??? for log outputs (svcOutputDebugString, ws, perhaps textwriter)
     void Logger::logJson(json obj, const std::string& ns, bool doBlocking, bool doDebugLog) {
-        sead::ThreadMgr* mgr = *EXL_SYM_RESOLVE<sead::ThreadMgr**>("sead::ThreadMgr::sInstance");
-        sead::Thread* thread = mgr->getCurrentThread(); // XXX what happens if we invoke this from a non-sead thread?
+        //sead::ThreadMgr* mgr = *EXL_SYM_RESOLVE<sead::ThreadMgr**>("sead::ThreadMgr::sInstance");
+        //sead::Thread* thread = mgr->getCurrentThread(); // XXX what happens if we invoke this from a non-sead thread?
 
         // note these are kv pairs, ie json {msg:"msg", sys:{ns:"", tick:420, ...}}
         obj["sys"] = json::object({
             {"ns", ns},
-            {"tick", svcGetSystemTick()},
-            {"tid", thread->getId()},
-            {"tname", thread->getName().cstr()} // TODO INamable+SafeString overloads?
+            {"tick", svcGetSystemTick()}
+            //{"tid", thread->getId()},
+            //{"tname", thread->getName().cstr()} // TODO INamable+SafeString overloads?
         });
         std::string out = obj.dump();
 
