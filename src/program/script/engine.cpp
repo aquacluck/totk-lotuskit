@@ -107,8 +107,18 @@ namespace lotuskit::script::engine {
         lotuskit::script::engine::execFuncInNewCtx(asEngine, mod, entryPoint);
     }
 
+    // TODO add push/pop ctx stack for tas scheduling:
+    // - allow scheduling arbitrary run lengths by executing on a stack of 1:1:1 ctx:module:file, building+executing+releasing one leaf file at a time
+    // - tas::awaitExecScript("sdcard:/totk_lotuskit/page_69_of_420.as"); // suspend currentCtx, build+push+run new file, later resume currentCtx
+    // - tas::awaitEvalScript("tas::input(30);"); // XXX would this ever be useful?
+    // - tas::awaitExecNXTas("sdcard:/totk_lotuskit/nx-tas.txt"); // TODO transpile+run nxtas source file in new module
+    // - pop requires handoff logic in tas::Playback
+    // - hotkeys and frontend buttons can work by pushing their payload instead of clobbering TODO needs JsonDispatch for web.as push op
+    // - TODO what should break vs push, abort vs pop, etc semantics look like?
+
     AngelScript::asIScriptModule* compileToNewModule(AngelScript::asIScriptEngine* engine, const char* moduleName, const char* sectionName, const char* scriptText) {
         // compile to new script module, clobbering existing module contents
+        // XXX what happens to contexts currently using the module, eg do we need to cleanup tas::Playback::currentCtx?
         AngelScript::asIScriptModule* mod = engine->GetModule(moduleName, AngelScript::asGM_ALWAYS_CREATE);
         mod->AddScriptSection(sectionName, scriptText);
         s32 asErrno = mod->Build(); // Build the module

@@ -1,6 +1,6 @@
 #include "util/fs.hpp"
 #include "exlaunch.hpp"
-#include "nn/fs.h"
+#include <nn/fs.h>
 #include <cstring>
 
 namespace lotuskit::util::fs {
