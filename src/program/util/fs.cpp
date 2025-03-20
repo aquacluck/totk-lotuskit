@@ -48,4 +48,33 @@ namespace lotuskit::util::fs {
         nn::fs::CloseFile(fd);
         return false; // ok
     }
+
+    bool writeTextFile(const char* src, const char* path) {
+        return writeFile(src, strlen(src), path);
+    }
+
+    bool writeFile(const void* src, size_t srcLen, const char* path) {
+        // ty Watertoon for mc_decompressor as reference (GPL2, https://gamebanana.com/tools/13236)
+        nn::fs::FileHandle fd;
+        nn::fs::CreateDirectory("sdcard:/totk_lotuskit"); // ensure folder present, ignore result
+
+        nn::Result res = nn::fs::OpenFile(&fd, path, nn::fs::OpenMode_Write);
+        if (!res.IsSuccess()) { // assert !fileExists(path), create output file
+            res = nn::fs::CreateFile(path, srcLen);
+            if (!res.IsSuccess()) { return true; } // err: failed to create
+            res = nn::fs::OpenFile(&fd, path, nn::fs::OpenMode_Write);
+        }
+        if (!res.IsSuccess()) { return true; } // err: failed to open
+
+        res = nn::fs::SetFileSize(fd, srcLen);
+        if (!res.IsSuccess()) { return true; } // err: failed to resize
+
+        constexpr auto FLUSH = nn::fs::WriteOption(nn::fs::WriteOptionFlag_Flush);
+        res = nn::fs::WriteFile(fd, 0, src, srcLen, FLUSH);
+        if (!res.IsSuccess()) { return true; } // err: failed to write
+
+        nn::fs::CloseFile(fd); // void
+        return false; // ok
+    }
+
 }
