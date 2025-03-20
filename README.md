@@ -1,7 +1,7 @@
 ## Getting started
 - Download the [latest build](https://github.com/aquacluck/totk-lotuskit/releases) for your game version. This is replaced with every commit, so you might want to hang on to the zip in case I break it in the future!
-- Extract the zip and install the mod by copying the `romfs` and `exefs` folders into your switch sd's `/atmosphere/contents/0100f2c0115b6000/` folder.
-- Run the game. ActorWatcher[0] should automatically be assigned to Player. Press **`L R ZL ZR + -`** together to start the ws server anytime. `romfs/totk_lotuskit/autorun.as` may be created to configure settings, ActorWatchers, etc at launch time.
+- Extract the zip and install the mod by copying the `romfs` and `exefs` folders into your switch sdcard's `/atmosphere/contents/0100f2c0115b6000/` folder.
+- Run the game. ActorWatcher[0] should automatically be assigned to Player. Press **`L R ZL ZR + -`** together to start the ws server anytime. `sdcard:/totk_lotuskit/autorun.as` may be created to configure settings, ActorWatchers, etc at launch time.
 - Run `frontend/run.py` (you'll need a python installation) and open the web frontend at [http://localhost:7073](http://localhost:7073)
 - Connect to an emulator with localhost (default), or enter your switch console ip+port in the bottom right to connect to the mod. Emulators are easier to get started with.
 - Fool around with things. You'll crash the game a lot and you'll be looking through some sort of code constantly, understand this going in and don't be frustrated :)
@@ -34,7 +34,7 @@
     - Many headers are mirrored+patched see `subrepo/*/CLOBBER_mirror.sh` to update or further patch them. tldr it rewrites the folder with upstream + local patches, which we commit into this repo.
     - `syms/build.py` is a symbol map+metadata build pipeline, keep this in sync! A header include file for each game version holding symbols prepared for exlaunch's lookup utilities will be generated. Symbols supplied mangled will also be included in the linker script.
 - Run `make` in a suitable build environment (such as [devkitPro](https://devkitpro.org/wiki/Getting_Started) or a [docker container](https://hub.docker.com/r/devkitpro/devkita64)) with cmake installed
-- Mod `exefs` files are at `build/main.npdm` and `build/subsdk9`, copy `romfs` configs from the repo
+- Mod `exefs` files are at `build/main.npdm` and `build/subsdk9`, copy `romfs` folder from the repo
 
 ## Repo overview
 - `.github` automatically builds and [releases](https://github.com/aquacluck/totk-lotuskit/releases) each commit. You could reproduce the build with this or set it up in your own repo clone.

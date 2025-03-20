@@ -1,5 +1,6 @@
 #include <string.h>
 #include "exlaunch.hpp"
+#include <nn/fs.h>
 #include <nn/hid.h>
 #include <nn/util.h>
 #include <heap/seadHeap.h>
@@ -18,7 +19,7 @@
 #include "tas/Playback.hpp"
 #include "tas/Record.hpp"
 #include "util/camera.hpp"
-#include "util/romfs.hpp"
+#include "util/fs.hpp"
 #include "util/player.hpp"
 #include "util/pause.hpp"
 #include "util/world.hpp"
@@ -226,6 +227,7 @@ HOOK_DEFINE_INLINE(SendEventPlayReportHook) {
         if (--defer_init_callcount != 0) { return; }
 
         // main mod init
+        nn::fs::MountSdCard("sdcard");
         lotuskit::server::WebSocket::assignHeap(StealHeapHook::stolenHeap);
         lotuskit::TextWriter::createFrameHeap();
         lotuskit::PrimitiveImpl::createFrameHeap();
