@@ -19,7 +19,7 @@ namespace lotuskit {
         newNode->outputText = nullptr;
         newNode->fn = fn; // fn lifetime managed by caller
         newNode->scale = scale;
-        newNode->color = color ? *color : sead::Color4f{0.85, 0.85, 0.85, 1.0}; // white ish
+        newNode->color = color ? *color : defaultColor;
         newNode->next.store(nullptr);
         if (text != nullptr) {
             auto n = strlen(text) + 1;
@@ -111,8 +111,7 @@ namespace lotuskit {
                 node->fn(writer, &textPos);
             }
             if (node->outputText != nullptr) {
-                auto color = sead::Color4f{0.85, 0.85, 0.85, 1.0}; // white ish TODO toast color/scale?
-                writer->pprintf(textPos, color, node->outputText);
+                writer->pprintf(textPos, defaultColor, node->outputText); // TODO toast color/scale?
             }
         }
     }

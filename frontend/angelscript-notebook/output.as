@@ -1,11 +1,4 @@
-// log to debug console, typically only visible in emulators
-sys::debugLog("hello debug"); // svcOutputDebugString syscall
-
-// log through websocket (and debug log too)
-Logger::logText("hello websocket", "/optional/ns/arg");
-
-// AngelScript's `string format(fmt, ...)` uses `{}`
-Logger::logText(format("{} {}", 420.69, "wikked"));
+// TextWriter: print text onscreen
 
 // print over the game **on this frame only** once
 // (by default in drawlist 0 where ActorWatcher+HexDump go)
@@ -28,6 +21,13 @@ TextWriter::toast(30, "hello for 30 actual frames \n");
 // TODO [script] cursor+scale drawnode bindings
 TextWriter::print(4, format("{} {}\n", 420.69, "wikked"));
 
+// Color4f accepts rgba 0 to 1, defaults:
+TextWriter::setDefaultColor(Color4f(0.85, 0.85, 0.85, 1.0));
+TextWriter::setShadowColor(Color4f(0, 0, 0, 1));
+TextWriter::invertColors(); // swap text+shadow
+
+
+// HexDump: print memory regions onscreen
 // AngelScript doesn't expose real pointers, this is a uint64 typedef
 ptr_t somewhere = 0x3331337; // pointers are fake
 
@@ -42,6 +42,19 @@ HexDump::pauseSlot(0);
 // stop all dumping+drawing for slot 0
 HexDump::clearSlot(0);
 
-// see globals.cpp for all shapes+types
+
+// Logger: low level debug/ws logs
+
+// log through websocket (and debug log too)
+Logger::logText("hello websocket", "/optional/ns/arg");
+
+// AngelScript's `string format(fmt, ...)` uses `{}`
+Logger::logText(format("{} {}", 420.69, "wikked"));
+
+// log to debug console, typically only visible in emulators
+sys::debugLog("hello debug"); // svcOutputDebugString syscall
+
+
+// PrimitiveDrawer: render 3d shapes onscreen (see globals.cpp for all shapes+types)
 PrimitiveDrawer::drawSphere4x8(0, Player.pos, 5, Color4f(0, 1, 0, 0.1), Color4f(0, 0, 1, 1));
 

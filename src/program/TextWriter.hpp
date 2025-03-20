@@ -46,35 +46,16 @@ namespace lotuskit {
         u32 ttlFrames;
     };
 
-    class TextWriterExt: public sead::TextWriter {
-        public:
-        void getCursorFromTopLeftImpl(sead::Vector2f* pos) const {
-            // always 720p sooooo just make it work
-            pos->x = this->mCursor.x + 640.0;
-            pos->y = 360.0 - this->mCursor.y;
-        }
-        void pprintf(sead::Vector2f &pos, const sead::Color4f& color, const char* fmt, auto&&... args) {
-            // pretty print: text shadow drawn first
-            this->mColor.r = 0.0; this->mColor.g = 0.0; this->mColor.b = 0.0; this->mColor.a = 1.0; // black
-            this->setCursorFromTopLeft(pos);
-            this->printf(fmt, std::forward<decltype(args)>(args)...); // javascript lookin ass bullshit
-
-            // main draw
-            this->mColor = color;
-            pos.x -= 1.0;
-            pos.y -= 1.0;
-            this->setCursorFromTopLeft(pos);
-            this->printf(fmt, std::forward<decltype(args)>(args)...);
-
-            // remember position for future calls
-            this->getCursorFromTopLeftImpl(&pos);
-            pos.x += 1.0;
-            pos.y += 1.0;
-        }
-    };
+    class TextWriterExt; // sead::TextWriter subclass with some bonus calls
 
     class TextWriter {
         public:
+        inline static sead::Color4f defaultColor = {0.85, 0.85, 0.85, 1.0}; // white ish
+        inline static sead::Color4f shadowColor = {0, 0, 0, 1}; // black
+        inline static void setDefaultColor(const sead::Color4f& v) { defaultColor = v; }
+        inline static void setShadowColor(const sead::Color4f& v) { shadowColor = v; }
+        inline static void invertColors() { std::swap(defaultColor, shadowColor); }
+
         inline static void printf(size_t drawList_i, const char* fmt, auto&&... args) {
             char buf[2000];
             nn::util::SNPrintf(buf, sizeof(buf), fmt, std::forward<decltype(args)>(args)...);
@@ -122,6 +103,33 @@ namespace lotuskit {
         static TextWriterToastNode* appendNewToastNode(u32 ttlFrames);
         static void drawFrame(TextWriterExt*);
         static void drawToasts(TextWriterExt*);
+    };
+
+    class TextWriterExt: public sead::TextWriter {
+        public:
+        void getCursorFromTopLeftImpl(sead::Vector2f* pos) const {
+            // always 720p sooooo just make it work
+            pos->x = this->mCursor.x + 640.0;
+            pos->y = 360.0 - this->mCursor.y;
+        }
+        void pprintf(sead::Vector2f &pos, const sead::Color4f& color, const char* fmt, auto&&... args) {
+            // pretty print: text shadow drawn first
+            this->mColor = lotuskit::TextWriter::shadowColor;
+            this->setCursorFromTopLeft(pos);
+            this->printf(fmt, std::forward<decltype(args)>(args)...);
+
+            // main draw
+            this->mColor = color;
+            pos.x -= 1.0;
+            pos.y -= 1.0;
+            this->setCursorFromTopLeft(pos);
+            this->printf(fmt, std::forward<decltype(args)>(args)...);
+
+            // remember position for future calls
+            this->getCursorFromTopLeftImpl(&pos);
+            pos.x += 1.0;
+            pos.y += 1.0;
+        }
     };
 
     namespace DebugDrawHooks {

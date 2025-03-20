@@ -756,6 +756,9 @@ namespace lotuskit::script::globals {
             // TODO do AS variadic stuff to hopefully just forward the args to normal snprintf/whatever -- format("{} {}", 1, 2) also exists for now
             asErrno = engine->RegisterGlobalFunction("void print(index_t, const string &in)", AngelScript::asFUNCTION(textwriter_as_print), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
             asErrno = engine->RegisterGlobalFunction("void toast(u32, const string &in)", AngelScript::asFUNCTION(textwriter_as_toast), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+            asErrno = engine->RegisterGlobalFunction("void setDefaultColor(const Color4f &in)", AngelScript::asFUNCTION(lotuskit::TextWriter::setDefaultColor), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+            asErrno = engine->RegisterGlobalFunction("void setShadowColor(const Color4f &in)", AngelScript::asFUNCTION(lotuskit::TextWriter::setShadowColor), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+            asErrno = engine->RegisterGlobalFunction("void invertColors()", AngelScript::asFUNCTION(lotuskit::TextWriter::invertColors), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
         /// }
 
         engine->SetDefaultNamespace("camera"); /// {

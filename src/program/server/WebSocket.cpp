@@ -483,10 +483,9 @@ namespace lotuskit::server {
                 lotuskit::TextWriter::appendCallback(2, [](lotuskit::TextWriterExt* writer, sead::Vector2f* textPos) {
                     textPos->x = 100;
                     textPos->y = 200;
-                    writer->mScale.x = 3;
-                    writer->mScale.y = 3;
                 });
-                lotuskit::TextWriter::printf(2, "[totk-lotuskit:%d] serving ws on 0.0.0.0:7072\n", TOTK_VERSION);
+                constexpr float scale = 3;
+                lotuskit::TextWriter::printf(2, scale, lotuskit::TextWriter::defaultColor, "[totk-lotuskit:%d] serving ws on 0.0.0.0:7072\n", TOTK_VERSION);
             }
         }
     }
