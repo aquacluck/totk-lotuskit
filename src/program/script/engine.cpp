@@ -99,19 +99,18 @@ namespace lotuskit::script::engine {
             lotuskit::TextWriter::toastf(30*5, "[error] %s\n", scriptBuf);
             return;
         }
-        execInScratchModule(scriptBuf);
+        execTextInNewModule("scratch", filename, scriptBuf, "void main()");
     }
 
-    void execInScratchModule(const char* scriptText) {
-        auto* mod = lotuskit::script::engine::compileToScratchModule(asEngine, scriptText);
-        const char* entryPoint = "void main()";
+    void execTextInNewModule(const char* moduleName, const char* sectionName, const char* scriptText, const char* entryPoint) {
+        auto* mod = lotuskit::script::engine::compileToNewModule(asEngine, moduleName, sectionName, scriptText);
         lotuskit::script::engine::execFuncInNewCtx(asEngine, mod, entryPoint);
     }
 
-    AngelScript::asIScriptModule* compileToScratchModule(AngelScript::asIScriptEngine* engine, const char* scriptText) {
-        // Create a new script module
-        AngelScript::asIScriptModule* mod = engine->GetModule("scratch", AngelScript::asGM_ALWAYS_CREATE); // clobber existing
-        mod->AddScriptSection("script.as", scriptText);
+    AngelScript::asIScriptModule* compileToNewModule(AngelScript::asIScriptEngine* engine, const char* moduleName, const char* sectionName, const char* scriptText) {
+        // compile to new script module, clobbering existing module contents
+        AngelScript::asIScriptModule* mod = engine->GetModule(moduleName, AngelScript::asGM_ALWAYS_CREATE);
+        mod->AddScriptSection(sectionName, scriptText);
         s32 asErrno = mod->Build(); // Build the module
         if (asErrno < 0) {
             // The build failed. The message stream will have received

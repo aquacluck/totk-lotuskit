@@ -16,8 +16,8 @@ namespace lotuskit::script::engine {
     void doAutorun(); // triggered at bootup
 
     void execLocalFileInScratchModule(const char* filename);
-    void execInScratchModule(const char* scriptText);
-    AngelScript::asIScriptModule* compileToScratchModule(AngelScript::asIScriptEngine* engine, const char* scriptText);
+    void execTextInNewModule(const char* moduleName, const char* sectionName, const char* scriptText, const char* entryPoint);
+    AngelScript::asIScriptModule* compileToNewModule(AngelScript::asIScriptEngine* engine, const char* moduleName, const char* sectionName, const char* scriptText);
     void execFuncInNewCtx(AngelScript::asIScriptEngine* engine, AngelScript::asIScriptModule* mod, const char* entryPoint);
 
 } // ns

@@ -11,7 +11,7 @@ namespace lotuskit::server {
         json jsonPayload = json::parse(jsonText);
         if (jsonPayload.contains("execScriptString")) {
             auto scriptText = jsonPayload["execScriptString"].template get<std::string>();
-            lotuskit::script::engine::execInScratchModule(scriptText.c_str());
+            lotuskit::script::engine::execTextInNewModule("scratch", "web.as", scriptText.c_str(), "void main()");
         }
     }
 
