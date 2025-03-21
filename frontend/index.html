@@ -99,7 +99,8 @@
         static wrap_implicit_main(script_text) {
             // no begin newline preserves line numbers
             // end newline closes any trailing line comment
-            return `void main() { ${script_text} \n}`;
+            // AS has a line offset setting but its not worth the plumbing rn
+            return `void main() { ${script_text}\n}`;
         }
 
         static exec(snippet) {
@@ -566,6 +567,46 @@
             }
         }
 
+        do_trash_upload() {
+            const remote_filename = "sdcard:/totk_lotuskit/web_trash.as";
+            let script_text = this.script_text_ref.current.value;
+            if (this.use_implicit_main_ref.current.checked) {
+                script_text = AngelScript.wrap_implicit_main(script_text);
+            }
+            WSTransport.send({persistFileString: script_text, persistFileName: remote_filename}); // WARNING this will immediately clobber any file dont fuck around
+        }
+
+        on_drop_terrifying_subsdk9_upload = async (e) => {
+            const file = e.currentTarget.files[0];
+            console.log("dropped:", file);
+            if (!file) { console.log("no file!"); return; }
+            if (file.name != "subsdk9") { console.log("weird filename!"); return; }
+            if (file.size < 64*1024) { console.log("file seems quite small!"); return; }
+            const reader = new FileReader(); // TODO wrap in promise? dumb api
+            reader.addEventListener("load", async () => {
+                const prefix = "data:application/octet-stream;base64,"; // need to strip this
+                if (reader.result.indexOf(prefix) !== 0) { console.log("weird readAsDataURL!"); return; }
+                const b64Payload = reader.result.slice(prefix.length);
+                const rawPayload = window.atob(b64Payload);
+                if (rawPayload.slice(0, 4) !== "NSO0") { console.log("missing nso header!"); return; }
+
+                const remote_filename = "sdcard:/atmosphere/contents/0100f2c0115b6000/exefs/subsdk9";
+                //const remote_filename = "sdcard:/totk_lotuskit/web_test.bin";
+
+                //WSTransport.send({persistFileBinary: b64Payload, persistFileName: remote_filename}); // WARNING this will immediately clobber any file dont fuck around
+                const chunkSize = 0x1000;
+                for (let i = 0; i < rawPayload.length-1;) {
+                    const rawChunk = rawPayload.slice(i, i+chunkSize);
+                    const b64Chunk = window.btoa(rawChunk);
+                    const op = (i == 0) ? 1 : 2; // open+write then write
+                    WSTransport.send({persistFileBinaryChunk: b64Chunk, persistFileName: remote_filename, persistChunkOp: op, persistChunkOffset: i}); // WARNING this will immediately clobber any file dont fuck around
+                    i += rawChunk.length;
+                }
+                WSTransport.send({persistFileBinaryChunk: "", persistFileName: remote_filename, persistChunkOp: 3, persistChunkOffset: 0}); // close
+            }, false);
+            reader.readAsDataURL(file);
+        }
+
         do_toggle_record() {
             AngelScript.exec("tas::toggleDump();");
         }
@@ -586,6 +627,8 @@
                     <input type="checkbox" id="execscript_use_implicit_main" ref=${this.use_implicit_main_ref} checked />
                     <button title="tas::toggleDump()" onClick=${ () => this.do_toggle_record() } class="pushbutton">tas dump</button>
                     <button title="tas::input(1); // sending another script interrupts the running one" onClick=${ () => AngelScript.exec("tas::input(1);") } class="pushbutton">break</button>
+                    <button title="WSTransport.send({persistFileString, persistFileName})" onClick=${ () => this.do_trash_upload() } class="pushbutton">⚠️upload</button>
+                    <label title="⚠️update subsdk9 (drop onto button)" for="subsdkupload"> nso: </label><input type="file" title="WSTransport.send({persistFileBinary, persistFileName})" onChange=${this.on_drop_terrifying_subsdk9_upload} class="pushbutton" style="width:32px;" id="subsdkupload" />
                     <br/>
                     <textarea class="as_source" placeholder='// check the blue AS📖 button for help \nPlayer.pos += 100*Vector3f::UP;\n\ntas::input(30, KEY_A|KEY_B, 32767,-32768, 0,0);\ntas::input(15, KEY_B, 0.5*STICK_UP_MAX /*, 8000*STICK_LEFT */);\n\nactor::createAndWatch( \n    1, "SpObj_LiftGeneratorWing_A_01", \n    Player.pos + 5*Vector3f::DOWN\n);' ref=${this.script_text_ref}></textarea>
                     <textarea placeholder="[tas output]" ref=${this.output_text_ref}></textarea>

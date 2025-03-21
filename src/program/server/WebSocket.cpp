@@ -276,6 +276,7 @@ namespace lotuskit::server {
                 recvSize = nn::socket::Recv(clientSocketFd, payload+6, payloadLen-6, 0); // blocking
                 // assert recvSize == payloadLen-6
             } else if (sizeByte == 0x7f) {
+                // FIXME stack limit? does payload need to be 0x1000 aligned? idk crash
                 recvSize = nn::socket::Recv(clientSocketFd, payload, payloadLen, 0); // blocking
                 // assert recvSize == payloadLen
             }

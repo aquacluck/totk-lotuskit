@@ -1,6 +1,5 @@
 #include "util/fs.hpp"
 #include "exlaunch.hpp"
-#include <nn/fs.h>
 #include <cstring>
 
 namespace lotuskit::util::fs {
@@ -75,6 +74,28 @@ namespace lotuskit::util::fs {
 
         nn::fs::CloseFile(fd); // void
         return false; // ok
+    }
+
+    void writeFileChunked(nn::fs::FileHandle* fd, const void* src, size_t srcLen, const char* path, u32 chunkOp, u64 chunkOffset) {
+        if (chunkOp == 1) {
+            // create/open/truncate (first call)
+            nn::fs::CreateFile(path, 0);
+            nn::fs::OpenFile(fd, path, nn::fs::OpenMode_Write);
+            nn::fs::SetFileSize(*fd, 0);
+        }
+        if (srcLen > 0) {
+            // write
+            s64 reqLen = chunkOffset + srcLen; // file will need to be at least this long
+            s64 curLen = 0; nn::fs::GetFileSize(&curLen, *fd); // get current filesize
+            if (reqLen > curLen) { nn::fs::SetFileSize(*fd, reqLen); } // extend filesize
+            constexpr auto NOFLUSH = nn::fs::WriteOption(0);
+            nn::fs::WriteFile(*fd, chunkOffset, src, srcLen, NOFLUSH); // write chunk
+        }
+        if (chunkOp == 3) {
+            // close (last call)
+            nn::fs::FlushFile(*fd);
+            nn::fs::CloseFile(*fd); // void
+        }
     }
 
 }
