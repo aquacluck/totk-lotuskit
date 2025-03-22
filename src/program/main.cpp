@@ -19,7 +19,6 @@
 #include "tas/Playback.hpp"
 #include "tas/Record.hpp"
 #include "util/camera.hpp"
-#include "util/fs.hpp"
 #include "util/player.hpp"
 #include "util/pause.hpp"
 #include "util/world.hpp"
@@ -196,10 +195,10 @@ HOOK_DEFINE_TRAMPOLINE(FrameworkProcDrawHook) {
             textPos->x = 1280.0 - 155.0;
             textPos->y = 2.0;
         });
+        lotuskit::server::WebSocket::calc(); // noblock recv, but blocking processing if enabled
         lotuskit::tas::Playback::calc(); // may re-enter script when currently scheduled input is complete
         lotuskit::tas::Record::calc();
         lotuskit::tas::InputDisplay::draw();
-        lotuskit::server::WebSocket::calc(); // noblock recv, but blocking processing if enabled
 
         Orig(self); // perform tas+script+scheduling before draw for synced display
     }

@@ -18,10 +18,8 @@ namespace lotuskit::tas {
 
     class Playback {
         public:
-        static void calc();
-
-        // script scheduling
-        inline static AngelScript::asIScriptContext* currentCtx = nullptr; // if state asEXECUTION_SUSPENDED, will be resumed when needed to produce next input
+        // frame count scheduling (see lotuskit::script::schedule for nesting/engine/etc scheduling concerns)
+        static void calc(); // called each frame, may resume tas script to generate next input
         inline static u32 currentInputTTL60 = 0; // remaining 30fps half-frames to apply scheduled TAS input
         inline static u32 elapsedPlayback60 = 0; // 30fps half-frames elapsed this script execution (based on counting)
 

@@ -1,5 +1,6 @@
 #include "script/engine.hpp"
 #include "script/globals.hpp"
+#include "script/schedule.hpp"
 #include <nn/util.h>
 #include "exlaunch.hpp"
 #include "util/fs.hpp"
@@ -54,11 +55,11 @@ namespace lotuskit::script::engine {
         // non-preemptive wrt script, scripts should yield to return control to the game:
         // (script timeouts are also possible, and the underlying guest thread could still be interrupted, but generally continuously runs+blocks the thread until script yields.)
         // XXX ensure we can run other parts of script module with an existing context suspended -- tas+ws runner(s?) should be independent of eg hooking AS callbacks.
-        // - tas+ws scripts are intended to run asap/realtime and so they're executed in WorldManagerModule::baseProcExe. Offloading this to another thread isn't really desirable.
-        //     - exception: http://www.angelcode.com/angelscript/sdk/docs/manual/doc_adv_dynamic_build.html#doc_adv_dynamic_build_incr
-        //       We'll want to page in/out long tas scripts somehow, doing this in another thread is good for both the disk io and AS compile work.
-        // - hook callback scripts need to run wherever they're invoked from. These may need to acquire a single asIScriptContext, until we can glue the TLS stuff needed for proper threading.
+        // - tas scripts are intended to run asap/realtime and so they're executed in main loop, offloading to another thread isn't really desirable.
+        // - hook callback scripts (TODO) need to run wherever they're invoked from. These may need to acquire a single asIScriptContext, until we can glue the TLS stuff needed for proper threading.
         engine->SetEngineProperty(AngelScript::asEP_AUTO_GARBAGE_COLLECT, false); // TODO get a proper child sead::Heap, get some benchmarks, try default/full/onestep/etc
+        // FIXME ^ figure out when to run gc, i don't think i'm supposed to be skipping this lol
+        // (watch for cheap moments to proc? scheduling nested load+compile this way might be nice too if the script can provide advance notice. TODO measure how disruptive this stuff is)
         engine->SetEngineProperty(AngelScript::asEP_DISABLE_SCRIPT_CLASS_GC, true); // surely i wouldnt make circular references :D
         engine->SetEngineProperty(AngelScript::asEP_BUILD_WITHOUT_LINE_CUES, true);
 
@@ -76,6 +77,7 @@ namespace lotuskit::script::engine {
     void createAndConfigureEngine() {
         asEngine = AngelScript::asCreateScriptEngine();
         configureEngine(asEngine);
+        lotuskit::script::schedule::tas::initModuleStack();
         lotuskit::script::globals::registerGlobals(asEngine);
         // asEngine->ShutDownAndRelease();
     }
@@ -83,81 +85,11 @@ namespace lotuskit::script::engine {
     void doAutorun() {
         const char* autorunFilename = "sdcard:/totk_lotuskit/autorun.as";
         if (lotuskit::util::fs::fileExists(autorunFilename)) {
-            execLocalFileInScratchModule(autorunFilename);
+            lotuskit::script::schedule::tas::pushExecLocalFileModule(autorunFilename);
             lotuskit::TextWriter::toastf(30*10, "[totk-lotuskit:%d] Ran autorun.as, main_offset=%p\nStart WS server anytime: L R ZL ZR + - \n", TOTK_VERSION, exl::util::GetMainModuleInfo().m_Total.m_Start);
         } else {
             lotuskit::TextWriter::toastf(30*10, "[totk-lotuskit:%d] No autorun.as, main_offset=%p\nStart WS server anytime: L R ZL ZR + - \n", TOTK_VERSION, exl::util::GetMainModuleInfo().m_Total.m_Start);
         }
     }
 
-    void execLocalFileInScratchModule(const char* filename) {
-        if (!lotuskit::util::fs::fileExists(filename)) { return; }
-        // FIXME larger scripts / text alloc
-        char scriptBuf[0x2000];
-        if (lotuskit::util::fs::readTextFile(scriptBuf, sizeof(scriptBuf), filename)) {
-            svcOutputDebugString(scriptBuf, strlen(scriptBuf)); // err
-            lotuskit::TextWriter::toastf(30*5, "[error] %s\n", scriptBuf);
-            return;
-        }
-        execTextInNewModule("scratch", filename, scriptBuf, "void main()");
-    }
-
-    void execTextInNewModule(const char* moduleName, const char* sectionName, const char* scriptText, const char* entryPoint) {
-        auto* mod = lotuskit::script::engine::compileToNewModule(asEngine, moduleName, sectionName, scriptText);
-        lotuskit::script::engine::execFuncInNewCtx(asEngine, mod, entryPoint);
-    }
-
-    // TODO add push/pop ctx stack for tas scheduling:
-    // - allow scheduling arbitrary run lengths by executing on a stack of 1:1:1 ctx:module:file, building+executing+releasing one leaf file at a time
-    // - tas::awaitExecScript("sdcard:/totk_lotuskit/page_69_of_420.as"); // suspend currentCtx, build+push+run new file, later resume currentCtx
-    // - tas::awaitEvalScript("tas::input(30);"); // XXX would this ever be useful?
-    // - tas::awaitExecNXTas("sdcard:/totk_lotuskit/nx-tas.txt"); // TODO transpile+run nxtas source file in new module
-    // - pop requires handoff logic in tas::Playback
-    // - hotkeys and frontend buttons can work by pushing their payload instead of clobbering TODO needs JsonDispatch for web.as push op
-    // - TODO what should break vs push, abort vs pop, etc semantics look like?
-
-    AngelScript::asIScriptModule* compileToNewModule(AngelScript::asIScriptEngine* engine, const char* moduleName, const char* sectionName, const char* scriptText) {
-        // compile to new script module, clobbering existing module contents
-        // XXX what happens to contexts currently using the module, eg do we need to cleanup tas::Playback::currentCtx?
-        AngelScript::asIScriptModule* mod = engine->GetModule(moduleName, AngelScript::asGM_ALWAYS_CREATE);
-        mod->AddScriptSection(sectionName, scriptText);
-        s32 asErrno = mod->Build(); // Build the module
-        if (asErrno < 0) {
-            // The build failed. The message stream will have received
-            // compiler errors that shows what needs to be fixed
-        }
-        return mod;
-    }
-
-    void execFuncInNewCtx(AngelScript::asIScriptEngine* engine, AngelScript::asIScriptModule* mod, const char* entryPoint) {
-        char buf[500];
-
-        // Find the function that is to be called (mod+entryPoint -> funcptr)
-        AngelScript::asIScriptFunction *asEntryPoint = mod->GetFunctionByDecl(entryPoint);
-        if (asEntryPoint == nullptr) {
-            TextWriter::toastf(30*5, "[error] missing entry point %s \n", entryPoint);
-            nn::util::SNPrintf(buf, sizeof(buf), "[error] missing entry point %s", entryPoint);
-            Logger::logText(buf, "/script/engine");
-            return;
-        }
-
-        // Create our context, prepare it, and then execute (engine -> ctx, + funcptr -> exec)
-        AngelScript::asIScriptContext *asCtx = engine->CreateContext();
-        asCtx->Prepare(asEntryPoint);
-        s32 asErrno = asCtx->Execute();
-
-        if (asErrno == AngelScript::asEXECUTION_FINISHED) {
-            asCtx->Release();
-
-        } else if (asErrno == AngelScript::asEXECUTION_EXCEPTION) {
-            // TODO exceptions
-            TextWriter::toastf(30*5, "[error] %s \n", asCtx->GetExceptionString());
-            nn::util::SNPrintf(buf, sizeof(buf), "[error] %s", asCtx->GetExceptionString());
-            Logger::logText(buf, "/script/engine");
-            asCtx->Release();
-
-        } else if (asErrno == AngelScript::asEXECUTION_SUSPENDED) {
-            // do not release ongoing async ctx
-        }
-    }
 } // ns

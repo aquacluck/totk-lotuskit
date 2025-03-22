@@ -1,5 +1,5 @@
 #include <string>
-#include "script/engine.hpp"
+#include "script/schedule.hpp"
 #include "server/JsonDispatch.hpp"
 #include "util/fs.hpp"
 #include "exlaunch.hpp"
@@ -16,7 +16,7 @@ namespace lotuskit::server {
         if (jsonPayload.contains("execScriptString")) {
             auto moduleName = jsonPayload.contains("execScriptModule") ? (jsonPayload["execScriptModule"].template get<std::string>()) : "web.as";
             auto scriptText = jsonPayload["execScriptString"].template get<std::string>();
-            lotuskit::script::engine::execTextInNewModule(moduleName.c_str(), "web.as", scriptText.c_str(), "void main()");
+            lotuskit::script::schedule::tas::pushExecTextModule(moduleName.c_str(), "web.as", scriptText.c_str(), "void main()");
 
         } else if (jsonPayload.contains("persistFileString") && jsonPayload.contains("persistFileName")) {
             auto src = jsonPayload["persistFileString"].template get<std::string>();

@@ -1,10 +1,11 @@
 #include <nn/util.h>
 #include "tas/Playback.hpp"
+#include "script/schedule.hpp"
 #include "structs/VFRMgr.hpp"
 #include "util/hash.hpp"
 #include "util/pause.hpp"
-#include "Logger.hpp"
 #include "TextWriter.hpp"
+#include "Logger.hpp"
 using Logger = lotuskit::Logger;
 constexpr auto murmur32 = lotuskit::util::hash::murmur32;
 
@@ -41,30 +42,20 @@ namespace lotuskit::tas {
             return ret;
         }
         void Playback::doScheduleAwaitPauseRequestStr(const std::string& requestKey) {
-            AngelScript::asIScriptContext *ctx = AngelScript::asGetActiveContext();
-            if (ctx == nullptr) { return; }
-
             awaitPauseVal = true;
             awaitBegin60 = elapsedPlayback60;
             isAwaitPauseRequestHash = murmur32(requestKey);
 
-            // yield execution from script back to game
             isPlaybackActive = true;
-            currentCtx = ctx;
-            ctx->Suspend(); // assert ctx->GetState() == asEXECUTION_SUSPENDED
+            lotuskit::script::schedule::tas::trySuspendCtx(); // yield execution from script back to game
         }
         void Playback::doScheduleAwaitUnpauseRequestStr(const std::string& requestKey) {
-            AngelScript::asIScriptContext *ctx = AngelScript::asGetActiveContext();
-            if (ctx == nullptr) { return; }
-
             awaitPauseVal = false;
             awaitBegin60 = elapsedPlayback60;
             isAwaitPauseRequestHash = murmur32(requestKey);
 
-            // yield execution from script back to game
             isPlaybackActive = true;
-            currentCtx = ctx;
-            ctx->Suspend(); // assert ctx->GetState() == asEXECUTION_SUSPENDED
+            lotuskit::script::schedule::tas::trySuspendCtx(); // yield execution from script back to game
         }
 
         bool Playback::calcScheduleIsAwaitPauseTarget() {
@@ -88,30 +79,20 @@ namespace lotuskit::tas {
             return ret;
         }
         void Playback::doScheduleAwaitPauseTargetStr(const std::string& targetKey) {
-            AngelScript::asIScriptContext *ctx = AngelScript::asGetActiveContext();
-            if (ctx == nullptr) { return; }
-
             awaitPauseVal = true;
             awaitBegin60 = elapsedPlayback60;
             isAwaitPauseTargetHash = murmur32(targetKey);
 
-            // yield execution from script back to game
             isPlaybackActive = true;
-            currentCtx = ctx;
-            ctx->Suspend(); // assert ctx->GetState() == asEXECUTION_SUSPENDED
+            lotuskit::script::schedule::tas::trySuspendCtx(); // yield execution from script back to game
         }
         void Playback::doScheduleAwaitUnpauseTargetStr(const std::string& targetKey) {
-            AngelScript::asIScriptContext *ctx = AngelScript::asGetActiveContext();
-            if (ctx == nullptr) { return; }
-
             awaitPauseVal = false;
             awaitBegin60 = elapsedPlayback60;
             isAwaitPauseTargetHash = murmur32(targetKey);
 
-            // yield execution from script back to game
             isPlaybackActive = true;
-            currentCtx = ctx;
-            ctx->Suspend(); // assert ctx->GetState() == asEXECUTION_SUSPENDED
+            lotuskit::script::schedule::tas::trySuspendCtx(); // yield execution from script back to game
         }
     /// }}} pause scheduling
 
@@ -153,9 +134,10 @@ namespace lotuskit::tas {
                 return Playback::drawTextWriterModeLine(); // keep using current scheduled input
             }
 
-            if (currentCtx == nullptr || currentCtx->GetState() != AngelScript::asEXECUTION_SUSPENDED) {
-                Logger::logText("[ERROR] tas script ctx missing, cannot advance input", "/tas/Playback");
-                //isPlaybackActive = false; // XXX is it better to repeat the last input or drop out? this has never happened yet
+            if (!lotuskit::script::schedule::tas::hasPlayableCtx()) {
+                // XXX is it better to repeat the last input or drop out? this has never happened yet
+                Logger::logText("[error] invalid tas ctx, cannot advance input", "/tas/Playback");
+                isPlaybackActive = false; // XXX if its "not playable" then lets stop playing hmm?
                 return Playback::drawTextWriterModeLine();
             }
         /// }}} end frametime scheduling
@@ -165,26 +147,8 @@ namespace lotuskit::tas {
         if (Playback::calcScheduleIsAwaitPauseTarget())  { return; } // modeline drawn on wait
 
         // resume script, eventually getting a setCurrentInput call
-        s32 asErrno = currentCtx->Execute();
-        if (asErrno == AngelScript::asEXECUTION_FINISHED) {
-            isPlaybackActive = false; // XXX ensure this doesnt drop the last input
-            currentCtx->Release();
-            currentCtx = nullptr;
-
-        } else if (asErrno == AngelScript::asEXECUTION_EXCEPTION) {
-            // TODO exceptions
-            isPlaybackActive = false;
-            char buf[1000];
-            nn::util::SNPrintf(buf, sizeof(buf), "[angelscript] uncaught: %s", currentCtx->GetExceptionString());
-            Logger::logText(buf, "/script/engine");
-            TextWriter::toastf(30*5, "[error] %s \n", currentCtx->GetExceptionString());
-            currentCtx->Release();
-            currentCtx = nullptr;
-
-        } else if (asErrno == AngelScript::asEXECUTION_SUSPENDED) {
-            // do not release ongoing async ctx
-        }
-
+        const bool isCompleteOrFail = lotuskit::script::schedule::tas::calcCtx();
+        if (isCompleteOrFail) { isPlaybackActive = false; }
         Playback::drawTextWriterModeLine();
     }
 
@@ -217,9 +181,6 @@ namespace lotuskit::tas {
             duration60 = duration * 3;
         } else return;
 
-        AngelScript::asIScriptContext *ctx = AngelScript::asGetActiveContext();
-        if (ctx == nullptr && duration60 > 0) { return; } // XXX err
-
         //TODO atomic toggle between double buffer currentInput+nextInput
         currentInputTTL60 = duration60;
         currentInput.LStick.mX = nextLStickX;
@@ -247,9 +208,7 @@ namespace lotuskit::tas {
         isAwaitPauseTargetHash = 0; // clear any awaits TODO extract
         isAwaitPauseRequestHash = 0;
         if (duration60 > 0) {
-            // yield execution from script back to game, to be resumed in n frames
-            currentCtx = ctx;
-            ctx->Suspend(); // assert ctx->GetState() == asEXECUTION_SUSPENDED
+            lotuskit::script::schedule::tas::trySuspendCtx(); // yield execution from script back to game, to be resumed in n frames
         }
     }
 
