@@ -1,4 +1,5 @@
 #include <nn/util.h>
+#include "tas/config.hpp"
 #include "tas/Playback.hpp"
 #include "script/schedule.hpp"
 #include "structs/VFRMgr.hpp"

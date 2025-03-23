@@ -34,28 +34,45 @@ namespace lotuskit::script::schedule::tas {
     }
 
     bool calcCtx() {
-        if (!hasPlayableCtx()) { return true; } // err
-        auto* ctx = getCtx();
+        ModuleStackEntry* sp = nullptr;
+        AngelScript::asEContextState prevState;
+        s32 asErrno = 0;
 
-        // TODO pop ctx if state == finished && moduleStackIndex > 0
-        // TODO count module stack usages, free on 0?
+        CTX_ENTER:
+        if (!hasPlayableCtx()) { abortStack(); return true; } // err
+        sp = getSP();
+        prevState = sp->asCtx->GetState();
+        if (prevState != AngelScript::asEXECUTION_SUSPENDED && prevState != AngelScript::asEXECUTION_PREPARED) { abortStack(); return true; } // err: unexpected state
 
-        s32 asErrno = ctx->Execute();
+        asErrno = sp->asCtx->Execute(); // run or resume the ctx until it yields/completes/fails
+
         if (asErrno == AngelScript::asEXECUTION_FINISHED) {
-            // TODO if moduleStackIndex > 0 { moduleStackIndex--; freemodule(); goto TOP; }
-            //ctx->Release(); // XXX any cleanup, pop, ... TODO pop and resume
-            //ctx = nullptr;
-            return true; // ok: entire script stack complete
+            if (moduleStackIndex == 0) {
+                // entire stack complete
+                sp->asCtx->Unprepare();
+                tryDiscardLastModuleForPop();
+                // TODO run gc?
+                return true; // ok: entire script stack complete
+
+            } else {
+                // nested scripts
+                sp->asCtx->Unprepare();
+                tryDiscardLastModuleForPop();
+                // TODO run gc?
+
+                // pop ctx, go back and keep running caller (the "await" ends here)
+                moduleStackIndex--;
+                goto CTX_ENTER;
+            }
 
         } else if (asErrno == AngelScript::asEXECUTION_EXCEPTION) {
-            // FIXME abort entire script stack? TODO generally we need to fail the whole stack at once yes
             // TODO exceptions
             char buf[1000];
-            nn::util::SNPrintf(buf, sizeof(buf), "[angelscript] uncaught: %s", ctx->GetExceptionString());
+            nn::util::SNPrintf(buf, sizeof(buf), "[angelscript] uncaught: %s", sp->asCtx->GetExceptionString());
             Logger::logText(buf, "/script/engine");
-            lotuskit::TextWriter::toastf(30*5, "[error] %s \n", ctx->GetExceptionString());
-            ctx->Release();
-            ctx = nullptr;
+            lotuskit::TextWriter::toastf(30*5, "[error] %s \n", sp->asCtx->GetExceptionString());
+
+            abortStack();
             return true; // err
 
         } else if (asErrno == AngelScript::asEXECUTION_SUSPENDED) {
@@ -68,7 +85,7 @@ namespace lotuskit::script::schedule::tas {
     void pushExecLocalFileModule(const char* filename) {
         if (!lotuskit::util::fs::fileExists(filename)) {
             lotuskit::TextWriter::toastf(30*5, "[error] script filename unreadable: %s\n", filename);
-            // FIXME abort entire script stack? TODO generally we need to fail the whole stack at once yes
+            abortStack();
             return;
         }
         // FIXME larger scripts / text alloc
@@ -76,11 +93,12 @@ namespace lotuskit::script::schedule::tas {
         if (lotuskit::util::fs::readTextFile(scriptBuf, sizeof(scriptBuf), filename)) {
             svcOutputDebugString(scriptBuf, strlen(scriptBuf)); // err
             lotuskit::TextWriter::toastf(30*5, "[error] %s\n", scriptBuf);
+            abortStack();
             return;
         }
 
         auto* mod = buildOnceOrGetModule(filename, filename, scriptBuf);
-        if (mod == nullptr) { return; } // err
+        if (mod == nullptr) { abortStack(); return; } // err
         // XXX free scriptText
         constexpr bool doImmediateExecute = true;
         pushExecModuleEntryPoint(mod, "void main()", doImmediateExecute);
@@ -88,7 +106,7 @@ namespace lotuskit::script::schedule::tas {
 
     void pushExecTextModule(const char* moduleName, const char* sectionName, const char* scriptText, const char* entryPoint) {
         auto* mod = buildOnceOrGetModule(moduleName, sectionName, scriptText);
-        if (mod == nullptr) { return; } // err
+        if (mod == nullptr) { abortStack(); return; } // err
         // XXX free scriptText
         constexpr bool doImmediateExecute = true;
         pushExecModuleEntryPoint(mod, entryPoint, doImmediateExecute);
@@ -132,12 +150,13 @@ namespace lotuskit::script::schedule::tas {
         } else if (moduleStackIndex == 0) {
             // initial script entry point
         } else {
+            abortStack();
             return; // err: sp context is dead
         }
 
         ModuleStackEntry* sp = getSP();
-        if (sp->asCtx == nullptr) { return; } // err should be alloced
-        if (sp->asModule != nullptr) { return; } // err should be empty
+        if (sp->asCtx == nullptr) { abortStack(); return; } // err should be alloced
+        if (sp->asModule != nullptr) { abortStack(); return; } // err should be empty
         // assert sp ctx state is uninitialized/unprepared
         sp->asModule = mod;
 
@@ -148,6 +167,7 @@ namespace lotuskit::script::schedule::tas {
             TextWriter::toastf(30*5, "[error] missing entry point %s \n", entryPoint);
             nn::util::SNPrintf(buf, sizeof(buf), "[error] missing entry point %s", entryPoint);
             Logger::logText(buf, "/script/engine");
+            abortStack();
             return;
         }
 
@@ -158,8 +178,37 @@ namespace lotuskit::script::schedule::tas {
             if (isCompleteOrFail) { lotuskit::tas::Playback::isPlaybackActive = false; }
         } else {
             // signal that queued ctx should be executed later
+            svcOutputDebugString("cant defer", 10); // FIXME
             //lotuskit::tas::Playback::isPlaybackActive = true; // TODO maybe a new flag to request this -- isPlaybackActive makes a bunch of input injection stuff go
         }
+    }
+
+    void tryDiscardLastModuleForPop() {
+        // wipe last module from sp
+        auto* sp = getSP();
+        auto* lastModule = sp->asModule;
+        if (lastModule == nullptr) { return; }
+        sp->asModule = nullptr;
+
+        // only proceed to discard unused modules
+        for (int i = 0; i < moduleStackIndex-1; i++) {
+            if (moduleStack[i].asModule == lastModule) {
+                return; // module is still in use
+            }
+        }
+
+        lastModule->Discard(); // free
+    }
+
+    void abortStack() {
+        svcOutputDebugString("as rip", 6); // XXX
+        for (size_t i = MAX_MODULE_STACK_DEPTH-1; i > 0; i--) {
+            moduleStackIndex = i;
+            moduleStack[i].asCtx->Unprepare(); // clear all contexts
+            tryDiscardLastModuleForPop(); // free all modules
+        }
+        moduleStackIndex = 0;
+        lotuskit::tas::Playback::isPlaybackActive = false;
     }
 
 } // ns

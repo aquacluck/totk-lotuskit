@@ -1,7 +1,6 @@
 #pragma once
 #include <string>
 #include "exlaunch.hpp"
-#include "tas/config.hpp"
 #include <angelscript.h>
 #include <nn/hid.h>
 #include "structs/nnSixAxis.hpp"

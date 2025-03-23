@@ -2,8 +2,6 @@
 #include <string>
 #include <angelscript.h>
 #include "exlaunch.hpp"
-#include "tas/config.hpp"
-#include "tas/Playback.hpp"
 
 namespace lotuskit::script::schedule::tas {
     // AS source files are loaded 1:1 into AS modules, allowing scripts to "call into" different files and
@@ -22,7 +20,7 @@ namespace lotuskit::script::schedule::tas {
     inline u8 moduleStackIndex = 0;
     inline ModuleStackEntry* getSP() { return &moduleStack[moduleStackIndex]; }
     inline AngelScript::asIScriptContext* getCtx() { return getSP()->asCtx; }
-    void initModuleStack();
+    void initModuleStack(); // init AS contexts at bootup
 
     void trySuspendCtx();
     bool hasPlayableCtx();
@@ -32,6 +30,9 @@ namespace lotuskit::script::schedule::tas {
     void pushExecLocalFileModule(const char* filename);
     void pushExecTextModule(const char* moduleName, const char* sectionName, const char* scriptText, const char* entryPoint);
     void pushExecModuleEntryPoint(AngelScript::asIScriptModule* mod, const char* entryPoint, bool doImmediateExecute = true);
+
+    void tryDiscardLastModuleForPop();
+    void abortStack();
 
 } // ns
 
