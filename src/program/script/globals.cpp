@@ -1,5 +1,6 @@
 #include "exlaunch.hpp"
 #include "script/globals.hpp"
+#include "script/schedule.hpp"
 
 #include <nn/util.h>
 #include <lib/json.hpp>
@@ -976,6 +977,13 @@ namespace lotuskit::script::globals {
             asErrno = engine->RegisterGlobalFunction(
                 "void doSkipLoadingPause(bool)",
                 AngelScript::asFUNCTION(lotuskit::tas::Playback::doSkipLoadingPause),
+                AngelScript::asCALL_CDECL
+            ); assert( asErrno >= 0 );
+
+            // call nested scripts
+            asErrno = engine->RegisterGlobalFunction(
+                "void awaitExecScript(const string &in)",
+                AngelScript::asFUNCTION(lotuskit::script::schedule::tas::pushExecLocalFileModule),
                 AngelScript::asCALL_CDECL
             ); assert( asErrno >= 0 );
 

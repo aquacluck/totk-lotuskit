@@ -96,6 +96,14 @@
 
 
     class AngelScript {
+        // These module names aren't special, but every unique module on the stack needs to have a different name:
+        // modules are built once per name per script execution, so while you can push the same name twice (recursion) it won't build/update with the script source you've sent.
+        // So if they're going to coexist on the stack, separate code needs to be in separate modules:
+        // the module name is like a function identifier which expires once the whole script completes.
+        static TAS_MODULE_DEFAULT = "web_anon.as"; // only things like buttons should be anon, oneshot "leaf" executions which can be pushed anytime
+        static TAS_MODULE_USER_REPL = "web_scratch.as"; // console/notepad/etc interactive usage (so we can still push anon buttons while this runs)
+        static TAS_MODULE_INTERRUPT = "web_interrupt.as"; // cant be anon because it needs to be able to interrupt anon
+
         static wrap_implicit_main(script_text) {
             // no begin newline preserves line numbers
             // end newline closes any trailing line comment
@@ -103,8 +111,9 @@
             return `void main() { ${script_text}\n}`;
         }
 
-        static exec(snippet) {
-            WSTransport.send({execScriptString: AngelScript.wrap_implicit_main(snippet)});
+        static exec(snippet, moduleName) {
+            moduleName ||= AngelScript.TAS_MODULE_DEFAULT;
+            WSTransport.send({execScriptString: AngelScript.wrap_implicit_main(snippet), execScriptModule: moduleName});
         }
     }
 
@@ -560,10 +569,9 @@
         do_exec() {
             let script_text = this.script_text_ref.current.value;
             if (this.use_implicit_main_ref.current.checked) {
-                AngelScript.exec(script_text); // snippet
+                AngelScript.exec(script_text, AngelScript.TAS_MODULE_USER_REPL); // snippet
             } else {
-                // XXX extract AngelScript.exec_module?
-                WSTransport.send({execScriptString: script_text});
+                WSTransport.send({execScriptString: script_text, execScriptModule: AngelScript.TAS_MODULE_USER_REPL});
             }
         }
 
@@ -626,7 +634,7 @@
                     <label title="Automatically wrap input into void main() {...} entry point" for="execscript_use_implicit_main">main:</label>
                     <input type="checkbox" id="execscript_use_implicit_main" ref=${this.use_implicit_main_ref} checked />
                     <button title="tas::toggleDump()" onClick=${ () => this.do_toggle_record() } class="pushbutton">tas dump</button>
-                    <button title="tas::input(1); // sending another script interrupts the running one" onClick=${ () => AngelScript.exec("tas::input(1);") } class="pushbutton">break</button>
+                    <button title="tas::input(1); // sending another script interrupts the running one" onClick=${ () => AngelScript.exec("tas::input(1);", AngelScript.TAS_MODULE_INTERRUPT) } class="pushbutton">break</button>
                     <button title="WSTransport.send({persistFileString, persistFileName})" onClick=${ () => this.do_trash_upload() } class="pushbutton">⚠️upload</button>
                     <label title="⚠️update subsdk9 (drop onto button)" for="subsdkupload"> nso: </label><input type="file" title="WSTransport.send({persistFileBinary, persistFileName})" onChange=${this.on_drop_terrifying_subsdk9_upload} class="pushbutton" style="width:32px;" id="subsdkupload" />
                     <br/>

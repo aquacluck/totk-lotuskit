@@ -14,9 +14,9 @@ namespace lotuskit::server {
     void JsonDispatch::dispatchText(const char* jsonText) {
         json jsonPayload = json::parse(jsonText);
         if (jsonPayload.contains("execScriptString")) {
-            auto moduleName = jsonPayload.contains("execScriptModule") ? (jsonPayload["execScriptModule"].template get<std::string>()) : "web.as";
+            auto moduleName = jsonPayload.contains("execScriptModule") ? (jsonPayload["execScriptModule"].template get<std::string>()) : "web_anon.as";
             auto scriptText = jsonPayload["execScriptString"].template get<std::string>();
-            lotuskit::script::schedule::tas::pushExecTextModule(moduleName.c_str(), "web.as", scriptText.c_str(), "void main()");
+            lotuskit::script::schedule::tas::pushExecTextModule(moduleName.c_str(), moduleName.c_str(), scriptText.c_str(), "void main()");
 
         } else if (jsonPayload.contains("persistFileString") && jsonPayload.contains("persistFileName")) {
             auto src = jsonPayload["persistFileString"].template get<std::string>();

@@ -62,6 +62,11 @@ namespace lotuskit::script::schedule::tas {
 
                 // pop ctx, go back and keep running caller (the "await" ends here)
                 moduleStackIndex--;
+
+                // FIXME do not resume ctx after pop if it: has an unfinished tas::input(), is awaiting something else, etc states where it was already suspended.
+                //       Just store whether it was suspended when we pushed past it? If the blocking condition has already cleared, tas::Playback will resume it for us next calc.
+                //       Immediately re entering these ctxs means dropping the previous input, skipping the scheduled input frames.
+                // FIXME tas::input timing etc needs to be stored per moduleStackIndex, or else remaining duration will be dropped when inner tas::input sets currentInputTTL60.
                 goto CTX_ENTER;
             }
 
@@ -112,14 +117,10 @@ namespace lotuskit::script::schedule::tas {
         pushExecModuleEntryPoint(mod, entryPoint, doImmediateExecute);
     }
 
-    // TODO add push/pop ctx stack for tas scheduling:
-    // - allow scheduling arbitrary run lengths by executing on a stack of 1:1:1 ctx:module:file, building+executing+releasing one leaf file at a time
-    // - tas::awaitExecScript("sdcard:/totk_lotuskit/page_69_of_420.as"); // suspend currentCtx, build+push+run new file, later resume currentCtx
-    // - tas::awaitEvalScript("tas::input(30);"); // XXX would this ever be useful?
-    // - tas::awaitExecNXTas("sdcard:/totk_lotuskit/nx-tas.txt"); // TODO transpile+run nxtas source file in new module
-    // - pop requires handoff logic in tas::Playback
-    // - hotkeys and frontend buttons can work by pushing their payload instead of clobbering TODO needs JsonDispatch for web.as push op
-    // - TODO what should break vs push, abort vs pop, etc semantics look like?
+    // TODO tas::awaitExecScript("sdcard:/totk_lotuskit/page_69_of_420.as"); // suspend currentCtx, build+push+run new file, later resume currentCtx
+    // XXX  tas::awaitEvalScript("tas::input(30);"); // would this ever be useful?
+    // TODO tas::awaitExecNXTas("sdcard:/totk_lotuskit/nx-tas.txt"); // transpile+run nxtas source file in new module
+    // TODO what should break vs push, abort vs pop, etc semantics look like?
 
     AngelScript::asIScriptModule* buildOnceOrGetModule(const char* moduleName, const char* sectionName, const char* scriptText) {
         const auto engine = lotuskit::script::engine::asEngine;
@@ -141,7 +142,7 @@ namespace lotuskit::script::schedule::tas {
     void pushExecModuleEntryPoint(AngelScript::asIScriptModule* mod, const char* entryPoint, bool doImmediateExecute) {
         const auto prevState = getCtx()->GetState();
         if (prevState == AngelScript::asEXECUTION_ACTIVE) {
-            // interrupt running script and jump to next entry
+            // interrupt running ctx, advance sp to next
             trySuspendCtx();
             moduleStackIndex++;
         } else if (prevState == AngelScript::asEXECUTION_SUSPENDED) {
@@ -209,6 +210,7 @@ namespace lotuskit::script::schedule::tas {
         }
         moduleStackIndex = 0;
         lotuskit::tas::Playback::isPlaybackActive = false;
+        // TODO run gc?
     }
 
 } // ns
