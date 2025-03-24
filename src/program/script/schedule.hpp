@@ -29,10 +29,11 @@ namespace lotuskit::script::schedule::tas {
     bool hasPlayableCtx();
     bool calcCtx(); // return true if complete/error, false if ok/ongoing
 
-    AngelScript::asIScriptModule* buildOnceOrGetModule(const char* moduleName, const char* sectionName, const char* scriptText);
-    void pushExecLocalFileModule(const char* filename);
-    void pushExecTextModule(const char* moduleName, const char* sectionName, const char* scriptText, const char* entryPoint);
-    void pushExecModuleEntryPoint(AngelScript::asIScriptModule* mod, const char* entryPoint, bool doImmediateExecute = true);
+    AngelScript::asIScriptModule* buildOnceOrGetModule(const std::string& moduleName, const std::string& sectionName, const std::string& scriptText);
+    void pushExecLocalFileModule(const std::string& filename);
+    void pushExecTextModule(const std::string& moduleName, const std::string& sectionName, const std::string& scriptText, const std::string& entryPoint);
+    void pushExecModuleEntryPoint(AngelScript::asIScriptModule* mod, const std::string& entryPoint, bool doImmediateExecute = true);
+    // TODO tas::awaitExecNXTas("sdcard:/totk_lotuskit/nx-tas.txt"); // transpile+run nxtas source file in new module
 
     void tryDiscardLastModuleForPop();
     void abortStack();

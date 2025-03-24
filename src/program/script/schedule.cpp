@@ -29,7 +29,6 @@ namespace lotuskit::script::schedule::tas {
         if (state == AngelScript::asEXECUTION_SUSPENDED) { return true; } // can be resumed
         if (state == AngelScript::asEXECUTION_PREPARED) { return true; } // can be started
         if (state == AngelScript::asEXECUTION_FINISHED && moduleStackIndex > 0) { return true; } // can be popped+resumed
-        svcOutputDebugString("badctx", 6); // XXX idk if this happens
         return false;
     }
 
@@ -84,29 +83,36 @@ namespace lotuskit::script::schedule::tas {
         return false; // ok: ongoing
     }
 
-    void pushExecLocalFileModule(const char* filename) {
-        if (!lotuskit::util::fs::fileExists(filename)) {
-            lotuskit::TextWriter::toastf(30*5, "[error] script filename unreadable: %s\n", filename);
-            abortStack();
-            return;
-        }
-        // FIXME larger scripts / text alloc
-        char scriptBuf[0x2000];
-        if (lotuskit::util::fs::readTextFile(scriptBuf, sizeof(scriptBuf), filename)) {
-            svcOutputDebugString(scriptBuf, strlen(scriptBuf)); // err
-            lotuskit::TextWriter::toastf(30*5, "[error] %s\n", scriptBuf);
-            abortStack();
-            return;
+    void pushExecLocalFileModule(const std::string& filename) {
+        // reuse any existing module by name during a single script execution -- do not check/rebuild file contents for update
+        const auto engine = lotuskit::script::engine::asEngine;
+        AngelScript::asIScriptModule* mod = engine->GetModule(filename.c_str(), AngelScript::asGM_ONLY_IF_EXISTS);
+
+        if (mod == nullptr) {
+            // read+build new module
+            if (!lotuskit::util::fs::fileExists(filename.c_str())) {
+                lotuskit::TextWriter::toastf(30*5, "[error] script filename unreadable: %s\n", filename.c_str());
+                abortStack();
+                return;
+            }
+
+            // FIXME larger scripts / text alloc
+            char scriptBuf[0x2000];
+            if (lotuskit::util::fs::readTextFile(scriptBuf, sizeof(scriptBuf), filename.c_str())) {
+                svcOutputDebugString(scriptBuf, strlen(scriptBuf)); // err
+                lotuskit::TextWriter::toastf(30*5, "[error] %s\n", scriptBuf);
+                abortStack();
+                return;
+            }
+            mod = buildOnceOrGetModule(filename, filename, scriptBuf); // XXX free scriptBuf
         }
 
-        auto* mod = buildOnceOrGetModule(filename, filename, scriptBuf);
         if (mod == nullptr) { abortStack(); return; } // err
-        // XXX free scriptText
         constexpr bool doImmediateExecute = true;
         pushExecModuleEntryPoint(mod, "void main()", doImmediateExecute);
     }
 
-    void pushExecTextModule(const char* moduleName, const char* sectionName, const char* scriptText, const char* entryPoint) {
+    void pushExecTextModule(const std::string& moduleName, const std::string& sectionName, const std::string& scriptText, const std::string& entryPoint) {
         auto* mod = buildOnceOrGetModule(moduleName, sectionName, scriptText);
         if (mod == nullptr) { abortStack(); return; } // err
         // XXX free scriptText
@@ -114,38 +120,19 @@ namespace lotuskit::script::schedule::tas {
         pushExecModuleEntryPoint(mod, entryPoint, doImmediateExecute);
     }
 
-    // XXX  tas::awaitEvalScript("tas::input(30);"); // would this ever be useful?
-    // TODO tas::awaitExecNXTas("sdcard:/totk_lotuskit/nx-tas.txt"); // transpile+run nxtas source file in new module
-    // TODO what should break vs push, abort vs pop, etc semantics look like?
-
-    AngelScript::asIScriptModule* buildOnceOrGetModule(const char* moduleName, const char* sectionName, const char* scriptText) {
-        const auto engine = lotuskit::script::engine::asEngine;
-
-        // reuse any existing module by name during a single script execution -- do not rebuild/clobber even if scriptText might be different across calls.
-        // TODO detect this sooner for file based cases to avoid read?
-        AngelScript::asIScriptModule* mod = engine->GetModule(moduleName, AngelScript::asGM_ONLY_IF_EXISTS);
-        if (mod != nullptr) { return mod; }
-
-        // build in new module
-        mod = engine->GetModule(moduleName, AngelScript::asGM_CREATE_IF_NOT_EXISTS);
-        if (mod == nullptr) { return nullptr; } // XXX impossible err?
-        mod->AddScriptSection(sectionName, scriptText);
-        s32 asErrno = mod->Build(); // Build the module
-        if (asErrno < 0) { return nullptr; } // The build failed. The message stream will have received compiler errors that shows what needs to be fixed
-        return mod;
-    }
-
-    void pushExecModuleEntryPoint(AngelScript::asIScriptModule* mod, const char* entryPoint, bool doImmediateExecute) {
+    void pushExecModuleEntryPoint(AngelScript::asIScriptModule* mod, const std::string& entryPoint, bool doImmediateExecute) {
         const auto prevState = getCtx()->GetState();
         if (prevState == AngelScript::asEXECUTION_ACTIVE) {
             // interrupt running ctx, advance sp to next
             trySuspendCtx();
             getSP()->isActiveCtxSuspendedForPush = true;
             moduleStackIndex++;
+
         } else if (prevState == AngelScript::asEXECUTION_SUSPENDED) {
             // advance sp past sleeping ctx
             getSP()->isActiveCtxSuspendedForPush = false;
             moduleStackIndex++;
+
         } else if (moduleStackIndex == 0) {
             // initial script entry point
         } else {
@@ -161,10 +148,10 @@ namespace lotuskit::script::schedule::tas {
 
         // Find the function that is to be called (mod+entryPoint -> funcptr)
         char buf[500];
-        AngelScript::asIScriptFunction *asEntryPoint = mod->GetFunctionByDecl(entryPoint);
+        AngelScript::asIScriptFunction *asEntryPoint = mod->GetFunctionByDecl(entryPoint.c_str());
         if (asEntryPoint == nullptr) {
-            TextWriter::toastf(30*5, "[error] missing entry point %s \n", entryPoint);
-            nn::util::SNPrintf(buf, sizeof(buf), "[error] missing entry point %s", entryPoint);
+            TextWriter::toastf(30*5, "[error] missing entry point %s \n", entryPoint.c_str());
+            nn::util::SNPrintf(buf, sizeof(buf), "[error] missing entry point %s", entryPoint.c_str());
             Logger::logText(buf, "/script/engine");
             abortStack();
             return;
@@ -177,9 +164,26 @@ namespace lotuskit::script::schedule::tas {
             if (isCompleteOrFail) { lotuskit::tas::Playback::isPlaybackActive = false; }
         } else {
             // signal that queued ctx should be executed later
-            svcOutputDebugString("cant defer", 10); // FIXME
-            //lotuskit::tas::Playback::isPlaybackActive = true; // TODO maybe a new flag to request this -- isPlaybackActive makes a bunch of input injection stuff go
+            svcOutputDebugString("[script] cant defer", 19);
+            // FIXME new flag to request this (isPlaybackActive makes a bunch of input injection stuff go)
+            //lotuskit::tas::Playback::isPlaybackActive = true;
         }
+    }
+
+    AngelScript::asIScriptModule* buildOnceOrGetModule(const std::string& moduleName, const std::string& sectionName, const std::string& scriptText) {
+        const auto engine = lotuskit::script::engine::asEngine;
+
+        // reuse any existing module by name during a single script execution -- do not rebuild/clobber even if scriptText might be different across calls.
+        AngelScript::asIScriptModule* mod = engine->GetModule(moduleName.c_str(), AngelScript::asGM_ONLY_IF_EXISTS);
+        if (mod != nullptr) { return mod; }
+
+        // build in new module
+        mod = engine->GetModule(moduleName.c_str(), AngelScript::asGM_CREATE_IF_NOT_EXISTS);
+        if (mod == nullptr) { return nullptr; } // XXX impossible err?
+        mod->AddScriptSection(sectionName.c_str(), scriptText.c_str());
+        s32 asErrno = mod->Build(); // Build the module
+        if (asErrno < 0) { return nullptr; } // The build failed. The message stream will have received compiler errors that shows what needs to be fixed
+        return mod;
     }
 
     void tryDiscardLastModuleForPop() {
@@ -200,7 +204,7 @@ namespace lotuskit::script::schedule::tas {
     }
 
     void abortStack() {
-        svcOutputDebugString("as rip", 6); // XXX
+        svcOutputDebugString("[script] abort", 14);
         trySuspendCtx();
         for (size_t i = MAX_MODULE_STACK_DEPTH-1; i > 0; i--) {
             moduleStackIndex = i;
