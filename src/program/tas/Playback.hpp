@@ -34,7 +34,8 @@ namespace lotuskit::tas {
 
         // current input
         static PlaybackInput currentInput;
-        inline static bool isPlaybackActive = false;
+        inline static bool isPlaybackActive = false; // tas is operational (note this does not imply `ctx->GetState() == asEXECUTION_ACTIVE`, AS does not constantly run)
+        inline static bool isPlaybackPendingCtx = false; // tas script should be started
         static void setCurrentInput(u32 duration=1, u64 nextButtons=0, s32 nextLStickX=0, s32 nextLStickY=0, s32 nextRStickX=0, s32 nextRStickY=0);
         static void setCurrentInputOr(u32 duration=1, u64 nextButtons=0, s32 nextLStickX=0, s32 nextLStickY=0, s32 nextRStickX=0, s32 nextRStickY=0);
         static void setCurrentInputXor(u32 duration=1, u64 nextButtons=0, s32 nextLStickX=0, s32 nextLStickY=0, s32 nextRStickX=0, s32 nextRStickY=0);

@@ -83,7 +83,7 @@ namespace lotuskit::script::schedule::tas {
         return false; // ok: ongoing
     }
 
-    void pushExecLocalFileModule(const std::string& filename) {
+    void pushExecLocalFileModule(const std::string& filename, bool doImmediateExecute) {
         // reuse any existing module by name during a single script execution -- do not check/rebuild file contents for update
         const auto engine = lotuskit::script::engine::asEngine;
         AngelScript::asIScriptModule* mod = engine->GetModule(filename.c_str(), AngelScript::asGM_ONLY_IF_EXISTS);
@@ -108,15 +108,13 @@ namespace lotuskit::script::schedule::tas {
         }
 
         if (mod == nullptr) { abortStack(); return; } // err
-        constexpr bool doImmediateExecute = true;
         pushExecModuleEntryPoint(mod, "void main()", doImmediateExecute);
     }
 
-    void pushExecTextModule(const std::string& moduleName, const std::string& sectionName, const std::string& scriptText, const std::string& entryPoint) {
+    void pushExecTextModule(const std::string& moduleName, const std::string& sectionName, const std::string& scriptText, const std::string& entryPoint, bool doImmediateExecute) {
         auto* mod = buildOnceOrGetModule(moduleName, sectionName, scriptText);
         if (mod == nullptr) { abortStack(); return; } // err
         // XXX free scriptText
-        constexpr bool doImmediateExecute = true;
         pushExecModuleEntryPoint(mod, entryPoint, doImmediateExecute);
     }
 
@@ -163,10 +161,8 @@ namespace lotuskit::script::schedule::tas {
             const bool isCompleteOrFail = calcCtx();
             if (isCompleteOrFail) { lotuskit::tas::Playback::isPlaybackActive = false; }
         } else {
-            // signal that queued ctx should be executed later
-            svcOutputDebugString("[script] cant defer", 19);
-            // FIXME new flag to request this (isPlaybackActive makes a bunch of input injection stuff go)
-            //lotuskit::tas::Playback::isPlaybackActive = true;
+            // signal that queued ctx should be executed in main loop tas calc
+            lotuskit::tas::Playback::isPlaybackPendingCtx = true;
         }
     }
 

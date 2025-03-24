@@ -98,7 +98,7 @@ namespace lotuskit::tas {
     /// }}} pause scheduling
 
     void Playback::calc() {
-        if (!isPlaybackActive) { return; } // not doing playback
+        if (!isPlaybackActive && !isPlaybackPendingCtx) { return; } // not doing playback
 
         const bool isLoadingPause = lotuskit::util::pause::isPauseRequest(0x0eafe200);
         if (isLoadingPause && skipLoadingPause) {
@@ -110,7 +110,7 @@ namespace lotuskit::tas {
             return;
         }
 
-        /// begin frametime scheduling {{{
+        if (isPlaybackActive) { // begin frametime scheduling
             // TODO extract `bool calcScheduleIsScriptInputExhausted()`
 
             // int 2 or 3 = float 1.0 (@30fps) or 1.5 (@20fps)
@@ -141,13 +141,14 @@ namespace lotuskit::tas {
                 isPlaybackActive = false; // XXX if its "not playable" then lets stop playing hmm?
                 return Playback::drawTextWriterModeLine();
             }
-        /// }}} end frametime scheduling
+        } // end frametime scheduling
 
         // pause scheduling
         if (Playback::calcScheduleIsAwaitPauseRequest()) { return; } // modeline drawn on wait
         if (Playback::calcScheduleIsAwaitPauseTarget())  { return; } // modeline drawn on wait
 
         // resume script, eventually getting a setCurrentInput call
+        if (isPlaybackPendingCtx) { isPlaybackPendingCtx = false; }
         const bool isCompleteOrFail = lotuskit::script::schedule::tas::calcCtx();
         if (isCompleteOrFail) { isPlaybackActive = false; }
         Playback::drawTextWriterModeLine();
