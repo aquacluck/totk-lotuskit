@@ -31,8 +31,8 @@ namespace lotuskit::util::fs {
             strcpy(out, errbuf);
             return true; // err
         }
-        if (fdLen > maxOut) {
-            nn::util::SNPrintf(errbuf, sizeof(errbuf), "file contents too long %d > %d %s ", fdLen, maxOut, path);
+        if (fdLen > maxOut-1) {
+            nn::util::SNPrintf(errbuf, sizeof(errbuf), "file contents too long %d > %d %s ", fdLen, maxOut-1, path);
             strcpy(out, errbuf);
             return true; // err
         }
@@ -45,6 +45,7 @@ namespace lotuskit::util::fs {
         }
 
         nn::fs::CloseFile(fd);
+        out[fdLen] = '\0'; // terminate
         return false; // ok
     }
 
