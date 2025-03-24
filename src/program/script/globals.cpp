@@ -982,8 +982,13 @@ namespace lotuskit::script::globals {
 
             // call nested scripts
             asErrno = engine->RegisterGlobalFunction(
-                "void awaitExecScript(const string &in)",
+                "void awaitExecFile(const string &in)",
                 AngelScript::asFUNCTION(lotuskit::script::schedule::tas::pushExecLocalFileModule),
+                AngelScript::asCALL_CDECL
+            ); assert( asErrno >= 0 );
+            asErrno = engine->RegisterGlobalFunction(
+                "void abort()",
+                AngelScript::asFUNCTION(lotuskit::script::schedule::tas::abortStack),
                 AngelScript::asCALL_CDECL
             ); assert( asErrno >= 0 );
 

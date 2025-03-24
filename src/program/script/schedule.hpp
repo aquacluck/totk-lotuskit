@@ -14,6 +14,9 @@ namespace lotuskit::script::schedule::tas {
         public:
         AngelScript::asIScriptModule* asModule;
         AngelScript::asIScriptContext* asCtx;
+        bool isActiveCtxSuspendedForPush;
+        // FIXME tas::input timing etc needs to be stored per moduleStackIndex, or else remaining duration will be dropped when inner tas::input sets currentInputTTL60.
+        //       Only affects interrupted inputs/awaits, which is unusual except for clicking buttons (which usually immediately returns).
     };
     constexpr size_t MAX_MODULE_STACK_DEPTH = 8;
     inline ModuleStackEntry moduleStack[MAX_MODULE_STACK_DEPTH] = {0};

@@ -317,7 +317,7 @@
             return html`
                 <div class="camerahacks" style="margin-top: 8px;">
                     Camera
-                    <button title="camera::toggleFreeze()" onClick=${() => this.reqToggleFreeze() } class="pushbutton" style="font-size:1.5rem;">\u23ef</button>
+                    <button title="camera::toggleFreeze()" onClick=${() => this.reqToggleFreeze() } class="pushbutton hint_recommended_hover" style="font-size:1.5rem;">\u23ef</button>
                     <label title="update with ActorWatcher position" for="camerahacks_follow">follow:</label>
                     <input type="checkbox" id="camerahacks_follow" ref=${this.follow} checked />
                     <label title="rotate relative to actor" for="camerahacks_relative">rel:</label>
@@ -336,27 +336,27 @@
                     <button title=${titleAW} onClick=${() => this.reqFreezeAtActorWatcher("NW") } class="pushbutton">${rel ? "↘"  : "NW"}</button>
                     <button title=${titleAW} onClick=${() => this.reqFreezeAtActorWatcher("N" ) } class="pushbutton">${rel ? "12" : "N" }</button>
                     <button title=${titleAW} onClick=${() => this.reqFreezeAtActorWatcher("NE") } class="pushbutton">${rel ? "↙"  : "NE"}</button>
-                    <button inert class="pushbutton pushbutton_null">__</button>
+                    <button inert class="pushbutton pushbutton_inert_spacer">__</button>
                     <span><label title="target camera to selected actor slot" for="camerahacks_slot_i">ActorWatcher[</label><input id="camerahacks_slot_i" style="width: 35px" type="number" placeholder="0" size="2" min="0" step="any" ref=${this.slot_i} />]</span>
 
                     <br/>
                     <button title=${titleAW} onClick=${() => this.reqFreezeAtActorWatcher("W" ) } class="pushbutton">${rel ? "9" : "W" }</button>
-                    <button inert class="pushbutton pushbutton_null">🌐</button>
+                    <button inert class="pushbutton pushbutton_inert_spacer">🌐</button>
                     <button title=${titleAW} onClick=${() => this.reqFreezeAtActorWatcher("E" ) } class="pushbutton">${rel ? "3" : "E "}</button>
-                    <button inert class="pushbutton pushbutton_null">__</button>
+                    <button inert class="pushbutton pushbutton_inert_spacer">__</button>
                     <span><label title="xz distance from target (offset = dist * direction)" for="camerahacks_dist">dist: </label><input id="camerahacks_dist" style="width: 60px;" type="number" placeholder="20" size="4" min="-10000" max="10000" step="any" ref=${this.dist} />m</span>
 
                     <br/>
                     <button title=${titleAW} onClick=${() => this.reqFreezeAtActorWatcher("SW") } class="pushbutton">${rel ? "↗" : "SW"}</button>
                     <button title=${titleAW} onClick=${() => this.reqFreezeAtActorWatcher("S" ) } class="pushbutton">${rel ? "6" : "S" }</button>
                     <button title=${titleAW} onClick=${() => this.reqFreezeAtActorWatcher("SE") } class="pushbutton">${rel ? "↖" : "SE"}</button>
-                    <button inert class="pushbutton pushbutton_null">__</button>
+                    <button inert class="pushbutton pushbutton_inert_spacer">__</button>
                     <span><label title="camera.pos_y = target.pos_y + elev" for="camerahacks_elev">elev: </label><input id="camerahacks_elev" style="width: 60px;" type="number" placeholder="5" size="4" min="-10000" max="10000" step="any" ref=${this.elev} />m</span>
 
                     <!--<button title="camera::toggleFreeze()" onClick=${() => this.reqToggleFreeze() } class="pushbutton" style="transform: rotate(-45deg);">⟵45°</button>-->
 
                     <br /><span style="margin-top: 12px; display: inline-block;">LStick:</span>
-                    <button title="PlayerUtil::doLStickAbsoluteVanilla(); // reset/default" onClick=${() => this.reqLStickAbsVanilla() }>\u23f5</button>
+                    <button class="hint_recommended_hover" title="PlayerUtil::doLStickAbsoluteVanilla(); // reset/default" onClick=${() => this.reqLStickAbsVanilla() }>\u23f5</button>
                     <button title="PlayerUtil::doLStickAbsoluteCameraFreeze(); // hold controls based on current view" onClick=${() => this.reqLStickAbsCam() }>🎥</button>
                     <button title="PlayerUtil::doLStickAbsolutePlayer(); // up is Link's forward" onClick=${() => this.reqLStickAbsPlayer() } style="color: #f9fc31; transform: scaleY(1.5); line-height: 14px;">⮝</button>
                     <button style="margin-left: 8px;" class="hover_hasargs" title="PlayerUtil::doLStickAbsoluteRadOffset(rad); // up is: 0 south, PI north, -PI_2 west, +PI_2 east" onClick=${() => this.reqLStickAbsRad() }>🌐</button><input class="hover_isarg" placeholder="PI" ref=${this.lstick_rad} size=4 />
@@ -431,7 +431,7 @@
                         </optgroup>
                     </select>
                     <button title=${reqFreezeTitle} onClick=${() => this.do_freeze_selection() } class="pushbutton">\u23f8</button>
-                    <button title="pause::doFreezeMask(false); // end pause freezing" onClick=${() => this.do_unfreeze() } class="pushbutton">\u23f5</button>
+                    <button title="pause::doFreezeMask(false); // end pause freezing" onClick=${() => this.do_unfreeze() } class="pushbutton hint_recommended_hover">\u23f5</button>
                     <button title="pause::freezeMask(0, 0, 0, 0); // force unpause" onClick=${() => this.do_freeze_nopause() } class="pushbutton">0</button>
                     <button style=${reqStyle} title=${relTitle} onClick=${() => this.do_releasePause() } class="pushbutton dec">-</button>
                     <button style=${reqStyle} title=${reqTitle} onClick=${() => this.do_requestPause() } class="pushbutton inc">+</button>
@@ -506,7 +506,7 @@
                         <option value="10">text</option>
                         <option value="11">code</option>
                     </select>
-                    <button onClick=${ () => this.do_absolute(slot_i) } class="pushbutton">dump</button>
+                    <button onClick=${ () => this.do_absolute(slot_i) } class="pushbutton hint_recommended_hover">dump</button>
                     <button onClick=${ () => this.do_pause(slot_i) } class="pushbutton">pause</button>
                     <button onClick=${ () => this.do_clear(slot_i) } class="pushbutton">clear</button>
                 </div>
@@ -630,13 +630,13 @@
             return html`
                 <div class="execscript">
                     AngelScript
-                    <button title="Run the script below" onClick=${ () => this.do_exec() } class="pushbutton cta_blue" style="margin-right:16px;">exec</button>
+                    <button title="Run the script below" onClick=${ () => this.do_exec() } class="pushbutton hint_blueprint_strong" style="margin-right:16px;">exec</button>
                     <label title="Automatically wrap input into void main() {...} entry point" for="execscript_use_implicit_main">main:</label>
                     <input type="checkbox" id="execscript_use_implicit_main" ref=${this.use_implicit_main_ref} checked />
                     <button title="tas::toggleDump()" onClick=${ () => this.do_toggle_record() } class="pushbutton">tas dump</button>
-                    <button title="tas::input(1); // sending another script interrupts the running one" onClick=${ () => AngelScript.exec("tas::input(1);", AngelScript.TAS_MODULE_INTERRUPT) } class="pushbutton">break</button>
+                    <button title="tas::abort()" onClick=${ () => AngelScript.exec("tas::abort();", AngelScript.TAS_MODULE_INTERRUPT) } class="pushbutton hint_destructive_hover">abort</button>
                     <button title="WSTransport.send({persistFileString, persistFileName})" onClick=${ () => this.do_trash_upload() } class="pushbutton">⚠️upload</button>
-                    <label title="⚠️update subsdk9 (drop onto button)" for="subsdkupload"> nso: </label><input type="file" title="WSTransport.send({persistFileBinary, persistFileName})" onChange=${this.on_drop_terrifying_subsdk9_upload} class="pushbutton" style="width:32px;" id="subsdkupload" />
+                    <label title="⚠️update subsdk9 (drop onto button)" for="subsdkupload"> nso: </label><input type="file" title="WSTransport.send({persistFileBinary, persistFileName})" onChange=${this.on_drop_terrifying_subsdk9_upload} class="pushbutton hint_destructive_hover" style="width:32px;" id="subsdkupload" />
                     <br/>
                     <textarea class="as_source" placeholder='// check the blue AS📖 button for help \nPlayer.pos += 100*Vector3f::UP;\n\ntas::input(30, KEY_A|KEY_B, 32767,-32768, 0,0);\ntas::input(15, KEY_B, 0.5*STICK_UP_MAX /*, 8000*STICK_LEFT */);\n\nactor::createAndWatch( \n    1, "SpObj_LiftGeneratorWing_A_01", \n    Player.pos + 5*Vector3f::DOWN\n);' ref=${this.script_text_ref}></textarea>
                     <textarea placeholder="[tas output]" ref=${this.output_text_ref}></textarea>
@@ -807,7 +807,7 @@
 
                     <div class="actor_selector_options">
                         Select:
-                        <button title="ActorWatcher::clearSlot(${i})" onClick=${ () => this.clear_slot(i) } class="pushbutton selectNull">null</button>
+                        <button title="ActorWatcher::clearSlot(${i})" onClick=${ () => this.clear_slot(i) } class="pushbutton hint_destructive_hover">null</button>
                         <button title="ActorWatcher::assignSlotAwaitRecall(${i})" onClick=${ () => this.assignSlotAwaitRecall(i) } class="pushbutton selectRecall"><img src="assets/img/Obj_ReverseRecorder.png" /></button>
                         <button title="ActorWatcher::assignSlotAwaitSpawn(${i}, string actorName); // optional filter by name" onClick=${ () => this.assignSlotAwaitSpawn(i) } class="pushbutton">spawn</button>
                         <button title="ActorWatcher::assignSlotAwaitBancEntityHash(${i}, u64 hash); // eg 0x07b4e71cd2536055" onClick=${ () => this.assignSlotAwaitBancEntityHash(i) } class="pushbutton">Banc</button>
@@ -1237,7 +1237,7 @@
             return html`
                 <div class="angelscript_notebook size_${state.ui_size}">
                     <button title="Expand/Collapse" onClick=${ () => this.toggle_size() }>${ state.ui_size == "medium" ? "[-]" : "[+]" }</button>
-                    <button class="cta_blue" title="Open/Toggle AngelScript notebook" onClick=${ () => this.do_notebook_open() }>AS📖</button>
+                    <button class="hint_blueprint_strong" title="Open/Toggle AngelScript notebook" onClick=${ () => this.do_notebook_open() }>AS📖</button>
                     <select class="size_small_hidden" onChange=${this.do_index_select}>
                         ${index_names}
                     </select>
@@ -1336,7 +1336,7 @@
                     <button title="Expand/Collapse" onClick=${ () => this.toggle_size() }>${ state.ui_size == "medium" ? "[-]" : "[+]" }</button>
                     <span class="size_small_hidden">Mod Socket</span>${flag}
                     <input class="size_small_hidden" placeholder="ws://127.0.0.1:7072" size="20" ref=${this.ws_location_ref} />
-                    <button class="cta_green" title=${connectTitle} style=${connectStyle} onClick=${this.do_connect_submit}>go</button>
+                    <button class="hint_recommended_strong" title=${connectTitle} style=${connectStyle} onClick=${this.do_connect_submit}>go</button>
                     <div class="size_small_hidden">
                         <select onChange=${this.do_recent_select}>
                             <option>[Session Recents]</option>

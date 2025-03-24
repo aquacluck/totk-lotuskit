@@ -60,14 +60,11 @@ namespace lotuskit::script::schedule::tas {
                 tryDiscardLastModuleForPop();
                 // TODO run gc?
 
-                // pop ctx, go back and keep running caller (the "await" ends here)
+                // pop ctx, go back and resume caller if was running when we started (exec script "await" ends here)
                 moduleStackIndex--;
-
-                // FIXME do not resume ctx after pop if it: has an unfinished tas::input(), is awaiting something else, etc states where it was already suspended.
-                //       Just store whether it was suspended when we pushed past it? If the blocking condition has already cleared, tas::Playback will resume it for us next calc.
-                //       Immediately re entering these ctxs means dropping the previous input, skipping the scheduled input frames.
-                // FIXME tas::input timing etc needs to be stored per moduleStackIndex, or else remaining duration will be dropped when inner tas::input sets currentInputTTL60.
-                goto CTX_ENTER;
+                if (getSP()->isActiveCtxSuspendedForPush) {
+                    goto CTX_ENTER;
+                }
             }
 
         } else if (asErrno == AngelScript::asEXECUTION_EXCEPTION) {
@@ -117,7 +114,6 @@ namespace lotuskit::script::schedule::tas {
         pushExecModuleEntryPoint(mod, entryPoint, doImmediateExecute);
     }
 
-    // TODO tas::awaitExecScript("sdcard:/totk_lotuskit/page_69_of_420.as"); // suspend currentCtx, build+push+run new file, later resume currentCtx
     // XXX  tas::awaitEvalScript("tas::input(30);"); // would this ever be useful?
     // TODO tas::awaitExecNXTas("sdcard:/totk_lotuskit/nx-tas.txt"); // transpile+run nxtas source file in new module
     // TODO what should break vs push, abort vs pop, etc semantics look like?
@@ -144,9 +140,11 @@ namespace lotuskit::script::schedule::tas {
         if (prevState == AngelScript::asEXECUTION_ACTIVE) {
             // interrupt running ctx, advance sp to next
             trySuspendCtx();
+            getSP()->isActiveCtxSuspendedForPush = true;
             moduleStackIndex++;
         } else if (prevState == AngelScript::asEXECUTION_SUSPENDED) {
             // advance sp past sleeping ctx
+            getSP()->isActiveCtxSuspendedForPush = false;
             moduleStackIndex++;
         } else if (moduleStackIndex == 0) {
             // initial script entry point
@@ -203,6 +201,7 @@ namespace lotuskit::script::schedule::tas {
 
     void abortStack() {
         svcOutputDebugString("as rip", 6); // XXX
+        trySuspendCtx();
         for (size_t i = MAX_MODULE_STACK_DEPTH-1; i > 0; i--) {
             moduleStackIndex = i;
             moduleStack[i].asCtx->Unprepare(); // clear all contexts

@@ -27,8 +27,23 @@ body { margin: 0; }
 @media (dynamic-range: standard) { :root { --color-text: #eee; } }
 @media (dynamic-range: high)     { :root { --color-text: #ccc; } }
 
+:root {
+    --hue-delete: 0; /* red */
+    --hue-recall: 48.6; /* yellow */
+    --hue-physical: 120; /* green */
+    --hue-recommended: 120; /* green */
+    --hue-blueprint: 205; /* blue */
+    --hue-motion: 228.6; /* blue */
+
+    --blueprint-strong: hsl(var(--hue-blueprint) 75% 30%);
+
+    --vec-red:   hsl(  0 40% 80%);
+    --vec-green: hsl(120 40% 80%);
+    --vec-blue:  hsl(240 40% 80%);
+}
+
 body, input, button, select, textarea, dialog, .fakebutton {
-    background-color: #000;
+    background: #000;
     color: var(--color-text);
     font-family: "Source Code Pro", monospace;
     font-weight: 500;
@@ -49,12 +64,20 @@ input, button, select, textarea, dialog, .fakebutton {
     min-width: 32px;
     /*max-width: 72px;*/
     padding: 0px 1px;
+}
 
-    &.pushbutton_null {
+.pushbutton, button {
+    &.pushbutton_inert_spacer {
         /* invisible spacer, used with `inert` to remove all interaction */
         opacity: 0;
         pointer-events: none;
     }
+
+    &.hint_destructive_hover:hover { background: hsl(var(--hue-delete) 55% 30%); }
+    &.hint_recommended_hover:hover { background: hsl(var(--hue-recommended) 45% 30%); }
+
+    &.hint_blueprint_strong  { background: var(--blueprint-strong); }
+    &.hint_recommended_strong { background: hsl(var(--hue-recommended) 55% 30%); }
 }
 
 .faketoggle {
@@ -64,9 +87,6 @@ input, button, select, textarea, dialog, .fakebutton {
 .fakebutton {
     user-select: none;
 }
-
-button.cta_blue  { background-color: #115588; } /* evoke "script" or "blueprint" */
-button.cta_green { background-color: #117711; } /* evoke "overwhelmingly default/important", use sparingly */
 
 textarea {
     width: 100%;
@@ -89,31 +109,21 @@ textarea {
 
 .hover_hasargs:hover {
     /* just keep extending if we need >3 args on a control */
-    outline: 1px solid #115588;
-    &+ .hover_isarg { outline: 1px solid #115588; }
-    &+ .hover_isarg + .hover_isarg { outline: 1px solid #115588; }
-    &+ .hover_isarg + .hover_isarg + .hover_isarg { outline: 1px solid #115588; }
+    outline: 1px solid var(--blueprint-strong);
+    &+ .hover_isarg { outline: 1px solid var(--blueprint-strong); }
+    &+ .hover_isarg + .hover_isarg { outline: 1px solid var(--blueprint-strong); }
+    &+ .hover_isarg + .hover_isarg + .hover_isarg { outline: 1px solid var(--blueprint-strong); }
 }
 .hover_hasargs:has(+ .hover_isarg:hover),
 .hover_hasargs:has(+ .hover_isarg + .hover_isarg:hover),
 .hover_hasargs:has(+ .hover_isarg + .hover_isarg + .hover_isarg:hover)
 {
-    outline: 1px solid #115588;
-    &+ .hover_isarg { outline: 1px solid #115588; }
-    &+ .hover_isarg + .hover_isarg { outline: 1px solid #115588; }
-    &+ .hover_isarg + .hover_isarg + .hover_isarg { outline: 1px solid #115588; }
+    outline: 1px solid var(--blueprint-strong);
+    &+ .hover_isarg { outline: 1px solid var(--blueprint-strong); }
+    &+ .hover_isarg + .hover_isarg { outline: 1px solid var(--blueprint-strong); }
+    &+ .hover_isarg + .hover_isarg + .hover_isarg { outline: 1px solid var(--blueprint-strong); }
 }
 
-:root {
-    --hue-recall: 48.6; /* yellow */
-    --hue-motion: 228.6; /* blue */
-    --hue-delete: 0; /* red */
-    --hue-physical: 120; /* green */
-
-    --vec-red:   hsl(  0 40% 80%);
-    --vec-green: hsl(120 40% 80%);
-    --vec-blue:  hsl(240 40% 80%);
-}
 .readout_vec2, .readout_vec3, .readout_quat {
     font-size: 0.85rem;
     &::before { content: attr(label) ": "; }
@@ -231,7 +241,7 @@ dialog {
     position: fixed;
     top: 0px;
     left: 0px;
-    filter: drop-shadow(0px 10px 10px #115588);
+    filter: drop-shadow(0px 10px 10px var(--blueprint-strong));
 
     &> .esc {
         position: absolute;
@@ -310,10 +320,6 @@ dialog {
         top: -6px;
         margin-bottom: -18px;
     }
-}
-
-.toolset_actor_watcher .actor_selector_options .selectNull {
-    &:hover { background: hsl(var(--hue-delete) 55% 30%); }
 }
 
 .toolset_actor_watcher .actor_toggles {
