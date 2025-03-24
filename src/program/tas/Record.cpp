@@ -26,6 +26,7 @@ namespace lotuskit::tas {
         VFRMgr* vfrMgr = *EXL_SYM_RESOLVE<VFRMgr**>("engine::module::VFRMgr::sInstance");
         u32 deltaFrame60 = (u32)(vfrMgr->mDeltaFrame * 2);
         // assert(deltaFrame60 == 2 or 3); assert(mDeltaFrame == 1.0 or 1.5 @30fps);
+        accumulatedRecord60 += deltaFrame60;
 
         if (isEquivalent(&currentInput, &accumulatorInput)) {
             // accumulatorInput still held
@@ -42,55 +43,97 @@ namespace lotuskit::tas {
         accumulatedInput60 = deltaFrame60; // XXX or 0 instead of carrying deltaFrame60 over?
         std::memcpy((void*)&(accumulatorInput.buttons), (void*)&(currentInput.buttons), 24);
 
-        dumpCompletedInput(&output, outputDuration60);
+        emitCompletedInput(&output, outputDuration60);
     }
 
-    void Record::dumpCompletedInput(RecordInput* output, u32 outputDuration60) {
+    void Record::beginDumpImpl() {
+        accumulatedInput60 = 0;
+        accumulatedRecord60 = 0;
+        isRecordActive = true;
+        Logger::logJson(json::object({
+            {"beginDump", true} // announce
+        }), "/tas/Record", false, false); // noblock, no debug log
+    }
+
+    void Record::endDump() {
+        // FIXME emit final input
+        isRecordActive = false;
+        Logger::logJson(json::object({
+            {"endDump", true} // announce
+        }), "/tas/Record", false, false); // noblock, no debug log
+    }
+
+    void Record::emitCompletedInput(RecordInput* output, u32 outputDuration60) {
         if (outputDuration60 == 0) { return; }
         u64 buttons = *(u64*)&(output->buttons);
 
+        // scale for assumed fps
         u32 outputDurationLogicalFrames = 0;
+        u32 outputTimestampLogicalFrames = 0;
         if (config::inputMode == config::InputDurationScalingStrategy::FPS60_1X) {
             outputDurationLogicalFrames = outputDuration60;
+            outputTimestampLogicalFrames = accumulatedRecord60;
         } else if (config::inputMode == config::InputDurationScalingStrategy::FPS30_2X) {
             outputDurationLogicalFrames = outputDuration60 / 2; // XXX do we want floor/ceil/??? for odds
+            outputTimestampLogicalFrames = accumulatedRecord60 / 2;
         } else if (config::inputMode == config::InputDurationScalingStrategy::FPS20_3X) {
             outputDurationLogicalFrames = outputDuration60 / 3; // XXX what if not divisible by 3?
+            outputTimestampLogicalFrames = accumulatedRecord60 / 3;
         } else return;
 
-        // TODO how/should we dump gyro? definitely not by default, and it's gonna be extremely noisy the entire time it's enabled,
-        //      it interferes with input accumulation, etc... I'd rather not try to support recording this tbh
-
-        // TODO option to queue to bg file writer thread, instead of wasting time with socket send?
-        //constexpr bool useFormat_nxTASAll = false; // TODO option for pure nx-TAS output? tsv?
-        constexpr bool useFormat_nxTASButtons = true;
-        if (useFormat_nxTASButtons) {
+        // format line, send it to emitInputImpl
+        char buf[1000];
+        if (useFormat_nxTASButtons || useFormat_nxTASAll) {
+            std::string buttonsSep = useFormat_nxTASAll ? ";" : "|";
             std::string buttonsStr = "";
-            if (buttons & (1 << 0)) { buttonsStr += "|KEY_A"; }
-            if (buttons & (1 << 1)) { buttonsStr += "|KEY_B"; }
-            if (buttons & (1 << 2)) { buttonsStr += "|KEY_X"; }
-            if (buttons & (1 << 3)) { buttonsStr += "|KEY_Y"; }
-            if (buttons & (1 << 6)) { buttonsStr += "|KEY_L"; }
-            if (buttons & (1 << 7)) { buttonsStr += "|KEY_R"; }
-            if (buttons & (1 << 8)) { buttonsStr += "|KEY_ZL"; }
-            if (buttons & (1 << 9)) { buttonsStr += "|KEY_ZR"; }
-            if (buttons & (1 << 10)) { buttonsStr += "|KEY_PLUS"; }
-            if (buttons & (1 << 11)) { buttonsStr += "|KEY_MINUS"; }
-            if (buttons & (1 << 12)) { buttonsStr += "|KEY_DLEFT"; }
-            if (buttons & (1 << 13)) { buttonsStr += "|KEY_DUP"; }
-            if (buttons & (1 << 14)) { buttonsStr += "|KEY_DRIGHT"; }
-            if (buttons & (1 << 15)) { buttonsStr += "|KEY_DDOWN"; }
-            if (buttons & (1 << 4)) { buttonsStr += "|KEY_LSTICK"; }
-            if (buttons & (1 << 5)) { buttonsStr += "|KEY_RSTICK"; }
+            if (buttons & (1 << 0)) { buttonsStr += buttonsSep + "KEY_A"; }
+            if (buttons & (1 << 1)) { buttonsStr += buttonsSep + "KEY_B"; }
+            if (buttons & (1 << 2)) { buttonsStr += buttonsSep + "KEY_X"; }
+            if (buttons & (1 << 3)) { buttonsStr += buttonsSep + "KEY_Y"; }
+            if (buttons & (1 << 6)) { buttonsStr += buttonsSep + "KEY_L"; }
+            if (buttons & (1 << 7)) { buttonsStr += buttonsSep + "KEY_R"; }
+            if (buttons & (1 << 8)) { buttonsStr += buttonsSep + "KEY_ZL"; }
+            if (buttons & (1 << 9)) { buttonsStr += buttonsSep + "KEY_ZR"; }
+            if (buttons & (1 << 10)) { buttonsStr += buttonsSep + "KEY_PLUS"; }
+            if (buttons & (1 << 11)) { buttonsStr += buttonsSep + "KEY_MINUS"; }
+            if (buttons & (1 << 12)) { buttonsStr += buttonsSep + "KEY_DLEFT"; }
+            if (buttons & (1 << 13)) { buttonsStr += buttonsSep + "KEY_DUP"; }
+            if (buttons & (1 << 14)) { buttonsStr += buttonsSep + "KEY_DRIGHT"; }
+            if (buttons & (1 << 15)) { buttonsStr += buttonsSep + "KEY_DDOWN"; }
+            if (buttons & (1 << 4)) { buttonsStr += buttonsSep + "KEY_LSTICK"; }
+            if (buttons & (1 << 5)) { buttonsStr += buttonsSep + "KEY_RSTICK"; }
             if (buttonsStr.size() == 0) { buttonsStr = " NONE"; }
 
-            char buf[1000];
-            nn::util::SNPrintf(buf, sizeof(buf), "tas::input(%d, %s, %d, %d, %d, %d);\n", outputDurationLogicalFrames, buttonsStr.c_str()+1, output->LStick.mX, output->LStick.mY, output->RStick.mX, output->RStick.mY);
-            Logger::logText(buf, "/tas/Record");
+            if (useFormat_nxTASAll) {
+                // nx-TAS
+                for (u32 fr = outputTimestampLogicalFrames - outputDurationLogicalFrames; fr < outputTimestampLogicalFrames; fr++) {
+                    // one line per frame, un-accumulated
+                    nn::util::SNPrintf(buf, sizeof(buf), "%d %s %d;%d %d;%d\n", fr, buttonsStr.c_str()+1, output->LStick.mX, output->LStick.mY, output->RStick.mX, output->RStick.mY);
+                    emitInputImpl(buf);
+                }
+
+            } else {
+                // AS with enum buttons
+                nn::util::SNPrintf(buf, sizeof(buf), "tas::input(%d, %s, %d, %d, %d, %d);\n", outputDurationLogicalFrames, buttonsStr.c_str()+1, output->LStick.mX, output->LStick.mY, output->RStick.mX, output->RStick.mY);
+                emitInputImpl(buf);
+            }
+
         } else {
-            char buf[1000];
+            // AS with raw int buttons
             nn::util::SNPrintf(buf, sizeof(buf), "tas::input(%d, %lld, %d, %d, %d, %d);\n", outputDurationLogicalFrames, buttons, output->LStick.mX, output->LStick.mY, output->RStick.mX, output->RStick.mY);
-            Logger::logText(buf, "/tas/Record");
+            emitInputImpl(buf);
         }
     }
+
+    void Record::emitInputImpl(const char* line) {
+        if (doEmitWS) {
+            Logger::logText(line, "/tas/Record", false, doEmitDebug);
+        } else if (doEmitDebug) {
+            svcOutputDebugString(line, strlen(line));
+        }
+        if (doEmitFile) {
+            // TODO write to useEmitLocalFile
+        }
+    }
+
 } // ns

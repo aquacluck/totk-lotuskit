@@ -946,10 +946,35 @@ namespace lotuskit::script::globals {
                 AngelScript::asCALL_CDECL
             ); assert( asErrno >= 0 );
 
-            // log inputs, sort of a minmal record
+            // input recording to file/frontend/???
+            asErrno = engine->RegisterGlobalFunction(
+                "void beginFileDump(const string &in)",
+                AngelScript::asFUNCTION(lotuskit::tas::Record::beginFileDump),
+                AngelScript::asCALL_CDECL
+            ); assert( asErrno >= 0 );
+            asErrno = engine->RegisterGlobalFunction(
+                "void beginFileDumpNXTas(const string &in)",
+                AngelScript::asFUNCTION(lotuskit::tas::Record::beginFileDumpNXTas),
+                AngelScript::asCALL_CDECL
+            ); assert( asErrno >= 0 );
+            asErrno = engine->RegisterGlobalFunction(
+                "void beginLoggerDump(bool ws=true)",
+                AngelScript::asFUNCTION(lotuskit::tas::Record::beginLoggerDump),
+                AngelScript::asCALL_CDECL
+            ); assert( asErrno >= 0 );
+            asErrno = engine->RegisterGlobalFunction(
+                "void beginLoggerDumpNXTas(bool ws=true)",
+                AngelScript::asFUNCTION(lotuskit::tas::Record::beginLoggerDumpNXTas),
+                AngelScript::asCALL_CDECL
+            ); assert( asErrno >= 0 );
             asErrno = engine->RegisterGlobalFunction(
                 "void toggleDump()",
-                AngelScript::asFUNCTION(lotuskit::tas::Record::trashToggleDump),
+                AngelScript::asFUNCTION(lotuskit::tas::Record::toggleDump),
+                AngelScript::asCALL_CDECL
+            ); assert( asErrno >= 0 );
+            asErrno = engine->RegisterGlobalFunction(
+                "void endDump()",
+                AngelScript::asFUNCTION(lotuskit::tas::Record::endDump),
                 AngelScript::asCALL_CDECL
             ); assert( asErrno >= 0 );
 

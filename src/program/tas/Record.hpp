@@ -4,6 +4,7 @@
 #include <nn/hid.h>
 #include <math/seadMatrix.h>
 #include <math/seadVector.h>
+#include <string>
 #include "structs/nnSixAxis.hpp"
 
 namespace lotuskit::tas {
@@ -22,8 +23,18 @@ namespace lotuskit::tas {
 
         static RecordInput currentInput; // volatile, overwritten constantly by applyCurrentInput hook
         static RecordInput accumulatorInput; // for keeping track of how long currentInput is held
-        static inline u32 accumulatedInput60 = 0;
-        static inline bool isRecordActive = false;
+        inline static u32 accumulatedInput60 = 0;
+        inline static bool isRecordActive = false; // calc accumulation+emit
+
+        inline static bool doEmitDebug = false;
+        inline static bool doEmitWS = true;
+        inline static bool doEmitFile = false;
+        inline static std::string useEmitLocalFile = "";
+        inline static bool useFormat_emitGyro = false; // gyro is extremely noisy
+        inline static bool useFormat_nxTASAll = false; // pure nx-TAS output
+        inline static bool useFormat_nxTASButtons = true; // use enums (eg KEY_B instead of raw buttons int), produces larger+slower code but u can read it :)
+        inline static u32 accumulatedRecord60 = 0; // eg for line count
+        // TODO option to queue to bg file writer thread?
 
         inline static void applyCurrentInput(nn::hid::NpadBaseState* src) {
             if (!isRecordActive) { } // no return, currentInput still feeds input display
@@ -37,19 +48,60 @@ namespace lotuskit::tas {
             std::memcpy((void*)&(currentInput.gyro), src_gyro, sizeof(nn::hid::SixAxisSensorState));
         }
 
-        inline static void trashToggleDump() {
+        static void beginDumpImpl();
+        static void endDump();
+        inline static void beginFileDump(const std::string& filename) {
+            doEmitDebug = false;
+            doEmitWS = false;
+            doEmitFile = true;
+            useEmitLocalFile = filename;
+            useFormat_emitGyro = false;
+            useFormat_nxTASAll = false;
+            useFormat_nxTASButtons = true;
+            beginDumpImpl();
+        }
+        inline static void beginFileDumpNXTas(const std::string& filename) {
+            doEmitDebug = false;
+            doEmitWS = false;
+            doEmitFile = true;
+            useEmitLocalFile = filename;
+            useFormat_emitGyro = false;
+            useFormat_nxTASAll = true;
+            useFormat_nxTASButtons = true;
+            beginDumpImpl();
+        }
+        inline static void beginLoggerDump(bool ws = true) {
+            doEmitDebug = true;
+            doEmitWS = ws;
+            doEmitFile = false;
+            useEmitLocalFile = "";
+            useFormat_emitGyro = false;
+            useFormat_nxTASAll = false;
+            useFormat_nxTASButtons = true;
+            beginDumpImpl();
+        }
+        inline static void beginLoggerDumpNXTas(bool ws = true) {
+            doEmitDebug = true;
+            doEmitWS = ws;
+            doEmitFile = false;
+            useEmitLocalFile = "";
+            useFormat_emitGyro = false;
+            useFormat_nxTASAll = true;
+            useFormat_nxTASButtons = true;
+            beginDumpImpl();
+        }
+        inline static void toggleDump() {
             isRecordActive = !isRecordActive;
             if (isRecordActive) {
-                // init record
-                // TODO accumulatorInput = currentInput = {0}?
-                accumulatedInput60 = 0;
+                beginDumpImpl(); // init record, reusing current settings
             } else {
-                // TODO close+emit final accumulatorInput?
+                endDump();
             }
         }
 
         private:
         static bool isEquivalent(RecordInput* a, RecordInput* b);
-        static void dumpCompletedInput(RecordInput* output, u32 outputDuration60);
+        static void emitCompletedInput(RecordInput* output, u32 outputDuration60);
+        static void emitInputImpl(const char* line);
     };
 } // ns

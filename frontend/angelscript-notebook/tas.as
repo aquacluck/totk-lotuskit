@@ -17,13 +17,13 @@ tas::inputXor(30, KEY_ZR); // XOR human controls together with script
 
 // TODO angle+arc+tweening helpers
 
-// not "recording", just logging the inputs --
-// for now saving+organizing them is entirely your job.
-tas::toggleDump();
-// TODO but i plan to add basic file support soon:
-// tas::beginFileDump("sdcard:/totk_lotuskit/name_me.as");
-// tas::beginFileDumpNXTas("sdcard:/totk_lotuskit/out.txt");
-// tas::endFileDump();
+// input recording/dumping
+tas::beginFileDump("sdcard:/totk_lotuskit/name_me.as");
+tas::beginFileDumpNXTas("sdcard:/totk_lotuskit/out.txt");
+tas::beginLoggerDump(false); // disable ws
+tas::beginLoggerDumpNXTas();
+tas::toggleDump(); // reuse latest settings
+tas::endDump();
 
 
 // Local files are loaded+unloaded as needed, so you can

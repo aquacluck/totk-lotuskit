@@ -558,6 +558,9 @@
     class ExecScript extends Component {
         constructor() {
             super();
+            this.setState({
+                isDumping: false,
+            });
 
             this.script_text_ref = createRef();
             this.use_implicit_main_ref = createRef();
@@ -621,7 +624,9 @@
 
         recv_tas_record(payload) {
             const el = this.output_text_ref.current;
-            el.value += payload["msg"];
+            if (payload.beginDump) { el.value = ""; this.setState({isDumping: true}); } // wipe on new recording
+            else if (payload.endDump) { this.setState({isDumping: false}); }
+            else { el.value += payload["msg"]; } // append new input
         }
 
         render(props, state) {
