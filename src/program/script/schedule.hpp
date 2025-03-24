@@ -36,7 +36,8 @@ namespace lotuskit::script::schedule::tas {
     // TODO void pushExecNXTas(const std::string& filename, bool doImmediateExecute = true); // transpile+run nxtas source file in new module
 
     void tryDiscardLastModuleForPop();
-    void abortStack();
+    void abortStack(const std::string& reason = "err");
+    void dumpStack();
 
 } // ns
 

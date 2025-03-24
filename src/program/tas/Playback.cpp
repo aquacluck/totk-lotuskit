@@ -98,7 +98,15 @@ namespace lotuskit::tas {
     /// }}} pause scheduling
 
     void Playback::calc() {
-        if (!isPlaybackActive && !isPlaybackPendingCtx) { return; } // not doing playback
+        if (!isPlaybackActive && !isExecuteCtxRequested) { return; } // not doing playback
+        if (isExecuteCtxRequested) {
+            // bypass async scheduling -- FIXME async flags should all be isolated per stackframe and
+            // cleared on enter/push so the remainder of function below will flow straight through
+            // on deferred module's first run instead of this bypass.
+            isExecuteCtxRequested = false;
+            calcAS();
+            return;
+        }
 
         const bool isLoadingPause = lotuskit::util::pause::isPauseRequest(0x0eafe200);
         if (isLoadingPause && skipLoadingPause) {
@@ -110,9 +118,7 @@ namespace lotuskit::tas {
             return;
         }
 
-        if (isPlaybackActive) { // begin frametime scheduling
-            // TODO extract `bool calcScheduleIsScriptInputExhausted()`
-
+        { // begin frametime scheduling // TODO extract `bool calcScheduleIsScriptInputExhausted()`
             // int 2 or 3 = float 1.0 (@30fps) or 1.5 (@20fps)
             // assert(mDeltaFrame == 1.0 || mDeltaFrame == 1.5); // precisely
             VFRMgr* vfrMgr = *EXL_SYM_RESOLVE<VFRMgr**>("engine::module::VFRMgr::sInstance");
@@ -147,8 +153,11 @@ namespace lotuskit::tas {
         if (Playback::calcScheduleIsAwaitPauseRequest()) { return; } // modeline drawn on wait
         if (Playback::calcScheduleIsAwaitPauseTarget())  { return; } // modeline drawn on wait
 
-        // resume script, eventually getting a setCurrentInput call
-        if (isPlaybackPendingCtx) { isPlaybackPendingCtx = false; }
+        calcAS(); // resume script, eventually getting a setCurrentInput call
+    }
+
+    void Playback::calcAS() {
+        // execute AS stack until it yields or completes
         const bool isCompleteOrFail = lotuskit::script::schedule::tas::calcCtx();
         if (isCompleteOrFail) { isPlaybackActive = false; }
         Playback::drawTextWriterModeLine();

@@ -987,8 +987,13 @@ namespace lotuskit::script::globals {
                 AngelScript::asCALL_CDECL
             ); assert( asErrno >= 0 );
             asErrno = engine->RegisterGlobalFunction(
-                "void abort()",
+                "void abort(const string &in = \"err\")",
                 AngelScript::asFUNCTION(lotuskit::script::schedule::tas::abortStack),
+                AngelScript::asCALL_CDECL
+            ); assert( asErrno >= 0 );
+            asErrno = engine->RegisterGlobalFunction(
+                "void dumpStack()",
+                AngelScript::asFUNCTION(lotuskit::script::schedule::tas::dumpStack),
                 AngelScript::asCALL_CDECL
             ); assert( asErrno >= 0 );
 

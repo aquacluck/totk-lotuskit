@@ -19,6 +19,7 @@ namespace lotuskit::tas {
         public:
         // frame count scheduling (see lotuskit::script::schedule for nesting/engine/etc scheduling concerns)
         static void calc(); // called each frame, may resume tas script to generate next input
+        static void calcAS();
         inline static u32 currentInputTTL60 = 0; // remaining 30fps half-frames to apply scheduled TAS input
         inline static u32 elapsedPlayback60 = 0; // 30fps half-frames elapsed this script execution (based on counting)
 
@@ -35,7 +36,7 @@ namespace lotuskit::tas {
         // current input
         static PlaybackInput currentInput;
         inline static bool isPlaybackActive = false; // tas is operational (note this does not imply `ctx->GetState() == asEXECUTION_ACTIVE`, AS does not constantly run)
-        inline static bool isPlaybackPendingCtx = false; // tas script should be started
+        inline static bool isExecuteCtxRequested = false; // tas AS ctx should be run by calc asap even if blocked FIXME push/pop blocking state
         static void setCurrentInput(u32 duration=1, u64 nextButtons=0, s32 nextLStickX=0, s32 nextLStickY=0, s32 nextRStickX=0, s32 nextRStickY=0);
         static void setCurrentInputOr(u32 duration=1, u64 nextButtons=0, s32 nextLStickX=0, s32 nextLStickY=0, s32 nextRStickX=0, s32 nextRStickY=0);
         static void setCurrentInputXor(u32 duration=1, u64 nextButtons=0, s32 nextLStickX=0, s32 nextLStickY=0, s32 nextRStickX=0, s32 nextRStickY=0);
