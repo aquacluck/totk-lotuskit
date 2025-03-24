@@ -19,8 +19,35 @@ tas::inputXor(30, KEY_ZR); // XOR human controls together with script
 
 // not "recording", just logging the inputs --
 // for now saving+organizing them is entirely your job.
-// (but i plan to add basic file support sometime)
 tas::toggleDump();
+// TODO but i plan to add basic file support soon:
+// tas::beginFileDump("sdcard:/totk_lotuskit/name_me.as");
+// tas::beginFileDumpNXTas("sdcard:/totk_lotuskit/out.txt");
+// tas::endFileDump();
+
+
+// Local files are loaded+unloaded as needed, so you can
+// organize extremely long scripts in a hierarchy/etc:
+tas::awaitExecFile("sdcard:/totk_lotuskit/name_me.as");
+tas::abort("rip"); // end current script, optional err
+tas::dumpStack(); // print files on tas stack, max depth 8
+// tas::awaitExecFileNXTAS(...); // TODO transpile+run
+
+/* tas stack caveats:
+ - Files don't share variables, call shared functions,
+   or directly pass arguments. They run in isolation
+   (to simplify memory management), however they can all
+   access the same game data with the same AS bindings.
+ - Each file/source is built once per script run,
+   it cannot be modified during that AS execution.
+   (FIXME "leaf" files do get rebuilt, this is bad for perf)
+ - FIXME Interrupting waits/inputs with more waits/inputs
+   will overwrite those timers/flags/etc, as this state is
+   currently shared across all files. (This applies to eg
+   buttons and hotkeys which actively interrupt the script.
+   Nesting tas::awaitExecFile() itself is fine because it
+   runs inline/between those calls, never interrupting them)
+*/
 
 
 /***********************************************************
