@@ -239,8 +239,8 @@ namespace lotuskit::tas {
         config::playbackInputPassthroughMode = config::PlaybackInputPassthroughMode::NULL_VANILLA;
     }
 
-    void Playback::applyCurrentInput(nn::hid::NpadBaseState* dst) {
-        if (!isPlaybackActive) { return; }
+    bool Playback::applyCurrentInput(nn::hid::NpadBaseState* dst) {
+        if (!isPlaybackActive) { return false; }
         switch(config::playbackInputPassthroughMode) {
             case config::PlaybackInputPassthroughMode::NULL_VANILLA:
             // passthrough all, do not alter input ("sleep")
@@ -274,10 +274,11 @@ namespace lotuskit::tas {
             // FIXME axis button flags not updated
             break;
         }
+        return true;
     }
 
-    void Playback::applyCurrentGyro(nn::hid::SixAxisSensorState* dst_gyro) {
-        if (!isPlaybackActive) { return; }
+    bool Playback::applyCurrentGyro(nn::hid::SixAxisSensorState* dst_gyro) {
+        if (!isPlaybackActive) { return false; }
         switch(config::playbackInputPassthroughMode) {
             case config::PlaybackInputPassthroughMode::NULL_VANILLA:
             // passthrough all, do not alter input ("sleep")
@@ -290,6 +291,7 @@ namespace lotuskit::tas {
             std::memcpy((void*)&(dst_gyro->linearAcceleration), (void*)&(currentInput.gyro.linearAcceleration), sizeof(nn::hid::SixAxisSensorState) - 0x10);
             break;
         }
+        return true;
     }
 
     u32 Playback::duration60ToUIFrames(u32 duration60) {

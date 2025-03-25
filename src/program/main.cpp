@@ -169,8 +169,11 @@ HOOK_DEFINE_TRAMPOLINE(NinJoyNpadDevice_calcHook) {
         //lotuskit::TextWriter::printf(0, "[NinJoyNpadDevice::calc] gyro ptr %p\n", state_gyro);
         lotuskit::tas::Record::applyCurrentInput(state); // keep track of latest human inputs regardless of record state
         lotuskit::tas::Record::applyCurrentGyro(state_gyro);
-        lotuskit::tas::Playback::applyCurrentInput(state); // mutate input states for tas if applicable
-        lotuskit::tas::Playback::applyCurrentGyro(state_gyro);
+        bool isInputMutate = lotuskit::tas::Playback::applyCurrentInput(state); // mutate input using current script settings (eg apply user passthrough)
+        bool isGyroMutate = lotuskit::tas::Playback::applyCurrentGyro(state_gyro);
+        // inject mutated states back into record, so we can re-log final inputs during playback (eg simultaneously playback AS while flattening into nxtas recording)
+        if (isInputMutate) { lotuskit::tas::Record::applyCurrentInput(state); }
+        if (isGyroMutate)  { lotuskit::tas::Record::applyCurrentGyro(state_gyro); }
     }
 };
 

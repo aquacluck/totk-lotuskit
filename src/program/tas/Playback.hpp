@@ -41,10 +41,10 @@ namespace lotuskit::tas {
         static void setCurrentInputOr(u32 duration=1, u64 nextButtons=0, s32 nextLStickX=0, s32 nextLStickY=0, s32 nextRStickX=0, s32 nextRStickY=0);
         static void setCurrentInputXor(u32 duration=1, u64 nextButtons=0, s32 nextLStickX=0, s32 nextLStickY=0, s32 nextRStickX=0, s32 nextRStickY=0);
         static void setSleepInput(u32 duration=1);
-        static void applyCurrentInput(nn::hid::NpadBaseState* dst);
+        static bool applyCurrentInput(nn::hid::NpadBaseState* dst); // true when input mutated
 
         // current gyro input: these calls do not schedule frames! you must call tas::input(n) to begin+continue tas playback!
-        static void applyCurrentGyro(nn::hid::SixAxisSensorState* dst_gyro);
+        static bool applyCurrentGyro(nn::hid::SixAxisSensorState* dst_gyro); // true when input mutated
         inline static void setCurrentGyroLinearAcceleration(const sead::Vector3f& linearAcceleration) { currentInput.gyro.linearAcceleration = linearAcceleration; }
         inline static void setCurrentGyroAngularVelocity(const sead::Vector3f& angularVelocity) {       currentInput.gyro.angularVelocity    = angularVelocity; }
         inline static void setCurrentGyroAngularVelocitySum(const sead::Vector3f& angularVelocitySum) { currentInput.gyro.angularVelocitySum = angularVelocitySum; }
