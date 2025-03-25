@@ -1,6 +1,7 @@
 #pragma once
 #include "exlaunch.hpp"
 #include <angelscript.h>
+#include <nn/fs.h>
 #include <nn/hid.h>
 #include <math/seadMatrix.h>
 #include <math/seadVector.h>
@@ -26,11 +27,13 @@ namespace lotuskit::tas {
         inline static u32 accumulatedInput60 = 0;
         inline static bool isRecordActive = false; // calc accumulation+emit
 
-        inline static bool doEmitDebug = false;
         inline static bool doEmitWS = true;
         inline static bool doEmitFile = false;
         inline static std::string useEmitLocalFile = "";
-        inline static bool useFormat_emitGyro = false; // gyro is extremely noisy
+        inline static nn::fs::FileHandle useEmitLocalFileFd = {};
+        inline static u32 useEmitLocalFileOffset = 0;
+        inline static bool doEmitDebug = false;
+        inline static bool useFormat_emitGyro = false; // TODO gyro is extremely noisy
         inline static bool useFormat_nxTASAll = false; // pure nx-TAS output
         inline static bool useFormat_nxTASButtons = true; // use enums (eg KEY_B instead of raw buttons int), produces larger+slower code but u can read it :)
         inline static u32 accumulatedRecord60 = 0; // eg for line count
@@ -55,6 +58,7 @@ namespace lotuskit::tas {
             doEmitWS = false;
             doEmitFile = true;
             useEmitLocalFile = filename;
+            useEmitLocalFileOffset = 0;
             useFormat_emitGyro = false;
             useFormat_nxTASAll = false;
             useFormat_nxTASButtons = true;
@@ -65,26 +69,29 @@ namespace lotuskit::tas {
             doEmitWS = false;
             doEmitFile = true;
             useEmitLocalFile = filename;
+            useEmitLocalFileOffset = 0;
             useFormat_emitGyro = false;
             useFormat_nxTASAll = true;
             useFormat_nxTASButtons = true;
             beginDumpImpl();
         }
         inline static void beginLoggerDump(bool ws = true) {
-            doEmitDebug = true;
+            doEmitDebug = !ws;
             doEmitWS = ws;
             doEmitFile = false;
             useEmitLocalFile = "";
+            useEmitLocalFileOffset = 0;
             useFormat_emitGyro = false;
             useFormat_nxTASAll = false;
             useFormat_nxTASButtons = true;
             beginDumpImpl();
         }
         inline static void beginLoggerDumpNXTas(bool ws = true) {
-            doEmitDebug = true;
+            doEmitDebug = !ws;
             doEmitWS = ws;
             doEmitFile = false;
             useEmitLocalFile = "";
+            useEmitLocalFileOffset = 0;
             useFormat_emitGyro = false;
             useFormat_nxTASAll = true;
             useFormat_nxTASButtons = true;
@@ -101,7 +108,8 @@ namespace lotuskit::tas {
 
         private:
         static bool isEquivalent(RecordInput* a, RecordInput* b);
+        static void calcCompletedInput(u32 remainderInit60);
         static void emitCompletedInput(RecordInput* output, u32 outputDuration60);
-        static void emitInputImpl(const char* line);
+        static void emitInputImpl(const char* line, u8 chunkOp);
     };
 } // ns

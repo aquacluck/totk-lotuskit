@@ -1,5 +1,6 @@
 #include <string>
 #include <nn/util.h>
+#include "util/fs.hpp"
 #include "tas/config.hpp"
 #include "tas/Record.hpp"
 #include "structs/VFRMgr.hpp"
@@ -21,12 +22,32 @@ namespace lotuskit::tas {
 
     void Record::calc() {
         if (!isRecordActive) { return; } // not doing record
-        lotuskit::TextWriter::printf(1, "[tas::Record] ws dump\n");
 
         VFRMgr* vfrMgr = *EXL_SYM_RESOLVE<VFRMgr**>("engine::module::VFRMgr::sInstance");
         u32 deltaFrame60 = (u32)(vfrMgr->mDeltaFrame * 2);
         // assert(deltaFrame60 == 2 or 3); assert(mDeltaFrame == 1.0 or 1.5 @30fps);
         accumulatedRecord60 += deltaFrame60;
+
+        u32 accumulatedRecordLogicalFrames; // derive for modeline:
+        if (config::inputMode == config::InputDurationScalingStrategy::FPS60_1X) {
+            accumulatedRecordLogicalFrames = accumulatedRecord60;
+        } else if (config::inputMode == config::InputDurationScalingStrategy::FPS30_2X) {
+            accumulatedRecordLogicalFrames = accumulatedRecord60 / 2;
+        } else if (config::inputMode == config::InputDurationScalingStrategy::FPS20_3X) {
+            accumulatedRecordLogicalFrames = accumulatedRecord60 / 3;
+        } else { accumulatedRecordLogicalFrames = 0; } // err
+
+        // display record modeline
+        // TODO options for time framecount/scaling/rta-hh:mm:ss.ms_ display formatting (TODO for Playback+timers as well)
+        const char* fmtFlag = useFormat_nxTASAll ? "nx" : "as";
+        const char* rawFlag = (!useFormat_nxTASAll && !useFormat_nxTASButtons) ? "|raw" : "";
+        const char* dbgFlag = doEmitDebug ? "|dbg" : "";
+        const char*  wsFlag = doEmitWS ? "|ws" : "";
+        if (doEmitFile) {
+            lotuskit::TextWriter::printf(1, "tas::Record(%s%s%s%s|file(%s))\n               fr:%6d\n", fmtFlag, rawFlag, dbgFlag, wsFlag, useEmitLocalFile.c_str(), accumulatedRecordLogicalFrames);
+        } else {
+            lotuskit::TextWriter::printf(1, "tas::Record(%s%s%s%s)\n               fr:%6d\n", fmtFlag, rawFlag, dbgFlag, wsFlag, accumulatedRecordLogicalFrames);
+        }
 
         if (isEquivalent(&currentInput, &accumulatorInput)) {
             // accumulatorInput still held
@@ -34,13 +55,17 @@ namespace lotuskit::tas {
             return;
         }
 
+        calcCompletedInput(deltaFrame60);
+    }
+
+    void Record::calcCompletedInput(u32 remainderInit60) {
         // move accumulator to tmp output
-        u32 outputDuration60 = accumulatedInput60; // XXX or + deltaFrame60 here instead of giving it to next input?
+        u32 outputDuration60 = accumulatedInput60; // XXX or + remainderInit60 here instead of giving it to next input?
         RecordInput output = {0}; // lol
         std::memcpy((void*)&(output.buttons), (void*)&(accumulatorInput.buttons), 24);
 
         // reset accumulator to currentInput
-        accumulatedInput60 = deltaFrame60; // XXX or 0 instead of carrying deltaFrame60 over?
+        accumulatedInput60 = remainderInit60; // XXX or 0 instead of carrying deltaFrame60 over?
         std::memcpy((void*)&(accumulatorInput.buttons), (void*)&(currentInput.buttons), 24);
 
         emitCompletedInput(&output, outputDuration60);
@@ -50,14 +75,29 @@ namespace lotuskit::tas {
         accumulatedInput60 = 0;
         accumulatedRecord60 = 0;
         isRecordActive = true;
+
         Logger::logJson(json::object({
             {"beginDump", true} // announce
         }), "/tas/Record", false, false); // noblock, no debug log
+
+        // open file for write if applicable (AS must also be encapsulated in function)
+        if (useFormat_nxTASAll) {
+            emitInputImpl("", 1);
+        } else {
+            emitInputImpl("void main() { ", 1);
+        }
     }
 
     void Record::endDump() {
-        // FIXME emit final input
         isRecordActive = false;
+        calcCompletedInput(0); // emit final input
+
+        if (useFormat_nxTASAll) { // close file if applicable
+            emitInputImpl("", 3);
+        } else {
+            emitInputImpl("}\n", 3);
+        }
+
         Logger::logJson(json::object({
             {"endDump", true} // announce
         }), "/tas/Record", false, false); // noblock, no debug log
@@ -109,30 +149,31 @@ namespace lotuskit::tas {
                 for (u32 fr = outputTimestampLogicalFrames - outputDurationLogicalFrames; fr < outputTimestampLogicalFrames; fr++) {
                     // one line per frame, un-accumulated
                     nn::util::SNPrintf(buf, sizeof(buf), "%d %s %d;%d %d;%d\n", fr, buttonsStr.c_str()+1, output->LStick.mX, output->LStick.mY, output->RStick.mX, output->RStick.mY);
-                    emitInputImpl(buf);
+                    emitInputImpl(buf, 2); // append
                 }
 
             } else {
                 // AS with enum buttons
                 nn::util::SNPrintf(buf, sizeof(buf), "tas::input(%d, %s, %d, %d, %d, %d);\n", outputDurationLogicalFrames, buttonsStr.c_str()+1, output->LStick.mX, output->LStick.mY, output->RStick.mX, output->RStick.mY);
-                emitInputImpl(buf);
+                emitInputImpl(buf, 2); // append
             }
 
         } else {
             // AS with raw int buttons
             nn::util::SNPrintf(buf, sizeof(buf), "tas::input(%d, %lld, %d, %d, %d, %d);\n", outputDurationLogicalFrames, buttons, output->LStick.mX, output->LStick.mY, output->RStick.mX, output->RStick.mY);
-            emitInputImpl(buf);
+            emitInputImpl(buf, 2); // append
         }
     }
 
-    void Record::emitInputImpl(const char* line) {
+    void Record::emitInputImpl(const char* line, const u8 chunkOp) {
         if (doEmitWS) {
             Logger::logText(line, "/tas/Record", false, doEmitDebug);
         } else if (doEmitDebug) {
             svcOutputDebugString(line, strlen(line));
         }
         if (doEmitFile) {
-            // TODO write to useEmitLocalFile
+            lotuskit::util::fs::writeFileChunked(&useEmitLocalFileFd, line, strlen(line), useEmitLocalFile.c_str(), chunkOp, useEmitLocalFileOffset);
+            useEmitLocalFileOffset += strlen(line);
         }
     }
 

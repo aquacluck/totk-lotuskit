@@ -30,7 +30,7 @@ tas::endDump();
 // organize extremely long scripts in a hierarchy/etc:
 tas::awaitExecFile("sdcard:/totk_lotuskit/name_me.as");
 tas::abort("rip"); // end current script, optional err
-tas::dumpStack(); // print files on tas stack, max depth 8
+tas::dumpStack(); // print files on tas stack, max depth 12
 // tas::awaitExecFileNXTAS(...); // TODO transpile+run
 
 /* tas stack caveats:
