@@ -44,7 +44,13 @@ namespace lotuskit::tas {
         const char* dbgFlag = doEmitDebug ? "|dbg" : "";
         const char*  wsFlag = doEmitWS ? "|ws" : "";
         if (doEmitFile) {
-            lotuskit::TextWriter::printf(1, "tas::Record(%s%s%s%s|file(%s))\n               fr:%6d\n", fmtFlag, rawFlag, dbgFlag, wsFlag, useEmitLocalFile.c_str(), accumulatedRecordLogicalFrames);
+            lotuskit::TextWriter::appendCallback(1, [](lotuskit::TextWriterExt* writer, sead::Vector2f* textPos) {
+                textPos->x -= 90.0; // pull left to make some more space
+            });
+            lotuskit::TextWriter::printf(1, "tas::Record(%s%s%s%s|file)\n%s\n               fr:%6d\n", fmtFlag, rawFlag, dbgFlag, wsFlag, useEmitLocalFile.c_str(), accumulatedRecordLogicalFrames);
+            lotuskit::TextWriter::appendCallback(1, [](lotuskit::TextWriterExt* writer, sead::Vector2f* textPos) {
+                textPos->x += 90.0; // put it back
+            });
         } else {
             lotuskit::TextWriter::printf(1, "tas::Record(%s%s%s%s)\n               fr:%6d\n", fmtFlag, rawFlag, dbgFlag, wsFlag, accumulatedRecordLogicalFrames);
         }
@@ -122,31 +128,33 @@ namespace lotuskit::tas {
         } else return;
 
         // format line, send it to emitInputImpl
-        char buf[1000];
+        char buf[200];
         if (useFormat_nxTASButtons || useFormat_nxTASAll) {
             std::string buttonsSep = useFormat_nxTASAll ? ";" : "|";
             std::string buttonsStr = "";
-            if (buttons & (1 << 0)) { buttonsStr += buttonsSep + "KEY_A"; }
-            if (buttons & (1 << 1)) { buttonsStr += buttonsSep + "KEY_B"; }
-            if (buttons & (1 << 2)) { buttonsStr += buttonsSep + "KEY_X"; }
-            if (buttons & (1 << 3)) { buttonsStr += buttonsSep + "KEY_Y"; }
-            if (buttons & (1 << 6)) { buttonsStr += buttonsSep + "KEY_L"; }
-            if (buttons & (1 << 7)) { buttonsStr += buttonsSep + "KEY_R"; }
-            if (buttons & (1 << 8)) { buttonsStr += buttonsSep + "KEY_ZL"; }
-            if (buttons & (1 << 9)) { buttonsStr += buttonsSep + "KEY_ZR"; }
-            if (buttons & (1 << 10)) { buttonsStr += buttonsSep + "KEY_PLUS"; }
-            if (buttons & (1 << 11)) { buttonsStr += buttonsSep + "KEY_MINUS"; }
-            if (buttons & (1 << 12)) { buttonsStr += buttonsSep + "KEY_DLEFT"; }
-            if (buttons & (1 << 13)) { buttonsStr += buttonsSep + "KEY_DUP"; }
-            if (buttons & (1 << 14)) { buttonsStr += buttonsSep + "KEY_DRIGHT"; }
-            if (buttons & (1 << 15)) { buttonsStr += buttonsSep + "KEY_DDOWN"; }
-            if (buttons & (1 << 4)) { buttonsStr += buttonsSep + "KEY_LSTICK"; }
-            if (buttons & (1 << 5)) { buttonsStr += buttonsSep + "KEY_RSTICK"; }
+            if (buttons) {
+                if (buttons & (1 << 0)) { buttonsStr += buttonsSep + "KEY_A"; }
+                if (buttons & (1 << 1)) { buttonsStr += buttonsSep + "KEY_B"; }
+                if (buttons & (1 << 2)) { buttonsStr += buttonsSep + "KEY_X"; }
+                if (buttons & (1 << 3)) { buttonsStr += buttonsSep + "KEY_Y"; }
+                if (buttons & (1 << 6)) { buttonsStr += buttonsSep + "KEY_L"; }
+                if (buttons & (1 << 7)) { buttonsStr += buttonsSep + "KEY_R"; }
+                if (buttons & (1 << 8)) { buttonsStr += buttonsSep + "KEY_ZL"; }
+                if (buttons & (1 << 9)) { buttonsStr += buttonsSep + "KEY_ZR"; }
+                if (buttons & (1 << 10)) { buttonsStr += buttonsSep + "KEY_PLUS"; }
+                if (buttons & (1 << 11)) { buttonsStr += buttonsSep + "KEY_MINUS"; }
+                if (buttons & (1 << 12)) { buttonsStr += buttonsSep + "KEY_DLEFT"; }
+                if (buttons & (1 << 13)) { buttonsStr += buttonsSep + "KEY_DUP"; }
+                if (buttons & (1 << 14)) { buttonsStr += buttonsSep + "KEY_DRIGHT"; }
+                if (buttons & (1 << 15)) { buttonsStr += buttonsSep + "KEY_DDOWN"; }
+                if (buttons & (1 << 4)) { buttonsStr += buttonsSep + "KEY_LSTICK"; }
+                if (buttons & (1 << 5)) { buttonsStr += buttonsSep + "KEY_RSTICK"; }
+            }
             if (buttonsStr.size() == 0) { buttonsStr = " NONE"; }
 
             if (useFormat_nxTASAll) {
                 // nx-TAS
-                for (u32 fr = outputTimestampLogicalFrames - outputDurationLogicalFrames; fr < outputTimestampLogicalFrames; fr++) {
+                for (u32 fr = outputTimestampLogicalFrames - outputDurationLogicalFrames - 1; fr < outputTimestampLogicalFrames - 1; fr++) {
                     // one line per frame, un-accumulated
                     nn::util::SNPrintf(buf, sizeof(buf), "%d %s %d;%d %d;%d\n", fr, buttonsStr.c_str()+1, output->LStick.mX, output->LStick.mY, output->RStick.mX, output->RStick.mY);
                     emitInputImpl(buf, 2); // append
@@ -154,13 +162,37 @@ namespace lotuskit::tas {
 
             } else {
                 // AS with enum buttons
-                nn::util::SNPrintf(buf, sizeof(buf), "tas::input(%d, %s, %d, %d, %d, %d);\n", outputDurationLogicalFrames, buttonsStr.c_str()+1, output->LStick.mX, output->LStick.mY, output->RStick.mX, output->RStick.mY);
+                if (output->RStick.mX != 0 || output->RStick.mY != 0) {
+                    nn::util::SNPrintf(buf, sizeof(buf), "tas::input(%d, %s, %d,%d, %d,%d);\n", outputDurationLogicalFrames, buttonsStr.c_str()+1, output->LStick.mX, output->LStick.mY, output->RStick.mX, output->RStick.mY);
+                } else {
+                    if (output->LStick.mX != 0 || output->LStick.mY != 0) {
+                        nn::util::SNPrintf(buf, sizeof(buf), "tas::input(%d, %s, %d,%d);\n", outputDurationLogicalFrames, buttonsStr.c_str()+1, output->LStick.mX, output->LStick.mY);
+                    } else {
+                        if (buttons != 0) {
+                            nn::util::SNPrintf(buf, sizeof(buf), "tas::input(%d, %s);\n", outputDurationLogicalFrames, buttonsStr.c_str()+1);
+                        } else {
+                            nn::util::SNPrintf(buf, sizeof(buf), "tas::input(%d);\n", outputDurationLogicalFrames);
+                        }
+                    }
+                }
                 emitInputImpl(buf, 2); // append
             }
 
         } else {
             // AS with raw int buttons
-            nn::util::SNPrintf(buf, sizeof(buf), "tas::input(%d, %lld, %d, %d, %d, %d);\n", outputDurationLogicalFrames, buttons, output->LStick.mX, output->LStick.mY, output->RStick.mX, output->RStick.mY);
+            if (output->RStick.mX != 0 || output->RStick.mY != 0) {
+                nn::util::SNPrintf(buf, sizeof(buf), "tas::input(%d, %lld, %d,%d, %d,%d);\n", outputDurationLogicalFrames, buttons, output->LStick.mX, output->LStick.mY, output->RStick.mX, output->RStick.mY);
+            } else {
+                if (output->LStick.mX != 0 || output->LStick.mY != 0) {
+                    nn::util::SNPrintf(buf, sizeof(buf), "tas::input(%d, %lld, %d,%d);\n", outputDurationLogicalFrames, buttons, output->LStick.mX, output->LStick.mY);
+                } else {
+                    if (buttons != 0) {
+                        nn::util::SNPrintf(buf, sizeof(buf), "tas::input(%d, %lld);\n", outputDurationLogicalFrames, buttons);
+                    } else {
+                        nn::util::SNPrintf(buf, sizeof(buf), "tas::input(%d);\n", outputDurationLogicalFrames);
+                    }
+                }
+            }
             emitInputImpl(buf, 2); // append
         }
     }
