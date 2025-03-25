@@ -85,7 +85,7 @@ namespace lotuskit::script::engine {
     void doAutorun() {
         const char* autorunFilename = "sdcard:/totk_lotuskit/autorun.as";
         if (lotuskit::util::fs::fileExists(autorunFilename)) {
-            lotuskit::script::schedule::tas::pushExecLocalFileModule(autorunFilename, false); // defer execution to main loop
+            lotuskit::script::schedule::tas::pushExecLocalFileModule(autorunFilename, "void main()", false); // defer execution to main loop
             lotuskit::TextWriter::toastf(30*10, "[totk-lotuskit:%d] Found autorun.as, main_offset=%p\nStart WS server anytime: L R ZL ZR + - \n", TOTK_VERSION, exl::util::GetMainModuleInfo().m_Total.m_Start);
         } else {
             lotuskit::TextWriter::toastf(30*10, "[totk-lotuskit:%d] No autorun.as, main_offset=%p\nStart WS server anytime: L R ZL ZR + - \n", TOTK_VERSION, exl::util::GetMainModuleInfo().m_Total.m_Start);

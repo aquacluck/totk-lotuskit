@@ -15,6 +15,7 @@
 #include "server/WebSocket.hpp"
 #include "script/engine.hpp"
 #include "script/globals.hpp"
+#include "script/hotkey.hpp"
 #include "tas/InputDisplay.hpp"
 #include "tas/Playback.hpp"
 #include "tas/Record.hpp"
@@ -172,6 +173,7 @@ HOOK_DEFINE_TRAMPOLINE(NinJoyNpadDevice_calcHook) {
         bool isInputMutate = lotuskit::tas::Playback::applyCurrentInput(state); // mutate input using current script settings (eg apply user passthrough)
         bool isGyroMutate = lotuskit::tas::Playback::applyCurrentGyro(state_gyro);
         // inject mutated states back into record, so we can re-log final inputs during playback (eg simultaneously playback AS while flattening into nxtas recording)
+        // FIXME i think recording injected inputs lags+extends inputs a frame due to AS calc interaction with Framework draw/calc frame boundary?
         if (isInputMutate) { lotuskit::tas::Record::applyCurrentInput(state); }
         if (isGyroMutate)  { lotuskit::tas::Record::applyCurrentGyro(state_gyro); }
     }
@@ -199,6 +201,7 @@ HOOK_DEFINE_TRAMPOLINE(FrameworkProcDrawHook) {
             textPos->y = 2.0;
         });
         lotuskit::server::WebSocket::calc(); // noblock recv, but blocking processing if enabled
+        lotuskit::script::hotkey::calc(); // may schedule tas stackframes for Playback (incurs file read)
         lotuskit::tas::Playback::calc(); // may re-enter script when currently scheduled input is complete
         lotuskit::tas::Record::calc();
         lotuskit::tas::InputDisplay::draw();

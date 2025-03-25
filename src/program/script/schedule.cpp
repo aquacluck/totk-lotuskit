@@ -2,9 +2,12 @@
 #include "script/schedule.hpp"
 #include "tas/Playback.hpp"
 #include "util/fs.hpp"
+#include "util/hash.hpp"
 #include "TextWriter.hpp"
 #include "Logger.hpp"
 using Logger = lotuskit::Logger;
+constexpr auto murmur32 = lotuskit::util::hash::murmur32;
+
 
 namespace lotuskit::script::schedule::tas {
     void initModuleStack() {
@@ -88,7 +91,7 @@ namespace lotuskit::script::schedule::tas {
         return false; // ok: ongoing
     }
 
-    void pushExecLocalFileModule(const std::string& filename, bool doImmediateExecute) {
+    void pushExecLocalFileModule(const std::string& filename, const std::string& entryPoint, bool doImmediateExecute) {
         // reuse any existing module by name during a single script execution -- do not check/rebuild file contents for update
         const auto engine = lotuskit::script::engine::asEngine;
         AngelScript::asIScriptModule* mod = engine->GetModule(filename.c_str(), AngelScript::asGM_ONLY_IF_EXISTS);
@@ -116,7 +119,7 @@ namespace lotuskit::script::schedule::tas {
             abortStack("[tas::schedule::pushExecLocalFileModule] module failed to build");
             return; // err
         }
-        pushExecModuleEntryPoint(mod, "void main()", doImmediateExecute);
+        pushExecModuleEntryPoint(mod, entryPoint, doImmediateExecute);
     }
 
     void pushExecLocalFileModuleNXTas(const std::string& filename, bool doImmediateExecute) {
@@ -158,6 +161,12 @@ namespace lotuskit::script::schedule::tas {
         if (mod == nullptr) { abortStack("[tas::schedule::pushExecTextModule] module failed to build"); return; } // err
         // XXX free scriptText
         pushExecModuleEntryPoint(mod, entryPoint, doImmediateExecute);
+    }
+
+    void pushExecEval(const std::string& scriptText, const std::string& entryPoint, bool doImmediateExecute) {
+        char moduleName[32];
+        nn::util::SNPrintf(moduleName, sizeof(moduleName), "eval_%08x.as", murmur32(scriptText));
+        pushExecTextModule(moduleName, moduleName, scriptText, entryPoint, doImmediateExecute);
     }
 
     void pushExecModuleEntryPoint(AngelScript::asIScriptModule* mod, const std::string& entryPoint, bool doImmediateExecute) {

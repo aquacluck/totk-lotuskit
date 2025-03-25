@@ -33,6 +33,7 @@ tas::abort("rip"); // end current script, optional err
 tas::dumpStack(); // print files on tas stack, max depth 12
 // Convert and exec frame-per-line `0 NONE 0;0 0;0` format
 tas::awaitExecFileNXTas("sdcard:/totk_lotuskit/script0-1.txt");
+tas::awaitEval("void main() { TextWriter::print(0, \"wow\n\"); }");
 
 /* tas stack caveats:
  - Files don't share variables, call shared functions,

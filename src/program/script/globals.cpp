@@ -1,6 +1,7 @@
 #include "exlaunch.hpp"
 #include "script/globals.hpp"
 #include "script/schedule.hpp"
+#include "script/hotkey.hpp"
 
 #include <nn/util.h>
 #include <lib/json.hpp>
@@ -1007,8 +1008,13 @@ namespace lotuskit::script::globals {
 
             // call nested scripts
             asErrno = engine->RegisterGlobalFunction(
-                "void awaitExecFile(const string &in)",
+                "void awaitExecFile(const string &in, const string &in = \"void main()\")",
                 AngelScript::asFUNCTION(lotuskit::script::schedule::tas::pushExecLocalFileModule),
+                AngelScript::asCALL_CDECL
+            ); assert( asErrno >= 0 );
+            asErrno = engine->RegisterGlobalFunction(
+                "void awaitEval(const string &in, const string &in = \"void main()\")",
+                AngelScript::asFUNCTION(lotuskit::script::schedule::tas::pushExecEval),
                 AngelScript::asCALL_CDECL
             ); assert( asErrno >= 0 );
             asErrno = engine->RegisterGlobalFunction(
@@ -1040,6 +1046,36 @@ namespace lotuskit::script::globals {
             ); assert( asErrno >= 0 );
 
         /// }
+    }
+
+    void registerHotkey(AngelScript::asIScriptEngine* engine) {
+        s32 asErrno;
+        engine->SetDefaultNamespace("hotkey");
+        asErrno = engine->RegisterGlobalFunction(
+            "void bindButtonsExecFile(u64 buttons, const string &in)",
+            AngelScript::asFUNCTION(lotuskit::script::hotkey::bindButtonsExecFile),
+            AngelScript::asCALL_CDECL
+        ); assert( asErrno >= 0 );
+        asErrno = engine->RegisterGlobalFunction(
+            "void bindButtonsExecFileNXTas(u64 buttons, const string &in)",
+            AngelScript::asFUNCTION(lotuskit::script::hotkey::bindButtonsExecFileNXTas),
+            AngelScript::asCALL_CDECL
+        ); assert( asErrno >= 0 );
+        asErrno = engine->RegisterGlobalFunction(
+            "void bindButtonsEval(u64 buttons, const string &in)",
+            AngelScript::asFUNCTION(lotuskit::script::hotkey::bindButtonsEval),
+            AngelScript::asCALL_CDECL
+        ); assert( asErrno >= 0 );
+        asErrno = engine->RegisterGlobalFunction(
+            "void unbindButtons(u64 buttons)",
+            AngelScript::asFUNCTION(lotuskit::script::hotkey::unbindButtons),
+            AngelScript::asCALL_CDECL
+        ); assert( asErrno >= 0 );
+        asErrno = engine->RegisterGlobalFunction(
+            "void setCooldown(u8 frames)",
+            AngelScript::asFUNCTION(lotuskit::script::hotkey::setCooldown),
+            AngelScript::asCALL_CDECL
+        ); assert( asErrno >= 0 );
     }
 
     void registerActorSystem(AngelScript::asIScriptEngine* engine) {
@@ -1337,6 +1373,7 @@ namespace lotuskit::script::globals {
         // TODO registerClassFwdDecls(engine); // avoid circular/mutual dep issues
         registerUtil(engine);
         registerTAS(engine);
+        registerHotkey(engine);
         registerPhive(engine);
         registerActorSystem(engine);
         registerEvent(engine);
