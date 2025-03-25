@@ -80,6 +80,10 @@ namespace lotuskit::tas {
     void Record::beginDumpImpl() {
         accumulatedInput60 = 0;
         accumulatedRecord60 = 0;
+        useEmitLocalFileOffset = 0; // XXX dont always do this -- some sort of append into separate functions might be nice?
+                                    // we can choose entrypoints and probably send args across tas stack eventually,
+                                    // so being able to dynamically record+call into a namespace of funcs would be very cool.
+                                    // (eg AB test movement strategies sharing some interface, treat a file like a library, etc)
         isRecordActive = true;
 
         Logger::logJson(json::object({
