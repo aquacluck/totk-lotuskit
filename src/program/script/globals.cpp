@@ -1012,6 +1012,11 @@ namespace lotuskit::script::globals {
                 AngelScript::asCALL_CDECL
             ); assert( asErrno >= 0 );
             asErrno = engine->RegisterGlobalFunction(
+                "void awaitExecFileNXTas(const string &in)",
+                AngelScript::asFUNCTION(lotuskit::script::schedule::tas::pushExecLocalFileModuleNXTas),
+                AngelScript::asCALL_CDECL
+            ); assert( asErrno >= 0 );
+            asErrno = engine->RegisterGlobalFunction(
                 "void abort(const string &in = \"err\")",
                 AngelScript::asFUNCTION(lotuskit::script::schedule::tas::abortStack),
                 AngelScript::asCALL_CDECL

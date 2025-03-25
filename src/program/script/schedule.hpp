@@ -31,11 +31,12 @@ namespace lotuskit::script::schedule::tas {
 
     AngelScript::asIScriptModule* buildOnceOrGetModule(const std::string& moduleName, const std::string& sectionName, const std::string& scriptText);
     void pushExecLocalFileModule(const std::string& filename, bool doImmediateExecute = true);
+    void pushExecLocalFileModuleNXTas(const std::string& filename, bool doImmediateExecute = true); // transpile+run nxtas source file in new module
     void pushExecTextModule(const std::string& moduleName, const std::string& sectionName, const std::string& scriptText, const std::string& entryPoint, bool doImmediateExecute = true);
     void pushExecModuleEntryPoint(AngelScript::asIScriptModule* mod, const std::string& entryPoint, bool doImmediateExecute = true);
-    // TODO void pushExecNXTas(const std::string& filename, bool doImmediateExecute = true); // transpile+run nxtas source file in new module
 
     void tryDiscardLastModuleForPop();
+    void transpileImpl_nxtas_to_as(const char* src, char* dst, size_t dstMax);
     void abortStack(const std::string& reason = "err");
     void dumpStack();
 

@@ -108,11 +108,46 @@ namespace lotuskit::script::schedule::tas {
                 abortStack("[tas::schedule::pushExecLocalFileModule] unreadable");
                 return;
             }
-            mod = buildOnceOrGetModule(filename, filename, scriptBuf); // XXX free scriptBuf
+            mod = buildOnceOrGetModule(filename, filename, scriptBuf);
+            // XXX free scriptBuf
         }
 
         if (mod == nullptr) {
             abortStack("[tas::schedule::pushExecLocalFileModule] module failed to build");
+            return; // err
+        }
+        pushExecModuleEntryPoint(mod, "void main()", doImmediateExecute);
+    }
+
+    void pushExecLocalFileModuleNXTas(const std::string& filename, bool doImmediateExecute) {
+        // reuse any existing module by name during a single script execution -- do not check/rebuild file contents for update
+        const auto engine = lotuskit::script::engine::asEngine;
+        AngelScript::asIScriptModule* mod = engine->GetModule(filename.c_str(), AngelScript::asGM_ONLY_IF_EXISTS);
+
+        if (mod == nullptr) {
+            // read+build new module
+            if (!lotuskit::util::fs::fileExists(filename.c_str())) {
+                lotuskit::TextWriter::toastf(30*5, "[error] script filename unreadable: %s\n", filename.c_str());
+                abortStack("[tas::schedule::pushExecLocalFileModuleNXTas] unreadable");
+                return;
+            }
+
+            // FIXME larger scripts / text alloc
+            char nxtasBuf[0x2000]; nxtasBuf[0] = '\0'; // ro source nxtas
+            char scriptBuf[0x2000]; scriptBuf[0] = '\0'; // wx output AS
+            if (lotuskit::util::fs::readTextFile(nxtasBuf, sizeof(nxtasBuf), filename.c_str())) {
+                svcOutputDebugString(nxtasBuf, strlen(nxtasBuf));
+                abortStack("[tas::schedule::pushExecLocalFileModuleNXTas] unreadable");
+                return;
+            }
+            transpileImpl_nxtas_to_as(nxtasBuf, scriptBuf, sizeof(scriptBuf));
+            // XXX free nxtasBuf
+            mod = buildOnceOrGetModule(filename, filename, scriptBuf);
+            // XXX free scriptBuf
+        }
+
+        if (mod == nullptr) {
+            abortStack("[tas::schedule::pushExecLocalFileModuleNXTas] module failed to build");
             return; // err
         }
         pushExecModuleEntryPoint(mod, "void main()", doImmediateExecute);
@@ -257,6 +292,123 @@ namespace lotuskit::script::schedule::tas {
             svcOutputDebugString(buf, strlen(buf));
             TextWriter::toastf(30*5, "%s\n", buf);
         }
+    }
+
+    void transpileImpl_nxtas_to_as(const char* src, char* dst, size_t dstMax) {
+        // Converts nxtas to AS intermediate (not really meant for human editing, eg raw button flags).
+        // Input must be well-formed! Excess whitespace between token groups is generally tolerated, not much else nonsense.
+
+        // assert dstMax isnt silly small
+        const char* entrypoint = "void main()";
+        const char* entrypoint_open = " {\n";
+        const char* entrypoint_close = "}\n";
+        // accumulators
+        u32 accDuration = 0;
+        u64 accButton = 0;
+        s32 accStick[4] = {0};
+        // file offsets
+        size_t dstn = 0;
+        // parse state
+        u64 lineButton = 0;
+        s32 lineStick[4] = {0};
+        s32 skipAheadTmpForScanf = 0;
+        char dstTmp[200]; dstTmp[0] = '\0'; dstTmp[199] = '\0';
+
+        // open func
+        strcpy(dst, entrypoint); dst += strlen(entrypoint); dstn += strlen(entrypoint);
+        strcpy(dst, entrypoint_open); dst += strlen(entrypoint_open); dstn += strlen(entrypoint_open);
+        const size_t limit = dstMax - strlen(entrypoint_close) - 1; // reserve entrypoint_close+terminate
+        do {
+            // begin source line: skip frame counter, leading whitespace, empty lines
+            while (true) {
+                while (*src == ' ' || *src == '\t' || *src == '\r' || *src == '\n') { src++; goto CONTINUE_2; } // consume whitespace
+                while (*src >= '0' && *src <= '9') { src++; goto CONTINUE_2; } // consume uint
+                break;
+                CONTINUE_2:
+            }
+            if (*src == '\0') { break; } // end src
+
+
+            lineButton = 0;
+            while (true) { // parse each button flag
+                // TODO option to preserve enums in output? but i dont wanna convert that, would prob rather just s/;/,/g the source flags... but effort, very different control flow.
+                //      (eg just inspecting the string would incorrectly proc accumulation when flag order changes) Shouldnt be worth the effort as long as this remains an intermediate output only?
+                if (strncmp(src, "NONE",        4) == 0) { lineButton  =       0; src +=  4; break; } // assert no other button flags with NONE
+                if (strncmp(src, "KEY_A",       5) == 0) { lineButton |= 1 <<  0; src +=  5; if (*src == ';') { src++; continue; } }
+                if (strncmp(src, "KEY_B",       5) == 0) { lineButton |= 1 <<  1; src +=  5; if (*src == ';') { src++; continue; } }
+                if (strncmp(src, "KEY_X",       5) == 0) { lineButton |= 1 <<  2; src +=  5; if (*src == ';') { src++; continue; } }
+                if (strncmp(src, "KEY_Y",       5) == 0) { lineButton |= 1 <<  3; src +=  5; if (*src == ';') { src++; continue; } }
+                if (strncmp(src, "KEY_ZL",      6) == 0) { lineButton |= 1 <<  8; src +=  6; if (*src == ';') { src++; continue; } }
+                if (strncmp(src, "KEY_ZR",      6) == 0) { lineButton |= 1 <<  9; src +=  6; if (*src == ';') { src++; continue; } }
+                if (strncmp(src, "KEY_PLUS",    8) == 0) { lineButton |= 1 << 10; src +=  8; if (*src == ';') { src++; continue; } }
+                if (strncmp(src, "KEY_MINUS",   9) == 0) { lineButton |= 1 << 11; src +=  9; if (*src == ';') { src++; continue; } }
+                if (strncmp(src, "KEY_DLEFT",   9) == 0) { lineButton |= 1 << 12; src +=  9; if (*src == ';') { src++; continue; } }
+                if (strncmp(src, "KEY_DUP",     7) == 0) { lineButton |= 1 << 13; src +=  7; if (*src == ';') { src++; continue; } }
+                if (strncmp(src, "KEY_DRIGHT", 10) == 0) { lineButton |= 1 << 14; src += 10; if (*src == ';') { src++; continue; } }
+                if (strncmp(src, "KEY_DDOWN",   9) == 0) { lineButton |= 1 << 15; src +=  9; if (*src == ';') { src++; continue; } }
+                if (strncmp(src, "KEY_LSTICK", 10) == 0) { lineButton |= 1 <<  4; src += 10; if (*src == ';') { src++; continue; } }
+                if (strncmp(src, "KEY_RSTICK", 10) == 0) { lineButton |= 1 <<  5; src += 10; if (*src == ';') { src++; continue; } }
+                if (strncmp(src, "KEY_L",       5) == 0) { lineButton |= 1 <<  6; src +=  5; if (*src == ';') { src++; continue; } } // these must be last so they dont shadow LSTICK+RSTICK
+                if (strncmp(src, "KEY_R",       5) == 0) { lineButton |= 1 <<  7; src +=  5; if (*src == ';') { src++; continue; } }
+                break;
+            }
+
+            // parse sticks
+            while (*src == ' ' || *src == '\t') { src++; } // consume whitespace
+            sscanf(src, "%d;%d%n", &lineStick[0], &lineStick[1], &skipAheadTmpForScanf); // read LStick
+            src += skipAheadTmpForScanf; // consume LStick
+            while (*src == ' ' || *src == '\t') { src++; } // consume whitespace
+            sscanf(src, "%d;%d%n", &lineStick[2], &lineStick[3], &skipAheadTmpForScanf); // read RStick
+            src += skipAheadTmpForScanf; // consume RStick
+
+            // source line complete, do accumulate+write
+            if (accDuration++ == 0) {
+                // begin accumulating this input (first iteration)
+                accButton   = lineButton;
+                accStick[0] = lineStick[0];
+                accStick[1] = lineStick[1];
+                accStick[2] = lineStick[2];
+                accStick[3] = lineStick[3];
+                continue; // proceed to next source line
+            }
+            if (accButton   != lineButton   ||
+                accStick[0] != lineStick[0] ||
+                accStick[1] != lineStick[1] ||
+                accStick[2] != lineStick[2] ||
+                accStick[3] != lineStick[3] ) {
+
+                // emit accumulated input
+                nn::util::SNPrintf(dstTmp, sizeof(dstTmp), "tas::input(%d, %llu, %d,%d, %d,%d);\n", accDuration, accButton, accStick[0], accStick[1], accStick[2], accStick[3]);
+                dstn += strlen(dstTmp);
+                if (dstn >= limit) { svcOutputDebugString("xpile overflow", 14); break; } // err
+                strcpy(dst, dstTmp);
+                dst += strlen(dstTmp);
+
+                // begin accumulating new input
+                accDuration = 1;
+                accButton   = lineButton;
+                accStick[0] = lineStick[0];
+                accStick[1] = lineStick[1];
+                accStick[2] = lineStick[2];
+                accStick[3] = lineStick[3];
+            }
+
+        } while(dstn < limit);
+
+        // emit final accumulated input
+        if (accDuration > 0) {
+            nn::util::SNPrintf(dstTmp, sizeof(dstTmp), "tas::input(%d, %llu, %d,%d, %d,%d);\n", accDuration, accButton, accStick[0], accStick[1], accStick[2], accStick[3]);
+            dstn += strlen(dstTmp);
+            if (dstn >= limit) { svcOutputDebugString("xpile overflow", 14); } // err
+            else {
+                strcpy(dst, dstTmp);
+                dst += strlen(dstTmp);
+            }
+        }
+
+        // close func
+        strcpy(dst, entrypoint_close); dst += strlen(entrypoint);
+        *dst = '\0'; // terminate
     }
 
 } // ns
