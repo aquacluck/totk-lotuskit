@@ -73,7 +73,10 @@ input, button, select, textarea, dialog, .fakebutton {
         pointer-events: none;
     }
 
-    &.hint_destructive_hover:hover { background: hsl(var(--hue-delete) 55% 30%); }
+    &.hint_destructive_hover {
+        color: hsl(var(--hue-delete) 45% 80%);
+        &:hover { background: hsl(var(--hue-delete) 55% 30%); }
+    }
     &.hint_recommended_hover:hover { background: hsl(var(--hue-recommended) 45% 30%); }
 
     &.hint_blueprint_strong  { background: var(--blueprint-strong); }
@@ -247,10 +250,8 @@ dialog {
         position: absolute;
         top: 0px;
         right: 0px;
-        color: hsl(var(--hue-delete) 55% 80%);
         &:before { content: "[x]"; }
         &:active:before { content: "esc"; }
-        &:hover { background: hsl(var(--hue-delete) 55% 30%); }
     }
 
     &> .move {

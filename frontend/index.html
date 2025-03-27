@@ -219,7 +219,7 @@
             return html`
                 <dialog ref=${this.dialogRef} onKeyDown=${this.do_dialog_keydown} open>
                     <button title="drag to move window" onMouseDown=${this.do_drag_begin} onMouseUp=${this.do_drag_end} class="pushbutton move"></button>
-                    <button title="esc when focused to close" onClick=${props.onClose} class="pushbutton esc"></button>
+                    <button title="esc when focused to close" onClick=${props.onClose} class="pushbutton hint_destructive_hover esc"></button>
                     ${props.children}
                 </dialog>
             `;
@@ -508,7 +508,7 @@
                     </select>
                     <button onClick=${ () => this.do_absolute(slot_i) } class="pushbutton hint_recommended_hover">dump</button>
                     <button onClick=${ () => this.do_pause(slot_i) } class="pushbutton">pause</button>
-                    <button onClick=${ () => this.do_clear(slot_i) } class="pushbutton">clear</button>
+                    <button onClick=${ () => this.do_clear(slot_i) } class="pushbutton hint_destructive_hover">clear</button>
                 </div>
             `;
         }
