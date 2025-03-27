@@ -753,6 +753,20 @@ namespace lotuskit::script::globals {
             asErrno = engine->RegisterGlobalFunction("void clearSlot(index_t)", AngelScript::asFUNCTION(lotuskit::HexDump::clearSlot), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
             asErrno = engine->RegisterGlobalFunction("void pauseSlot(index_t)", AngelScript::asFUNCTION(lotuskit::HexDump::pauseSlot), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
             asErrno = engine->RegisterGlobalFunction("void assignSlotAbsolute(index_t, ptr_t, u32, u32, const string &in = \"HexDump\", u32 dataType=0, bool formatHex=true)", AngelScript::asFUNCTION(lotuskit::HexDump::assignSlotAbsolute), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+            // immediate TextWriter draw
+            asErrno = engine->RegisterGlobalFunction("void textwriter_printf_u8(index_t, ptr_t, ptr_t, u32 lines=1, bool formatHex=true)", AngelScript::asFUNCTION(lotuskit::HexDump::textwriter_printf_u8), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+            asErrno = engine->RegisterGlobalFunction("void textwriter_printf_u16(index_t, ptr_t, ptr_t, u32 lines=1, bool formatHex=true)", AngelScript::asFUNCTION(lotuskit::HexDump::textwriter_printf_u16), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+            asErrno = engine->RegisterGlobalFunction("void textwriter_printf_u32(index_t, ptr_t, ptr_t, u32 lines=1, bool formatHex=true)", AngelScript::asFUNCTION(lotuskit::HexDump::textwriter_printf_u32), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+            asErrno = engine->RegisterGlobalFunction("void textwriter_printf_u64(index_t, ptr_t, ptr_t, u32 lines=1, bool formatHex=true)", AngelScript::asFUNCTION(lotuskit::HexDump::textwriter_printf_u64), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+            asErrno = engine->RegisterGlobalFunction("void textwriter_printf_s8(index_t, ptr_t, ptr_t, u32 lines=1, bool formatHex=true)", AngelScript::asFUNCTION(lotuskit::HexDump::textwriter_printf_s8), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+            asErrno = engine->RegisterGlobalFunction("void textwriter_printf_s16(index_t, ptr_t, ptr_t, u32 lines=1, bool formatHex=true)", AngelScript::asFUNCTION(lotuskit::HexDump::textwriter_printf_s16), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+            asErrno = engine->RegisterGlobalFunction("void textwriter_printf_s32(index_t, ptr_t, ptr_t, u32 lines=1, bool formatHex=true)", AngelScript::asFUNCTION(lotuskit::HexDump::textwriter_printf_s32), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+            asErrno = engine->RegisterGlobalFunction("void textwriter_printf_s64(index_t, ptr_t, ptr_t, u32 lines=1, bool formatHex=true)", AngelScript::asFUNCTION(lotuskit::HexDump::textwriter_printf_s64), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+            asErrno = engine->RegisterGlobalFunction("void textwriter_printf_float(index_t, ptr_t, ptr_t, u32 lines=1, bool formatHex=false)", AngelScript::asFUNCTION(lotuskit::HexDump::textwriter_printf_float), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+            asErrno = engine->RegisterGlobalFunction("void textwriter_printf_double(index_t, ptr_t, ptr_t, u32 lines=1, bool formatHex=false)", AngelScript::asFUNCTION(lotuskit::HexDump::textwriter_printf_double), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+            asErrno = engine->RegisterGlobalFunction("void textwriter_printf_text(index_t, ptr_t, ptr_t, u32 lines=1, bool formatHex=true)", AngelScript::asFUNCTION(lotuskit::HexDump::textwriter_printf_text), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+            asErrno = engine->RegisterGlobalFunction("void textwriter_printf_code_aarch64(index_t, ptr_t, ptr_t, u32 lines=4, bool formatHex=false)", AngelScript::asFUNCTION(lotuskit::HexDump::textwriter_printf_code_aarch64), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+
         /// }
 
         engine->SetDefaultNamespace("TextWriter"); /// {
