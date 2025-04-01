@@ -85,12 +85,19 @@
         }
 
         static subscribe_ns(ns, cbfunc) {
-            // TODO dedupe, unsubscribe?
             if (ns in WSTransport.ns_subscriptions) {
+                if (WSTransport.ns_subscriptions[ns].indexOf(cbfunc) != -1) { return; } // dupe
                 WSTransport.ns_subscriptions[ns].push(cbfunc);
             } else {
                 WSTransport.ns_subscriptions[ns] = [cbfunc];
             }
+        }
+
+        static unsubscribe_ns(ns, cbfunc) {
+            if (!(ns in WSTransport.ns_subscriptions)) { return; }
+            const i = WSTransport.ns_subscriptions[ns].indexOf(cbfunc);
+            if (i == -1) { return; }
+            WSTransport.ns_subscriptions[ns].splice(i, 1);
         }
     };
 
@@ -114,6 +121,38 @@
         static exec(snippet, moduleName) {
             moduleName ||= AngelScript.TAS_MODULE_DEFAULT;
             WSTransport.send({execScriptString: AngelScript.wrap_implicit_main(snippet), execScriptModule: moduleName});
+        }
+    }
+
+    class RemoteFileUtil {
+        static reqDumpTextFile(filename, ns) {
+            if (ns === undefined) {
+                // use tmp ns for subscribe/routing purposes
+                const basename = filename.split("/").at(-1).split(".").at(0); // eg "dump_latest"
+                ns = "/tmp/fs/dump/" + basename;
+            }
+
+            return new Promise((res, rej) => {
+                let output = "";
+                function cb(payload) {
+                    if (payload.beginDump) { } // nop begin
+                    else if (payload.endDump) { WSTransport.unsubscribe_ns(ns, cb); res(output); }
+                    else { output += payload["msg"]; } // accumulate file contents
+                }
+                WSTransport.subscribe_ns(ns, cb);
+                AngelScript.exec(`Logger::dumpTextFileIntoNS("${filename}", "${ns}");`);
+            });
+        }
+
+        static navigatorDownload(content, filename, mimeType) { // XXX doesnt really belong here
+            mimeType ||= "text/plain";
+            const blob = new Blob([content], {type: mimeType});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.setAttribute('href', url);
+            a.setAttribute('download', filename);
+            a.click();
+            URL.revokeObjectURL(url);
         }
     }
 
@@ -559,14 +598,18 @@
         constructor() {
             super();
             this.setState({
+                // tas dump
                 isDumping: false,
+                dumpMode: "ws",
             });
 
             this.script_text_ref = createRef();
             this.use_implicit_main_ref = createRef();
 
-            WSTransport.subscribe_ns("/tas/Record", this.recv_tas_record.bind(this))
-            this.output_text_ref = createRef();
+            WSTransport.subscribe_ns("/tas/Record", this.recv_tas_dump_ws.bind(this))
+            this.tas_dump_filename_ref = createRef();
+            this.tas_dump_ws_output_text_ref = createRef();
+            this.tas_dump_use_nxtas_ref = createRef();
         }
 
         do_exec() {
@@ -578,13 +621,51 @@
             }
         }
 
-        do_trash_upload() {
-            const remote_filename = "sdcard:/totk_lotuskit/web_trash.as";
-            let script_text = this.script_text_ref.current.value;
-            if (this.use_implicit_main_ref.current.checked) {
-                script_text = AngelScript.wrap_implicit_main(script_text);
+        do_tas_upload_filename() {
+            const filename = this.tas_dump_filename_ref.current.value || "dump_latest.as";
+            const payload = this.tas_dump_ws_output_text_ref.current.value;
+            WSTransport.send({persistFileString: payload, persistFileName: filename}); // WARNING this will immediately clobber any file dont fuck around
+        }
+
+        async do_tas_download_filename(doBrowserSave) {
+            const filename = this.tas_dump_filename_ref.current.value || "dump_latest.as";
+            const payload = await RemoteFileUtil.reqDumpTextFile(filename);
+            //console.log('dump', filename, payload);
+            this.tas_dump_ws_output_text_ref.current.value = payload;
+            if (doBrowserSave) {
+                const basename = filename.split("/").at(-1); // eg "dump_latest.as"
+                RemoteFileUtil.navigatorDownload(payload, basename);
             }
-            WSTransport.send({persistFileString: script_text, persistFileName: remote_filename}); // WARNING this will immediately clobber any file dont fuck around
+        }
+
+        do_tas_dump_toggle() {
+            if (this.state.isDumping) {
+                // just end any ongoing recording
+                AngelScript.exec("tas::endDump();");
+                return;
+            }
+
+            const isNXTas = this.tas_dump_use_nxtas_ref.current.value == "nx";
+            if (this.state.dumpMode == "ws") {
+                if (isNXTas) {
+                    AngelScript.exec("tas::beginLoggerDumpNXTas();");
+                } else {
+                    AngelScript.exec("tas::beginLoggerDump();");
+                }
+
+            } else if (this.state.dumpMode == "sdcard") {
+                const filename = this.tas_dump_filename_ref.current.value || "dump_latest.as";
+                if (isNXTas) {
+                    AngelScript.exec(`tas::beginFileDumpNXTas("${filename}");`);
+                } else {
+                    AngelScript.exec(`tas::beginFileDump("${filename}");`);
+                }
+            }
+        }
+
+        do_tas_dump_mode_select = (e) => {
+            const dumpMode = e.currentTarget.value;
+            this.setState({dumpMode: dumpMode});
         }
 
         on_drop_terrifying_subsdk9_upload = async (e) => {
@@ -618,39 +699,74 @@
             reader.readAsDataURL(file);
         }
 
-        do_toggle_record() {
-            AngelScript.exec("tas::toggleDump();");
-        }
-
-        recv_tas_record(payload) {
-            const el = this.output_text_ref.current;
+        recv_tas_dump_ws(payload) {
+            const el = this.tas_dump_ws_output_text_ref.current;
             if (payload.beginDump) { el.value = ""; this.setState({isDumping: true}); } // wipe on new recording
             else if (payload.endDump) { this.setState({isDumping: false}); }
             else { el.value += payload["msg"]; } // append new input
         }
 
+        renderTasDump(props, state) {
+            // TODO extract new component class for dump
+            const recordTitle = state.isDumping ? "End recording" : "Configure + Begin record";
+            const recordToggleChar = state.isDumping ? "\u23f9" : "\u23fa";
+            const recordActiveClass = state.isDumping ? "recording" : "notrecording";
+            const sd_hasargs = state.dumpMode == "sdcard" ? "hover_hasargs" : "";
+            const sd_arg = state.dumpMode == "sdcard" ? html`<input class="hover_isarg" placeholder="dump_latest.as" ref=${this.tas_dump_filename_ref} size=24 />` : "";
+            const sd_download = state.dumpMode == "sdcard" ?  html`<button title="View remote file (display below)" onClick=${ () => this.do_tas_download_filename(false) } class="pushbutton hint_eye_corner">📥︎</button>` : "";
+            const sd_download_save = state.dumpMode == "sdcard" ?  html`<button title="Download remote file (browser save + display below)" onClick=${ () => this.do_tas_download_filename(true) } class="pushbutton hint_floppy_corner">📥︎</button>` : "";
+            const sd_upload = state.dumpMode == "sdcard" ?  html`<button title="Upload remote file (using contents below)" onClick=${ () => this.do_tas_upload_filename() } class="pushbutton hint_destructive_hover">📤︎</button>` : "";
+            // TODO const sd_filepicker = <button onClick=${ () => { this.tas_dump_filename_ref.current.value = await TODO_RemoteFilePicker.invoke(); } } >[pick] 📂📂︎📁︎</button>;
+            const HACK_suppressHeightReflow = html`<button class="pushbutton pushbutton_inert_spacer" inert>📥︎</button>`; // always keep a 📥︎ button in layout
+
+            return html`
+                    <span title="Manages tas dumps/transfers">REC</span>
+                    <button title="${recordTitle}" onClick=${ () => this.do_tas_dump_toggle() } class="pushbutton record_red ${recordActiveClass}">${recordToggleChar}</button>
+
+                    <select style="width: 48px; margin-left: 8px;" ref=${this.tas_dump_use_nxtas_ref} >
+                        <option disabled>[Dump Format]</option>
+                        <option value="as" title="Use default AngelScript format">as</option>
+                        <option value="nx" title="Use line-based nx-TAS format">nx</option>
+                    </select>
+
+                    <select class="${sd_hasargs}" onChange=${this.do_tas_dump_mode_select} style="width: 48px;">
+                        <option disabled>[Dump Destination]</option>
+                        <option value="ws" title="Dump only to ws (output below)">ws</option>
+                        <option value="sdcard" title="Dump only to sdcard (relative to sdcard:/totk_lotuskit/ by default)">sd</option>
+                    </select>
+
+                    ${sd_arg}
+                    ${sd_download}
+                    ${sd_download_save}
+                    ${sd_upload}
+                    ${HACK_suppressHeightReflow}
+
+                    <textarea placeholder="[tas output]" ref=${this.tas_dump_ws_output_text_ref}></textarea>
+            `;
+        }
+
         render(props, state) {
-            // TODO <select>/<input>/??? remote filename selections for: tas dump, file upload
-            // TODO remote file list+view+upload (its gonna be gross)
             // TODO local (web client) file save/load, copy, drop to remote, ...
             // TODO ctrl+enter do_exec()
             const nsoDisplay = false ? "inline" : "none"; // XXX feature flags in sessionStorage?
+
             return html`
                 <div class="execscript">
-                    <span title="Manages AngelScript for the tas stack">AS:</span>
+                    <span title="Manages AngelScript execution/playback for the tas stack">AS:</span>
                     <button title="Run the script below" onClick=${ () => this.do_exec() } class="pushbutton hint_blueprint_strong">exec</button>
                     <button title="tas::abort()" onClick=${ () => AngelScript.exec("tas::abort();", AngelScript.TAS_MODULE_INTERRUPT) } class="pushbutton hint_destructive_hover">abort</button>
                     <label title="Automatically wrap input into void main() {...} entry point" for="execscript_use_implicit_main">main:</label>
                     <input type="checkbox" id="execscript_use_implicit_main" ref=${this.use_implicit_main_ref} checked />
-                    <button title="tas::toggleDump()" onClick=${ () => this.do_toggle_record() } class="pushbutton">tas dump</button>
-                    <button title="WSTransport.send({persistFileString, persistFileName})" onClick=${ () => this.do_trash_upload() } class="pushbutton">⚠️upload</button>
+
                     <span style="float: right; display: ${nsoDisplay};">
                         <label title="⚠️update subsdk9 (drop onto button)" for="subsdkupload"> nso: </label>
                         <input type="file" title="WSTransport.send({persistFileBinary, persistFileName})" onChange=${this.on_drop_terrifying_subsdk9_upload} class="pushbutton hint_destructive_hover" style="width:32px;" id="subsdkupload" />
                     </span>
                     <br/>
-                    <textarea class="as_source" placeholder='// check blue AS📖 button below for help \nPlayer.pos += 100*Vector3f::UP;\n\ntas::input(30, KEY_A|KEY_B, 32767,-32768, 0,0);\ntas::input(15, KEY_B, 0.5*STICK_UP_MAX /*, 8000*STICK_LEFT */);\n\nactor::createAndWatch( \n    1, "SpObj_LiftGeneratorWing_A_01", \n    Player.pos + 5*Vector3f::DOWN\n);\n\ntas::awaitExecFile("sdcard:/totk_lotuskit/autorun.as");' ref=${this.script_text_ref}></textarea>
-                    <textarea placeholder="[tas output]" ref=${this.output_text_ref}></textarea>
+                    <textarea style="margin-bottom: 8px;" class="as_source" placeholder='// check blue AS📖 button below for help \nPlayer.pos += 100*Vector3f::UP;\n\ntas::input(30, KEY_A|KEY_B, 32767,-32768, 0,0);\ntas::input(15, KEY_B, 0.5*STICK_UP_MAX /*, 8000*STICK_LEFT */);\n\nactor::createAndWatch( \n    1, "SpObj_LiftGeneratorWing_A_01", \n    Player.pos + 5*Vector3f::DOWN\n);\n\ntas::awaitExecFile("sdcard:/totk_lotuskit/autorun.as");' ref=${this.script_text_ref}></textarea>
+
+                    ${ this.renderTasDump(props, state) }
+
                 </div>
             `;
         }

@@ -747,6 +747,7 @@ namespace lotuskit::script::globals {
 
         engine->SetDefaultNamespace("Logger"); /// {
             engine->RegisterGlobalFunction("void logText(const string &in, const string &in = \"/Logger\", bool = false, bool = true )", AngelScript::asFUNCTION(Logger::logText), AngelScript::asCALL_CDECL);
+            asErrno = engine->RegisterGlobalFunction("void dumpTextFileIntoNS(const string &in, const string &in)", AngelScript::asFUNCTION(lotuskit::Logger::dumpTextFileIntoNS), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
         /// }
 
         engine->SetDefaultNamespace("HexDump"); /// {

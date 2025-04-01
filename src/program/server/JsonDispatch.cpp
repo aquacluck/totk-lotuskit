@@ -21,13 +21,13 @@ namespace lotuskit::server {
         } else if (jsonPayload.contains("persistFileString") && jsonPayload.contains("persistFileName")) {
             auto src = jsonPayload["persistFileString"].template get<std::string>();
             auto path = jsonPayload["persistFileName"].template get<std::string>();
-            lotuskit::util::fs::writeTextFile(src.c_str(), path.c_str());
+            lotuskit::util::fs::writeTextFile(src.c_str(), path);
 
         } else if (jsonPayload.contains("persistFileBinary") && jsonPayload.contains("persistFileName")) {
             std::string src = websocketpp::base64_decode(jsonPayload["persistFileBinary"].template get<std::string>()); // yes it returns a binary std::string
             // XXX how to free jsonPayload["persistFileBinary"] now?
             auto path = jsonPayload["persistFileName"].template get<std::string>();
-            lotuskit::util::fs::writeFile(src.c_str(), src.size(), path.c_str());
+            lotuskit::util::fs::writeFile(src.c_str(), src.size(), path);
 
         } else if (jsonPayload.contains("persistFileBinaryChunk") && jsonPayload.contains("persistFileName") && jsonPayload.contains("persistChunkOp") && jsonPayload.contains("persistChunkOffset")) {
             // write a file split across several ws frames -- gross hack
@@ -35,7 +35,7 @@ namespace lotuskit::server {
             auto path = jsonPayload["persistFileName"].template get<std::string>();
             auto chunkOp = jsonPayload["persistChunkOp"].template get<u32>();
             auto chunkOffset = jsonPayload["persistChunkOffset"].template get<u32>();
-            lotuskit::util::fs::writeFileChunked(&chunkedUploadFd, src.c_str(), src.size(), path.c_str(), chunkOp, chunkOffset);
+            lotuskit::util::fs::writeFileChunked(&chunkedUploadFd, src.c_str(), src.size(), path, chunkOp, chunkOffset);
         }
     }
 

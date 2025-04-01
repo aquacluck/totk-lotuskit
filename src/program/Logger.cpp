@@ -1,5 +1,6 @@
 #include "Logger.hpp"
 #include "server/WebSocket.hpp"
+#include "util/fs.hpp"
 //#include <thread/seadThread.h>
 using json = nlohmann::json;
 
@@ -52,5 +53,15 @@ namespace lotuskit {
         }
     }
     */
+
+    void Logger::dumpTextFileIntoNS(const std::string& filename, const std::string& ns) {
+        constexpr size_t maxOut = 0x2000;
+        char out[maxOut];
+        lotuskit::util::fs::readTextFile(out, maxOut, filename.c_str());
+        Logger::logText(out, ns, false, false);
+        Logger::logJson(json::object({
+            {"endDump", true} // announce
+        }), ns, false, false);
+    }
 
 } // ns

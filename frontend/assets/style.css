@@ -81,6 +81,42 @@ input, button, select, textarea, dialog, .fakebutton {
 
     &.hint_blueprint_strong  { background: var(--blueprint-strong); }
     &.hint_recommended_strong { background: hsl(var(--hue-recommended) 55% 30%); }
+
+    &.hint_eye_corner {
+        position: relative;
+        &::after {
+            position: absolute;
+            content: '👁';
+            bottom: -1px;
+            right: -1px;
+            font-size: 0.85rem;
+            color: hsl(var(--hue-recommended) 45% 80%);
+        }
+    }
+    &.hint_floppy_corner {
+        position: relative;
+        &::after {
+            position: absolute;
+            content: '💾︎';
+            bottom: 0px;
+            right: 0px;
+            font-size: 0.75rem;
+            color: hsl(var(--hue-recommended) 45% 80%);
+        }
+    }
+
+    &.record_red {
+        font-size: 1.5rem; /* XXX extract this align+size stuff? */
+        vertical-align: bottom;
+        &:hover { background: hsl(var(--hue-blueprint) 35% 30%); } /* and this? */
+        &.recording { background: hsl(var(--hue-blueprint) 35% 30%); border-color: #222 #666 #666 #222; } /* button is "active"/depressed */
+
+        color: hsl(var(--hue-delete) 90% 70%);
+        text-shadow:  1px  1px 0px var(--color-text),
+                     -1px  1px 0px var(--color-text),
+                      1px -1px 0px var(--color-text),
+                     -1px -1px 0px var(--color-text);
+    }
 }
 
 .faketoggle {

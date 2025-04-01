@@ -3,9 +3,10 @@
 #include <cstring>
 
 namespace lotuskit::util::fs {
-    bool fileExists(const char* path) {
+    bool fileExists(const std::string& path) {
+        const auto cpath = canonicalize(path);
         nn::fs::FileHandle fd;
-        nn::Result res = nn::fs::OpenFile(&fd, path, nn::fs::OpenMode_Read);
+        nn::Result res = nn::fs::OpenFile(&fd, cpath.c_str(), nn::fs::OpenMode_Read);
         if (!res.IsSuccess()) {
             return false;
         }
@@ -13,13 +14,14 @@ namespace lotuskit::util::fs {
         return true;
     }
 
-    bool readTextFile(char* out, s64 maxOut, const char* path) {
+    bool readTextFile(char* out, s64 maxOut, const std::string& path) {
         char errbuf[200]; // assert maxOut > 200
+        const auto cpath = canonicalize(path);
         nn::fs::FileHandle fd;
-        nn::Result res = nn::fs::OpenFile(&fd, path, nn::fs::OpenMode_Read);
+        nn::Result res = nn::fs::OpenFile(&fd, cpath.c_str(), nn::fs::OpenMode_Read);
 
         if (!res.IsSuccess()) {
-            nn::util::SNPrintf(errbuf, sizeof(errbuf), "cant open file %s ", path);
+            nn::util::SNPrintf(errbuf, sizeof(errbuf), "cant open file %s ", cpath.c_str());
             strcpy(out, errbuf);
             return true; // err
         }
@@ -27,19 +29,19 @@ namespace lotuskit::util::fs {
         s64 fdLen = 0;
         res = nn::fs::GetFileSize(&fdLen, fd);
         if (!res.IsSuccess()) {
-            nn::util::SNPrintf(errbuf, sizeof(errbuf), "cant get file size %s ", path);
+            nn::util::SNPrintf(errbuf, sizeof(errbuf), "cant get file size %s ", cpath.c_str());
             strcpy(out, errbuf);
             return true; // err
         }
         if (fdLen > maxOut-1) {
-            nn::util::SNPrintf(errbuf, sizeof(errbuf), "file contents too long %d > %d %s ", fdLen, maxOut-1, path);
+            nn::util::SNPrintf(errbuf, sizeof(errbuf), "file contents too long %d > %d %s ", fdLen, maxOut-1, cpath.c_str());
             strcpy(out, errbuf);
             return true; // err
         }
 
         res = nn::fs::ReadFile(fd, 0, out, fdLen);
         if (!res.IsSuccess()) {
-            nn::util::SNPrintf(errbuf, sizeof(errbuf), "file read fail %s ", path);
+            nn::util::SNPrintf(errbuf, sizeof(errbuf), "file read fail %s ", cpath.c_str());
             strcpy(out, errbuf);
             return true; // err
         }
@@ -49,20 +51,21 @@ namespace lotuskit::util::fs {
         return false; // ok
     }
 
-    bool writeTextFile(const char* src, const char* path) {
+    bool writeTextFile(const char* src, const std::string& path) {
         return writeFile(src, strlen(src), path);
     }
 
-    bool writeFile(const void* src, size_t srcLen, const char* path) {
+    bool writeFile(const void* src, size_t srcLen, const std::string& path) {
         // ty Watertoon for mc_decompressor as reference (GPL2, https://gamebanana.com/tools/13236)
+        const auto cpath = canonicalize(path);
         nn::fs::FileHandle fd;
         nn::fs::CreateDirectory("sdcard:/totk_lotuskit"); // ensure folder present, ignore result
 
-        nn::Result res = nn::fs::OpenFile(&fd, path, nn::fs::OpenMode_Write);
-        if (!res.IsSuccess()) { // assert !fileExists(path), create output file
-            res = nn::fs::CreateFile(path, srcLen);
+        nn::Result res = nn::fs::OpenFile(&fd, cpath.c_str(), nn::fs::OpenMode_Write);
+        if (!res.IsSuccess()) { // assert !fileExists(cpath), create output file
+            res = nn::fs::CreateFile(cpath.c_str(), srcLen);
             if (!res.IsSuccess()) { return true; } // err: failed to create
-            res = nn::fs::OpenFile(&fd, path, nn::fs::OpenMode_Write);
+            res = nn::fs::OpenFile(&fd, cpath.c_str(), nn::fs::OpenMode_Write);
         }
         if (!res.IsSuccess()) { return true; } // err: failed to open
 
@@ -77,11 +80,12 @@ namespace lotuskit::util::fs {
         return false; // ok
     }
 
-    void writeFileChunked(nn::fs::FileHandle* fd, const void* src, size_t srcLen, const char* path, u32 chunkOp, u64 chunkOffset) {
+    void writeFileChunked(nn::fs::FileHandle* fd, const void* src, size_t srcLen, const std::string& path, u32 chunkOp, u64 chunkOffset) {
+        const auto cpath = canonicalize(path);
         if (chunkOp == 1) {
             // create/open/truncate (first call)
-            nn::fs::CreateFile(path, 0);
-            nn::fs::OpenFile(fd, path, nn::fs::OpenMode_Write);
+            nn::fs::CreateFile(cpath.c_str(), 0);
+            nn::fs::OpenFile(fd, cpath.c_str(), nn::fs::OpenMode_Write);
             nn::fs::SetFileSize(*fd, 0);
         }
         if (srcLen > 0) {
@@ -97,6 +101,15 @@ namespace lotuskit::util::fs {
             nn::fs::FlushFile(*fd);
             nn::fs::CloseFile(*fd); // void
         }
+    }
+
+    std::string canonicalize(const std::string& path) {
+        const std::string PREFIX = "sdcard:/totk_lotuskit/";
+        for (const char* c = path.c_str(); true; c++) {
+            if (*c == '\0') { break; }
+            if (*c == ':') { return path; } // path apparently contains a mount point, return unaltered
+        }
+        return PREFIX + path;
     }
 
 }
