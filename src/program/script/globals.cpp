@@ -1134,14 +1134,14 @@ namespace lotuskit::script::globals {
         /// }
 
         engine->SetDefaultNamespace("actor"); /// {
-            asErrno = engine->RegisterGlobalFunction("void createSimple(string &in)", AngelScript::asFUNCTION(lotuskit::util::actor::createSimple), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
-            asErrno = engine->RegisterGlobalFunction("void createSimple(string &in, float, float, float)", AngelScript::asFUNCTION(lotuskit::util::actor::createSimpleXYZ), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
-            asErrno = engine->RegisterGlobalFunction("void createSimple(string &in, const Vector3f &in)", AngelScript::asFUNCTION(lotuskit::util::actor::createSimplePos), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
-            asErrno = engine->RegisterGlobalFunction("void createSimple(string &in, const Vector3f &in, const Matrix33f &in)", AngelScript::asFUNCTION(lotuskit::util::actor::createSimplePosRot), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
-            asErrno = engine->RegisterGlobalFunction("void createAndWatch(index_t, string &in)", AngelScript::asFUNCTION(lotuskit::util::actor::createAndWatch), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
-            asErrno = engine->RegisterGlobalFunction("void createAndWatch(index_t, string &in, float, float, float)", AngelScript::asFUNCTION(lotuskit::util::actor::createAndWatchXYZ), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
-            asErrno = engine->RegisterGlobalFunction("void createAndWatch(index_t, string &in, const Vector3f &in)", AngelScript::asFUNCTION(lotuskit::util::actor::createAndWatchPos), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
-            asErrno = engine->RegisterGlobalFunction("void createAndWatch(index_t, string &in, const Vector3f &in, const Matrix33f &in)", AngelScript::asFUNCTION(lotuskit::util::actor::createAndWatchPosRot), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+            asErrno = engine->RegisterGlobalFunction("void createSimple(const string &in)", AngelScript::asFUNCTION(lotuskit::util::actor::createSimple), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+            asErrno = engine->RegisterGlobalFunction("void createSimple(const string &in, float, float, float)", AngelScript::asFUNCTION(lotuskit::util::actor::createSimpleXYZ), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+            asErrno = engine->RegisterGlobalFunction("void createSimple(const string &in, const Vector3f &in)", AngelScript::asFUNCTION(lotuskit::util::actor::createSimplePos), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+            asErrno = engine->RegisterGlobalFunction("void createSimple(const string &in, const Vector3f &in, const Matrix33f &in)", AngelScript::asFUNCTION(lotuskit::util::actor::createSimplePosRot), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+            asErrno = engine->RegisterGlobalFunction("void createAndWatch(index_t, const string &in)", AngelScript::asFUNCTION(lotuskit::util::actor::createAndWatch), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+            asErrno = engine->RegisterGlobalFunction("void createAndWatch(index_t, const string &in, float, float, float)", AngelScript::asFUNCTION(lotuskit::util::actor::createAndWatchXYZ), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+            asErrno = engine->RegisterGlobalFunction("void createAndWatch(index_t, const string &in, const Vector3f &in)", AngelScript::asFUNCTION(lotuskit::util::actor::createAndWatchPos), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+            asErrno = engine->RegisterGlobalFunction("void createAndWatch(index_t, const string &in, const Vector3f &in, const Matrix33f &in)", AngelScript::asFUNCTION(lotuskit::util::actor::createAndWatchPosRot), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
         /// }
 
         engine->SetDefaultNamespace("ActorWatcher"); /// {
@@ -1152,7 +1152,7 @@ namespace lotuskit::script::globals {
             asErrno = engine->RegisterGlobalFunction("void assignSlot(index_t, ptr_t)", AngelScript::asFUNCTION(lotuskit::ActorWatcher::assignSlot), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
             asErrno = engine->RegisterGlobalFunction("void assignSlotPreActor(index_t, ptr_t)", AngelScript::asFUNCTION(lotuskit::ActorWatcher::assignSlotPreActor), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
             //asErrno = engine->RegisterGlobalFunction("void assignSlotPreActor(index_t, PreActor@)", AngelScript::asFUNCTION(lotuskit::ActorWatcher::assignSlotPreActor), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
-            asErrno = engine->RegisterGlobalFunction("void assignSlotAwaitSpawn(index_t, string &in)", AngelScript::asFUNCTION(lotuskit::ActorWatcher::assignSlotAwaitSpawn), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+            asErrno = engine->RegisterGlobalFunction("void assignSlotAwaitSpawn(index_t, const string &in)", AngelScript::asFUNCTION(lotuskit::ActorWatcher::assignSlotAwaitSpawn), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
             asErrno = engine->RegisterGlobalFunction("void assignSlotAwaitRecall(index_t)", AngelScript::asFUNCTION(lotuskit::ActorWatcher::assignSlotAwaitRecall), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
             asErrno = engine->RegisterGlobalFunction("void assignSlotAwaitBancEntityHash(index_t, u64)", AngelScript::asFUNCTION(lotuskit::ActorWatcher::assignSlotAwaitBancEntityHash), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
 
@@ -1206,8 +1206,8 @@ namespace lotuskit::script::globals {
     void registerEvent(AngelScript::asIScriptEngine* engine) {
         s32 asErrno;
         engine->SetDefaultNamespace("event");
-        asErrno = engine->RegisterGlobalFunction("void requestSimple(string &in, ptr_t=0)",    AngelScript::asFUNCTION(lotuskit::util::event::requestSimple), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
-        asErrno = engine->RegisterGlobalFunction("void requestSimple(string &in, ActorBase@)", AngelScript::asFUNCTION(lotuskit::util::event::requestSimple), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void requestSimple(const string &in, ptr_t=0)",    AngelScript::asFUNCTION(lotuskit::util::event::requestSimple), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void requestSimple(const string &in, ActorBase@)", AngelScript::asFUNCTION(lotuskit::util::event::requestSimple), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
     }
 
     void registerPlayerUtil(AngelScript::asIScriptEngine* engine) {

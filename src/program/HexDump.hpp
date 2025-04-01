@@ -29,7 +29,7 @@ namespace lotuskit {
         void* dumpSrc; // absolute address to inspect TODO derive from ^. This is always the "beginning" of the observed region for any pagination/etc logic, even for negative
         u8 buf[BUF_LEN]; // every calc will replace the contents of this buffer, perhaps performing comparisons/etc first
         s32 dumpLen; // abs(dumpLen) capped at BUF_LEN, but +-2GB addressable. Should be a multiple of 0x10
-        u16 drawLen; // capped at smallest of: abs(dumpLen) or BUF_LEN or about a screenful, to eg observe a large BUF_LEN but limit the output. default: about a screenful. Should be a multiple of 0x10
+        u32 drawLen; // capped at smallest of: abs(dumpLen) or BUF_LEN or about a screenful, to eg observe a large BUF_LEN but limit the output. default: about a screenful. Should be a multiple of 0x10
         u32 calcAge; // calc ticks since isCalc was last true / buf was refreshed
         std::string label; // user chosen for reference
         HexDumpDataType dataType; // try to format data to this type
@@ -246,9 +246,8 @@ namespace lotuskit {
                     slot.calcAge++;
                 } else {
                     // dump into buffer
-                    u32 len = abs(slot.dumpLen);
-                    len = len > HexDumpEntry::BUF_LEN ? HexDumpEntry::BUF_LEN : len;
-                    std::memcpy(slot.buf, slot.dumpSrc, len);
+                    const u32 dumpLen = std::min(static_cast<u32>(abs(slot.dumpLen)), HexDumpEntry::BUF_LEN);
+                    std::memcpy(slot.buf, slot.dumpSrc, dumpLen);
 
                     slot.calcAge = 0;
                     slot.isDraw = true; // XXX maybe we don't always want to draw?
@@ -258,8 +257,8 @@ namespace lotuskit {
                     const char* live = slot.calcAge == 0 ? "[LIVE]" : ""; // visible when buf has been updated this frame, for slow/intermittent/triggered/discontinued/etc dumps
                     lotuskit::TextWriter::printf(0, "%s[%d](dumpLen=%d, age=%d) %s\r\n", slot.label.c_str(), i, slot.dumpLen, slot.calcAge, live);
 
-                    u32 cap = reinterpret_cast<u32>((u32)slot.dumpLen > HexDumpEntry::BUF_LEN ? HexDumpEntry::BUF_LEN : slot.dumpLen);
-                    u32 drawLen = slot.drawLen > cap ? cap : slot.drawLen;
+                    const u32 drawMax = std::min(static_cast<u32>(abs(slot.dumpLen)), HexDumpEntry::BUF_LEN);
+                    const u32 drawLen = std::min(slot.drawLen, drawMax);
 
                     void* backingSrc = slot.dumpSrc;
                     void* src = slot.buf;
