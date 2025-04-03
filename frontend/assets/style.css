@@ -97,7 +97,7 @@ input, button, select, textarea, dialog, .fakebutton {
         position: relative;
         &::after {
             position: absolute;
-            content: '💾︎';
+            content: '💾︎'; /* ⛘ https://codepoints.net/U+26D8 sdcard? */
             bottom: 0px;
             right: 0px;
             font-size: 0.75rem;

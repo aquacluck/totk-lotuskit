@@ -1040,7 +1040,7 @@ namespace lotuskit::script::globals {
             ); assert( asErrno >= 0 );
             asErrno = engine->RegisterGlobalFunction(
                 "void abort(const string &in = \"err\")",
-                AngelScript::asFUNCTION(lotuskit::script::schedule::tas::abortStack),
+                AngelScript::asFUNCTION(lotuskit::script::schedule::tas::abortStackReq),
                 AngelScript::asCALL_CDECL
             ); assert( asErrno >= 0 );
             asErrno = engine->RegisterGlobalFunction(

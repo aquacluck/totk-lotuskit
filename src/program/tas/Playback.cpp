@@ -98,6 +98,8 @@ namespace lotuskit::tas {
     /// }}} pause scheduling
 
     void Playback::calc() {
+        lotuskit::script::schedule::tas::abortStackImpl(); // stop+cleanup everything when pending abort. We do this outside script execution because... its very confusing lol.
+                                                           // (ctxs do not immediately suspend/etc when you ask them to during script execution)
         if (!isPlaybackActive && !isExecuteCtxRequested) { return; } // not doing playback
         if (isExecuteCtxRequested) {
             // bypass async scheduling -- FIXME async flags should all be isolated per stackframe and
