@@ -151,6 +151,7 @@ namespace lotuskit::server {
         constexpr u64 SERVER_LISTEN_COMBO = (1 << 6) | (1 << 7) | (1 << 8) | (1 << 9) | (1 << 10) | (1 << 11); // L R ZL ZR + -
         u32 listenReqDebounce = 0;
         u32 listenNotifDelay = 0;
+        bool needsInit = true;
 
 #if WEBSOCKET_DO_THREADED_SEND
         constexpr size_t STACK_SIZE = 0x2000; // XXX idk
@@ -425,6 +426,13 @@ namespace lotuskit::server {
         }
     }
 
+    void WebSocket::closeActiveSocket() {
+        nn::socket::Close(clientSocketFd);
+        nn::socket::Close(serverSocketFd);
+        clientSocketFd = 0;
+        isWsEstablished = false;
+    }
+
     void WebSocket::init() {
         socketPool = (u8*)stolenHeap->alloc(SOCKET_POOL_SIZE + ALLOCATOR_POOL_SIZE + PAGE_SIZE);
         socketPool = (u8*)ALIGN_UP(socketPool, PAGE_SIZE); // FIXME cant free this once we throw away alloc ptr
@@ -440,10 +448,6 @@ namespace lotuskit::server {
             svcOutputDebugString(buf, strlen(buf));
             // XXX just ignore it? we'll see...
         }
-
-        const char* bindIp = "0.0.0.0";
-        const u16 bindPort = 7072;
-        listenAndWaitForFrontend(bindIp, bindPort); // blocking
 
 #if WEBSOCKET_DO_THREADED_SEND
         // create writer thread for this ws connection
@@ -467,7 +471,7 @@ namespace lotuskit::server {
         const bool isCombo = *(u64*)&(lotuskit::tas::Record::currentInput.buttons) == SERVER_LISTEN_COMBO;
         if ((isCombo || isInternalReqListen) && listenReqDebounce == 0) {
             isInternalReqListen = false;
-            listenReqDebounce = 15; // ignore button combo for n frames
+            listenReqDebounce = 30; // ignore button combo for n frames
             listenNotifDelay = 3; // defer server for n frames in order to display notice
         }
         if (listenReqDebounce > 0) { listenReqDebounce--; }
@@ -475,9 +479,10 @@ namespace lotuskit::server {
             listenNotifDelay--;
             if (listenNotifDelay == 0) {
                 if (!isWsEstablished) {
-                    init(); // blocking
+                    if (needsInit) { needsInit = false; init(); } // blocking
+                    listenAndWaitForFrontend("0.0.0.0", 7072); // blocking
                 } else {
-                    // TODO clean disconnect? idk
+                    closeActiveSocket();
                 }
             } else {
                 // display notice just before freezing the game

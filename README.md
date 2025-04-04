@@ -16,15 +16,14 @@
 - By default the frontend is served on 7073 because it looks sort of like "TOTK". The mod's WebSocket server is on 7072 because it's like 2 is the sequel.
 
 ## Known bugs, sharp edges, and bad times
-- When troubleshooting be sure to check any emulator logs as well as ws traffic and console in browser devtools. Things like scripting syntax errors will show up there.
+- When troubleshooting be sure to check any emulator logs as well as ws traffic and console in browser devtools.
 - Opening up a game/emulator process for arbitrary manipulation over the network is inherently risky, be sure you understand the risks and keep the device on safe networks.
 - Don't leave ActorWatchers targeting dead/dying actors while you go through loading screens (especially title+shrine loads), this will eventually crash. Clear the watcher or target a resident actor like Player to avoid this.
-- Only 1 WebSocket connection to the mod per launch. There is no way to disconnect+reconnect to the game yet.
 - Polling options in the frontend aren't perfect -- if the browser tries to connect right as the mod is opening its socket, the frontend can get stuck unable to connect.
 - Actors may fail to spawn in some scripts with ifs/branches? or matrix constants unless assigned to an intermediate? If your script is very short try making it longer.
 - Script size is limited to ~8KB and crashes on overflow
-- Scripts loaded from disk must use unix line endings? Or else weird syntax errors may occur
-- camera "above" button may choose bad angles resulting in inverted controls. This state is prone to crashing when taking out devices + more
+- Re-recording tas input during playback appears to emit incorrect durations (an extra frame for each input?), probably best to avoid this for now.
+- In some cases `tas::abort()` fails to clean up until another script is run. After one failure this should resolve.
 - PrimitiveDrawer shapes may be stale or repeated/overlapping when drawn after a pause, because tools like ActorWatcher try to draw the entire time without clearing the FrameHeap
 - The mod can't bind+serve on ipv6 yet -- the modded device must be accessed with a `ws://192.168.0.69:7072` style 4 number ipv4 address. This should only be a problem for ipv6-only LANs (somewhat exotic for home networks)
 - When reporting mid-game freezing/crashing problems, I'll need a lot of detail! Console vs emulator, version, how long was the play session, where it happened, any recent loads or approaching any major landmarks, any crash dump/log, etc... Modding the game is very fragile, there are countless ways to fail, it's hard to narrow down and I'm not very good at C++ or reverse engineering :)

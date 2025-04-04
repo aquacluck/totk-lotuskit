@@ -26,6 +26,7 @@ namespace lotuskit::server {
         static void listenAndWaitForFrontend(const char* bindIp, const u16 bindPort);
         static void recvNoblockAndProc();
         static void flushSendQueueBlocking();
+        static void closeActiveSocket();
     };
 
 } // ns
