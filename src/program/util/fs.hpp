@@ -12,4 +12,7 @@ namespace lotuskit::util::fs {
 
     // write a file split across several calls -- gross hack
     void writeFileChunked(nn::fs::FileHandle* workingFd, const void* src, size_t srcLen, const std::string& path, u32 chunkOp, u64 chunkOffset);
+
+    using VisitCallback = void(const std::string&, nn::fs::DirectoryEntry*); // parent path, child dentry
+    void visitDirectoryEntries(const std::string& path, s32 openMode, VisitCallback* cb);
 }

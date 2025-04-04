@@ -103,6 +103,22 @@ namespace lotuskit::util::fs {
         }
     }
 
+    void visitDirectoryEntries(const std::string& path, s32 openMode, VisitCallback* cb) {
+        const auto cpath = canonicalize(path);
+        nn::fs::DirectoryHandle dh = {};
+        nn::Result res = nn::fs::OpenDirectory(&dh, cpath.c_str(), openMode);
+        if (!res.IsSuccess()) { return; }
+        s64 _readCount;
+        s64 dirCount;
+        nn::fs::GetDirectoryEntryCount(&dirCount, dh);
+        for (s64 i = 0; i < dirCount; i++) {
+            nn::fs::DirectoryEntry dentry = {};
+            nn::fs::ReadDirectory(&_readCount, &dentry, dh, 1);
+            cb(cpath, &dentry);
+        }
+        nn::fs::CloseDirectory(dh);
+    }
+
     std::string canonicalize(const std::string& path) {
         const std::string PREFIX = "sdcard:/totk_lotuskit/";
         for (const char* c = path.c_str(); true; c++) {

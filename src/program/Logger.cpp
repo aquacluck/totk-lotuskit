@@ -1,6 +1,7 @@
 #include "Logger.hpp"
 #include "server/WebSocket.hpp"
 #include "util/fs.hpp"
+#include <nn/fs.h>
 //#include <thread/seadThread.h>
 using json = nlohmann::json;
 
@@ -59,6 +60,24 @@ namespace lotuskit {
         char out[maxOut];
         lotuskit::util::fs::readTextFile(out, maxOut, filename.c_str());
         Logger::logText(out, ns, false, false);
+        Logger::logJson(json::object({
+            {"endDump", true} // announce
+        }), ns, false, false);
+    }
+
+    void Logger::dumpDirectoryIndexIntoNS(const std::string& path, const std::string& ns) {
+        const auto indexMode = nn::fs::OpenDirectoryMode::OpenDirectoryMode_All; // subdirs+files
+        static const char* ns_;
+        ns_ = ns.c_str(); // HACK no capture
+
+        lotuskit::util::fs::visitDirectoryEntries(path, indexMode, [](const std::string& cpath, nn::fs::DirectoryEntry* dentry) {
+            Logger::logJson(json::object({
+                {"name", dentry->mName},
+                {"size", dentry->mFileSize},
+                {"type", dentry->mTypeByte}
+            }), ns_, false, false);
+        });
+
         Logger::logJson(json::object({
             {"endDump", true} // announce
         }), ns, false, false);

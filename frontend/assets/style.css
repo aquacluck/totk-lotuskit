@@ -104,6 +104,17 @@ input, button, select, textarea, dialog, .fakebutton {
             color: hsl(var(--hue-recommended) 45% 80%);
         }
     }
+    &.hint_folder_corner {
+        position: relative;
+        &::after {
+            position: absolute;
+            content: '📁︎';
+            bottom: 0px;
+            right: 0px;
+            font-size: 0.75rem;
+            color: hsl(var(--hue-recommended) 45% 80%);
+        }
+    }
 
     &.record_red {
         font-size: 1.5rem; /* XXX extract this align+size stuff? */
@@ -147,20 +158,26 @@ textarea {
 }
 
 .hover_hasargs:hover {
-    /* just keep extending if we need >3 args on a control */
+    /* just keep extending if we need >5 args on a control */
     outline: 1px solid var(--blueprint-strong);
     &+ .hover_isarg { outline: 1px solid var(--blueprint-strong); }
     &+ .hover_isarg + .hover_isarg { outline: 1px solid var(--blueprint-strong); }
     &+ .hover_isarg + .hover_isarg + .hover_isarg { outline: 1px solid var(--blueprint-strong); }
+    &+ .hover_isarg + .hover_isarg + .hover_isarg + .hover_isarg { outline: 1px solid var(--blueprint-strong); }
+    &+ .hover_isarg + .hover_isarg + .hover_isarg + .hover_isarg + .hover_isarg { outline: 1px solid var(--blueprint-strong); }
 }
 .hover_hasargs:has(+ .hover_isarg:hover),
 .hover_hasargs:has(+ .hover_isarg + .hover_isarg:hover),
-.hover_hasargs:has(+ .hover_isarg + .hover_isarg + .hover_isarg:hover)
+.hover_hasargs:has(+ .hover_isarg + .hover_isarg + .hover_isarg:hover),
+.hover_hasargs:has(+ .hover_isarg + .hover_isarg + .hover_isarg + .hover_isarg:hover),
+.hover_hasargs:has(+ .hover_isarg + .hover_isarg + .hover_isarg + .hover_isarg + .hover_isarg:hover)
 {
     outline: 1px solid var(--blueprint-strong);
     &+ .hover_isarg { outline: 1px solid var(--blueprint-strong); }
     &+ .hover_isarg + .hover_isarg { outline: 1px solid var(--blueprint-strong); }
     &+ .hover_isarg + .hover_isarg + .hover_isarg { outline: 1px solid var(--blueprint-strong); }
+    &+ .hover_isarg + .hover_isarg + .hover_isarg + .hover_isarg { outline: 1px solid var(--blueprint-strong); }
+    &+ .hover_isarg + .hover_isarg + .hover_isarg + .hover_isarg + .hover_isarg { outline: 1px solid var(--blueprint-strong); }
 }
 
 .readout_vec2, .readout_vec3, .readout_quat {
@@ -214,6 +231,16 @@ textarea {
     b { color: var(--vec-green); }
 }
 
+.filelist {
+    li {
+        line-height: 2rem;
+    }
+    .filesize {
+        color: #666;
+        border: 1px solid #333;
+        padding: 2px;
+    }
+}
 
 
 

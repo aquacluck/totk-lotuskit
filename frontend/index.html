@@ -99,6 +99,24 @@
             if (i == -1) { return; }
             WSTransport.ns_subscriptions[ns].splice(i, 1);
         }
+
+        static subscribe_ns_async(cb_user_begin, cb_user_each, ns) {
+            ns ||= "/tmp/subscribe_ns_async"; // default
+
+            return new Promise((res, rej) => {
+                function cb(payload) {
+                    if (cb_user_each(payload)) {
+                        // user cb is done with subscription
+                        WSTransport.unsubscribe_ns(ns, cb);
+                        res(); // return to await
+                    }
+                }
+                WSTransport.subscribe_ns(ns, cb);
+
+                // eg ask mod for something now that subscription is ready
+                if (cb_user_begin) { cb_user_begin(ns); }
+            });
+        }
     };
 
 
@@ -125,23 +143,36 @@
     }
 
     class RemoteFileUtil {
-        static reqDumpTextFile(filename, ns) {
-            if (ns === undefined) {
-                // use tmp ns for subscribe/routing purposes
-                const basename = filename.split("/").at(-1).split(".").at(0); // eg "dump_latest"
-                ns = "/tmp/fs/dump/" + basename;
-            }
+        static async reqDumpTextFile(filename, ns) {
+            ns ||= "/tmp/fs/dump/" + filename.split("/").at(-1).split(".").at(0); // default
 
-            return new Promise((res, rej) => {
-                let output = "";
-                function cb(payload) {
-                    if (payload.beginDump) { } // nop begin
-                    else if (payload.endDump) { WSTransport.unsubscribe_ns(ns, cb); res(output); }
-                    else { output += payload["msg"]; } // accumulate file contents
-                }
-                WSTransport.subscribe_ns(ns, cb);
-                AngelScript.exec(`Logger::dumpTextFileIntoNS("${filename}", "${ns}");`);
-            });
+            let output = "";
+            await WSTransport.subscribe_ns_async(
+                () => AngelScript.exec(`Logger::dumpTextFileIntoNS("${filename}", "${ns}");`), // begin
+                payload => {
+                    if (payload.msg) { output += payload.msg; } // accumulate file contents
+                    if (payload.endDump) { return true; } // resolve
+                },
+                ns // accumulation scope
+            );
+
+            return output;
+        }
+
+        static async reqDirectoryIndex(path, ns) {
+            ns ||= "/tmp/fs/index/" + path.split("/").at(-1); // default
+
+            let output = [];
+            await WSTransport.subscribe_ns_async(
+                () => AngelScript.exec(`Logger::dumpDirectoryIndexIntoNS("${path}", "${ns}");`), // begin
+                payload => {
+                    if (payload.endDump) { return true; } // resolve
+                    output.push(payload); // accumulate dentries
+                },
+                ns // accumulation scope
+            );
+
+            return output;
         }
 
         static navigatorDownload(content, filename, mimeType) { // XXX doesnt really belong here
@@ -601,6 +632,7 @@
                 // tas dump
                 isDumping: false,
                 dumpMode: "ws",
+                isBrowseSD: false,
             });
 
             this.script_text_ref = createRef();
@@ -668,6 +700,10 @@
             this.setState({dumpMode: dumpMode});
         }
 
+        begin_browse_sd() { this.setState({isBrowseSD: true}); }
+        end_browse_sd() { this.setState({isBrowseSD: false}); }
+        pick_browse_sd(path) { this.tas_dump_filename_ref.current.value = path; this.end_browse_sd(); }
+
         on_drop_terrifying_subsdk9_upload = async (e) => {
             const file = e.currentTarget.files[0];
             console.log("dropped:", file);
@@ -712,11 +748,14 @@
             const recordToggleChar = state.isDumping ? "\u23f9" : "\u23fa";
             const recordActiveClass = state.isDumping ? "recording" : "notrecording";
             const sd_hasargs = state.dumpMode == "sdcard" ? "hover_hasargs" : "";
-            const sd_arg = state.dumpMode == "sdcard" ? html`<input class="hover_isarg" placeholder="dump_latest.as" ref=${this.tas_dump_filename_ref} size=24 />` : "";
-            const sd_download = state.dumpMode == "sdcard" ?  html`<button title="View remote file (display below)" onClick=${ () => this.do_tas_download_filename(false) } class="pushbutton hint_eye_corner">📥︎</button>` : "";
-            const sd_download_save = state.dumpMode == "sdcard" ?  html`<button title="Download remote file (browser save + display below)" onClick=${ () => this.do_tas_download_filename(true) } class="pushbutton hint_floppy_corner">📥︎</button>` : "";
-            const sd_upload = state.dumpMode == "sdcard" ?  html`<button title="Upload remote file (using contents below)" onClick=${ () => this.do_tas_upload_filename() } class="pushbutton hint_destructive_hover">📤︎</button>` : "";
-            // TODO const sd_filepicker = <button onClick=${ () => { this.tas_dump_filename_ref.current.value = await TODO_RemoteFilePicker.invoke(); } } >[pick] 📂📂︎📁︎</button>;
+            const sd_arg = state.dumpMode == "sdcard" ? html`<input class="hover_isarg" placeholder="dump_latest.as" ref=${this.tas_dump_filename_ref} size=36 />` : "";
+
+            const sd_arg_browse = state.dumpMode == "sdcard" ? html`<button title="Open sdcard browser" onClick=${ () => this.begin_browse_sd() } class="pushbutton hover_isarg hint_folder_corner" style="color: #aaa; transform: scaleX(0.8); padding: 0 9px; margin-right: -4px;">⛘</button>` : "";
+            const sd_arg_window = state.isBrowseSD ? html`<${RemoteFileBrowser} onClose=${ () => this.end_browse_sd() } onPick=${ path => this.pick_browse_sd(path) } />` : "";
+
+            const sd_download = state.dumpMode == "sdcard" ?  html`<button title="View remote file (display below)" onClick=${ () => this.do_tas_download_filename(false) } class="pushbutton hover_isarg hint_eye_corner">📥︎</button>` : "";
+            const sd_download_save = state.dumpMode == "sdcard" ?  html`<button title="Download remote file (browser save + display below)" onClick=${ () => this.do_tas_download_filename(true) } class="pushbutton hover_isarg hint_floppy_corner">📥︎</button>` : "";
+            const sd_upload = state.dumpMode == "sdcard" ?  html`<button title="Upload remote file (using contents below)" onClick=${ () => this.do_tas_upload_filename() } class="pushbutton hover_isarg hint_destructive_hover">📤︎</button>` : "";
             const HACK_suppressHeightReflow = html`<button class="pushbutton pushbutton_inert_spacer" inert>📥︎</button>`; // always keep a 📥︎ button in layout
 
             return html`
@@ -736,6 +775,8 @@
                     </select>
 
                     ${sd_arg}
+                    ${sd_arg_browse}
+                    ${sd_arg_window}
                     ${sd_download}
                     ${sd_download_save}
                     ${sd_upload}
@@ -1377,6 +1418,87 @@
         }
     };
 
+    class RemoteFileBrowser extends Component {
+        constructor() {
+            super();
+            this.state = {
+                remote_path: undefined,
+                dentries: [],
+            };
+        }
+
+        componentDidMount() {
+            this.load_remote_index("sdcard:/totk_lotuskit");
+        }
+
+        load_remote_index(path) {
+            this.setState({remote_path: path, dentries: []});
+            RemoteFileUtil.reqDirectoryIndex(path).then(newDentries => {
+                this.setState({remote_path: path, dentries: newDentries});
+            });
+        }
+
+        do_traverse_up() {
+            let dest = this.state.remote_path.split("/").slice(0, -1).join("/"); // traverse up one
+            if (dest === "") { dest = "sdcard:/"; }
+            if (dest.slice(-1) == ":") { dest = this.state.remote_path.slice(0, this.state.remote_path.indexOf("/")+1); } // can't traverse above root
+            this.load_remote_index(dest);
+        }
+
+        do_traverse_down(relpath) {
+            let dest = this.state.remote_path.split("/")
+            dest.push(relpath);
+            this.load_remote_index(dest.filter(x=>x).join("/"));
+        }
+
+        render(props, state) {
+            let dentryList = state.dentries.map(dentry => {
+                if (dentry.type === 0) { // folder
+                    return html`<li><a href="#" onClick=${ e => { this.do_traverse_down(dentry.name); e.preventDefault(); return false; } }>${dentry.name}</a></li>`;
+                } else if (dentry.type === 1) { // file
+                    let usize = dentry.size;
+                    let unit = "";
+                    if (usize > 0) { unit = "B"; }
+                    if (usize > 2*1024) { unit = "KB"; usize /= 1024; }
+                    if (usize > 2*1024) { unit = "MB"; usize /= 1024; }
+                    if (usize > 2*1024) { unit = "GB"; usize /= 1024; }
+                    const fmtSize = html`<span class="filesize">${usize.toFixed(0)} ${unit}</span>`
+
+                    let cpath = state.remote_path;
+                    if (cpath.indexOf("sdcard:/totk_lotuskit") == 0) {
+                        // canonicalize (make relative to mod home)
+                        cpath = cpath.slice("sdcard:/totk_lotuskit".length);
+                        if (cpath && cpath[0] == "/") { cpath = cpath.slice(1); }
+                    }
+                    if (cpath.length > 0 && cpath.slice(-1) != "/") { cpath += "/"; } // root dirs don't need separators
+                    cpath += dentry.name;
+                    // HACK setting innerHTML violates vdom
+                    const copy = html`<button class="copy" title="copy" onClick=${e => { navigator.clipboard.writeText(cpath); e.target.innerHTML = "✅"; }}>📋</button>`;
+
+                    const pick = props.onPick ? html`<button class="copy" title="pick" onClick=${() => { props.onPick(cpath); }}>pick</button>` : "";
+
+                    return html`<li><span class="copy_fake_target">${dentry.name}</span> ${copy} ${pick} ${fmtSize}</li>`;
+                }
+
+            });
+            if (dentryList.length == 0) { dentryList = [html`<li style="color: #666;">[empty folder]</li>`]; }
+
+            return html`
+                <${SimpleWindow} onClose=${props.onClose}>
+                    Remote files
+                    <a href="#" onClick=${ e => { this.load_remote_index("sdcard:/"); e.preventDefault(); return false; } } style="margin: 0 12px 0 48px">sdcard:/</a>
+                    <a href="#" onClick=${ e => { this.load_remote_index("content:/"); e.preventDefault(); return false; } }>content:/</a>
+                    <br /><br />
+                    ${state.remote_path}<br />
+                    <ul class="filelist" style="min-width: 400px; min-height: 200px; max-height: 60vh; overflow: scroll;">
+                        <li><a href="#" onClick=${ e => { this.do_traverse_up(); e.preventDefault(); return false; } }>..</a></li>
+                        ${dentryList}
+                    </ul>
+                </${SimpleWindow}>
+            `;
+        }
+    };
+
     class ModConnectionUI extends Component {
         constructor() {
             super();
@@ -1517,6 +1639,12 @@
         `;
     }
 
+    // expose some stuff to devtools
+    window.AngelScript = AngelScript;
+    window.WSTransport = WSTransport;
+    window.RemoteFileUtil = RemoteFileUtil;
+
+    // main entrypoint
     window.addEventListener("load", async function() {
         WSTransport.connect();
         const root = document.querySelector(".root");
