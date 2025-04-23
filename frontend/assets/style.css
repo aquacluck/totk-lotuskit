@@ -42,6 +42,10 @@ body { margin: 0; }
     --vec-blue:  hsl(240 40% 80%);
 }
 
+a:link    { color: hsl(220, 70%, 70%); }
+a:visited { color: hsl(270, 70%, 60%); }
+a:active  { color: hsl(0, 70%, 70%); }
+
 body, input, button, select, textarea, dialog, .fakebutton {
     background: #000;
     color: var(--color-text);
