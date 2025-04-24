@@ -24,6 +24,7 @@
 - Script size is limited to ~8KB and crashes on overflow
 - Re-recording tas input during playback appears to emit incorrect durations (an extra frame for each input?), probably best to avoid this for now.
 - In some cases `tas::abort()` fails to clean up until another script is run. After one failure this should resolve.
+- Output folder for tas recordings must exist, you should create a `sdcard:/totk_lotuskit` folder for the default output.
 - PrimitiveDrawer shapes may be stale or repeated/overlapping when drawn after a pause, because tools like ActorWatcher try to draw the entire time without clearing the FrameHeap
 - The mod can't bind+serve on ipv6 yet -- the modded device must be accessed with a `ws://192.168.0.69:7072` style 4 number ipv4 address. This should only be a problem for ipv6-only LANs (somewhat exotic for home networks)
 - The mod doesn't correctly close sockets on console yet -- the socket may fail to re-listen again for ~30s after closing
