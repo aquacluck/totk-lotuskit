@@ -233,6 +233,7 @@ HOOK_DEFINE_INLINE(SendEventPlayReportHook) {
 
         // main mod init
         nn::fs::MountSdCard("sdcard");
+        nn::hid::InitializeKeyboard(); // for hotkey
         lotuskit::server::WebSocket::assignHeap(StealHeapHook::stolenHeap);
         lotuskit::TextWriter::createFrameHeap();
         lotuskit::PrimitiveImpl::createFrameHeap();

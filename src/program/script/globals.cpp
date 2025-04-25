@@ -1088,6 +1088,28 @@ namespace lotuskit::script::globals {
             AngelScript::asFUNCTION(lotuskit::script::hotkey::unbindButtons),
             AngelScript::asCALL_CDECL
         ); assert( asErrno >= 0 );
+
+        asErrno = engine->RegisterGlobalFunction(
+            "void bindKeyboardExecFile(const string &in, const string &in)",
+            AngelScript::asFUNCTION(lotuskit::script::hotkey::bindKeyboardExecFile),
+            AngelScript::asCALL_CDECL
+        ); assert( asErrno >= 0 );
+        asErrno = engine->RegisterGlobalFunction(
+            "void bindKeyboardExecFileNXTas(const string &in, const string &in)",
+            AngelScript::asFUNCTION(lotuskit::script::hotkey::bindKeyboardExecFileNXTas),
+            AngelScript::asCALL_CDECL
+        ); assert( asErrno >= 0 );
+        asErrno = engine->RegisterGlobalFunction(
+            "void bindKeyboardEval(const string &in, const string &in)",
+            AngelScript::asFUNCTION(lotuskit::script::hotkey::bindKeyboardEval),
+            AngelScript::asCALL_CDECL
+        ); assert( asErrno >= 0 );
+        asErrno = engine->RegisterGlobalFunction(
+            "void unbindKeyboard(const string &in)",
+            AngelScript::asFUNCTION(lotuskit::script::hotkey::unbindKeyboard),
+            AngelScript::asCALL_CDECL
+        ); assert( asErrno >= 0 );
+
         asErrno = engine->RegisterGlobalFunction(
             "void setCooldown(u8 frames)",
             AngelScript::asFUNCTION(lotuskit::script::hotkey::setCooldown),
