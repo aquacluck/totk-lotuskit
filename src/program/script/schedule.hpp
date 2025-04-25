@@ -16,6 +16,8 @@ namespace lotuskit::script::schedule::tas {
         AngelScript::asIScriptContext* asCtx;
         // FIXME tas::input timing etc needs to be stored per moduleStackIndex, or else remaining duration will be dropped when inner tas::input sets currentInputTTL60.
         //       Only affects interrupted inputs/awaits, which is unusual except for clicking buttons (which usually immediately returns).
+        //       Prereq for frame advance, because we need better control over ctx+game resumption after advance command (since the advance input itself will be script driven).
+        //       Cannot use module for storage since it can be shared, maybe store in ctx or just make a struct in here.
     };
     constexpr size_t MAX_MODULE_STACK_DEPTH = 12;
     inline ModuleStackEntry moduleStack[MAX_MODULE_STACK_DEPTH] = {0};

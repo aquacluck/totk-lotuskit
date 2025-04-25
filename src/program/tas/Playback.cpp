@@ -109,6 +109,8 @@ namespace lotuskit::tas {
             calcAS();
             return;
         }
+        // TODO early return for frame advance etc (can we use debugpause?), deduct only frame-advanced time in frametime scheduling.
+        //      Exclude isExecuteCtxRequested from early return so it can always execute for eg ws/hotkey during frame advance.
 
         const bool isLoadingPause = lotuskit::util::pause::isPauseRequest(0x0eafe200);
         if (isLoadingPause && skipLoadingPause) {

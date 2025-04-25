@@ -22,6 +22,7 @@ namespace lotuskit::tas {
 
     void Record::calc() {
         if (!isRecordActive) { return; } // not doing record
+        // TODO early return for frame advance etc (can we use debugpause?), account only for frame-advanced time
 
         VFRMgr* vfrMgr = *EXL_SYM_RESOLVE<VFRMgr**>("engine::module::VFRMgr::sInstance");
         u32 deltaFrame60 = (u32)(vfrMgr->mDeltaFrame * 2);

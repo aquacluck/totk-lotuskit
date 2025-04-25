@@ -52,6 +52,9 @@ namespace lotuskit::script::schedule::tas {
             return true; // err: unexpected state
         }
 
+        // TODO move async/blocking checks from tas::Playback to here at sp level, so it works for pop+resume here as well as resuming from mainloop.
+        //      The frametime stuff should prob stay there, but otherwise tas::Playback will mostly be exposing stuff to AS.
+
         asErrno = sp->asCtx->Execute(); // run or resume the ctx until it yields/completes/fails
 
         if (asErrno == AngelScript::asEXECUTION_FINISHED) {
