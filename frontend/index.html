@@ -298,6 +298,35 @@
 
 
     // main ui
+    class WorldHacks extends Component {
+        doPresetPerfectDay() {
+            AngelScript.exec([
+                "world::doHackFogDisable(false);",
+                "world::setFogDensity(0, 0, 0);",
+                "world::setTimeHM(12,00);",
+                "world::setWeather(0);",
+                "world::setWind(0, 0, 0);",
+            ].join("\n"));
+        }
+
+        doPresetPerfectNight() {
+            AngelScript.exec([
+                "world::doHackFogDisable(true);",
+                "world::setFogDensity(0, 0, 0);",
+                "world::setTimeHM(00,00);",
+                "world::setWeather(0);",
+                "world::setWind(0, 0, 0);",
+            ].join("\n"));
+        }
+
+        render() {
+            return html`
+                <span style="margin-left: 32px;">World:</span>
+                <button title="Perfect day (noon, clear fog, clear weather, clear wind)" onClick=${() => this.doPresetPerfectDay() } class="pushbutton hint_sparkles_corner">☀️</button>
+                <button title="Perfect night (midnight, clear+hack fog, clear weather, clear wind)" onClick=${() => this.doPresetPerfectNight() } class="pushbutton hint_sparkles_corner">🌘</button>
+            `;
+        }
+    };
 
     class CameraHacks extends Component {
         constructor() {
@@ -392,6 +421,7 @@
                     <input type="checkbox" id="camerahacks_follow" ref=${this.follow} checked />
                     <label title="rotate relative to actor" for="camerahacks_relative">rel:</label>
                     <input type="checkbox" id="camerahacks_relative" ref=${this.relative} onChange=${() => this.setState({relative: this.relative.current.checked}) } />
+                    <${WorldHacks} />
 
                     <div style="float:right;">
                         <button title="camera::log()" onClick=${() => this.reqCameraLog() } class="pushbutton">dump</button>

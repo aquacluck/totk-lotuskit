@@ -86,6 +86,16 @@ input, button, select, textarea, dialog, .fakebutton {
     &.hint_blueprint_strong  { background: var(--blueprint-strong); }
     &.hint_recommended_strong { background: hsl(var(--hue-recommended) 55% 30%); }
 
+    &.hint_sparkles_corner {
+        position: relative;
+        &::after {
+            position: absolute;
+            content: '✨';
+            bottom: -1px;
+            right: -1px;
+            font-size: 0.85rem;
+        }
+    }
     &.hint_eye_corner {
         position: relative;
         &::after {
