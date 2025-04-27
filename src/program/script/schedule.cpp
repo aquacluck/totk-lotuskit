@@ -3,6 +3,7 @@
 #include "tas/Playback.hpp"
 #include "util/fs.hpp"
 #include "util/hash.hpp"
+#include "util/pause.hpp"
 #include "TextWriter.hpp"
 #include "Logger.hpp"
 using Logger = lotuskit::Logger;
@@ -10,6 +11,101 @@ constexpr auto murmur32 = lotuskit::util::hash::murmur32;
 
 
 namespace lotuskit::script::schedule::tas {
+
+    bool ModuleStackFrame::isValidForExecution() {
+        if (isAbortReq) { return false; }
+        if (this->asCtx == nullptr) { return false; }
+        if (this->asModule == nullptr) { return false; }
+
+        const auto state = this->asCtx->GetState();
+        if (state != AngelScript::asEXECUTION_SUSPENDED && state != AngelScript::asEXECUTION_PREPARED) {
+            return false;
+        }
+
+        return true;
+    }
+
+    bool ModuleStackFrame::calcScheduleIsAwaitPauseRequest() {
+        if (this->state.isAwaitPauseRequestHash == 0) { return false; }
+        const auto pauseMgr = lotuskit::util::pause::pauseMgr;
+        const auto name = pauseMgr->getPauseRequestKey(this->state.isAwaitPauseRequestHash);
+        const bool isPause = pauseMgr->getPauseRequestCount(this->state.isAwaitPauseRequestHash) > 0;
+        const bool ret = this->state.awaitPauseVal != isPause;
+        if (ret) {
+            // TODO display pause name
+            lotuskit::TextWriter::appendCallback(1, [](lotuskit::TextWriterExt* writer, sead::Vector2f* textPos) {
+                textPos->x = 1280.0 - 350.0;
+            });
+            if (this->state.awaitPauseVal) {
+                lotuskit::TextWriter::printf(1, "awaitPauseRequest(%s:%3u)\n               fr:%6d\n", name, lotuskit::tas::Playback::duration60ToUIFrames(elapsedPlayback60-this->state.awaitBegin60), lotuskit::tas::Playback::duration60ToUIFrames(elapsedPlayback60));
+            } else {
+                lotuskit::TextWriter::printf(1, "awaitUnpauseRequest(%s:%3u)\n               fr:%6d\n", name, lotuskit::tas::Playback::duration60ToUIFrames(elapsedPlayback60-this->state.awaitBegin60), lotuskit::tas::Playback::duration60ToUIFrames(elapsedPlayback60));
+            }
+        } else {
+            this->state.isAwaitPauseRequestHash = 0; // end await
+        }
+        return ret;
+    }
+
+    bool ModuleStackFrame::calcScheduleIsAwaitPauseTarget() {
+        if (this->state.isAwaitPauseTargetHash == 0) { return false; }
+        const auto pauseMgr = lotuskit::util::pause::pauseMgr;
+        const auto name = pauseMgr->getPauseTargetKey(this->state.isAwaitPauseTargetHash);
+        const bool isPause = pauseMgr->isTargetPaused(this->state.isAwaitPauseTargetHash);
+        const bool ret = this->state.awaitPauseVal != isPause;
+        if (ret) {
+            lotuskit::TextWriter::appendCallback(1, [](lotuskit::TextWriterExt* writer, sead::Vector2f* textPos) {
+                textPos->x = 1280.0 - 350.0;
+            });
+            if (this->state.awaitPauseVal) {
+                lotuskit::TextWriter::printf(1, "tas::awaitPauseTarget(%s:%3u)\n               fr:%6d\n", name, lotuskit::tas::Playback::duration60ToUIFrames(elapsedPlayback60-this->state.awaitBegin60), lotuskit::tas::Playback::duration60ToUIFrames(elapsedPlayback60));
+            } else {
+                lotuskit::TextWriter::printf(1, "tas::awaitUnpauseTarget(%s:%3u)\n               fr:%6d\n", name, lotuskit::tas::Playback::duration60ToUIFrames(elapsedPlayback60-this->state.awaitBegin60), lotuskit::tas::Playback::duration60ToUIFrames(elapsedPlayback60));
+            }
+        } else {
+            this->state.isAwaitPauseTargetHash = 0; // end await
+        }
+        return ret;
+    }
+
+    bool ModuleStackFrame::isBlockedFromScheduling() {
+        // XXX opt to suppress textwriter?
+        // XXX elapsedPlayback60 is hard to reason about -- it doesnt include any "loading" or pause await time here, but *some* awaits will likely be desirable to include.
+        //     It'll be hard to generalize this to timers/etc if there's not a clear way to describe these different waits, their timekeeping impls, and when to increment them.
+
+        // pending script can never be blocked: eg there is no way to know whether a hotkey payload wants to bypass LoadingPause before we invoke it,
+        //                                      so we must bypass everything for pending modules (unless we inherit certain settings from parent sp or some other side channel)
+        if (isPlaybackBeginPending) {
+            return false;
+        }
+
+        // pause scheduling
+        const bool isLoadingPause = lotuskit::util::pause::isPauseRequest(0x0eafe200);
+        if (isLoadingPause && this->state.skipLoadingPause) {
+            if (this->state.isAwaitPauseRequestHash == 0x0eafe200 && this->state.awaitPauseVal == true) {
+                // do not resume, but if script is awaiting LoadingPause request, clear the blocking condition
+                this->state.isAwaitPauseRequestHash = 0;
+            }
+            lotuskit::TextWriter::printf(1, "tas::nop(LoadingPause)\n               fr:%6d\n", lotuskit::tas::Playback::duration60ToUIFrames(elapsedPlayback60));
+            return true;
+        }
+        if (this->calcScheduleIsAwaitPauseRequest()) { return true; } // modeline drawn on wait
+        if (this->calcScheduleIsAwaitPauseTarget())  { return true; } // modeline drawn on wait
+
+        return false;
+    }
+
+    void ModuleStackFrame::resetState() {
+        //lotuskit::tas::Playback::PlaybackInput input;
+        this->state.inputTTL60 = 0;
+        this->state.awaitBegin60 = 0;
+        this->state.isAwaitPauseRequestHash = 0;
+        this->state.isAwaitPauseTargetHash = 0;
+        this->state.skipLoadingPause = true;
+        this->state.awaitPauseVal = false;
+        // this->state.playbackInputPassthroughMode = PLAYBACK_TAS_ONLY
+    }
+
     void initModuleStack() {
         const auto engine = lotuskit::script::engine::asEngine;
         for (size_t i = 0; i < MAX_MODULE_STACK_DEPTH; i++) {
@@ -18,43 +114,71 @@ namespace lotuskit::script::schedule::tas {
     }
 
     void trySuspendCtx() {
-        auto* ctx = getCtx();
+        auto* ctx = getSP()->asCtx;
         if (ctx == nullptr) { return; }
         // assert ctx->GetState() == asEXECUTION_ACTIVE?
         ctx->Suspend();
         // assert ctx->GetState() == asEXECUTION_SUSPENDED
     }
 
-    bool hasPlayableCtx() {
-        const auto* ctx = getCtx();
-        if (ctx == nullptr) { return false; }
-        const auto state = ctx->GetState();
-        if (state == AngelScript::asEXECUTION_SUSPENDED) { return true; } // can be resumed
-        if (state == AngelScript::asEXECUTION_PREPARED) { return true; } // can be started
-        if (state == AngelScript::asEXECUTION_FINISHED && moduleStackIndex > 0) { return true; } // can be popped+resumed
-        return false;
+    bool calcConsumeFrametime_queryIsInputExhausted(u32 deltaFrame60) {
+        auto* sp = getSP();
+        if (isPlaybackBeginPending) {
+            // tas playback has not begun, input is not queued yet, but we need to run AS (where it will likely get an input scheduled).
+            if (moduleStackIndex > 0) {
+                auto* prevsp = &moduleStack[moduleStackIndex-1];
+                if (prevsp->state.inputTTL60 > 0) {
+                    // For the following frametime calc, deduct from the previous sp's input which was (presumably) just interrupted to schedule the pending sp.
+                    // The time which has just passed belonged to it.
+                    sp = prevsp;
+                }
+            }
+        }
+
+        // deduct frametime from scheduled input
+        auto& state = sp->state;
+        if (state.inputTTL60 >= deltaFrame60) {
+            state.inputTTL60 -= deltaFrame60;
+            elapsedPlayback60 += deltaFrame60;
+        } else {
+            // only 0/1/2 frames60 left on schedule and deltaFrame60 is larger
+            // XXX is erring on one side or the other better, until i properly figure this out?
+            //     ie playing out these closing frames and deferring or eating into subsequent inputs? sounds complicated in the dumb way
+            state.inputTTL60 = 0; // abandon/truncate the remainder of this scheduled input and resume script
+            elapsedPlayback60 += deltaFrame60; // desync observable by user when elapsed time exceeds their expected schedule
+        }
+
+        return state.inputTTL60 == 0; // is scheduled input exhausted?
     }
 
-    bool calcCtx() {
-        ModuleStackEntry* sp = nullptr;
-        AngelScript::asEContextState prevState;
+    bool calcCtx(u32 deltaFrame60) {
+        ModuleStackFrame* sp = nullptr;
         s32 asErrno = 0;
 
         CTX_ENTER:
-        if (!hasPlayableCtx()) {
+        sp = getSP();
+        if (sp == nullptr || !sp->isValidForExecution()) {
             abortStackReq("[tas::schedule::calcCtx] no playable ctx");
             return true; // err
         }
-        sp = getSP();
-        prevState = sp->asCtx->GetState();
-        if (prevState != AngelScript::asEXECUTION_SUSPENDED && prevState != AngelScript::asEXECUTION_PREPARED) {
-            abortStackReq("[tas::schedule::calcCtx] can only execute suspended|prepared");
-            return true; // err: unexpected state
+
+        // TODO early return for frame advance etc (can we use debugpause?), deduct only frame-advanced time in frametime scheduling.
+        //      Exclude isPlaybackBeginPending from early return so it can always execute for eg ws/hotkey during frame advance.
+
+        if (sp->isBlockedFromScheduling()) {
+            return false; // ok: currently in an await/etc
         }
 
-        // TODO move async/blocking checks from tas::Playback to here at sp level, so it works for pop+resume here as well as resuming from mainloop.
-        //      The frametime stuff should prob stay there, but otherwise tas::Playback will mostly be exposing stuff to AS.
+        if (deltaFrame60 > 0) {
+            if (!calcConsumeFrametime_queryIsInputExhausted(deltaFrame60) && !isPlaybackBeginPending) {
+                return false; // ok: keep using scheduled input, do not resume script (unless requested)
+            }
 
+            deltaFrame60 = 0; // only deduct frametime before explicit first run
+                              // (always 0 on stackframe pop+resume, so we don't deduct duplicate time when we goto CTX_ENTER)
+        }
+
+        isPlaybackBeginPending = false;
         asErrno = sp->asCtx->Execute(); // run or resume the ctx until it yields/completes/fails
 
         if (asErrno == AngelScript::asEXECUTION_FINISHED) {
@@ -71,9 +195,9 @@ namespace lotuskit::script::schedule::tas {
                 tryDiscardLastModuleForPop();
                 // TODO run gc?
 
-                // pop ctx, go back and resume caller
+                // pop stackframe, go back and decide whether to resume
                 moduleStackIndex--;
-                goto CTX_ENTER; // FIXME do not resume if ctx is awaiting something / mid tas input / etc intentional suspend
+                goto CTX_ENTER;
             }
 
         } else if (asErrno == AngelScript::asEXECUTION_EXCEPTION) {
@@ -87,9 +211,13 @@ namespace lotuskit::script::schedule::tas {
 
         } else if (asErrno == AngelScript::asEXECUTION_SUSPENDED) {
             // do not release ongoing async ctx
+            return false; // ok: ongoing script yielded (maybe for an await/etc)
+        } else if (asErrno == AngelScript::asEXECUTION_ABORTED) {
+            return true; // ok: user abort
         }
 
-        return false; // ok: ongoing
+        svcOutputDebugString("unreachable", 11);
+        return true; // err
     }
 
     void pushExecLocalFileModule(const std::string& filename, const std::string& entryPoint, bool doImmediateExecute) {
@@ -171,7 +299,7 @@ namespace lotuskit::script::schedule::tas {
     }
 
     void pushExecModuleEntryPoint(AngelScript::asIScriptModule* mod, const std::string& entryPoint, bool doImmediateExecute) {
-        const auto prevState = getCtx()->GetState();
+        const auto prevState = getSP()->asCtx->GetState();
         const auto* prevMod = getSP()->asModule;
 
         if (prevMod != nullptr) {
@@ -188,11 +316,12 @@ namespace lotuskit::script::schedule::tas {
             }
         }
 
-        ModuleStackEntry* sp = getSP();
+        ModuleStackFrame* sp = getSP();
         if (sp->asCtx == nullptr) { abortStackReq("[tas::schedule::pushExecModuleEntryPoint] sp ctx null"); return; } // err should be alloced
         if (sp->asModule != nullptr) { abortStackReq("[tas::schedule::pushExecModuleEntryPoint] sp module not null"); return; } // err should be empty
-        // assert sp ctx state is uninitialized/unprepared
+        // XXX assert asCtx state is uninitialized/unprepared
         sp->asModule = mod;
+        sp->resetState(); // wipe timing/async/etc data
 
         // Find the function that is to be called (mod+entryPoint -> funcptr)
         char buf[500];
@@ -209,10 +338,10 @@ namespace lotuskit::script::schedule::tas {
 
         if (doImmediateExecute) {
             const bool isCompleteOrFail = calcCtx();
-            if (isCompleteOrFail) { lotuskit::tas::Playback::isPlaybackActive = false; }
+            if (isCompleteOrFail) { isPlaybackActive = false; }
         } else {
             // signal that queued ctx should be executed in main loop tas calc
-            lotuskit::tas::Playback::isExecuteCtxRequested = true;
+            isPlaybackBeginPending = true;
         }
     }
 
@@ -279,7 +408,7 @@ namespace lotuskit::script::schedule::tas {
             if (sp->asModule) { sp->asModule->Discard(); sp->asModule = nullptr; } // free all modules
         }
         moduleStackIndex = 0;
-        lotuskit::tas::Playback::isPlaybackActive = false;
+        isPlaybackActive = false;
         abortReqReason = "";
         // TODO run gc?
     }
