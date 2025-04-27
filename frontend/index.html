@@ -220,7 +220,7 @@
         return html`<span style="transform: rotate(${rad}rad);" class="compass_spinny vec_components_${VecComponentPatterns.ZX}"><span>${ns}</span><span>${ew}</span>→</span>`
     }
 
-    function CompassSpinnyPhysics({value}) { // Quaternionf
+    function CompassSpinnyPhysics({value}) { // Quatf
         const rad = (-2 * Math.atan2(value[1], value[3])) + Math.PI/2;
         // FIXME calc NSEW from rad
         return html`<span style="transform: rotate(${rad}rad);" class="compass_spinny"><span>\xa0</span><span>\xa0</span>→</span>`

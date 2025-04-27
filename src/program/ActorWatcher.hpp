@@ -1,7 +1,10 @@
 #pragma once
 #include <string>
 #include <cstring>
+#include <format>
 #include <gfx/seadPrimitiveRenderer.h>
+#include <math/seadMatrix.h>
+#include <math/seadVector.h>
 #include "structs/engineActor.hpp"
 #include "structs/phive.hpp"
 #include "TextWriter.hpp"
@@ -293,9 +296,13 @@ namespace lotuskit {
                 }), ns, false, false); // noblock, no debug log
             }
             if (doTextWriterRigidBody) {
+                #define FF(f) (f == 1 ? "1" : (f == -1 ? "-1" : (fabs(f) < 0.000001 ? "0" : std::format("{:.6f}", f))))
                 float* xxx = (float*)&(rbody->lastTransform); //float x = [3]; float y = [7]; float z = [11];
                 sead::Vector3f vel = rbody->getNextLinearVelocity();
-                lotuskit::TextWriter::printf(0, "RigidBody %s(%p): pos %f %f %f, vel %f %f %f \n", rbody->getName().c_str(), rbody, xxx[3], xxx[7], xxx[11], vel.x, vel.y, vel.z );
+                auto pos_str = std::format("{}, {}, {}", FF(xxx[3]), FF(xxx[7]), FF(xxx[11]));
+                auto vel_str = std::format("{}, {}, {}  |xz|={}", FF(vel.x), FF(vel.y), FF(vel.z), FF(std::sqrt(vel.x*vel.x + vel.z*vel.z)));
+                lotuskit::TextWriter::printf(0, "RigidBody %s(%p): pos %s; vel %s \n", rbody->getName().c_str(), rbody, pos_str.c_str(), vel_str.c_str());
+                #undef FF
             }
             if (doDrawRigidBodyPos || doDrawRigidBodyAABB) {
                 lotuskit::PrimitiveDrawer::setModelMtx(0, rbody->lastTransform);
@@ -372,14 +379,17 @@ namespace lotuskit {
 
                 if (slot.doTextWriter) {
                     const auto& v = actor->mLastLinearVelocity;
+                    //XXX this is gross but idk how to make it look nice otherwise. Many of the 0 arent quite 0 but i dont think we care much here?
+                    #define FF(f) (f == 1 ? "1" : (f == -1 ? "-1" : (fabs(f) < 0.000001 ? "0" : std::format("{:.6f}", f))))
+                    auto pos_str = std::format("{}, {}, {}", FF(actor->mPosition.x), FF(actor->mPosition.y), FF(actor->mPosition.z));
+                    auto rot_str = std::format("[{}, {}, {}, {}, {}, {}, {}, {}, {}]", FF(rot.m[0][0]), FF(rot.m[0][1]), FF(rot.m[0][2]), FF(rot.m[1][0]), FF(rot.m[1][1]), FF(rot.m[1][2]), FF(rot.m[2][0]), FF(rot.m[2][1]), FF(rot.m[2][2]));
+                    auto vel_str = std::format("{}, {}, {}  |xz|={}", FF(v.x), FF(v.y), FF(v.z), FF(std::sqrt(v.x*v.x + v.z*v.z)));
+                    auto angvel_str = std::format("{}, {}, {}", FF(actor->mLastAngularVelocity.x), FF(actor->mLastAngularVelocity.y), FF(actor->mLastAngularVelocity.z));
                     lotuskit::TextWriter::printf(
-                        0, "%s(%p) \npos: %f, %f, %f \nrot: [%f, %f, %f, %f, %f, %f, %f, %f, %f] \nvel: %f, %f, %f, |xz|=%f \nangvel: %f %f %f \n",
-                        actor->mName.cstr(), slot.actor,
-                        actor->mPosition.x, actor->mPosition.y, actor->mPosition.z,
-                        rot.m[0][0], rot.m[0][1], rot.m[0][2], rot.m[1][0], rot.m[1][1], rot.m[1][2], rot.m[2][0], rot.m[2][1], rot.m[2][2],
-                        v.x, v.y, v.z, std::sqrt(v.x*v.x + v.z*v.z),
-                        actor->mLastAngularVelocity.x, actor->mLastAngularVelocity.y, actor->mLastAngularVelocity.z
+                        0, "%s(%p)\npos: %s\nrot: %s\nvel: %s\nangvel: %s\n",
+                        actor->mName.cstr(), slot.actor, pos_str.c_str(), rot_str.c_str(), vel_str.c_str(), angvel_str.c_str()
                     );
+                    #undef FF
                 }
 
                 // PrimitiveDrawer info
