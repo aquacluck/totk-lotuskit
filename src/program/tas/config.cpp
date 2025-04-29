@@ -5,5 +5,6 @@ namespace lotuskit::tas::config {
     InputDurationScalingStrategy inputMode = InputDurationScalingStrategy::FPS30_2X;
     VFRCopingStrategy vfrMode = VFRCopingStrategy::NULL_VANILLA;
     PlaybackInputPassthroughMode playbackInputPassthroughMode = PlaybackInputPassthroughMode::NULL_VANILLA;
+    FrameAdvanceMode frameAdvanceMode = FrameAdvanceMode::NULL_VANILLA;
 } // ns
 

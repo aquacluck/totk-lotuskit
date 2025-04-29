@@ -179,17 +179,15 @@ HOOK_DEFINE_TRAMPOLINE(NinJoyNpadDevice_calcHook) {
     }
 };
 
+/*
 HOOK_DEFINE_TRAMPOLINE(FrameworkProcCalcHook) {
     static constexpr auto s_name = "engine::framework::Framework::procCalc_";
 
     static void Callback(void* self) {
         Orig(self); // perform observations after calc for fresh results
-
-        lotuskit::util::pause::drawPauses();
-        lotuskit::ActorWatcher::calc();
-        lotuskit::HexDump::calc();
     }
 };
+*/
 
 HOOK_DEFINE_TRAMPOLINE(FrameworkProcDrawHook) {
     static constexpr auto s_name = "engine::framework::Framework::procDraw_";
@@ -205,6 +203,9 @@ HOOK_DEFINE_TRAMPOLINE(FrameworkProcDrawHook) {
         lotuskit::tas::Playback::calc(); // may re-enter script when currently scheduled input is complete
         lotuskit::tas::Record::calc();
         lotuskit::tas::InputDisplay::draw();
+        lotuskit::util::pause::drawPauses();
+        lotuskit::ActorWatcher::calc(); // may resolve actor selection via preactor
+        lotuskit::HexDump::calc();
 
         Orig(self); // perform tas+script+scheduling before draw for synced display
     }
@@ -242,7 +243,7 @@ HOOK_DEFINE_INLINE(SendEventPlayReportHook) {
         lotuskit::script::engine::doAutorun();
 
         //WorldManagerModuleBaseProcHook::Install(); // "main loop"
-        FrameworkProcCalcHook::Install();
+        //FrameworkProcCalcHook::Install();
         FrameworkProcDrawHook::Install();
 
         //OnWhistleHook::Install();
