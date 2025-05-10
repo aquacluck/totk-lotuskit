@@ -16,7 +16,8 @@ namespace lotuskit::server {
         if (jsonPayload.contains("execScriptString")) {
             auto moduleName = jsonPayload.contains("execScriptModule") ? (jsonPayload["execScriptModule"].template get<std::string>()) : "web_anon.as";
             auto scriptText = jsonPayload["execScriptString"].template get<std::string>();
-            lotuskit::script::schedule::tas::pushExecTextModule(moduleName, moduleName, scriptText, "void main()", false); // defer execution to main loop
+            bool skipDebugPause = jsonPayload.contains("skipDebugPause") ? (jsonPayload["skipDebugPause"].template get<bool>()) : true;
+            lotuskit::script::schedule::tas::pushExecTextModule(moduleName, moduleName, scriptText, "void main()", false, skipDebugPause); // defer execution to main loop
 
         } else if (jsonPayload.contains("persistFileString") && jsonPayload.contains("persistFileName")) {
             auto src = jsonPayload["persistFileString"].template get<std::string>();

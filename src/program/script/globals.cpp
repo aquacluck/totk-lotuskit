@@ -1018,8 +1018,30 @@ namespace lotuskit::script::globals {
                 AngelScript::asCALL_CDECL
             ); assert( asErrno >= 0 );
             asErrno = engine->RegisterGlobalFunction(
+                "void doSkipDebugPause(bool)",
+                AngelScript::asFUNCTION(lotuskit::tas::Playback::doSkipDebugPause),
+                AngelScript::asCALL_CDECL
+            ); assert( asErrno >= 0 );
+            asErrno = engine->RegisterGlobalFunction(
                 "void doSkipLoadingPause(bool)",
                 AngelScript::asFUNCTION(lotuskit::tas::Playback::doSkipLoadingPause),
+                AngelScript::asCALL_CDECL
+            ); assert( asErrno >= 0 );
+
+            // frame advance
+            asErrno = engine->RegisterGlobalFunction(
+                "void beginFrameAdvance()",
+                AngelScript::asFUNCTION(lotuskit::tas::Playback::beginFrameAdvance),
+                AngelScript::asCALL_CDECL
+            ); assert( asErrno >= 0 );
+            asErrno = engine->RegisterGlobalFunction(
+                "void stepFrameAdvance(u32 duration)",
+                AngelScript::asFUNCTION(lotuskit::tas::Playback::stepFrameAdvance),
+                AngelScript::asCALL_CDECL
+            ); assert( asErrno >= 0 );
+            asErrno = engine->RegisterGlobalFunction(
+                "void endFrameAdvance()",
+                AngelScript::asFUNCTION(lotuskit::tas::Playback::endFrameAdvance),
                 AngelScript::asCALL_CDECL
             ); assert( asErrno >= 0 );
 

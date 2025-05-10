@@ -125,6 +125,7 @@
         // modules are built once per name per script execution, so while you can push the same name twice (recursion) it won't build/update with the script source you've sent.
         // So if they're going to coexist on the stack, separate code needs to be in separate modules:
         // the module name is like a function identifier which expires once the whole script completes.
+        // XXX maybe just send unique/hashed module names so nobody needs to think about this?
         static TAS_MODULE_DEFAULT = "web_anon.as"; // only things like buttons should be anon, oneshot "leaf" executions which can be pushed anytime
         static TAS_MODULE_USER_REPL = "web_scratch.as"; // console/notepad/etc interactive usage (so we can still push anon buttons while this runs)
         static TAS_MODULE_INTERRUPT = "web_interrupt.as"; // cant be anon because it needs to be able to interrupt anon
@@ -137,8 +138,11 @@
         }
 
         static exec(snippet, moduleName) {
-            moduleName ||= AngelScript.TAS_MODULE_DEFAULT;
-            WSTransport.send({execScriptString: AngelScript.wrap_implicit_main(snippet), execScriptModule: moduleName});
+            WSTransport.send({
+                execScriptString: AngelScript.wrap_implicit_main(snippet),
+                execScriptModule: moduleName || AngelScript.TAS_MODULE_DEFAULT,
+                skipDebugPause: false, // noblock on DebugPause (for toolbar buttons etc) XXX rename AngelScript.exec
+            });
         }
     }
 
@@ -328,6 +332,59 @@
         }
     };
 
+    class FrameAdvance extends Component {
+        constructor() {
+            super();
+            this.step_n = createRef();
+        }
+
+        doTogglePausePlay() {
+            AngelScript.exec([
+                `auto req = "DebugPause";`,
+                `if (pause::isPauseRequest(req)) {`,
+                    `tas::endFrameAdvance();`,
+                `} else {`,
+                    `tas::beginFrameAdvance();`,
+                `}`,
+            ].join("\n"));
+        }
+        doStepAS() {
+            const step_n = this.step_n.current.value || 1;
+            AngelScript.exec(`tas::stepFrameAdvance(${step_n});`);
+        }
+        doStepSleep() {
+            const step_n = this.step_n.current.value || 1;
+            AngelScript.exec([
+                `tas::doSkipDebugPause(true);`, // further tas frames in this script only (ie the sleep(n) below) will be blocked by DebugPause...
+                                                // (interrupts usually run throughout DebugPause but we opt out here to keep it consistent between interactive + AS usage)
+                `tas::stepFrameAdvance(${step_n});`, // ...but we immediately unpause DebugPause anyways
+                `tas::sleep(1);`, // yield to ^ scheduling, should resume next calc:
+                `tas::sleep(${step_n});`, // and run through the frames, using human control
+
+                // unpause for passthrough/sleep then repause (or begin pause).
+                // We don't need to worry about the unpause unexpectedly unblocking sp-1, because we are sp and only sp can be scheduled to run. So this should work for both ad-hoc and AS-interrupt uses.
+                //`auto req = "DebugPause";`,
+                //`pause::releasePause(req);`, // XXX prob doesnt work during isFrameAdvance? wont isFrameAdvance repause it all the time?
+                //`tas::sleep(${step_n});`,
+                //`pause::requestPause(req);`,
+
+            ].join("\n"));
+        }
+
+        render(props, state) {
+            return html`
+                <span class="frameadvance" style="margin-left: 16px;">
+                    Frame:
+                    <button title="DebugPause increment/decrement" onClick=${() => this.doTogglePausePlay() } class="pushbutton" style="font-size:1.5rem;">\u23ef</button>
+                    <button title="step ahead (in an already-running script)" onClick=${() => this.doStepAS() } class="pushbutton hint_blueprint_strong hover_hasargs" style="font-size: 2.5rem; vertical-align: bottom; line-height: 0;"><span style="transform: rotateY(180deg); display: inline-block;">\u293d</span></button>
+                    <button title="step ahead (controller passthrough)" onClick=${() => this.doStepSleep() } class="pushbutton hint_controller_corner hover_hasargs hover_isarg" style="font-size: 2.5rem; vertical-align: bottom; line-height: 0;"><span style="transform: rotateY(180deg); display: inline-block;">\u293d</span></button>
+                    <input class="hover_isarg" style="width: 48px" type="number" placeholder="1" size="2" min="1" step="any" ref=${this.step_n} />
+                </span>
+            `;
+        }
+
+    };
+
     class CameraHacks extends Component {
         constructor() {
             super();
@@ -472,10 +529,11 @@
         constructor() {
             super();
             this.pausenameref = createRef();
+            this.setState({pauseName: "LoadingPause", isPauseReq: true});
             WSTransport.subscribe_ns("/pause/log", payload => { this.setState(payload) });
         }
 
-        static PauseReqAll = ["ResetGimmickFromScript", "LoadingPause", "UpdateBancResource", "DebugPause", "SceneBeginning", "EventPlayMovie", "EventDisableController_Camera", "EventSetupOrRestore", "PostGamePause", "GamePauseWithoutEvent", "SystemPauseWhileLoading", "UpdateResourcePause", "EventBancChangePause", "ResetGimmick", "AutoBuilderPause", "PreGamePause", "GameOverPause", "GamePause", "EventDisableController", "SceneTransition", "ClickPause", "ReverseRecorderPause"];
+        static PauseReqAll = ["LoadingPause", "DebugPause", "ClickPause", "EventDisableController", "EventDisableController_Camera", "ReverseRecorderPause", "PreGamePause", "GamePause", "PostGamePause", "EventBancChangePause", "GameOverPause", "ResetGimmickFromScript", "UpdateBancResource", "SceneBeginning", "EventPlayMovie", "EventSetupOrRestore", "GamePauseWithoutEvent", "SystemPauseWhileLoading", "UpdateResourcePause", "ResetGimmick", "AutoBuilderPause", "SceneTransition"];
 
         static PauseTargetAll = ["AI", "AS", "Actor", "Blackboard", "CSharp", "Camera", "Controller", "Custom_ASGlobalFrame", "Custom_ActorCalcDrawExceptPouchActor", "Custom_ActorCalcExceptAutoBuilderActor", "Custom_ActorCalcExceptFarDelete", "Custom_ActorCalcExceptOpeningEventActor", "Custom_ActorCalcExceptPlayerEquipment", "Custom_ActorCalcExceptPlayer", "Custom_ActorCalc", "Custom_ActorDraw", "Custom_ActorRenderingProxy", "Custom_AllowCalcScript", "Custom_AllowStartScript", "Custom_AmiiboMgr", "Custom_AttentionSystem", "Custom_AutoPlacementMgr", "Custom_AutoSaveCount", "Custom_AutoSave", "Custom_BancLoadMgrCheckGameData", "Custom_BancRealtimeEdit", "Custom_ChallengeFollowerMgr", "Custom_Chemical", "Custom_CompanionMgrSummon", "Custom_Controller_Camera", "Custom_Controller_Player", "Custom_Controller_UI", "Custom_CraftSignboardMgr", "Custom_DragonMgr", "Custom_DynamicResolution", "Custom_EffectAutoBuild", "Custom_EffectReverseRecorder", "Custom_EffectSystem", "Custom_EnergyGaugeMgr", "Custom_Footprint", "Custom_ForbidLoadingPause", "Custom_GSysAndController", "Custom_GSysPauseMenu", "Custom_GSys", "Custom_GameBalance", "Custom_GameEffect", "Custom_LaunchParameterMgr", "Custom_LightBallBudMgr", "Custom_Logic", "Custom_NpcPhysicsProcOnReset", "Custom_PerceptionCalc", "Custom_PhysicsUpdateWorld", "Custom_PlayReportCount", "Custom_Player", "Custom_ReverseRecorder", "Custom_SceneDraw", "Custom_Sequence", "Custom_SkipDamageCalc", "Custom_SoundBgm", "Custom_SoundEnv", "Custom_SoundPauseAll", "Custom_SoundWorldExceptEnv", "Custom_SpecialPowerFilter", "Custom_StopCotrollerRumble", "Custom_StopSaveLiveToGameData", "Custom_TimerMgr", "Custom_UpdateBancResource", "Custom_WaitLoadForUI", "Custom_WorldMgrImm", "Custom_WorldMgr", "Dengu", "Ecpp", "Effect", "Error", "Event", "GameData", "Graphics", "LOD", "ProgramHotReload", "Reaction", "Resource", "Rumble", "Scene", "Tool", "UI", "Visualize", "XLink"];
 
@@ -511,7 +569,7 @@
 
             return html`
                 <div class="pausehacks">
-                    Pause:
+                    PauseMgr
                     <label title="pause::doTextWriter(checked)" class="faketoggle doTextWriter" for="pause_doTextWriter">
                         <input type="checkbox" id="pause_doTextWriter" checked=${state.doTextWriter} onChange=${ e => this.do_send_toggle("doTextWriter") } />
                         <span class="fakebutton pushbutton">txt</span>
@@ -522,7 +580,7 @@
                     </label>
                     <br />
 
-                    <select ref=${this.pausenameref} onChange=${this.on_select_pause}>
+                    <select ref=${this.pausenameref} onChange=${this.on_select_pause} style="width: 200px;">
                         <optgroup label="PauseRequest">
                         ${PauseHacks.PauseReqOptions}
                         </optgroup>
@@ -640,9 +698,18 @@
 
     class QuickDumps extends Component {
         // TODO display output somewhere?
+        constructor() {
+            super();
+            this.sleep_n = createRef();
+        }
         do_heapInfo() { AngelScript.exec("sys::heapInfo();"); }
         do_threadInfo() { AngelScript.exec("sys::threadInfo();"); }
         do_hookLimits() { AngelScript.exec("sys::hookLimits();"); }
+        doSleep() {
+            // this isnt important enough for main tas/frameadvance/etc ui so it goes here for now
+            const frame_n = this.sleep_n.current.value || 1;
+            AngelScript.exec(`tas::sleep(${frame_n});`);
+        }
         render(props, state) {
             return html`
                 <div class="quickdumps">
@@ -650,6 +717,7 @@
                     <button title="sys::heapInfo()" onClick=${ () => this.do_heapInfo() } class="pushbutton">heaps</button>
                     <button title="sys::threadInfo()" onClick=${ () => this.do_threadInfo() } class="pushbutton">threads</button>
                     <button title="sys::hookLimits()" onClick=${ () => this.do_hookLimits() } class="pushbutton">hooks</button>
+                    <button class="pushbutton hover_hasargs" title="tas::sleep(n);" onClick=${() => this.doSleep() }>sleep(</button><input class="hover_isarg" style="width: 48px" type="number" placeholder="1" size="2" min="1" step="any" ref=${this.sleep_n} /><span class="hover_isarg">)</span>
                 </div>
             `;
         }
@@ -675,12 +743,14 @@
         }
 
         do_exec() {
-            let script_text = this.script_text_ref.current.value;
-            if (this.use_implicit_main_ref.current.checked) {
-                AngelScript.exec(script_text, AngelScript.TAS_MODULE_USER_REPL); // snippet
-            } else {
-                WSTransport.send({execScriptString: script_text, execScriptModule: AngelScript.TAS_MODULE_USER_REPL});
-            }
+            const script_text = this.script_text_ref.current.value;
+            const main = this.use_implicit_main_ref.current.checked;
+
+            WSTransport.send({
+                execScriptString: main ? AngelScript.wrap_implicit_main(script_text) : script_text,
+                execScriptModule: AngelScript.TAS_MODULE_USER_REPL,
+                skipDebugPause: true, // block on DebugPause
+            });
         }
 
         do_tas_upload_filename() {
@@ -829,6 +899,7 @@
                     <label title="Automatically wrap input into void main() {...} entry point" for="execscript_use_implicit_main">main:</label>
                     <input type="checkbox" id="execscript_use_implicit_main" ref=${this.use_implicit_main_ref} checked />
 
+                    <${FrameAdvance} />
                     <span style="float: right; display: ${nsoDisplay};">
                         <label title="⚠️update subsdk9 (drop onto button)" for="subsdkupload"> nso: </label>
                         <input type="file" title="WSTransport.send({persistFileBinary, persistFileName})" onChange=${this.on_drop_terrifying_subsdk9_upload} class="pushbutton hint_destructive_hover" style="width:32px;" id="subsdkupload" />

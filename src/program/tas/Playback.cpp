@@ -4,6 +4,7 @@
 #include "script/schedule.hpp"
 #include "structs/VFRMgr.hpp"
 #include "util/hash.hpp"
+#include "util/pause.hpp"
 #include "TextWriter.hpp"
 #include "Logger.hpp"
 using Logger = lotuskit::Logger;
@@ -128,6 +129,10 @@ namespace lotuskit::tas::Playback {
         lotuskit::script::schedule::tas::isPlaybackActive = true;
         lotuskit::script::schedule::tas::trySuspendCtx(); // yield execution from script back to game
     }
+    void doSkipDebugPause(bool v) {
+        auto& state = lotuskit::script::schedule::tas::getSP()->state;
+        state.skipDebugPause = v;
+    }
     void doSkipLoadingPause(bool v) {
         auto& state = lotuskit::script::schedule::tas::getSP()->state;
         state.skipLoadingPause = v;
@@ -222,6 +227,43 @@ namespace lotuskit::tas::Playback {
         auto v = sead::Vector3f{0, 0, 0};
         auto m = sead::Matrix33f{0,0,0, 0,0,0, 0,0,0};
         setCurrentGyroAll(v, v, v, m);
+    }
+
+    void beginFrameAdvance() {
+        //lotuskit::TextWriter::toastf(30, "beginFrameAdvance(%d)\n", 420); // XXX
+
+        if (!lotuskit::script::schedule::tas::isFrameAdvance) {
+            lotuskit::script::schedule::tas::isFrameAdvance = true;
+            lotuskit::script::schedule::tas::bypassDebugPause60 = 0;
+        }
+        if (!lotuskit::util::pause::isPauseRequestStr("DebugPause")) {
+            lotuskit::util::pause::requestPauseStr("DebugPause");
+        }
+    }
+
+    void stepFrameAdvance(u32 duration) {
+        //lotuskit::TextWriter::toastf(30, "stepFrameAdvance(%d)\n", duration); // XXX
+
+        u32 duration60 = 0;
+        if (config::inputMode == config::InputDurationScalingStrategy::FPS60_1X) {
+            duration60 = duration;
+        } else if (config::inputMode == config::InputDurationScalingStrategy::FPS30_2X) {
+            duration60 = duration * 2;
+        } else if (config::inputMode == config::InputDurationScalingStrategy::FPS20_3X) {
+            duration60 = duration * 3;
+        }
+        if (!lotuskit::script::schedule::tas::isFrameAdvance) {
+            beginFrameAdvance();
+        }
+        lotuskit::script::schedule::tas::bypassDebugPause60 += duration60;
+    }
+
+    void endFrameAdvance() {
+        //lotuskit::TextWriter::toastf(30, "endFrameAdvance(%d)\n", 420); // XXX
+
+        lotuskit::util::pause::releasePauseStr("DebugPause"); // XXX might be easier to just force 0 and 1 instead of inc/dec
+        lotuskit::script::schedule::tas::bypassDebugPause60 = 0;
+        lotuskit::script::schedule::tas::isFrameAdvance = false;
     }
 
     void drawTextWriterModeLine() {

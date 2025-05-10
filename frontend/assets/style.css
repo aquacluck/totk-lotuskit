@@ -96,6 +96,17 @@ input, button, select, textarea, dialog, .fakebutton {
             font-size: 0.85rem;
         }
     }
+    &.hint_controller_corner {
+        position: relative;
+        &::after {
+            position: absolute;
+            content: '🎮︎';
+            bottom: 2px;
+            right: -1px;
+            font-size: 0.85rem;
+            color: hsl(var(--hue-recommended) 45% 80%);
+        }
+    }
     &.hint_eye_corner {
         position: relative;
         &::after {
@@ -274,7 +285,7 @@ textarea {
 
 .toolset_rightbar {
     position: absolute;
-    height: 490px; /* FIXME trash layout -- visually holds the group before execscript and everything after just spills out */
+    height: 490px; /* FIXME trash layout -- height manually adjusted to draw border around dense cluster toolset */
     padding: 8px;
     background: #000;
     border: 1px solid #444;
@@ -287,20 +298,15 @@ textarea {
     'camerahacks camerahacks'
     'hexdump hexdump'
     'memsearch quickdumps'
-    'execscript execscript'
     'execscript execscript';
 }
 .toolset_rightbar > .camerahacks { grid-area: camerahacks; }
 .toolset_rightbar > .pausehacks { grid-area: pausehacks; }
 .toolset_rightbar > .hexdump { grid-area: hexdump; }
 .toolset_rightbar > .memsearch { grid-area: memsearch; }
-.toolset_rightbar > .execscript { grid-area: execscript; }
-.toolset_rightbar > .execscript {
-    /* XXX distinct region but we dont really know the height */
-    margin-top: 20px;
-    background: #000;
-    height: 300px;
-}
+.toolset_rightbar > .quickdumps { grid-area: quickdumps; }
+/* TODO split rightbar into ^ dense cluster toolset and v AS toolset */
+.toolset_rightbar > .execscript   { grid-area:   execscript; background: #000; margin-top: 20px; }
 
 
 .toolset_quickcorner {

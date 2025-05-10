@@ -25,6 +25,7 @@ namespace lotuskit::tas::Playback {
     void doScheduleAwaitUnpauseRequestStr(const std::string& requestKey);
     void doScheduleAwaitPauseTargetStr(const std::string& targetKey);
     void doScheduleAwaitUnpauseTargetStr(const std::string& targetKey);
+    void doSkipDebugPause(bool);
     void doSkipLoadingPause(bool);
 
     // script binds for: current input
@@ -40,6 +41,18 @@ namespace lotuskit::tas::Playback {
     void setCurrentGyroRotation(const sead::Matrix33f& rotation);
     void setCurrentGyroAll(const sead::Vector3f& linearAcceleration, const sead::Vector3f& angularVelocity, const sead::Vector3f& angularVelocitySum, const sead::Matrix33f& rotation);
     void setCurrentGyroAllZero();
+
+    // XXX distinguish human steps from scripted steps:
+    //     scripts should be able to consume frametime even in DebugPause if they want, for demo or automated inspection.
+    //     ~~Then other use cases involve manually stepping through the script to watch it run slowly,~~
+    //         ^ or script yields into DebugPause, then user can mess around and resume it. Actually stepping through a script would make scheduling complicated.
+    //     then simplest use case is actually recording or just checking out manual inputs frame by frame.
+    //         ^ this can be the mode scripts yield into. idk what the resume function/mechanism should look like... just endFrameAdvance()? then sp returns, then sp-1 should be scheduled to resume?
+
+    // script binds for: stepping through an existing script (this sp = interrupt ctx with skipDebugPause, <sp = script to step through)
+    void beginFrameAdvance();
+    void stepFrameAdvance(u32 duration=1);
+    void endFrameAdvance();
 
     // internal/utility
     void drawTextWriterModeLine();
