@@ -338,6 +338,7 @@ namespace lotuskit::script::globals {
     std::string actor_name_get(::engine::actor::ActorBase* actor) { return actor->mActorName.cstr(); }
     sead::Matrix33f actor_rot_get(::engine::actor::ActorBase* actor) { return actor->mRotation; }
     sead::Matrix34f actor_posrot_get(::engine::actor::ActorBase* actor) { return sead::Matrix34f{actor->mRotation, actor->mPosition}; }
+    sead::Vector3f actor_vel_get(::engine::actor::ActorBase* actor) { return actor->mLastLinearVelocity; }
 
     void tas_input_vec2f_l(u32 duration, u64 nextButtons, const sead::Vector2f &nextLStick) {
         lotuskit::tas::Playback::setCurrentInput(duration, nextButtons, nextLStick.x, nextLStick.y, 0, 0);
@@ -1162,6 +1163,8 @@ namespace lotuskit::script::globals {
             asErrno = engine->RegisterObjectMethod("ActorBase", "void setPosRot(float, float, float, float, float, float, float, float, float, float, float, float)", AngelScript::asFUNCTION(lotuskit::util::actor::setPosRot39), AngelScript::asCALL_CDECL_OBJFIRST); assert(asErrno >= 0);
             asErrno = engine->RegisterObjectMethod("ActorBase", "void setPosRot(const Vector3f &in, const Matrix33f &in)", AngelScript::asFUNCTION(lotuskit::util::actor::setPosRot), AngelScript::asCALL_CDECL_OBJFIRST); assert(asErrno >= 0);
             asErrno = engine->RegisterObjectMethod("ActorBase", "void setPosRot(const Matrix34f &in)", AngelScript::asFUNCTION(lotuskit::util::actor::setPosRot34), AngelScript::asCALL_CDECL_OBJFIRST); assert(asErrno >= 0);
+
+            asErrno = engine->RegisterObjectMethod("ActorBase", "Vector3f get_vel() property", AngelScript::asFUNCTION(actor_vel_get), AngelScript::asCALL_CDECL_OBJFIRST); assert(asErrno >= 0);
 
             asErrno = engine->RegisterObjectMethod("ActorBase", "BoundBox3f getAABB()", AngelScript::asFUNCTION(actor_aabb_get), AngelScript::asCALL_CDECL_OBJFIRST); assert(asErrno >= 0);
             asErrno = engine->RegisterObjectMethod("ActorBase", "string getName()", AngelScript::asFUNCTION(actor_name_get), AngelScript::asCALL_CDECL_OBJFIRST); assert(asErrno >= 0);
