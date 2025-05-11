@@ -24,6 +24,7 @@ namespace lotuskit::util::actor {
     void setRot9(ActorBase* actor, float m00, float m01, float m02, float m10, float m11, float m12, float m20, float m21, float m22);
     void setPosRot39(ActorBase* actor, float x, float y, float z, float m00, float m01, float m02, float m10, float m11, float m12, float m20, float m21, float m22);
     void setPosRot(ActorBase* actor, const sead::Vector3f &pos, const sead::Matrix33f &rot);
+    void setPosRot34(ActorBase* actor, const sead::Matrix34f &posrot);
 
     phive::RigidBodyEntity* getMainRigidBody(ActorBase* actor);
     phive::RigidBodyEntity* getRigidBodyByName(ActorBase* actor, const std::string& name);

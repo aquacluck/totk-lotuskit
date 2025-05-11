@@ -337,6 +337,7 @@ namespace lotuskit::script::globals {
     sead::BoundBox3f actor_aabb_get(::engine::actor::ActorBase* actor) { return actor->mAABB; }
     std::string actor_name_get(::engine::actor::ActorBase* actor) { return actor->mActorName.cstr(); }
     sead::Matrix33f actor_rot_get(::engine::actor::ActorBase* actor) { return actor->mRotation; }
+    sead::Matrix34f actor_posrot_get(::engine::actor::ActorBase* actor) { return sead::Matrix34f{actor->mRotation, actor->mPosition}; }
 
     void tas_input_vec2f_l(u32 duration, u64 nextButtons, const sead::Vector2f &nextLStick) {
         lotuskit::tas::Playback::setCurrentInput(duration, nextButtons, nextLStick.x, nextLStick.y, 0, 0);
@@ -425,10 +426,7 @@ namespace lotuskit::script::globals {
         m.a[8] = rot.m[2][0]; m.a[9] = rot.m[2][1]; m.a[10] = rot.m[2][2];
     }
     void matrix34f_posrot_set(sead::Matrix34f &m, const sead::Vector3f &pos, const sead::Matrix33f &rot) {
-        m.a[3] = pos.x; m.a[7] = pos.y; m.a[11] = pos.z;
-        m.a[0] = rot.m[0][0]; m.a[1] = rot.m[0][1]; m.a[ 2] = rot.m[0][2];
-        m.a[4] = rot.m[1][0]; m.a[5] = rot.m[1][1]; m.a[ 6] = rot.m[1][2];
-        m.a[8] = rot.m[2][0]; m.a[9] = rot.m[2][1]; m.a[10] = rot.m[2][2];
+        m = sead::Matrix34f{rot, pos};
     }
 
     void Matrix44fConstructor(sead::Matrix44f *self) { new(self) sead::Matrix44f(); }
@@ -1157,11 +1155,13 @@ namespace lotuskit::script::globals {
             asErrno = engine->RegisterObjectMethod("ActorBase", "void setPos(float, float, float)", AngelScript::asFUNCTION(lotuskit::util::actor::setPosXYZ), AngelScript::asCALL_CDECL_OBJFIRST); assert(asErrno >= 0);
 
             asErrno = engine->RegisterObjectMethod("ActorBase", "Matrix33f get_rot() property", AngelScript::asFUNCTION(actor_rot_get), AngelScript::asCALL_CDECL_OBJFIRST); assert(asErrno >= 0);
+            asErrno = engine->RegisterObjectMethod("ActorBase", "Matrix34f get_posRot() property", AngelScript::asFUNCTION(actor_posrot_get), AngelScript::asCALL_CDECL_OBJFIRST); assert(asErrno >= 0);
             asErrno = engine->RegisterObjectMethod("ActorBase", "void set_rot(const Matrix33f &in) property", AngelScript::asFUNCTION(lotuskit::util::actor::setRot), AngelScript::asCALL_CDECL_OBJFIRST); assert(asErrno >= 0);
             asErrno = engine->RegisterObjectMethod("ActorBase", "void setRot(float, float, float, float, float, float, float, float, float)", AngelScript::asFUNCTION(lotuskit::util::actor::setRot9), AngelScript::asCALL_CDECL_OBJFIRST); assert(asErrno >= 0);
             asErrno = engine->RegisterObjectMethod("ActorBase", "void setRot(const Matrix33f &in)", AngelScript::asFUNCTION(lotuskit::util::actor::setRot), AngelScript::asCALL_CDECL_OBJFIRST); assert(asErrno >= 0);
             asErrno = engine->RegisterObjectMethod("ActorBase", "void setPosRot(float, float, float, float, float, float, float, float, float, float, float, float)", AngelScript::asFUNCTION(lotuskit::util::actor::setPosRot39), AngelScript::asCALL_CDECL_OBJFIRST); assert(asErrno >= 0);
             asErrno = engine->RegisterObjectMethod("ActorBase", "void setPosRot(const Vector3f &in, const Matrix33f &in)", AngelScript::asFUNCTION(lotuskit::util::actor::setPosRot), AngelScript::asCALL_CDECL_OBJFIRST); assert(asErrno >= 0);
+            asErrno = engine->RegisterObjectMethod("ActorBase", "void setPosRot(const Matrix34f &in)", AngelScript::asFUNCTION(lotuskit::util::actor::setPosRot34), AngelScript::asCALL_CDECL_OBJFIRST); assert(asErrno >= 0);
 
             asErrno = engine->RegisterObjectMethod("ActorBase", "BoundBox3f getAABB()", AngelScript::asFUNCTION(actor_aabb_get), AngelScript::asCALL_CDECL_OBJFIRST); assert(asErrno >= 0);
             asErrno = engine->RegisterObjectMethod("ActorBase", "string getName()", AngelScript::asFUNCTION(actor_name_get), AngelScript::asCALL_CDECL_OBJFIRST); assert(asErrno >= 0);
