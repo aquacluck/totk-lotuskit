@@ -186,7 +186,7 @@ namespace lotuskit {
             return slots[i].actor;
         }
 
-        // config
+        // slot config
         inline static void doTextWriter(size_t i, bool val) {
             slots[i].doTextWriter = val;
             slots[i].wsAnnounceConfig(i);
@@ -238,6 +238,14 @@ namespace lotuskit {
         inline static void doDrawRigidBodyPosFuture(size_t i, u64 val) {
             slots[i].doDrawRigidBodyPosFuture = val;
             slots[i].wsAnnounceConfig(i);
+        }
+
+        // global config
+        inline static size_t doTextWriterDelta_target = 0;
+        inline static size_t doTextWriterDelta_ref = 0;
+        inline static void doTextWriterDelta_set(size_t ref, size_t target) {
+            doTextWriterDelta_target = target;
+            doTextWriterDelta_ref = ref;
         }
 
         inline static void resolveRecallHighlight(engine::actor::ActorBase *actor) {
@@ -552,6 +560,26 @@ namespace lotuskit {
                 lotuskit::TextWriter::printf(0, "\n");
 
             } // foreach slot
+
+            if (doTextWriterDelta_ref != doTextWriterDelta_target) {
+                auto* ref = getSlotActor(doTextWriterDelta_ref);
+                auto* target = getSlotActor(doTextWriterDelta_target);
+                if (ref == nullptr || target == nullptr) { return; }
+
+                // calc delta between slot actors
+                sead::Vector3f dpos = target->mPosition - ref->mPosition;
+                sead::Vector3f dvel = target->mLastLinearVelocity - ref->mLastLinearVelocity;
+
+                #define FF(f) (f == 1 ? "1" : (f == -1 ? "-1" : (fabs(f) < 0.000001 ? "0" : std::format("{:.6f}", f))))
+                auto pos_str = std::format("{}, {}, {}", FF(dpos.x), FF(dpos.y), FF(dpos.z));
+                auto vel_str = std::format("{}, {}, {}  |xz|={}", FF(dvel.x), FF(dvel.y), FF(dvel.z), FF(std::sqrt(dvel.x*dvel.x + dvel.z*dvel.z)));
+                lotuskit::TextWriter::printf(
+                    0, "AWDelta(%d,%d)\ndpos: %s\ndvel: %s\n\n",
+                    doTextWriterDelta_ref, doTextWriterDelta_target, pos_str.c_str(), vel_str.c_str()
+                );
+                #undef FF
+            }
+
         } // calc
     }; // ActorWatcher
 } // ns

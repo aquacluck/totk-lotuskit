@@ -1207,6 +1207,7 @@ namespace lotuskit::script::globals {
 
             // config
             asErrno = engine->RegisterGlobalFunction("void doTextWriter(index_t, bool)", AngelScript::asFUNCTION(lotuskit::ActorWatcher::doTextWriter), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+            asErrno = engine->RegisterGlobalFunction("void doTextWriterDelta(index_t, index_t)", AngelScript::asFUNCTION(lotuskit::ActorWatcher::doTextWriterDelta_set), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
             asErrno = engine->RegisterGlobalFunction("void doWSLog(index_t, bool)", AngelScript::asFUNCTION(lotuskit::ActorWatcher::doWSLog), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
 
             asErrno = engine->RegisterGlobalFunction("void doDrawAABB(index_t, bool)", AngelScript::asFUNCTION(lotuskit::ActorWatcher::doDrawAABB), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
