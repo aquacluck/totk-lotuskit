@@ -456,6 +456,7 @@ namespace lotuskit::script::schedule::tas {
             auto* sp = &moduleStack[i];
             if (sp->asCtx) { sp->asCtx->Abort(); sp->asCtx->Unprepare(); } // clear all contexts
             if (sp->asModule) { sp->asModule->Discard(); sp->asModule = nullptr; } // free all modules
+            // FIXME sometimes stale module still gets looked up by name after this? or some stale/cachelike issue, after AS compilation error
         }
         moduleStackIndex = 0;
         isPlaybackActive = false;

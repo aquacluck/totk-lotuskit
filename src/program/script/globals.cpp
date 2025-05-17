@@ -828,6 +828,24 @@ namespace lotuskit::script::globals {
             asErrno = engine->RegisterEnumValue("nxTASButton", "KEY_DDOWN", (1 << 15)); assert(asErrno >= 0);
             asErrno = engine->RegisterEnumValue("nxTASButton", "KEY_LSTICK", (1 << 4)); assert(asErrno >= 0);
             asErrno = engine->RegisterEnumValue("nxTASButton", "KEY_RSTICK", (1 << 5)); assert(asErrno >= 0);
+            // short ones too, typing is pain
+            asErrno = engine->RegisterEnum("Button"); assert(asErrno >= 0);
+            asErrno = engine->RegisterEnumValue("Button", "A", (1 << 0)); assert(asErrno >= 0);
+            asErrno = engine->RegisterEnumValue("Button", "B", (1 << 1)); assert(asErrno >= 0);
+            asErrno = engine->RegisterEnumValue("Button", "X", (1 << 2)); assert(asErrno >= 0);
+            asErrno = engine->RegisterEnumValue("Button", "Y", (1 << 3)); assert(asErrno >= 0);
+            asErrno = engine->RegisterEnumValue("Button", "L", (1 << 6)); assert(asErrno >= 0);
+            asErrno = engine->RegisterEnumValue("Button", "R", (1 << 7)); assert(asErrno >= 0);
+            asErrno = engine->RegisterEnumValue("Button", "ZL", (1 << 8)); assert(asErrno >= 0);
+            asErrno = engine->RegisterEnumValue("Button", "ZR", (1 << 9)); assert(asErrno >= 0);
+            asErrno = engine->RegisterEnumValue("Button", "PLUS", (1 << 10)); assert(asErrno >= 0);
+            asErrno = engine->RegisterEnumValue("Button", "MINUS", (1 << 11)); assert(asErrno >= 0);
+            asErrno = engine->RegisterEnumValue("Button", "DLEFT", (1 << 12)); assert(asErrno >= 0);
+            asErrno = engine->RegisterEnumValue("Button", "DUP", (1 << 13)); assert(asErrno >= 0);
+            asErrno = engine->RegisterEnumValue("Button", "DRIGHT", (1 << 14)); assert(asErrno >= 0);
+            asErrno = engine->RegisterEnumValue("Button", "DDOWN", (1 << 15)); assert(asErrno >= 0);
+            asErrno = engine->RegisterEnumValue("Button", "LSTICK", (1 << 4)); assert(asErrno >= 0);
+            asErrno = engine->RegisterEnumValue("Button", "RSTICK", (1 << 5)); assert(asErrno >= 0);
 
             asErrno = engine->RegisterGlobalProperty("const Vector2f STICK_ZERO", &Vector2fStatic::STICK_ZERO); assert(asErrno >= 0);
             asErrno = engine->RegisterGlobalProperty("const Vector2f STICK_UP_MAX", &Vector2fStatic::STICK_UP_MAX); assert(asErrno >= 0);
@@ -838,6 +856,40 @@ namespace lotuskit::script::globals {
             asErrno = engine->RegisterGlobalProperty("const Vector2f STICK_LEFT", &Vector2fStatic::STICK_LEFT_DIR); assert(asErrno >= 0);
             asErrno = engine->RegisterGlobalProperty("const Vector2f STICK_RIGHT_MAX", &Vector2fStatic::STICK_RIGHT_MAX); assert(asErrno >= 0);
             asErrno = engine->RegisterGlobalProperty("const Vector2f STICK_RIGHT", &Vector2fStatic::STICK_RIGHT_DIR); assert(asErrno >= 0);
+
+            // HACK for convenience dupe tas input+sleep into root ns (`tas::` is too much for the single most common line, "use using" too cryptic)
+            asErrno = engine->RegisterGlobalFunction(
+                "void input(u32 duration=1, u64 nextButtons=0, s32 nextLStickX=0, s32 nextLStickY=0, s32 nextRStickX=0, s32 nextRStickY=0)",
+                AngelScript::asFUNCTION(lotuskit::tas::Playback::setCurrentInput),
+                AngelScript::asCALL_CDECL
+            ); assert( asErrno >= 0 );
+            asErrno = engine->RegisterGlobalFunction(
+                // note these floats still use s32 units, not 0...1! There's no Vector2i binding yet and this seems simpler anyways
+                "void input(u32 duration, u64 nextButtons, const Vector2f &in)",
+                AngelScript::asFUNCTION(tas_input_vec2f_l),
+                AngelScript::asCALL_CDECL
+            ); assert( asErrno >= 0 );
+            asErrno = engine->RegisterGlobalFunction(
+                "void input(u32 duration, u64 nextButtons, const Vector2f &in, const Vector2f &in)",
+                AngelScript::asFUNCTION(tas_input_vec2f_lr),
+                AngelScript::asCALL_CDECL
+            ); assert( asErrno >= 0 );
+            asErrno = engine->RegisterGlobalFunction(
+                "void input(u32 duration, const Vector2f &in)",
+                AngelScript::asFUNCTION(tas_input_vec2f_0l),
+                AngelScript::asCALL_CDECL
+            ); assert( asErrno >= 0 );
+            asErrno = engine->RegisterGlobalFunction(
+                "void input(u32 duration, const Vector2f &in, const Vector2f &in)",
+                AngelScript::asFUNCTION(tas_input_vec2f_0lr),
+                AngelScript::asCALL_CDECL
+            ); assert( asErrno >= 0 );
+            // schedule frames for tas script to wait, passing through human input verbatim
+            asErrno = engine->RegisterGlobalFunction(
+                "void sleep(u32 duration=1)",
+                AngelScript::asFUNCTION(lotuskit::tas::Playback::setSleepInput),
+                AngelScript::asCALL_CDECL
+            ); assert( asErrno >= 0 );
         /// }
 
         engine->SetDefaultNamespace("tas"); /// {
