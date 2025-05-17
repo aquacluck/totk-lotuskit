@@ -333,10 +333,39 @@ namespace lotuskit::util::player {
         }
     };
 
+    HOOK_DEFINE_TRAMPOLINE(StaminaCalculatorCalcRecoveryHook) {
+        static constexpr auto s_name = "game::player::StaminaCalculator::calcRecovery";
+        static void Callback(game::player::StaminaCalculator* self, void* idk1, u32 idk2_maybe_receiver_signature_flag) {
+            if (doTextWriterStaminaCalculator) {
+                lotuskit::TextWriter::printf(0, "StaminaCalculator(%p), stamina(%f), freeze(%f), flags(%02x), amount(%f), time(%f)\n",
+                    self, self->mStamina, freezeStaminaRecoveryAmount, self->mFlags, self->mStaminaRecoverAmount, self->mNoRecoveryTimer.mTime);
+            }
+
+            if (freezeStaminaExhaustionMode) {
+                self->mStaminaRecoverAmount = 0;
+                self->mFlags = 1; // always exhausted?
+                self->mNoRecoveryTimer.mTime = 2; // never recover
+
+            } else if (freezeStaminaRecoveryAmount > 0) {
+                self->mStaminaRecoverAmount = freezeStaminaRecoveryAmount;
+                self->mFlags = 0; // never exhausted?
+                self->mNoRecoveryTimer.mTime = 0; // always recover asap (recovery can still be blocked by climbing+idk)
+
+            } else if (freezeStaminaRecoveryAmount < 0) {
+                self->mStaminaRecoverAmount = 0;
+                // nop wrt exhaustion
+                self->mNoRecoveryTimer.mTime = 2; // never recover
+            }
+
+            Orig(self, idk1, idk2_maybe_receiver_signature_flag);
+        }
+    };
+
     void InstallHooks() {
         ExecutePlayerCalcStick_CameraHook::Install();
         ExecutePlayerCalcStick_WriteLeftStickRadianCameraStandardHook::Install();
         //MovementDebugHooks::Install();
+        StaminaCalculatorCalcRecoveryHook::Install();
     }
 
     game::component::PlayerComponent* getPlayerComponent() {
@@ -349,7 +378,7 @@ namespace lotuskit::util::player {
     /*
     // XXX same problem as doing this on Player's RigidBody -- doesn't reliably apply/hold
     void setLinearVelocity(sead::Vector3f* vel) {
-        auto pc = getPlayerComponent();
+        auto* pc = getPlayerComponent();
         if (pc == nullptr) { return; }
         u64 doScale30 = 0;
 
@@ -363,6 +392,17 @@ namespace lotuskit::util::player {
     }
     */
 
+    float getStamina() {
+        auto* pc = getPlayerComponent();
+        if (pc == nullptr) { return 0; }
+        return pc->mStaminaCalculator.mStamina;
+    }
+    void setStamina(float stam) {
+        auto* pc = getPlayerComponent();
+        if (pc == nullptr) { return; }
+        pc->mStaminaCalculator.mStamina = stam;
+        pc->mStaminaCalculator.mStaminaInternal = stam; // XXX wut do
+    }
 
 } // ns
 

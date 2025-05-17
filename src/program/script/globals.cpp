@@ -1327,6 +1327,13 @@ namespace lotuskit::script::globals {
         //asErrno = engine->RegisterGlobalFunction("void disableGloom(bool)", AngelScript::asFUNCTION(lotuskit::util::player::disableGloom), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
         //asErrno = engine->RegisterGlobalFunction("void setVel(const Vector3f &in)", AngelScript::asFUNCTION(lotuskit::util::player::setLinearVelocity), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
         //asErrno = engine->RegisterGlobalFunction("void setVel(float, float, float)", AngelScript::asFUNCTION(lotuskit::util::player::setLinearVelocityXYZ), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+
+        asErrno = engine->RegisterGlobalFunction("float getStamina()", AngelScript::asFUNCTION(lotuskit::util::player::getStamina), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void setStamina(float)", AngelScript::asFUNCTION(lotuskit::util::player::setStamina), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void freezeStaminaRecovery(float)", AngelScript::asFUNCTION(lotuskit::util::player::freezeStaminaRecovery), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void freezeStaminaExhaustion(bool)", AngelScript::asFUNCTION(lotuskit::util::player::freezeStaminaExhaustion), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void doTextWriterStaminaCalculator(bool)", AngelScript::asFUNCTION(lotuskit::util::player::doTextWriterStaminaCalculator_set), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+
     }
 
     void registerWorldUtil(AngelScript::asIScriptEngine* engine) {

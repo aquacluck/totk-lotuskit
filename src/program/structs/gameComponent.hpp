@@ -7,12 +7,12 @@
 #include "structs/engineComponent.hpp"
 #include "structs/engineTransceiver.hpp"
 #include "structs/engineUtil.hpp"
+#include "structs/gamePlayer.hpp"
 
 namespace pp { class Document; }
 namespace game::actor { class GameActor; } // TODO
 
 namespace game::player { class ASCommandSet_STUB      { public: u8 idk[0xd0]; }; }
-namespace game::player { class StaminaCalculator_STUB { public: u8 idk[0x80]; }; }
 namespace engine::util { class Callback_STUB          { public: u8 idk[0x38]; }; }
 namespace sead         { class IFunction_STUB         { public: void* vtbl; void* mpParent; void* func; u64 virtual_flags; }; }
 
@@ -455,7 +455,7 @@ namespace game::component {
         undefined field406_0x1385;
         undefined field407_0x1386;
         undefined field408_0x1387;
-        game::player::StaminaCalculator_STUB mStaminaCalculator;
+        game::player::StaminaCalculator mStaminaCalculator;
         undefined8 field410_0x1408;
         undefined8 field411_0x1410;
         undefined8 field412_0x1418;

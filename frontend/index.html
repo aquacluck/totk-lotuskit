@@ -598,6 +598,25 @@
         }
     };
 
+    class StaminaHacks extends Component {
+        do_freeze_vanilla() { AngelScript.exec(`PlayerUtil::freezeStaminaExhaustion(false); PlayerUtil::freezeStaminaRecovery(0);`); }
+        do_freeze_recover() { AngelScript.exec(`PlayerUtil::freezeStaminaRecovery(30000);`); }
+        do_freeze_exhaust() { AngelScript.exec(`PlayerUtil::freezeStaminaExhaustion(true);`); }
+        do_freeze_norecover() { AngelScript.exec(`PlayerUtil::freezeStaminaRecovery(-1);`); }
+
+        render(props, state) {
+            return html`
+                <div class="staminahacks" style="margin-left: 40px;">
+                    Stam
+                    <button title="/* reset/default */ PlayerUtil::freezeStaminaExhaustion(false); PlayerUtil::freezeStaminaRecovery(0);" onClick=${() => this.do_freeze_vanilla() } class="pushbutton hint_recommended_hover"><img src="assets/img/stamina_normal.png" /></button>
+                    <button title="PlayerUtil::freezeStaminaRecovery(30000); // always fast recover" onClick=${() => this.do_freeze_recover() } class="pushbutton"><img src="assets/img/stamina_extra.png" /></button>
+                    <button title="PlayerUtil::freezeStaminaExhaustion(true); // always exhausted" onClick=${() => this.do_freeze_exhaust() } class="pushbutton"><img src="assets/img/stamina_red.png" /></button>
+                    <button title="PlayerUtil::freezeStaminaRecovery(-1); // never recover" onClick=${() => this.do_freeze_norecover() } class="pushbutton hint_snowflake_corner"><img src="assets/img/stamina_low.png" /></button>
+                </div>
+            `;
+        }
+    };
+
     class HexDumpSlot extends Component {
         constructor() {
             super();
@@ -882,7 +901,7 @@
                     ${sd_upload}
                     ${HACK_suppressHeightReflow}
 
-                    <textarea placeholder="[tas output]" ref=${this.tas_dump_ws_output_text_ref}></textarea>
+                    <textarea style="text-wrap: nowrap;" placeholder="[tas output]" ref=${this.tas_dump_ws_output_text_ref}></textarea>
             `;
         }
 
@@ -905,7 +924,7 @@
                         <input type="file" title="WSTransport.send({persistFileBinary, persistFileName})" onChange=${this.on_drop_terrifying_subsdk9_upload} class="pushbutton hint_destructive_hover" style="width:32px;" id="subsdkupload" />
                     </span>
                     <br/>
-                    <textarea style="margin-bottom: 8px;" class="as_source" placeholder='// check blue AS📖 button below for help \nPlayer.pos += 100*Vector3f::UP;\n\ntas::input(30, KEY_A|KEY_B, 32767,-32768, 0,0);\ntas::input(15, KEY_B, 0.5*STICK_UP_MAX /*, 8000*STICK_LEFT */);\n\nactor::createAndWatch( \n    1, "SpObj_LiftGeneratorWing_A_01", \n    Player.pos + 5*Vector3f::DOWN\n);\n\ntas::awaitExecFile("sdcard:/totk_lotuskit/autorun.as");' ref=${this.script_text_ref}></textarea>
+                    <textarea class="as_source" placeholder='// check blue AS📖 button below for help \nPlayer.pos += 100*Vector3f::UP;\n\ntas::input(30, KEY_A|KEY_B, 32767,-32768, 0,0);\ntas::input(15, KEY_B, 0.5*STICK_UP_MAX /*, 8000*STICK_LEFT */);\n\nactor::createAndWatch( \n    1, "SpObj_LiftGeneratorWing_A_01", \n    Player.pos + 5*Vector3f::DOWN\n);\n\ntas::awaitExecFile("sdcard:/totk_lotuskit/autorun.as");' ref=${this.script_text_ref}></textarea>
 
                     ${ this.renderTasDump(props, state) }
 
@@ -1077,7 +1096,7 @@
                     <div class="actor_selector_options">
                         Select:
                         <button title="ActorWatcher::clearSlot(${i})" onClick=${ () => this.clear_slot(i) } class="pushbutton hint_destructive_hover">null</button>
-                        <button title="ActorWatcher::assignSlotAwaitRecall(${i})" onClick=${ () => this.assignSlotAwaitRecall(i) } class="pushbutton selectRecall"><img src="assets/img/Obj_ReverseRecorder.png" /></button>
+                        <button title="ActorWatcher::assignSlotAwaitRecall(${i})" onClick=${ () => this.assignSlotAwaitRecall(i) } class="pushbutton"><img src="assets/img/Obj_ReverseRecorder.png" /></button>
                         <button title="ActorWatcher::assignSlotAwaitSpawn(${i}, string actorName); // optional filter by name" onClick=${ () => this.assignSlotAwaitSpawn(i) } class="pushbutton">spawn</button>
                         <button title="ActorWatcher::assignSlotAwaitBancEntityHash(${i}, u64 hash); // eg 0x07b4e71cd2536055" onClick=${ () => this.assignSlotAwaitBancEntityHash(i) } class="pushbutton">Banc</button>
                         <br/>
@@ -1715,6 +1734,7 @@
             <${ActorWatcher} slot_i=3 />
             <section class="toolset_rightbar">
                 <${PauseHacks} />
+                <${StaminaHacks} />
                 <${CameraHacks} />
                 <div class="hexdump" style="margin-top: 8px;">
                     HexDump
