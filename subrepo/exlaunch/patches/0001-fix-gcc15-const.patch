@@ -1,0 +1,20 @@
+diff --git a/subrepo/exlaunch/source/lib/patch/patcher_impl.hpp b/subrepo/exlaunch/source/lib/patch/patcher_impl.hpp
+index 42ae0a4..38a27b8 100644
+--- a/subrepo/exlaunch/source/lib/patch/patcher_impl.hpp
++++ b/subrepo/exlaunch/source/lib/patch/patcher_impl.hpp
+@@ -8,7 +8,7 @@
+ namespace exl::patch {
+ 
+     namespace impl {
+-        inline util::TypedStorage<const util::RwPages> s_Storage;
++        inline util::TypedStorage<util::RwPages> s_Storage;
+ 
+         [[gnu::const]] inline const util::RwPages& GetRwPages() { return util::GetReference(s_Storage); }
+ 
+@@ -45,4 +45,4 @@ namespace exl::patch {
+         inline ptrdiff_t AddrFromRoPointer(void* ptr) const { return AddrFromRo(reinterpret_cast<uintptr_t>(ptr)); }
+         inline ptrdiff_t AddrFromRwPointer(void* ptr) const { return AddrFromRw(reinterpret_cast<uintptr_t>(ptr)); }
+     };
+-}
+\ No newline at end of file
++}
