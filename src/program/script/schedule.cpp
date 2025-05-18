@@ -405,9 +405,13 @@ namespace lotuskit::script::schedule::tas {
         // build in new module
         mod = engine->GetModule(moduleName.c_str(), AngelScript::asGM_CREATE_IF_NOT_EXISTS);
         if (mod == nullptr) { return nullptr; } // XXX impossible err?
-        mod->AddScriptSection(sectionName.c_str(), scriptText.c_str());
+        mod->AddScriptSection(sectionName.c_str(), scriptText.c_str()); // XXX can this fail but still build ok? would leak empty module
         s32 asErrno = mod->Build(); // Build the module
-        if (asErrno < 0) { return nullptr; } // The build failed. The message stream will have received compiler errors that shows what needs to be fixed
+        if (asErrno < 0) {
+            // The build failed. The message stream will have received compiler errors that shows what needs to be fixed
+            mod->Discard(); // do not leave empty module present
+            return nullptr;
+        }
         return mod;
     }
 
@@ -456,7 +460,6 @@ namespace lotuskit::script::schedule::tas {
             auto* sp = &moduleStack[i];
             if (sp->asCtx) { sp->asCtx->Abort(); sp->asCtx->Unprepare(); } // clear all contexts
             if (sp->asModule) { sp->asModule->Discard(); sp->asModule = nullptr; } // free all modules
-            // FIXME sometimes stale module still gets looked up by name after this? or some stale/cachelike issue, after AS compilation error
         }
         moduleStackIndex = 0;
         isPlaybackActive = false;
