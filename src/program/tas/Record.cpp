@@ -1,12 +1,14 @@
 #include <string>
 #include <nn/util.h>
 #include "util/fs.hpp"
-#include "tas/config.hpp"
+#include "script/schedule.hpp"
 #include "tas/Record.hpp"
 #include "structs/VFRMgr.hpp"
 #include "Logger.hpp"
 #include "TextWriter.hpp"
 using Logger = lotuskit::Logger;
+using InputDurationScalingStrategy = lotuskit::script::schedule::tas::InputDurationScalingStrategy;
+
 
 namespace lotuskit::tas {
     RecordInput Record::currentInput = {0};
@@ -30,11 +32,11 @@ namespace lotuskit::tas {
         accumulatedRecord60 += deltaFrame60;
 
         u32 accumulatedRecordLogicalFrames; // derive for modeline:
-        if (config::inputMode == config::InputDurationScalingStrategy::FPS60_1X) {
+        if (inputFPSMode == InputDurationScalingStrategy::FPS60_1X) {
             accumulatedRecordLogicalFrames = accumulatedRecord60;
-        } else if (config::inputMode == config::InputDurationScalingStrategy::FPS30_2X) {
+        } else if (inputFPSMode == InputDurationScalingStrategy::FPS30_2X) {
             accumulatedRecordLogicalFrames = accumulatedRecord60 / 2;
-        } else if (config::inputMode == config::InputDurationScalingStrategy::FPS20_3X) {
+        } else if (inputFPSMode == InputDurationScalingStrategy::FPS20_3X) {
             accumulatedRecordLogicalFrames = accumulatedRecord60 / 3;
         } else { accumulatedRecordLogicalFrames = 0; } // err
 
@@ -121,13 +123,13 @@ namespace lotuskit::tas {
         // scale for assumed fps
         u32 outputDurationLogicalFrames = 0;
         u32 outputTimestampLogicalFrames = 0;
-        if (config::inputMode == config::InputDurationScalingStrategy::FPS60_1X) {
+        if (inputFPSMode == InputDurationScalingStrategy::FPS60_1X) {
             outputDurationLogicalFrames = outputDuration60;
             outputTimestampLogicalFrames = accumulatedRecord60;
-        } else if (config::inputMode == config::InputDurationScalingStrategy::FPS30_2X) {
+        } else if (inputFPSMode == InputDurationScalingStrategy::FPS30_2X) {
             outputDurationLogicalFrames = outputDuration60 / 2; // XXX do we want floor/ceil/??? for odds
             outputTimestampLogicalFrames = accumulatedRecord60 / 2;
-        } else if (config::inputMode == config::InputDurationScalingStrategy::FPS20_3X) {
+        } else if (inputFPSMode == InputDurationScalingStrategy::FPS20_3X) {
             outputDurationLogicalFrames = outputDuration60 / 3; // XXX what if not divisible by 3?
             outputTimestampLogicalFrames = accumulatedRecord60 / 3;
         } else return;

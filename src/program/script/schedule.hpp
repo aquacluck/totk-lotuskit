@@ -11,6 +11,20 @@ namespace lotuskit::script::schedule::tas {
     // split+nested across many files within a single logical flow of execution.
     // (This state and control flow do not apply to (tbd) exl hook scripts, only tas scripts.)
 
+    enum class InputDurationScalingStrategy {
+        // how inputs should be dumped, or how playback commands should be interpreted
+        FPS60_1X = 1, // awkward but 1:1: count in raw 30fps half-frames
+        FPS30_2X = 2, // default: 1 frame = 30fps intended
+        FPS20_3X = 3, // awkward and useless? assume we're pegged at 20fps and this is the new normal
+    };
+
+    enum class PlaybackInputPassthroughMode {
+        NULL_VANILLA = 0,      // full passthrough ("sleep" or human only)
+        PLAYBACK_TAS_ONLY = 1, // input supplied verbatim by tas
+        PASSTHROUGH_OR = 2,    // human inputs added to tas inputs: human may add buttons or alter axes
+        PASSTHROUGH_XOR = 3,   // human inputs invert tas inputs: human may toggle buttons or cancel out axes
+    };
+
     // global scheduling state
     inline u32 elapsedPlayback60 = 0; // 30fps half-frames elapsed this script execution (based on counting)
     inline u32 bypassDebugPause60 = 0; // frames to step ahead in tas playback, overriding normal pause scheduling
@@ -35,8 +49,8 @@ namespace lotuskit::script::schedule::tas {
         bool skipLoadingPause; // frames with LoadingPause do not count toward input timing
         bool awaitPauseVal; // common: waiting for pause vs unpause
 
-        // TODO store+revert to correct passthrough mode on pop (eg if a hotkey suspends a tas::input and plays other inputs)
-        // lotuskit::tas::config::PlaybackInputPassthroughMode playbackInputPassthroughMode;
+        InputDurationScalingStrategy inputFPSMode;
+        PlaybackInputPassthroughMode playbackInputPassthroughMode;
     };
 
     class ModuleStackFrame {
@@ -80,6 +94,7 @@ namespace lotuskit::script::schedule::tas {
     void abortStackImpl(); // process abort req
     void transpileImpl_nxtas_to_as(const char* src, char* dst, size_t dstMax); // XXX doesnt belong here but it'll be easier to fix up alloc stuff when its not scattered (translating/loading/etc large scripts is very fragile, prob because it uses fakeheap)
     void dumpStack();
+    u32 duration60ToUIFrames(u32 duration60, InputDurationScalingStrategy inputFPSMode);
 
 } // ns
 

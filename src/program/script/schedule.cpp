@@ -37,9 +37,9 @@ namespace lotuskit::script::schedule::tas {
                 textPos->x = 1280.0 - 350.0;
             });
             if (this->state.awaitPauseVal) {
-                lotuskit::TextWriter::printf(1, "awaitPauseRequest(%s:%3u)\n               fr:%6d\n", name, lotuskit::tas::Playback::duration60ToUIFrames(elapsedPlayback60-this->state.awaitBegin60), lotuskit::tas::Playback::duration60ToUIFrames(elapsedPlayback60));
+                lotuskit::TextWriter::printf(1, "awaitPauseRequest(%s:%3u)\n               fr:%6d\n", name, duration60ToUIFrames(elapsedPlayback60 - this->state.awaitBegin60, this->state.inputFPSMode), duration60ToUIFrames(elapsedPlayback60, this->state.inputFPSMode));
             } else {
-                lotuskit::TextWriter::printf(1, "awaitUnpauseRequest(%s:%3u)\n               fr:%6d\n", name, lotuskit::tas::Playback::duration60ToUIFrames(elapsedPlayback60-this->state.awaitBegin60), lotuskit::tas::Playback::duration60ToUIFrames(elapsedPlayback60));
+                lotuskit::TextWriter::printf(1, "awaitUnpauseRequest(%s:%3u)\n               fr:%6d\n", name, duration60ToUIFrames(elapsedPlayback60 - this->state.awaitBegin60, this->state.inputFPSMode), duration60ToUIFrames(elapsedPlayback60, this->state.inputFPSMode));
             }
         } else {
             this->state.isAwaitPauseRequestHash = 0; // end await
@@ -58,9 +58,9 @@ namespace lotuskit::script::schedule::tas {
                 textPos->x = 1280.0 - 350.0;
             });
             if (this->state.awaitPauseVal) {
-                lotuskit::TextWriter::printf(1, "tas::awaitPauseTarget(%s:%3u)\n               fr:%6d\n", name, lotuskit::tas::Playback::duration60ToUIFrames(elapsedPlayback60-this->state.awaitBegin60), lotuskit::tas::Playback::duration60ToUIFrames(elapsedPlayback60));
+                lotuskit::TextWriter::printf(1, "tas::awaitPauseTarget(%s:%3u)\n               fr:%6d\n", name, duration60ToUIFrames(elapsedPlayback60 - this->state.awaitBegin60, this->state.inputFPSMode), duration60ToUIFrames(elapsedPlayback60, this->state.inputFPSMode));
             } else {
-                lotuskit::TextWriter::printf(1, "tas::awaitUnpauseTarget(%s:%3u)\n               fr:%6d\n", name, lotuskit::tas::Playback::duration60ToUIFrames(elapsedPlayback60-this->state.awaitBegin60), lotuskit::tas::Playback::duration60ToUIFrames(elapsedPlayback60));
+                lotuskit::TextWriter::printf(1, "tas::awaitUnpauseTarget(%s:%3u)\n               fr:%6d\n", name, duration60ToUIFrames(elapsedPlayback60 - this->state.awaitBegin60, this->state.inputFPSMode), duration60ToUIFrames(elapsedPlayback60, this->state.inputFPSMode));
             }
         } else {
             this->state.isAwaitPauseTargetHash = 0; // end await
@@ -93,7 +93,7 @@ namespace lotuskit::script::schedule::tas {
                 // override pause to potentially unblock script
                 // return false; // fallthrough
             } else {
-                lotuskit::TextWriter::printf(1, "tas::nop(DebugPause)\n               fr:%6d\n", lotuskit::tas::Playback::duration60ToUIFrames(elapsedPlayback60));
+                lotuskit::TextWriter::printf(1, "tas::nop(DebugPause)\n               fr:%6d\n", duration60ToUIFrames(elapsedPlayback60, this->state.inputFPSMode));
                 return true;
             }
         }
@@ -104,7 +104,7 @@ namespace lotuskit::script::schedule::tas {
                 // do not resume, but if script is awaiting LoadingPause request, clear the blocking condition
                 this->state.isAwaitPauseRequestHash = 0;
             }
-            lotuskit::TextWriter::printf(1, "tas::nop(LoadingPause)\n               fr:%6d\n", lotuskit::tas::Playback::duration60ToUIFrames(elapsedPlayback60));
+            lotuskit::TextWriter::printf(1, "tas::nop(LoadingPause)\n               fr:%6d\n", duration60ToUIFrames(elapsedPlayback60, this->state.inputFPSMode));
             return true;
         }
 
@@ -123,7 +123,10 @@ namespace lotuskit::script::schedule::tas {
         this->state.skipDebugPause = true;
         this->state.skipLoadingPause = true;
         this->state.awaitPauseVal = false;
-        // this->state.playbackInputPassthroughMode = PLAYBACK_TAS_ONLY
+
+        // TODO inherit from adjustable default/global? or scripts can just update these at exectime?
+        this->state.inputFPSMode = InputDurationScalingStrategy::FPS30_2X;
+        this->state.playbackInputPassthroughMode = PlaybackInputPassthroughMode::NULL_VANILLA;
     }
 
     void initModuleStack() {
@@ -168,7 +171,6 @@ namespace lotuskit::script::schedule::tas {
             elapsedPlayback60 += deltaFrame60; // desync observable by user when elapsed time exceeds their expected schedule
         }
 
-        // FIXME we're somehow dropping remainder of input after interrupt? eg try stacking sleeps or stepFrameAdvance interrupt, it skips to next input line...
         // FIXME many menus (eg plus, d-up) dont seem to open when stepping through their button, they seem sensitive to actual press time?
 
         if (isFrameAdvance) {
@@ -211,20 +213,17 @@ namespace lotuskit::script::schedule::tas {
             return true; // err
         }
 
-        // TODO early return for frame advance etc (can we use debugpause?), deduct only frame-advanced time in frametime scheduling.
-        //      Exclude isPlaybackBeginPending from early return so it can always execute for eg ws/hotkey during frame advance.
-
         if (sp->isBlockedFromScheduling()) {
             return false; // ok: currently in an await/etc
         }
 
-        if (deltaFrame60 > 0) {
-            if (!calcConsumeFrametime_queryIsInputExhausted(deltaFrame60) && !isPlaybackBeginPending) {
-                return false; // ok: keep using scheduled input, do not resume script (unless requested)
-            }
+        if (!calcConsumeFrametime_queryIsInputExhausted(deltaFrame60) && !isPlaybackBeginPending) {
+            return false; // ok: keep using scheduled input, do not resume script (unless requested)
+        }
 
-            deltaFrame60 = 0; // only deduct frametime before explicit first run
-                              // (always 0 on stackframe pop+resume, so we don't deduct duplicate time when we goto CTX_ENTER)
+        if (deltaFrame60 > 0) {
+            // only deduct frametime before explicit first run
+            deltaFrame60 = 0; // (always 0 after stackframe pop+resume, so we don't deduct duplicate time when we goto CTX_ENTER)
         }
 
         isPlaybackBeginPending = false;
@@ -240,6 +239,7 @@ namespace lotuskit::script::schedule::tas {
 
             } else {
                 // nested scripts
+                // TODO copy/inherit input state from popping sp, unless we have something scheduled already
                 sp->asCtx->Unprepare();
                 tryDiscardLastModuleForPop();
                 // TODO run gc?
@@ -371,6 +371,7 @@ namespace lotuskit::script::schedule::tas {
         // XXX assert asCtx state is uninitialized/unprepared
         sp->asModule = mod;
         sp->resetState(); // wipe timing/async/etc data
+        // TODO inherit sp-1 input state for init? idk, need to avoid sudden gaps in inputs when we change sp now. having a clear single input record to inject was nice before, might be worth just doing that?
         sp->state.skipDebugPause = skipDebugPause;
 
         // Find the function that is to be called (mod+entryPoint -> funcptr)
@@ -495,6 +496,18 @@ namespace lotuskit::script::schedule::tas {
             svcOutputDebugString(buf, strlen(buf));
             TextWriter::toastf(30*5, "%s\n", buf);
         }
+    }
+
+    u32 duration60ToUIFrames(u32 duration60, InputDurationScalingStrategy inputFPSMode) {
+        // how many "frames" is the timespan
+        if (inputFPSMode == InputDurationScalingStrategy::FPS60_1X) {
+            return duration60;
+        } else if (inputFPSMode == InputDurationScalingStrategy::FPS30_2X) {
+            return duration60 / 2;
+        } else if (inputFPSMode == InputDurationScalingStrategy::FPS20_3X) {
+            return duration60 / 3;
+        }
+        return 0xdeaddead;
     }
 
     void transpileImpl_nxtas_to_as(const char* src, char* dst, size_t dstMax) {

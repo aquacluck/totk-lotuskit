@@ -7,6 +7,9 @@
 #include <math/seadVector.h>
 #include <string>
 #include "structs/nnSixAxis.hpp"
+#include "script/schedule.hpp"
+using InputDurationScalingStrategy = lotuskit::script::schedule::tas::InputDurationScalingStrategy;
+
 
 namespace lotuskit::tas {
     struct RecordInput {
@@ -28,6 +31,7 @@ namespace lotuskit::tas {
         inline static u32 accumulatedInput60 = 0; // single input duration
         inline static u32 accumulatedRecord60 = 0; // entire recording duration (used for nxtas line labels + modeline framecount)
         inline static bool isRecordActive = false; // calc accumulation+emit
+        inline static InputDurationScalingStrategy inputFPSMode = InputDurationScalingStrategy::FPS30_2X;
 
         // completed inputs are emitted according to logging/file/etc options:
         inline static bool doEmitWS = true;
