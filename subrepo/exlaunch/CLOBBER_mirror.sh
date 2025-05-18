@@ -22,8 +22,8 @@ if [[ "$KEEP_TMPGIT" != "1" ]]; then
     rm -rf tmpgit
 
     # temp repo
-    # last base: "Forgot a few things :3"
-    #            https://github.com/shadowninja108/exlaunch/commit/4778861a288f2719ae5b7d867e435b271334b747
+    # last base: "Add various nn os types/APIs"
+    #            https://github.com/shadowninja108/exlaunch/commit/2cdbdba450a1fed83b803d678ced2ed9ce8eab32
     git clone --recursive --depth 1 https://github.com/shadowninja108/exlaunch tmpgit
     echo
     echo
