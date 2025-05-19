@@ -239,10 +239,18 @@ namespace lotuskit::script::schedule::tas {
 
             } else {
                 // nested scripts
-                // TODO copy/inherit input state from popping sp, unless we have something scheduled already
                 sp->asCtx->Unprepare();
                 tryDiscardLastModuleForPop();
                 // TODO run gc?
+
+                // copy/inherit input state from finished sp, unless we have something scheduled already.
+                // This prevents any gaps in inputs before the resumed script has a chance to schedule something else.
+                if ((sp-1)->state.inputTTL60 == 0) {
+                    auto* prevInput = &(sp->state.input);
+                    auto* thisInput = &((sp-1)->state.input);
+                    std::memcpy((void*)thisInput, (void*)prevInput, 24+0x60);
+                    (sp-1)->state.playbackInputPassthroughMode = sp->state.playbackInputPassthroughMode;
+                }
 
                 // pop stackframe, go back and decide whether to resume
                 moduleStackIndex--;
@@ -348,30 +356,47 @@ namespace lotuskit::script::schedule::tas {
     }
 
     void pushExecModuleEntryPoint(AngelScript::asIScriptModule* mod, const std::string& entryPoint, bool doImmediateExecute, bool skipDebugPause) {
-        const auto prevState = getSP()->asCtx->GetState();
-        const auto* prevMod = getSP()->asModule;
+        bool spIsIncrement = false;
+        { // decide advance sp + suspend any ongoing ctx
+            const auto prevState = getSP()->asCtx->GetState();
+            const auto* prevMod = getSP()->asModule;
+            if (prevMod != nullptr) {
+                // sp slot occupied, advance past it
+                if (prevState == AngelScript::asEXECUTION_ACTIVE) {
+                    trySuspendCtx();
+                }
+                spIsIncrement = true; // defer changing moduleStackIndex until sp+1 input is initialized
 
-        if (prevMod != nullptr) {
-            // sp slot occupied, advance past it
-            if (prevState == AngelScript::asEXECUTION_ACTIVE) {
-                trySuspendCtx();
-            }
-            moduleStackIndex++;
-
-        } else {
-            // sp slot is empty, just reuse it
-            if (prevState == AngelScript::asEXECUTION_ACTIVE) {
-                trySuspendCtx(); // XXX idk if necessary
+            } else {
+                // sp slot is empty, just reuse it
+                if (prevState == AngelScript::asEXECUTION_ACTIVE) {
+                    trySuspendCtx(); // XXX idk if necessary
+                }
+                spIsIncrement = false;
             }
         }
 
         ModuleStackFrame* sp = getSP();
+        if (spIsIncrement) {
+            // inherit initial input state to avoid gaps around sp transition
+            auto* prevInput = &(sp->state.input);
+            auto prevMode = sp->state.playbackInputPassthroughMode;
+            sp++;
+            auto* thisInput = &(sp->state.input);
+
+            sp->resetState(); // wipe timing/async/etc data
+            std::memcpy((void*)thisInput, (void*)prevInput, 24+0x60);
+            sp->state.playbackInputPassthroughMode = prevMode;
+
+        } else {
+            sp->resetState(); // wipe timing/async/etc data
+        }
+
         if (sp->asCtx == nullptr) { abortStackReq("[tas::schedule::pushExecModuleEntryPoint] sp ctx null"); return; } // err should be alloced
         if (sp->asModule != nullptr) { abortStackReq("[tas::schedule::pushExecModuleEntryPoint] sp module not null"); return; } // err should be empty
         // XXX assert asCtx state is uninitialized/unprepared
+
         sp->asModule = mod;
-        sp->resetState(); // wipe timing/async/etc data
-        // TODO inherit sp-1 input state for init? idk, need to avoid sudden gaps in inputs when we change sp now. having a clear single input record to inject was nice before, might be worth just doing that?
         sp->state.skipDebugPause = skipDebugPause;
 
         // Find the function that is to be called (mod+entryPoint -> funcptr)
@@ -386,6 +411,11 @@ namespace lotuskit::script::schedule::tas {
         }
 
         sp->asCtx->Prepare(asEntryPoint);
+
+        if (spIsIncrement) {
+            moduleStackIndex++; // finally increment after ^ initialization
+            // assert sp == getSP()
+        }
 
         if (doImmediateExecute) {
             const bool isCompleteOrFail = calcCtx();

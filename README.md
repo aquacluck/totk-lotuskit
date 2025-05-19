@@ -23,8 +23,8 @@
 - Actors may fail to spawn in some scripts with ifs/branches? or matrix constants unless assigned to an intermediate? If your script is very short try making it longer.
 - Script size is limited to ~8KB and crashes on overflow
 - Re-recording tas input during playback appears to emit incorrect durations (an extra frame for each input?). `tas::inputOr()` and `tas::inputXor()` have a similar issue causing buttons to be released a frame late. Avoid these features for now.
-- Buttons appear to be released between `tas::awaitExecFile()` calls? (TODO preserve final input state from popped sp, if the resumed sp has no input scheduled)
 - Many button presses/releases are missed during frame advance, as the input needs to change exactly on the unpaused frame and the mod doesn't do this yet.
+- Frame advance appears to advance 2 frames when 1 is requested?
 - Output folder for tas recordings must exist, you should create a `sdcard:/totk_lotuskit` folder for the default output.
 - PrimitiveDrawer shapes may be stale or repeated/overlapping when drawn after a pause, because tools like ActorWatcher try to draw the entire time without clearing the FrameHeap
 - The mod can't bind+serve on ipv6 yet -- the modded device must be accessed with a `ws://192.168.0.69:7072` style 4 number ipv4 address. This should only be a problem for ipv6-only LANs (somewhat exotic for home networks)
