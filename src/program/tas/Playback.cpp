@@ -130,13 +130,13 @@ namespace lotuskit::tas::Playback {
         lotuskit::script::schedule::tas::isPlaybackActive = true;
         lotuskit::script::schedule::tas::trySuspendCtx(); // yield execution from script back to game
     }
-    void doSkipDebugPause(bool v) {
+    void doBlockOnDebugPause(bool v) {
         auto& state = lotuskit::script::schedule::tas::getSP()->state;
-        state.skipDebugPause = v;
+        state.blockOnDebugPause = v;
     }
-    void doSkipLoadingPause(bool v) {
+    void doBlockOnLoadingPause(bool v) {
         auto& state = lotuskit::script::schedule::tas::getSP()->state;
-        state.skipLoadingPause = v;
+        state.blockOnLoadingPause = v;
     }
 
     // script binds for: current input

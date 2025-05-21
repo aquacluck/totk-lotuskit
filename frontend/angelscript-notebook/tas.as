@@ -220,8 +220,8 @@ tas::awaitPauseTarget("Custom_Footprint");
 tas::awaitUnpauseTarget("Custom_Footprint");
 
 // Keep running tas through specific pauses:
-tas::doSkipDebugPause(false);
-tas::doSkipLoadingPause(false);
+tas::doBlockOnDebugPause(false);
+tas::doBlockOnLoadingPause(false);
 
 // toggle input display
 tas::doTextWriterInputDisplay(false);

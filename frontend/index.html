@@ -141,7 +141,7 @@
             WSTransport.send({
                 execScriptString: AngelScript.wrap_implicit_main(snippet),
                 execScriptModule: moduleName || AngelScript.TAS_MODULE_DEFAULT,
-                skipDebugPause: false, // noblock on DebugPause (for toolbar buttons etc) XXX rename AngelScript.exec
+                blockOnDebugPause: false, // noblock on DebugPause (for toolbar buttons etc) XXX rename AngelScript.exec
             });
         }
     }
@@ -355,8 +355,8 @@
         doStepSleep() {
             const step_n = this.step_n.current.value || 1;
             AngelScript.exec([
-                `tas::doSkipDebugPause(true);`, // further tas frames in this script only (ie the sleep(n) below) will be blocked by DebugPause...
-                                                // (interrupts usually run throughout DebugPause but we opt out here to keep it consistent between interactive + AS usage)
+                `tas::doBlockOnDebugPause(true);`, // further tas frames in this script only (ie the sleep(n) below) will be blocked by DebugPause...
+                                                   // (interrupts usually run throughout DebugPause but we opt out here to keep it consistent between interactive + AS usage)
                 `tas::stepFrameAdvance(${step_n});`, // ...but we immediately unpause DebugPause anyways
                 `sys::suspendCtx();`, // yield to ^ scheduling, should resume next calc:
                 `tas::sleep(${step_n});`, // and run through the frames, using human control
@@ -760,7 +760,7 @@
             WSTransport.send({
                 execScriptString: main ? AngelScript.wrap_implicit_main(script_text) : script_text,
                 execScriptModule: AngelScript.TAS_MODULE_USER_REPL,
-                skipDebugPause: true, // block on DebugPause
+                blockOnDebugPause: true,
             });
         }
 

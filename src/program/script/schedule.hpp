@@ -45,8 +45,8 @@ namespace lotuskit::script::schedule::tas {
         u32 awaitBegin60; // common: for time spent waiting, relative to elapsedPlayback60
         u32 isAwaitPauseRequestHash;
         u32 isAwaitPauseTargetHash;
-        bool skipDebugPause; // frames with DebugPause do not count toward input timing
-        bool skipLoadingPause; // frames with LoadingPause do not count toward input timing
+        bool blockOnDebugPause; // frames with DebugPause do not count toward input timing
+        bool blockOnLoadingPause; // frames with LoadingPause do not count toward input timing
         bool awaitPauseVal; // common: waiting for pause vs unpause
 
         InputDurationScalingStrategy inputFPSMode;
@@ -83,11 +83,11 @@ namespace lotuskit::script::schedule::tas {
 
     // push/enqueue
     AngelScript::asIScriptModule* buildOnceOrGetModule(const std::string& moduleName, const std::string& sectionName, const std::string& scriptText);
-    void pushExecLocalFileModule(const std::string& filename, const std::string& entryPoint, bool doImmediateExecute = true, bool skipDebugPause = true);
-    void pushExecLocalFileModuleNXTas(const std::string& filename, bool doImmediateExecute = true, bool skipDebugPause = true); // transpile+run nxtas source file in new module
-    void pushExecTextModule(const std::string& moduleName, const std::string& sectionName, const std::string& scriptText, const std::string& entryPoint, bool doImmediateExecute = true, bool skipDebugPause = true);
-    void pushExecEval(const std::string& scriptText, const std::string& entryPoint, bool doImmediateExecute = true, bool skipDebugPause = true); // sugar for AS
-    void pushExecModuleEntryPoint(AngelScript::asIScriptModule* mod, const std::string& entryPoint, bool doImmediateExecute = true, bool skipDebugPause = true);
+    void pushExecLocalFileModule(const std::string& filename, const std::string& entryPoint, bool doImmediateExecute = true, bool blockOnDebugPause = true);
+    void pushExecLocalFileModuleNXTas(const std::string& filename, bool doImmediateExecute = true, bool blockOnDebugPause = true); // transpile+run nxtas source file in new module
+    void pushExecTextModule(const std::string& moduleName, const std::string& sectionName, const std::string& scriptText, const std::string& entryPoint, bool doImmediateExecute = true, bool blockOnDebugPause = true);
+    void pushExecEval(const std::string& scriptText, const std::string& entryPoint, bool doImmediateExecute = true, bool blockOnDebugPause = true); // sugar for AS
+    void pushExecModuleEntryPoint(AngelScript::asIScriptModule* mod, const std::string& entryPoint, bool doImmediateExecute = true, bool blockOnDebugPause = true);
 
     // util
     void abortStackReq(const std::string& reason = "err");

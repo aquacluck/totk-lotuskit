@@ -83,7 +83,7 @@ namespace lotuskit::script::schedule::tas {
 
         // pause scheduling
         const bool isDebugPause = lotuskit::util::pause::isPauseRequest(0x2d67e2da);
-        if (isDebugPause && this->state.skipDebugPause) {
+        if (isDebugPause && this->state.blockOnDebugPause) {
             if (this->state.isAwaitPauseRequestHash == 0x2d67e2da && this->state.awaitPauseVal == true) {
                 // do not resume, but if script is awaiting DebugPause request, clear the blocking condition
                 this->state.isAwaitPauseRequestHash = 0;
@@ -99,7 +99,7 @@ namespace lotuskit::script::schedule::tas {
         }
 
         const bool isLoadingPause = lotuskit::util::pause::isPauseRequest(0x0eafe200);
-        if (isLoadingPause && this->state.skipLoadingPause) {
+        if (isLoadingPause && this->state.blockOnLoadingPause) {
             if (this->state.isAwaitPauseRequestHash == 0x0eafe200 && this->state.awaitPauseVal == true) {
                 // do not resume, but if script is awaiting LoadingPause request, clear the blocking condition
                 this->state.isAwaitPauseRequestHash = 0;
@@ -120,8 +120,8 @@ namespace lotuskit::script::schedule::tas {
         this->state.awaitBegin60 = 0;
         this->state.isAwaitPauseRequestHash = 0;
         this->state.isAwaitPauseTargetHash = 0;
-        this->state.skipDebugPause = true;
-        this->state.skipLoadingPause = true;
+        this->state.blockOnDebugPause = true;
+        this->state.blockOnLoadingPause = true;
         this->state.awaitPauseVal = false;
 
         // TODO inherit from adjustable default/global? or scripts can just update these at exectime?
@@ -175,7 +175,7 @@ namespace lotuskit::script::schedule::tas {
             } else if (isPause && bypassDebugPause60 == 0) {
                 // its paused already yay
 
-            } else if (!state.skipDebugPause) {
+            } else if (!state.blockOnDebugPause) {
                 // execution continues without regard to DebugPause -- do not count down bypassDebugPause60, just run
                 isPlaybackFrame = true; // deduct from input timer
                 isPauseAwareInputFrame = true; // but dont count runlength
@@ -288,7 +288,7 @@ namespace lotuskit::script::schedule::tas {
         return true; // err
     }
 
-    void pushExecLocalFileModule(const std::string& filename, const std::string& entryPoint, bool doImmediateExecute, bool skipDebugPause) {
+    void pushExecLocalFileModule(const std::string& filename, const std::string& entryPoint, bool doImmediateExecute, bool blockOnDebugPause) {
         // reuse any existing module by name during a single script execution -- do not check/rebuild file contents for update
         const auto engine = lotuskit::script::engine::asEngine;
         AngelScript::asIScriptModule* mod = engine->GetModule(filename.c_str(), AngelScript::asGM_ONLY_IF_EXISTS);
@@ -316,10 +316,10 @@ namespace lotuskit::script::schedule::tas {
             abortStackReq("[tas::schedule::pushExecLocalFileModule] module failed to build");
             return; // err
         }
-        pushExecModuleEntryPoint(mod, entryPoint, doImmediateExecute, skipDebugPause);
+        pushExecModuleEntryPoint(mod, entryPoint, doImmediateExecute, blockOnDebugPause);
     }
 
-    void pushExecLocalFileModuleNXTas(const std::string& filename, bool doImmediateExecute, bool skipDebugPause) {
+    void pushExecLocalFileModuleNXTas(const std::string& filename, bool doImmediateExecute, bool blockOnDebugPause) {
         // reuse any existing module by name during a single script execution -- do not check/rebuild file contents for update
         const auto engine = lotuskit::script::engine::asEngine;
         AngelScript::asIScriptModule* mod = engine->GetModule(filename.c_str(), AngelScript::asGM_ONLY_IF_EXISTS);
@@ -350,23 +350,23 @@ namespace lotuskit::script::schedule::tas {
             abortStackReq("[tas::schedule::pushExecLocalFileModuleNXTas] module failed to build");
             return; // err
         }
-        pushExecModuleEntryPoint(mod, "void main()", doImmediateExecute, skipDebugPause);
+        pushExecModuleEntryPoint(mod, "void main()", doImmediateExecute, blockOnDebugPause);
     }
 
-    void pushExecTextModule(const std::string& moduleName, const std::string& sectionName, const std::string& scriptText, const std::string& entryPoint, bool doImmediateExecute, bool skipDebugPause) {
+    void pushExecTextModule(const std::string& moduleName, const std::string& sectionName, const std::string& scriptText, const std::string& entryPoint, bool doImmediateExecute, bool blockOnDebugPause) {
         auto* mod = buildOnceOrGetModule(moduleName, sectionName, scriptText);
         if (mod == nullptr) { abortStackReq("[tas::schedule::pushExecTextModule] module failed to build"); return; } // err
         // XXX free scriptText
-        pushExecModuleEntryPoint(mod, entryPoint, doImmediateExecute, skipDebugPause);
+        pushExecModuleEntryPoint(mod, entryPoint, doImmediateExecute, blockOnDebugPause);
     }
 
-    void pushExecEval(const std::string& scriptText, const std::string& entryPoint, bool doImmediateExecute, bool skipDebugPause) {
+    void pushExecEval(const std::string& scriptText, const std::string& entryPoint, bool doImmediateExecute, bool blockOnDebugPause) {
         char moduleName[32];
         nn::util::SNPrintf(moduleName, sizeof(moduleName), "eval_%08x.as", murmur32(scriptText));
-        pushExecTextModule(moduleName, moduleName, scriptText, entryPoint, doImmediateExecute, skipDebugPause);
+        pushExecTextModule(moduleName, moduleName, scriptText, entryPoint, doImmediateExecute, blockOnDebugPause);
     }
 
-    void pushExecModuleEntryPoint(AngelScript::asIScriptModule* mod, const std::string& entryPoint, bool doImmediateExecute, bool skipDebugPause) {
+    void pushExecModuleEntryPoint(AngelScript::asIScriptModule* mod, const std::string& entryPoint, bool doImmediateExecute, bool blockOnDebugPause) {
         bool spIsIncrement = false;
         { // decide advance sp + suspend any ongoing ctx
             const auto prevState = getSP()->asCtx->GetState();
@@ -408,7 +408,7 @@ namespace lotuskit::script::schedule::tas {
         // XXX assert asCtx state is uninitialized/unprepared
 
         sp->asModule = mod;
-        sp->state.skipDebugPause = skipDebugPause;
+        sp->state.blockOnDebugPause = blockOnDebugPause;
 
         // Find the function that is to be called (mod+entryPoint -> funcptr)
         char buf[500];

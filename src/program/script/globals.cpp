@@ -1069,13 +1069,13 @@ namespace lotuskit::script::globals {
                 AngelScript::asCALL_CDECL
             ); assert( asErrno >= 0 );
             asErrno = engine->RegisterGlobalFunction(
-                "void doSkipDebugPause(bool)",
-                AngelScript::asFUNCTION(lotuskit::tas::Playback::doSkipDebugPause),
+                "void doBlockOnDebugPause(bool)",
+                AngelScript::asFUNCTION(lotuskit::tas::Playback::doBlockOnDebugPause),
                 AngelScript::asCALL_CDECL
             ); assert( asErrno >= 0 );
             asErrno = engine->RegisterGlobalFunction(
-                "void doSkipLoadingPause(bool)",
-                AngelScript::asFUNCTION(lotuskit::tas::Playback::doSkipLoadingPause),
+                "void doBlockOnLoadingPause(bool)",
+                AngelScript::asFUNCTION(lotuskit::tas::Playback::doBlockOnLoadingPause),
                 AngelScript::asCALL_CDECL
             ); assert( asErrno >= 0 );
 
