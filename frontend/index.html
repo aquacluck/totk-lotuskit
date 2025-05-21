@@ -358,16 +358,8 @@
                 `tas::doSkipDebugPause(true);`, // further tas frames in this script only (ie the sleep(n) below) will be blocked by DebugPause...
                                                 // (interrupts usually run throughout DebugPause but we opt out here to keep it consistent between interactive + AS usage)
                 `tas::stepFrameAdvance(${step_n});`, // ...but we immediately unpause DebugPause anyways
-                `tas::sleep(1);`, // yield to ^ scheduling, should resume next calc:
+                `sys::suspendCtx();`, // yield to ^ scheduling, should resume next calc:
                 `tas::sleep(${step_n});`, // and run through the frames, using human control
-
-                // unpause for passthrough/sleep then repause (or begin pause).
-                // We don't need to worry about the unpause unexpectedly unblocking sp-1, because we are sp and only sp can be scheduled to run. So this should work for both ad-hoc and AS-interrupt uses.
-                //`auto req = "DebugPause";`,
-                //`pause::releasePause(req);`, // XXX prob doesnt work during isFrameAdvance? wont isFrameAdvance repause it all the time?
-                //`tas::sleep(${step_n});`,
-                //`pause::requestPause(req);`,
-
             ].join("\n"));
         }
 

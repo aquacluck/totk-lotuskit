@@ -158,32 +158,27 @@ namespace lotuskit::script::schedule::tas {
             }
         }
 
-        // deduct frametime from scheduled input
         auto& state = sp->state;
-        if (state.inputTTL60 >= deltaFrame60) {
-            state.inputTTL60 -= deltaFrame60;
-            elapsedPlayback60 += deltaFrame60;
-        } else {
-            // only 0/1/2 frames60 left on schedule and deltaFrame60 is larger
-            // XXX is erring on one side or the other better, until i properly figure this out?
-            //     ie playing out these closing frames and deferring or eating into subsequent inputs? sounds complicated in the dumb way
-            state.inputTTL60 = 0; // abandon/truncate the remainder of this scheduled input and resume script
-            elapsedPlayback60 += deltaFrame60; // desync observable by user when elapsed time exceeds their expected schedule
-        }
-
-        // FIXME many menus (eg plus, d-up) dont seem to open when stepping through their button, they seem sensitive to actual press time?
+        bool isPlaybackFrame = true;
+        bool isPauseAwareInputFrame = false;
 
         if (isFrameAdvance) {
+            // FIXME many menus (eg plus, d-up) dont seem to open when stepping through their button, they seem sensitive to actual press time?
             const bool isPause = lotuskit::util::pause::isPauseRequestStr("DebugPause");
+            isPlaybackFrame = false;
+
             if (!isPause && bypassDebugPause60 == 0) {
                 // enforce pause
                 lotuskit::util::pause::requestPauseStr("DebugPause");
+                isPlaybackFrame = true;
 
             } else if (isPause && bypassDebugPause60 == 0) {
                 // its paused already yay
 
             } else if (!state.skipDebugPause) {
                 // execution continues without regard to DebugPause -- do not count down bypassDebugPause60, just run
+                isPlaybackFrame = true; // deduct from input timer
+                isPauseAwareInputFrame = true; // but dont count runlength
 
             } else if (isPause && bypassDebugPause60 > 0) {
                 // release pause for bypassDebugPause60 duration -- do not count down this frame as we have not run unpaused yet
@@ -192,10 +187,26 @@ namespace lotuskit::script::schedule::tas {
             } else if (!isPause && bypassDebugPause60 > 0) {
                 // countdown time that just elapsed
                 bypassDebugPause60 -= std::min(bypassDebugPause60, deltaFrame60);
+                isPlaybackFrame = true;
                 if (bypassDebugPause60 == 0) {
                     // enforce pause
                     lotuskit::util::pause::requestPauseStr("DebugPause");
                 }
+            }
+        }
+
+        // deduct frametime from scheduled input
+        if (isPlaybackFrame) {
+            if (state.inputTTL60 >= deltaFrame60) {
+                state.inputTTL60 -= deltaFrame60;
+            } else {
+                // only 0/1/2 frames60 left on schedule and deltaFrame60 is larger
+                // XXX is erring on one side or the other better, until i properly figure this out?
+                //     ie playing out these closing frames and deferring or eating into subsequent inputs? sounds complicated in the dumb way
+                state.inputTTL60 = 0; // abandon/truncate the remainder of this scheduled input and resume script
+            }
+            if (!isPauseAwareInputFrame) {
+                elapsedPlayback60 += deltaFrame60; // desync observable by user when elapsed time exceeds their expected schedule (eg lag holds buttons longer than expected)
             }
         }
 
@@ -401,6 +412,7 @@ namespace lotuskit::script::schedule::tas {
 
         // Find the function that is to be called (mod+entryPoint -> funcptr)
         char buf[500];
+        if (entryPoint.c_str() == nullptr) { abortStackReq("uhhhhhhhh"); return; } // XXX
         AngelScript::asIScriptFunction *asEntryPoint = mod->GetFunctionByDecl(entryPoint.c_str());
         if (asEntryPoint == nullptr) {
             TextWriter::toastf(30*5, "[error] missing entry point %s \n", entryPoint.c_str());
