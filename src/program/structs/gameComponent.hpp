@@ -455,7 +455,7 @@ namespace game::component {
         undefined field406_0x1385;
         undefined field407_0x1386;
         undefined field408_0x1387;
-        game::player::StaminaCalculator mStaminaCalculator;
+        game::player::StaminaCalculator mStaminaCalculator; // XXX pc offset 0x30 diff (TOTK_121 = 0x1388, TOTK_100 = 0x1358)
         undefined8 field410_0x1408;
         undefined8 field411_0x1410;
         undefined8 field412_0x1418;

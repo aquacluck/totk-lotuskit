@@ -1325,6 +1325,7 @@ namespace lotuskit::script::globals {
         asErrno = engine->RegisterGlobalFunction("void doLStickAbsolutePlayer()", AngelScript::asFUNCTION(lotuskit::util::player::doLStickAbsolutePlayer), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
 
         //asErrno = engine->RegisterGlobalFunction("void disableGloom(bool)", AngelScript::asFUNCTION(lotuskit::util::player::disableGloom), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        //asErrno = engine->RegisterGlobalFunction("ptr_t getPlayerComponent()", AngelScript::asFUNCTION(lotuskit::util::player::getPlayerComponent), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
         //asErrno = engine->RegisterGlobalFunction("void setVel(const Vector3f &in)", AngelScript::asFUNCTION(lotuskit::util::player::setLinearVelocity), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
         //asErrno = engine->RegisterGlobalFunction("void setVel(float, float, float)", AngelScript::asFUNCTION(lotuskit::util::player::setLinearVelocityXYZ), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
 

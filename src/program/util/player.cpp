@@ -392,16 +392,28 @@ namespace lotuskit::util::player {
     }
     */
 
-    float getStamina() {
+    game::player::StaminaCalculator* getStaminaCalculator() {
         auto* pc = getPlayerComponent();
-        if (pc == nullptr) { return 0; }
-        return pc->mStaminaCalculator.mStamina;
+        if (pc == nullptr) { return nullptr; }
+        auto* ret = &(pc->mStaminaCalculator);
+        #ifdef TOTK_100
+            // XXX pc offset 0x30 diff (TOTK_121 = 0x1388, TOTK_100 = 0x1358)
+            ret = static_cast<game::player::StaminaCalculator*>((void*)ret - 0x30);
+        #endif
+        return ret;
     }
+
+    float getStamina() {
+        auto* sc = getStaminaCalculator();
+        if (sc == nullptr) { return 0; }
+        return sc->mStamina;
+    }
+
     void setStamina(float stam) {
-        auto* pc = getPlayerComponent();
-        if (pc == nullptr) { return; }
-        pc->mStaminaCalculator.mStamina = stam;
-        pc->mStaminaCalculator.mStaminaInternal = stam; // XXX wut do
+        auto* sc = getStaminaCalculator();
+        if (sc == nullptr) { return; }
+        sc->mStamina = stam;
+        sc->mStaminaInternal = stam; // XXX wut do
     }
 
 } // ns
