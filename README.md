@@ -1,5 +1,5 @@
 ## Getting started
-- Download the [latest build](https://github.com/aquacluck/totk-lotuskit/releases) for your game version. This is replaced with every commit, so you might want to hang on to the zip in case I break it in the future!
+- Download the [latest build](https://github.com/aquacluck/totk-lotuskit/releases) for your game version.
 - Extract the zip and install the mod by copying the `romfs` and `exefs` folders into your switch sdcard's `/atmosphere/contents/0100f2c0115b6000/` folder.
 - Run the game. ActorWatcher[0] should automatically be assigned to Player. Press **`L R ZL ZR + -`** together to start the ws server anytime. `sdcard:/totk_lotuskit/autorun.as` may be created to configure settings, ActorWatchers, etc at launch time.
 - Run `frontend/run.py` (you'll need a python installation) and open the web frontend at [http://localhost:7073](http://localhost:7073)
