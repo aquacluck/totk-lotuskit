@@ -68,6 +68,14 @@ input, button, select, textarea, dialog, .fakebutton {
     min-width: 32px;
     /*max-width: 72px;*/
     padding: 0px 1px;
+
+    img {
+        height: 100%;
+        width: 100%;
+        position: relative;
+        top: -6px;
+        margin-bottom: -18px;
+    }
 }
 
 .pushbutton, button {
@@ -94,6 +102,27 @@ input, button, select, textarea, dialog, .fakebutton {
             bottom: -1px;
             right: -1px;
             font-size: 0.85rem;
+        }
+    }
+    &.hint_snowflake_corner {
+        position: relative;
+        &::after {
+            position: absolute;
+            content: '❄️';
+            bottom: -1px;
+            right: -1px;
+            font-size: 0.85rem;
+        }
+    }
+    &.hint_controller_corner {
+        position: relative;
+        &::after {
+            position: absolute;
+            content: '🎮︎';
+            bottom: 2px;
+            right: -1px;
+            font-size: 0.85rem;
+            color: hsl(var(--hue-recommended) 45% 80%);
         }
     }
     &.hint_eye_corner {
@@ -236,7 +265,9 @@ textarea {
 }
 
 .execscript .as_source {
+    text-wrap: nowrap;
     min-height: 150px;
+    margin-bottom: 8px;
 }
 
 .fuzzysort_results_item {
@@ -274,7 +305,7 @@ textarea {
 
 .toolset_rightbar {
     position: absolute;
-    height: 490px; /* FIXME trash layout -- visually holds the group before execscript and everything after just spills out */
+    height: 490px; /* FIXME trash layout -- height manually adjusted to draw border around dense cluster toolset */
     padding: 8px;
     background: #000;
     border: 1px solid #444;
@@ -283,24 +314,20 @@ textarea {
     grid-template-rows: 1fr 1fr 1fr 1fr 1fr;
     grid-template-columns: 1fr 1fr;
     grid-template-areas:
-    'pausehacks pausehacks'
+    'pausehacks staminahacks'
     'camerahacks camerahacks'
     'hexdump hexdump'
     'memsearch quickdumps'
-    'execscript execscript'
     'execscript execscript';
 }
 .toolset_rightbar > .camerahacks { grid-area: camerahacks; }
 .toolset_rightbar > .pausehacks { grid-area: pausehacks; }
+.toolset_rightbar > .staminahacks { grid-area: staminahacks; }
 .toolset_rightbar > .hexdump { grid-area: hexdump; }
 .toolset_rightbar > .memsearch { grid-area: memsearch; }
-.toolset_rightbar > .execscript { grid-area: execscript; }
-.toolset_rightbar > .execscript {
-    /* XXX distinct region but we dont really know the height */
-    margin-top: 20px;
-    background: #000;
-    height: 300px;
-}
+.toolset_rightbar > .quickdumps { grid-area: quickdumps; }
+/* TODO split rightbar into ^ dense cluster toolset and v AS toolset */
+.toolset_rightbar > .execscript   { grid-area:   execscript; background: #000; margin-top: 20px; }
 
 
 .toolset_quickcorner {
@@ -344,8 +371,8 @@ dialog {
     &> .content {
         min-width: 200px;
         min-height: 100px;
-        width: 600px;
-        height: 400px;
+        width: 900px;
+        height: 500px;
         resize: both;
         overflow: scroll;
         margin-top: 6px;
@@ -388,17 +415,6 @@ dialog {
 .toolset_actor_watcher > .actor_compass { grid-area: actor_compass; margin-bottom: 12px; }
 .toolset_actor_watcher > .savestate_slot_actions { grid-area: savestate_slot_actions; }
 .toolset_actor_watcher > .bumper_pushbuttons { grid-area: bumper_pushbuttons; }
-
-.toolset_actor_watcher .actor_selector_options .selectRecall {
-    img {
-        /* TODO extract for any image-backed pushbutton? */
-        height: 100%;
-        width: 100%;
-        position: relative;
-        top: -6px;
-        margin-bottom: -18px;
-    }
-}
 
 .toolset_actor_watcher .actor_toggles {
     margin-top: 8px;

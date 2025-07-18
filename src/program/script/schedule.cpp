@@ -37,9 +37,9 @@ namespace lotuskit::script::schedule::tas {
                 textPos->x = 1280.0 - 350.0;
             });
             if (this->state.awaitPauseVal) {
-                lotuskit::TextWriter::printf(1, "awaitPauseRequest(%s:%3u)\n               fr:%6d\n", name, lotuskit::tas::Playback::duration60ToUIFrames(elapsedPlayback60-this->state.awaitBegin60), lotuskit::tas::Playback::duration60ToUIFrames(elapsedPlayback60));
+                lotuskit::TextWriter::printf(1, "awaitPauseRequest(%s:%3u)\n               fr:%6d\n", name, duration60ToUIFrames(elapsedPlayback60 - this->state.awaitBegin60, this->state.inputFPSMode), duration60ToUIFrames(elapsedPlayback60, this->state.inputFPSMode));
             } else {
-                lotuskit::TextWriter::printf(1, "awaitUnpauseRequest(%s:%3u)\n               fr:%6d\n", name, lotuskit::tas::Playback::duration60ToUIFrames(elapsedPlayback60-this->state.awaitBegin60), lotuskit::tas::Playback::duration60ToUIFrames(elapsedPlayback60));
+                lotuskit::TextWriter::printf(1, "awaitUnpauseRequest(%s:%3u)\n               fr:%6d\n", name, duration60ToUIFrames(elapsedPlayback60 - this->state.awaitBegin60, this->state.inputFPSMode), duration60ToUIFrames(elapsedPlayback60, this->state.inputFPSMode));
             }
         } else {
             this->state.isAwaitPauseRequestHash = 0; // end await
@@ -58,9 +58,9 @@ namespace lotuskit::script::schedule::tas {
                 textPos->x = 1280.0 - 350.0;
             });
             if (this->state.awaitPauseVal) {
-                lotuskit::TextWriter::printf(1, "tas::awaitPauseTarget(%s:%3u)\n               fr:%6d\n", name, lotuskit::tas::Playback::duration60ToUIFrames(elapsedPlayback60-this->state.awaitBegin60), lotuskit::tas::Playback::duration60ToUIFrames(elapsedPlayback60));
+                lotuskit::TextWriter::printf(1, "tas::awaitPauseTarget(%s:%3u)\n               fr:%6d\n", name, duration60ToUIFrames(elapsedPlayback60 - this->state.awaitBegin60, this->state.inputFPSMode), duration60ToUIFrames(elapsedPlayback60, this->state.inputFPSMode));
             } else {
-                lotuskit::TextWriter::printf(1, "tas::awaitUnpauseTarget(%s:%3u)\n               fr:%6d\n", name, lotuskit::tas::Playback::duration60ToUIFrames(elapsedPlayback60-this->state.awaitBegin60), lotuskit::tas::Playback::duration60ToUIFrames(elapsedPlayback60));
+                lotuskit::TextWriter::printf(1, "tas::awaitUnpauseTarget(%s:%3u)\n               fr:%6d\n", name, duration60ToUIFrames(elapsedPlayback60 - this->state.awaitBegin60, this->state.inputFPSMode), duration60ToUIFrames(elapsedPlayback60, this->state.inputFPSMode));
             }
         } else {
             this->state.isAwaitPauseTargetHash = 0; // end await
@@ -79,16 +79,35 @@ namespace lotuskit::script::schedule::tas {
             return false;
         }
 
+        //lotuskit::TextWriter::printf(1, "ass(%d)\n", 420); // XXX
+
         // pause scheduling
+        const bool isDebugPause = lotuskit::util::pause::isPauseRequest(0x2d67e2da);
+        if (isDebugPause && this->state.blockOnDebugPause) {
+            if (this->state.isAwaitPauseRequestHash == 0x2d67e2da && this->state.awaitPauseVal == true) {
+                // do not resume, but if script is awaiting DebugPause request, clear the blocking condition
+                this->state.isAwaitPauseRequestHash = 0;
+            }
+            if (isFrameAdvance && bypassDebugPause60 > 0) {
+                //lotuskit::TextWriter::printf(1, "isFrameAdvance(%d) bypassDebugPause60(%d)\n", isFrameAdvance, bypassDebugPause60); // XXX
+                // override pause to potentially unblock script
+                // return false; // fallthrough
+            } else {
+                lotuskit::TextWriter::printf(1, "tas::nop(DebugPause)\n               fr:%6d\n", duration60ToUIFrames(elapsedPlayback60, this->state.inputFPSMode));
+                return true;
+            }
+        }
+
         const bool isLoadingPause = lotuskit::util::pause::isPauseRequest(0x0eafe200);
-        if (isLoadingPause && this->state.skipLoadingPause) {
+        if (isLoadingPause && this->state.blockOnLoadingPause) {
             if (this->state.isAwaitPauseRequestHash == 0x0eafe200 && this->state.awaitPauseVal == true) {
                 // do not resume, but if script is awaiting LoadingPause request, clear the blocking condition
                 this->state.isAwaitPauseRequestHash = 0;
             }
-            lotuskit::TextWriter::printf(1, "tas::nop(LoadingPause)\n               fr:%6d\n", lotuskit::tas::Playback::duration60ToUIFrames(elapsedPlayback60));
+            lotuskit::TextWriter::printf(1, "tas::nop(LoadingPause)\n               fr:%6d\n", duration60ToUIFrames(elapsedPlayback60, this->state.inputFPSMode));
             return true;
         }
+
         if (this->calcScheduleIsAwaitPauseRequest()) { return true; } // modeline drawn on wait
         if (this->calcScheduleIsAwaitPauseTarget())  { return true; } // modeline drawn on wait
 
@@ -101,9 +120,13 @@ namespace lotuskit::script::schedule::tas {
         this->state.awaitBegin60 = 0;
         this->state.isAwaitPauseRequestHash = 0;
         this->state.isAwaitPauseTargetHash = 0;
-        this->state.skipLoadingPause = true;
+        this->state.blockOnDebugPause = true;
+        this->state.blockOnLoadingPause = true;
         this->state.awaitPauseVal = false;
-        // this->state.playbackInputPassthroughMode = PLAYBACK_TAS_ONLY
+
+        // TODO inherit from adjustable default/global? or scripts can just update these at exectime?
+        this->state.inputFPSMode = InputDurationScalingStrategy::FPS30_2X;
+        this->state.playbackInputPassthroughMode = PlaybackInputPassthroughMode::NULL_VANILLA;
     }
 
     void initModuleStack() {
@@ -135,17 +158,56 @@ namespace lotuskit::script::schedule::tas {
             }
         }
 
-        // deduct frametime from scheduled input
         auto& state = sp->state;
-        if (state.inputTTL60 >= deltaFrame60) {
-            state.inputTTL60 -= deltaFrame60;
-            elapsedPlayback60 += deltaFrame60;
-        } else {
-            // only 0/1/2 frames60 left on schedule and deltaFrame60 is larger
-            // XXX is erring on one side or the other better, until i properly figure this out?
-            //     ie playing out these closing frames and deferring or eating into subsequent inputs? sounds complicated in the dumb way
-            state.inputTTL60 = 0; // abandon/truncate the remainder of this scheduled input and resume script
-            elapsedPlayback60 += deltaFrame60; // desync observable by user when elapsed time exceeds their expected schedule
+        bool isPlaybackFrame = true;
+        bool isPauseAwareInputFrame = false;
+
+        if (isFrameAdvance) {
+            // FIXME many menus (eg plus, d-up) dont seem to open when stepping through their button, they seem sensitive to actual press time?
+            const bool isPause = lotuskit::util::pause::isPauseRequestStr("DebugPause");
+            isPlaybackFrame = false;
+
+            if (!isPause && bypassDebugPause60 == 0) {
+                // enforce pause
+                lotuskit::util::pause::requestPauseStr("DebugPause");
+                isPlaybackFrame = true;
+
+            } else if (isPause && bypassDebugPause60 == 0) {
+                // its paused already yay
+
+            } else if (!state.blockOnDebugPause) {
+                // execution continues without regard to DebugPause -- do not count down bypassDebugPause60, just run
+                isPlaybackFrame = true; // deduct from input timer
+                isPauseAwareInputFrame = true; // but dont count runlength
+
+            } else if (isPause && bypassDebugPause60 > 0) {
+                // release pause for bypassDebugPause60 duration -- do not count down this frame as we have not run unpaused yet
+                lotuskit::util::pause::releasePauseStr("DebugPause");
+
+            } else if (!isPause && bypassDebugPause60 > 0) {
+                // countdown time that just elapsed
+                bypassDebugPause60 -= std::min(bypassDebugPause60, deltaFrame60);
+                isPlaybackFrame = true;
+                if (bypassDebugPause60 == 0) {
+                    // enforce pause
+                    lotuskit::util::pause::requestPauseStr("DebugPause");
+                }
+            }
+        }
+
+        // deduct frametime from scheduled input
+        if (isPlaybackFrame) {
+            if (state.inputTTL60 >= deltaFrame60) {
+                state.inputTTL60 -= deltaFrame60;
+            } else {
+                // only 0/1/2 frames60 left on schedule and deltaFrame60 is larger
+                // XXX is erring on one side or the other better, until i properly figure this out?
+                //     ie playing out these closing frames and deferring or eating into subsequent inputs? sounds complicated in the dumb way
+                state.inputTTL60 = 0; // abandon/truncate the remainder of this scheduled input and resume script
+            }
+            if (!isPauseAwareInputFrame) {
+                elapsedPlayback60 += deltaFrame60; // desync observable by user when elapsed time exceeds their expected schedule (eg lag holds buttons longer than expected)
+            }
         }
 
         return state.inputTTL60 == 0; // is scheduled input exhausted?
@@ -162,20 +224,17 @@ namespace lotuskit::script::schedule::tas {
             return true; // err
         }
 
-        // TODO early return for frame advance etc (can we use debugpause?), deduct only frame-advanced time in frametime scheduling.
-        //      Exclude isPlaybackBeginPending from early return so it can always execute for eg ws/hotkey during frame advance.
-
         if (sp->isBlockedFromScheduling()) {
             return false; // ok: currently in an await/etc
         }
 
-        if (deltaFrame60 > 0) {
-            if (!calcConsumeFrametime_queryIsInputExhausted(deltaFrame60) && !isPlaybackBeginPending) {
-                return false; // ok: keep using scheduled input, do not resume script (unless requested)
-            }
+        if (!calcConsumeFrametime_queryIsInputExhausted(deltaFrame60) && !isPlaybackBeginPending) {
+            return false; // ok: keep using scheduled input, do not resume script (unless requested)
+        }
 
-            deltaFrame60 = 0; // only deduct frametime before explicit first run
-                              // (always 0 on stackframe pop+resume, so we don't deduct duplicate time when we goto CTX_ENTER)
+        if (deltaFrame60 > 0) {
+            // only deduct frametime before explicit first run
+            deltaFrame60 = 0; // (always 0 after stackframe pop+resume, so we don't deduct duplicate time when we goto CTX_ENTER)
         }
 
         isPlaybackBeginPending = false;
@@ -194,6 +253,15 @@ namespace lotuskit::script::schedule::tas {
                 sp->asCtx->Unprepare();
                 tryDiscardLastModuleForPop();
                 // TODO run gc?
+
+                // copy/inherit input state from finished sp, unless we have something scheduled already.
+                // This prevents any gaps in inputs before the resumed script has a chance to schedule something else.
+                if ((sp-1)->state.inputTTL60 == 0) {
+                    auto* prevInput = &(sp->state.input);
+                    auto* thisInput = &((sp-1)->state.input);
+                    std::memcpy((void*)thisInput, (void*)prevInput, 24+0x60);
+                    (sp-1)->state.playbackInputPassthroughMode = sp->state.playbackInputPassthroughMode;
+                }
 
                 // pop stackframe, go back and decide whether to resume
                 moduleStackIndex--;
@@ -220,7 +288,7 @@ namespace lotuskit::script::schedule::tas {
         return true; // err
     }
 
-    void pushExecLocalFileModule(const std::string& filename, const std::string& entryPoint, bool doImmediateExecute) {
+    void pushExecLocalFileModule(const std::string& filename, const std::string& entryPoint, bool doImmediateExecute, bool blockOnDebugPause) {
         // reuse any existing module by name during a single script execution -- do not check/rebuild file contents for update
         const auto engine = lotuskit::script::engine::asEngine;
         AngelScript::asIScriptModule* mod = engine->GetModule(filename.c_str(), AngelScript::asGM_ONLY_IF_EXISTS);
@@ -248,10 +316,10 @@ namespace lotuskit::script::schedule::tas {
             abortStackReq("[tas::schedule::pushExecLocalFileModule] module failed to build");
             return; // err
         }
-        pushExecModuleEntryPoint(mod, entryPoint, doImmediateExecute);
+        pushExecModuleEntryPoint(mod, entryPoint, doImmediateExecute, blockOnDebugPause);
     }
 
-    void pushExecLocalFileModuleNXTas(const std::string& filename, bool doImmediateExecute) {
+    void pushExecLocalFileModuleNXTas(const std::string& filename, bool doImmediateExecute, bool blockOnDebugPause) {
         // reuse any existing module by name during a single script execution -- do not check/rebuild file contents for update
         const auto engine = lotuskit::script::engine::asEngine;
         AngelScript::asIScriptModule* mod = engine->GetModule(filename.c_str(), AngelScript::asGM_ONLY_IF_EXISTS);
@@ -282,49 +350,69 @@ namespace lotuskit::script::schedule::tas {
             abortStackReq("[tas::schedule::pushExecLocalFileModuleNXTas] module failed to build");
             return; // err
         }
-        pushExecModuleEntryPoint(mod, "void main()", doImmediateExecute);
+        pushExecModuleEntryPoint(mod, "void main()", doImmediateExecute, blockOnDebugPause);
     }
 
-    void pushExecTextModule(const std::string& moduleName, const std::string& sectionName, const std::string& scriptText, const std::string& entryPoint, bool doImmediateExecute) {
+    void pushExecTextModule(const std::string& moduleName, const std::string& sectionName, const std::string& scriptText, const std::string& entryPoint, bool doImmediateExecute, bool blockOnDebugPause) {
         auto* mod = buildOnceOrGetModule(moduleName, sectionName, scriptText);
         if (mod == nullptr) { abortStackReq("[tas::schedule::pushExecTextModule] module failed to build"); return; } // err
         // XXX free scriptText
-        pushExecModuleEntryPoint(mod, entryPoint, doImmediateExecute);
+        pushExecModuleEntryPoint(mod, entryPoint, doImmediateExecute, blockOnDebugPause);
     }
 
-    void pushExecEval(const std::string& scriptText, const std::string& entryPoint, bool doImmediateExecute) {
+    void pushExecEval(const std::string& scriptText, const std::string& entryPoint, bool doImmediateExecute, bool blockOnDebugPause) {
         char moduleName[32];
         nn::util::SNPrintf(moduleName, sizeof(moduleName), "eval_%08x.as", murmur32(scriptText));
-        pushExecTextModule(moduleName, moduleName, scriptText, entryPoint, doImmediateExecute);
+        pushExecTextModule(moduleName, moduleName, scriptText, entryPoint, doImmediateExecute, blockOnDebugPause);
     }
 
-    void pushExecModuleEntryPoint(AngelScript::asIScriptModule* mod, const std::string& entryPoint, bool doImmediateExecute) {
-        const auto prevState = getSP()->asCtx->GetState();
-        const auto* prevMod = getSP()->asModule;
+    void pushExecModuleEntryPoint(AngelScript::asIScriptModule* mod, const std::string& entryPoint, bool doImmediateExecute, bool blockOnDebugPause) {
+        bool spIsIncrement = false;
+        { // decide advance sp + suspend any ongoing ctx
+            const auto prevState = getSP()->asCtx->GetState();
+            const auto* prevMod = getSP()->asModule;
+            if (prevMod != nullptr) {
+                // sp slot occupied, advance past it
+                if (prevState == AngelScript::asEXECUTION_ACTIVE) {
+                    trySuspendCtx();
+                }
+                spIsIncrement = true; // defer changing moduleStackIndex until sp+1 input is initialized
 
-        if (prevMod != nullptr) {
-            // sp slot occupied, advance past it
-            if (prevState == AngelScript::asEXECUTION_ACTIVE) {
-                trySuspendCtx();
-            }
-            moduleStackIndex++;
-
-        } else {
-            // sp slot is empty, just reuse it
-            if (prevState == AngelScript::asEXECUTION_ACTIVE) {
-                trySuspendCtx(); // XXX idk if necessary
+            } else {
+                // sp slot is empty, just reuse it
+                if (prevState == AngelScript::asEXECUTION_ACTIVE) {
+                    trySuspendCtx(); // XXX idk if necessary
+                }
+                spIsIncrement = false;
             }
         }
 
         ModuleStackFrame* sp = getSP();
+        if (spIsIncrement) {
+            // inherit initial input state to avoid gaps around sp transition
+            auto* prevInput = &(sp->state.input);
+            auto prevMode = sp->state.playbackInputPassthroughMode;
+            sp++;
+            auto* thisInput = &(sp->state.input);
+
+            sp->resetState(); // wipe timing/async/etc data
+            std::memcpy((void*)thisInput, (void*)prevInput, 24+0x60);
+            sp->state.playbackInputPassthroughMode = prevMode;
+
+        } else {
+            sp->resetState(); // wipe timing/async/etc data
+        }
+
         if (sp->asCtx == nullptr) { abortStackReq("[tas::schedule::pushExecModuleEntryPoint] sp ctx null"); return; } // err should be alloced
         if (sp->asModule != nullptr) { abortStackReq("[tas::schedule::pushExecModuleEntryPoint] sp module not null"); return; } // err should be empty
         // XXX assert asCtx state is uninitialized/unprepared
+
         sp->asModule = mod;
-        sp->resetState(); // wipe timing/async/etc data
+        sp->state.blockOnDebugPause = blockOnDebugPause;
 
         // Find the function that is to be called (mod+entryPoint -> funcptr)
         char buf[500];
+        if (entryPoint.c_str() == nullptr) { abortStackReq("uhhhhhhhh"); return; } // XXX
         AngelScript::asIScriptFunction *asEntryPoint = mod->GetFunctionByDecl(entryPoint.c_str());
         if (asEntryPoint == nullptr) {
             TextWriter::toastf(30*5, "[error] missing entry point %s \n", entryPoint.c_str());
@@ -335,6 +423,11 @@ namespace lotuskit::script::schedule::tas {
         }
 
         sp->asCtx->Prepare(asEntryPoint);
+
+        if (spIsIncrement) {
+            moduleStackIndex++; // finally increment after ^ initialization
+            // assert sp == getSP()
+        }
 
         if (doImmediateExecute) {
             const bool isCompleteOrFail = calcCtx();
@@ -355,9 +448,13 @@ namespace lotuskit::script::schedule::tas {
         // build in new module
         mod = engine->GetModule(moduleName.c_str(), AngelScript::asGM_CREATE_IF_NOT_EXISTS);
         if (mod == nullptr) { return nullptr; } // XXX impossible err?
-        mod->AddScriptSection(sectionName.c_str(), scriptText.c_str());
+        mod->AddScriptSection(sectionName.c_str(), scriptText.c_str()); // XXX can this fail but still build ok? would leak empty module
         s32 asErrno = mod->Build(); // Build the module
-        if (asErrno < 0) { return nullptr; } // The build failed. The message stream will have received compiler errors that shows what needs to be fixed
+        if (asErrno < 0) {
+            // The build failed. The message stream will have received compiler errors that shows what needs to be fixed
+            mod->Discard(); // do not leave empty module present
+            return nullptr;
+        }
         return mod;
     }
 
@@ -441,6 +538,18 @@ namespace lotuskit::script::schedule::tas {
             svcOutputDebugString(buf, strlen(buf));
             TextWriter::toastf(30*5, "%s\n", buf);
         }
+    }
+
+    u32 duration60ToUIFrames(u32 duration60, InputDurationScalingStrategy inputFPSMode) {
+        // how many "frames" is the timespan
+        if (inputFPSMode == InputDurationScalingStrategy::FPS60_1X) {
+            return duration60;
+        } else if (inputFPSMode == InputDurationScalingStrategy::FPS30_2X) {
+            return duration60 / 2;
+        } else if (inputFPSMode == InputDurationScalingStrategy::FPS20_3X) {
+            return duration60 / 3;
+        }
+        return 0xdeaddead;
     }
 
     void transpileImpl_nxtas_to_as(const char* src, char* dst, size_t dstMax) {

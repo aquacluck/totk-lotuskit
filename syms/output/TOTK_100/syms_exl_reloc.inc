@@ -66,6 +66,7 @@
 { util::ModuleIndex::Main, 0x00bf476c, "game::component::PlayerComponent::getLeftStickRadianCameraStandard" },
 { util::ModuleIndex::Main, 0x015ebbfc, "game::component::PlayerComponent::setLinearVelocity" },
 { util::ModuleIndex::Main, 0x01182160, "game::event::EventActorController::sendEventPlayReport" },
+{ util::ModuleIndex::Main, 0x0096ebc0, "game::player::StaminaCalculator::calcRecovery" },
 { util::ModuleIndex::Main, 0x00b22a34, "game::wm::WorldManagerModule::baseProcExe" },
 { util::ModuleIndex::Main, 0x00a9e0c0, "game::wm::WorldManagerModule::fogDisable_HACK" },
 { util::ModuleIndex::Main, 0x045f4ba8, "game::wm::WorldManagerModule::sInstance" },

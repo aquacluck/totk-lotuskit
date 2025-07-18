@@ -11,23 +11,6 @@ namespace lotuskit::util::actor {
     using CreateFunc = bool (engine::actor::ActorMgr*, const sead::SafeString&, const engine::actor::BaseProcMgr::CreateArg&,
                              engine::actor::CreateWatcherRef*, engine::actor::CreatePriority, engine::actor::PreActor*,
                              engine::actor::ActorFile*, sead::Function*, bool, engine::actor::BaseProcMgr::Result*, engine::actor::PreActor**);
-    class ForceSetMatrixArg {
-        public:
-        float f[12];
-        inline ForceSetMatrixArg(const sead::Vector3f& pos, const sead::Matrix33f& rot) {
-            f[3] = pos.x; f[7] = pos.y; f[11] = pos.z;
-            f[0] = rot.m[0][0]; f[1] = rot.m[0][1]; f[ 2] = rot.m[0][2];
-            f[4] = rot.m[1][0]; f[5] = rot.m[1][1]; f[ 6] = rot.m[1][2];
-            f[8] = rot.m[2][0]; f[9] = rot.m[2][1]; f[10] = rot.m[2][2];
-        }
-        inline void unfuck(sead::Vector3f& pos, sead::Matrix33f& rot) {
-            pos.x = f[3]; pos.y = f[7]; pos.z = f[11];
-            rot.m[0][0] = f[0]; rot.m[0][1] = f[1]; rot.m[0][2] = f[2];
-            rot.m[1][0] = f[4]; rot.m[1][1] = f[5]; rot.m[1][2] = f[6];
-            rot.m[2][0] = f[8]; rot.m[2][1] = f[9]; rot.m[2][2] = f[10];
-        }
-    };
-    using ForceSetMatrixFunc = void (engine::actor::ActorBase*, ForceSetMatrixArg*, u32);
 
     void createSimple(const std::string &actorName) {
         if (lotuskit::script::globals::ResidentActors::Player == nullptr) {
@@ -136,10 +119,14 @@ namespace lotuskit::util::actor {
         setPosRot(actor, sead::Vector3f{x, y, z}, sead::Matrix33f{m00, m01, m02, m10, m11, m12, m20, m21, m22});
     }
     void setPosRot(ActorBase* actor, const sead::Vector3f &pos, const sead::Matrix33f &rot) {
-        ForceSetMatrixArg arg{pos, rot};
-        ForceSetMatrixFunc* forceSetMatrix = EXL_SYM_RESOLVE<ForceSetMatrixFunc*>("engine::actor::ActorBase::forceSetMatrix");
+        sead::Matrix34f arg{rot, pos};
+        setPosRot34(actor, arg);
+    }
+    void setPosRot34(ActorBase* actor, const sead::Matrix34f &posrot) {
+        using impl_t = void (engine::actor::ActorBase*, const sead::Matrix34f&, u32);
+        auto impl = EXL_SYM_RESOLVE<impl_t*>("engine::actor::ActorBase::forceSetMatrix");
         u32 usuallyZeroFlag = 0;
-        forceSetMatrix(actor, &arg, usuallyZeroFlag);
+        impl(actor, posrot, usuallyZeroFlag);
     }
 
     phive::RigidBodyEntity* getMainRigidBody(ActorBase* actor) {

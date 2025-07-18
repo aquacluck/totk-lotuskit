@@ -25,7 +25,8 @@ namespace lotuskit::tas::Playback {
     void doScheduleAwaitUnpauseRequestStr(const std::string& requestKey);
     void doScheduleAwaitPauseTargetStr(const std::string& targetKey);
     void doScheduleAwaitUnpauseTargetStr(const std::string& targetKey);
-    void doSkipLoadingPause(bool);
+    void doBlockOnDebugPause(bool);
+    void doBlockOnLoadingPause(bool);
 
     // script binds for: current input
     void setCurrentInput(u32 duration=1, u64 nextButtons=0, s32 nextLStickX=0, s32 nextLStickY=0, s32 nextRStickX=0, s32 nextRStickY=0);
@@ -41,9 +42,13 @@ namespace lotuskit::tas::Playback {
     void setCurrentGyroAll(const sead::Vector3f& linearAcceleration, const sead::Vector3f& angularVelocity, const sead::Vector3f& angularVelocitySum, const sead::Matrix33f& rotation);
     void setCurrentGyroAllZero();
 
+    // script binds for: stepping through an existing script (this sp = interrupt ctx with blockOnDebugPause, <sp = script to step through)
+    void beginFrameAdvance();
+    void stepFrameAdvance(u32 duration=1);
+    void endFrameAdvance();
+
     // internal/utility
     void drawTextWriterModeLine();
-    u32 duration60ToUIFrames(u32 duration60);
 
 } // ns
 

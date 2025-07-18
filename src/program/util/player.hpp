@@ -31,5 +31,14 @@ namespace lotuskit::util::player {
     //void setLinearVelocity(sead::Vector3f* vel);
     //void setLinearVelocityXYZ(float x, float y, float z);
 
+    float getStamina();
+    void setStamina(float amount);
+    inline float freezeStaminaRecoveryAmount = 0; // 0: vanilla, <0: never recover, >0: always recover amount (bypass exhaustion + some other recovery blockers)
+    inline void freezeStaminaRecovery(float amount) { freezeStaminaRecoveryAmount = amount; }
+    inline bool freezeStaminaExhaustionMode = false;
+    inline void freezeStaminaExhaustion(bool exhausted) { freezeStaminaExhaustionMode = exhausted; }
+    inline bool doTextWriterStaminaCalculator = false;
+    inline void doTextWriterStaminaCalculator_set(bool v) { doTextWriterStaminaCalculator = v; }
+
 } // ns
 

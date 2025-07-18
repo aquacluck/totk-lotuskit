@@ -1,13 +1,15 @@
 #include <nn/util.h>
-#include "tas/config.hpp"
 #include "tas/Playback.hpp"
 #include "script/schedule.hpp"
 #include "structs/VFRMgr.hpp"
 #include "util/hash.hpp"
+#include "util/pause.hpp"
 #include "TextWriter.hpp"
 #include "Logger.hpp"
 using Logger = lotuskit::Logger;
 constexpr auto murmur32 = lotuskit::util::hash::murmur32;
+using PlaybackInputPassthroughMode = lotuskit::script::schedule::tas::PlaybackInputPassthroughMode;
+using InputDurationScalingStrategy = lotuskit::script::schedule::tas::InputDurationScalingStrategy;
 
 namespace lotuskit::tas::Playback {
     void calc() {
@@ -32,16 +34,16 @@ namespace lotuskit::tas::Playback {
         if (!lotuskit::script::schedule::tas::isPlaybackActive) { return false; }
         const auto& state = lotuskit::script::schedule::tas::getSP()->state;
 
-        switch(config::playbackInputPassthroughMode) {
-            case config::PlaybackInputPassthroughMode::NULL_VANILLA:
+        switch(state.playbackInputPassthroughMode) {
+            case PlaybackInputPassthroughMode::NULL_VANILLA:
             // passthrough all, do not alter input ("sleep")
             break;
 
-            case config::PlaybackInputPassthroughMode::PLAYBACK_TAS_ONLY:
+            case PlaybackInputPassthroughMode::PLAYBACK_TAS_ONLY:
             std::memcpy((void*)&(dst->mButtons), (void*)&(state.input.buttons), 24);
             break;
 
-            case config::PlaybackInputPassthroughMode::PASSTHROUGH_OR:
+            case PlaybackInputPassthroughMode::PASSTHROUGH_OR:
             *((u64*)&(dst->mButtons)) |= *((u64*)&(state.input.buttons));
             // passthrough all non-zero axes
             dst->mAnalogStickL.mX = (dst->mAnalogStickL.mX != 0) ? dst->mAnalogStickL.mX : state.input.LStick.mX;
@@ -51,7 +53,7 @@ namespace lotuskit::tas::Playback {
             // FIXME axis button flags not updated
             break;
 
-            case config::PlaybackInputPassthroughMode::PASSTHROUGH_XOR:
+            case PlaybackInputPassthroughMode::PASSTHROUGH_XOR:
             *((u64*)&(dst->mButtons)) ^= *((u64*)&(state.input.buttons));
             // toggle all non-zero axes
             dst->mAnalogStickL.mX = (state.input.LStick.mX == 0) ? dst->mAnalogStickL.mX :
@@ -72,14 +74,14 @@ namespace lotuskit::tas::Playback {
         if (!lotuskit::script::schedule::tas::isPlaybackActive) { return false; }
         const auto& state = lotuskit::script::schedule::tas::getSP()->state;
 
-        switch(config::playbackInputPassthroughMode) {
-            case config::PlaybackInputPassthroughMode::NULL_VANILLA:
+        switch(state.playbackInputPassthroughMode) {
+            case PlaybackInputPassthroughMode::NULL_VANILLA:
             // passthrough all, do not alter input ("sleep")
             break;
 
-            case config::PlaybackInputPassthroughMode::PASSTHROUGH_OR: // gyro unsupported
-            case config::PlaybackInputPassthroughMode::PASSTHROUGH_XOR: // gyro unsupported
-            case config::PlaybackInputPassthroughMode::PLAYBACK_TAS_ONLY:
+            case PlaybackInputPassthroughMode::PASSTHROUGH_OR: // gyro unsupported
+            case PlaybackInputPassthroughMode::PASSTHROUGH_XOR: // gyro unsupported
+            case PlaybackInputPassthroughMode::PLAYBACK_TAS_ONLY:
             // XXX hack dont clobber sample header
             std::memcpy((void*)&(dst_gyro->linearAcceleration), (void*)&(state.input.gyro.linearAcceleration), sizeof(nn::hid::SixAxisSensorState) - 0x10);
             break;
@@ -128,9 +130,13 @@ namespace lotuskit::tas::Playback {
         lotuskit::script::schedule::tas::isPlaybackActive = true;
         lotuskit::script::schedule::tas::trySuspendCtx(); // yield execution from script back to game
     }
-    void doSkipLoadingPause(bool v) {
+    void doBlockOnDebugPause(bool v) {
         auto& state = lotuskit::script::schedule::tas::getSP()->state;
-        state.skipLoadingPause = v;
+        state.blockOnDebugPause = v;
+    }
+    void doBlockOnLoadingPause(bool v) {
+        auto& state = lotuskit::script::schedule::tas::getSP()->state;
+        state.blockOnLoadingPause = v;
     }
 
     // script binds for: current input
@@ -140,11 +146,11 @@ namespace lotuskit::tas::Playback {
 
         // what is "n frames" expected to mean?
         u32 duration60 = 0;
-        if (config::inputMode == config::InputDurationScalingStrategy::FPS60_1X) {
+        if (state.inputFPSMode == InputDurationScalingStrategy::FPS60_1X) {
             duration60 = duration;
-        } else if (config::inputMode == config::InputDurationScalingStrategy::FPS30_2X) {
+        } else if (state.inputFPSMode == InputDurationScalingStrategy::FPS30_2X) {
             duration60 = duration * 2;
-        } else if (config::inputMode == config::InputDurationScalingStrategy::FPS20_3X) {
+        } else if (state.inputFPSMode == InputDurationScalingStrategy::FPS20_3X) {
             duration60 = duration * 3;
         } else return;
 
@@ -164,17 +170,14 @@ namespace lotuskit::tas::Playback {
         if (nextRStickX < -16400) { nextButtons |= (1 << (u32)nn::hid::NpadButton::StickRLeft); }
         if (nextRStickY >  16400) { nextButtons |= (1 << (u32)nn::hid::NpadButton::StickRUp); }
         if (nextRStickY < -16400) { nextButtons |= (1 << (u32)nn::hid::NpadButton::StickRDown); }
+        *(u64*)&(state.input.buttons) = nextButtons;
 
-        // TODO extract "playback begin" logic?
+        state.playbackInputPassthroughMode = PlaybackInputPassthroughMode::PLAYBACK_TAS_ONLY;
         if (!lotuskit::script::schedule::tas::isPlaybackActive) {
+            // TODO extract "playback begin" logic?
             lotuskit::script::schedule::tas::elapsedPlayback60 = 0;
         }
-
-        config::playbackInputPassthroughMode = config::PlaybackInputPassthroughMode::PLAYBACK_TAS_ONLY;
-        *(u64*)&(state.input.buttons) = nextButtons;              // These are expected to be
-        lotuskit::script::schedule::tas::isPlaybackActive = true; // written/observable in order
-        // XXX and i'm not confident that's guaranteed, but it doesnt seem dangerous at least?
-        //     i do this sort of guard without locking a lot though, so i need to find out. std::memory_order or something?
+        lotuskit::script::schedule::tas::isPlaybackActive = true;
 
         if (duration60 > 0) {
             lotuskit::script::schedule::tas::trySuspendCtx(); // yield execution from script back to game, to be resumed in n frames
@@ -182,16 +185,19 @@ namespace lotuskit::tas::Playback {
     }
     void setCurrentInputOr(u32 duration, u64 nextButtons, s32 nextLStickX, s32 nextLStickY, s32 nextRStickX, s32 nextRStickY) {
         setCurrentInput(duration, nextButtons, nextLStickX, nextLStickY, nextRStickX, nextRStickY);
-        config::playbackInputPassthroughMode = config::PlaybackInputPassthroughMode::PASSTHROUGH_OR; // TODO extract passthrough mode to sp state
+        auto& state = lotuskit::script::schedule::tas::getSP()->state;
+        state.playbackInputPassthroughMode = PlaybackInputPassthroughMode::PASSTHROUGH_OR;
     }
     void setCurrentInputXor(u32 duration, u64 nextButtons, s32 nextLStickX, s32 nextLStickY, s32 nextRStickX, s32 nextRStickY) {
         setCurrentInput(duration, nextButtons, nextLStickX, nextLStickY, nextRStickX, nextRStickY);
-        config::playbackInputPassthroughMode = config::PlaybackInputPassthroughMode::PASSTHROUGH_XOR; // TODO extract passthrough mode to sp state
+        auto& state = lotuskit::script::schedule::tas::getSP()->state;
+        state.playbackInputPassthroughMode = PlaybackInputPassthroughMode::PASSTHROUGH_XOR;
     }
     void setSleepInput(u32 duration) {
         // called by tas script to passthrough human input for next n frames
         setCurrentInput(duration, 0, 0,0, 0,0);
-        config::playbackInputPassthroughMode = config::PlaybackInputPassthroughMode::NULL_VANILLA; // TODO extract passthrough mode to sp state
+        auto& state = lotuskit::script::schedule::tas::getSP()->state;
+        state.playbackInputPassthroughMode = PlaybackInputPassthroughMode::NULL_VANILLA;
     }
 
     // script binds for: current gyro input
@@ -224,6 +230,46 @@ namespace lotuskit::tas::Playback {
         setCurrentGyroAll(v, v, v, m);
     }
 
+    void beginFrameAdvance() {
+        //lotuskit::TextWriter::toastf(30, "beginFrameAdvance(%d)\n", 420); // XXX
+
+        if (!lotuskit::script::schedule::tas::isFrameAdvance) {
+            lotuskit::script::schedule::tas::isFrameAdvance = true;
+            lotuskit::script::schedule::tas::bypassDebugPause60 = 0;
+        }
+        if (!lotuskit::util::pause::isPauseRequestStr("DebugPause")) {
+            lotuskit::util::pause::requestPauseStr("DebugPause");
+        }
+    }
+
+    void stepFrameAdvance(u32 duration) {
+        //lotuskit::TextWriter::toastf(30, "stepFrameAdvance(%d)\n", duration); // XXX
+
+        u32 duration60 = 0;
+        const auto* sp = lotuskit::script::schedule::tas::getSP();
+        const auto inputFPSMode = sp ? sp->state.inputFPSMode : InputDurationScalingStrategy::FPS30_2X; // TODO inherit from default/option? idk if this can even happen
+        if (inputFPSMode == InputDurationScalingStrategy::FPS60_1X) {
+            duration60 = duration;
+        } else if (inputFPSMode == InputDurationScalingStrategy::FPS30_2X) {
+            duration60 = duration * 2;
+        } else if (inputFPSMode == InputDurationScalingStrategy::FPS20_3X) {
+            duration60 = duration * 3;
+        }
+
+        if (!lotuskit::script::schedule::tas::isFrameAdvance) {
+            beginFrameAdvance();
+        }
+        lotuskit::script::schedule::tas::bypassDebugPause60 += duration60;
+    }
+
+    void endFrameAdvance() {
+        //lotuskit::TextWriter::toastf(30, "endFrameAdvance(%d)\n", 420); // XXX
+
+        lotuskit::util::pause::releasePauseStr("DebugPause"); // XXX might be easier to just force 0 and 1 instead of inc/dec
+        lotuskit::script::schedule::tas::bypassDebugPause60 = 0;
+        lotuskit::script::schedule::tas::isFrameAdvance = false;
+    }
+
     void drawTextWriterModeLine() {
         const auto& state = lotuskit::script::schedule::tas::getSP()->state;
         const auto currentInputTTL60 = state.inputTTL60;
@@ -231,28 +277,16 @@ namespace lotuskit::tas::Playback {
         // TODO opts for system tick? this frame's delta time? rta? igt?
         // (however its impossible to predict or progress-bar a script's frame duration -- halting problem)
         if (!lotuskit::script::schedule::tas::isPlaybackActive) {
-            lotuskit::TextWriter::printf(1, "tas::end TOTK_%d\n               fr:%6d\n",                                                 TOTK_VERSION, duration60ToUIFrames(elapsedPlayback60));
-        } else if (config::playbackInputPassthroughMode == config::PlaybackInputPassthroughMode::NULL_VANILLA) {
-            lotuskit::TextWriter::printf(1, "tas::sleep(%3u) TOTK_%d\n               fr:%6d\n", duration60ToUIFrames(currentInputTTL60), TOTK_VERSION, duration60ToUIFrames(elapsedPlayback60));
-        } else if (config::playbackInputPassthroughMode == config::PlaybackInputPassthroughMode::PLAYBACK_TAS_ONLY) {
-            lotuskit::TextWriter::printf(1, "tas::input(%3u) TOTK_%d\n               fr:%6d\n", duration60ToUIFrames(currentInputTTL60), TOTK_VERSION, duration60ToUIFrames(elapsedPlayback60));
-        } else if (config::playbackInputPassthroughMode == config::PlaybackInputPassthroughMode::PASSTHROUGH_OR) {
-            lotuskit::TextWriter::printf(1, "   inputOr(%3u) TOTK_%d\n               fr:%6d\n", duration60ToUIFrames(currentInputTTL60), TOTK_VERSION, duration60ToUIFrames(elapsedPlayback60));
-        } else if (config::playbackInputPassthroughMode == config::PlaybackInputPassthroughMode::PASSTHROUGH_XOR) {
-            lotuskit::TextWriter::printf(1, "  inputXor(%3u) TOTK_%d\n               fr:%6d\n", duration60ToUIFrames(currentInputTTL60), TOTK_VERSION, duration60ToUIFrames(elapsedPlayback60));
+            lotuskit::TextWriter::printf(1, "tas::end TOTK_%d\n               fr:%6d\n",                                                 TOTK_VERSION, duration60ToUIFrames(elapsedPlayback60, state.inputFPSMode));
+        } else if (state.playbackInputPassthroughMode == PlaybackInputPassthroughMode::NULL_VANILLA) {
+            lotuskit::TextWriter::printf(1, "tas::sleep(%3u) TOTK_%d\n               fr:%6d\n", duration60ToUIFrames(currentInputTTL60, state.inputFPSMode), TOTK_VERSION, duration60ToUIFrames(elapsedPlayback60, state.inputFPSMode));
+        } else if (state.playbackInputPassthroughMode == PlaybackInputPassthroughMode::PLAYBACK_TAS_ONLY) {
+            lotuskit::TextWriter::printf(1, "tas::input(%3u) TOTK_%d\n               fr:%6d\n", duration60ToUIFrames(currentInputTTL60, state.inputFPSMode), TOTK_VERSION, duration60ToUIFrames(elapsedPlayback60, state.inputFPSMode));
+        } else if (state.playbackInputPassthroughMode == PlaybackInputPassthroughMode::PASSTHROUGH_OR) {
+            lotuskit::TextWriter::printf(1, "   inputOr(%3u) TOTK_%d\n               fr:%6d\n", duration60ToUIFrames(currentInputTTL60, state.inputFPSMode), TOTK_VERSION, duration60ToUIFrames(elapsedPlayback60, state.inputFPSMode));
+        } else if (state.playbackInputPassthroughMode == PlaybackInputPassthroughMode::PASSTHROUGH_XOR) {
+            lotuskit::TextWriter::printf(1, "  inputXor(%3u) TOTK_%d\n               fr:%6d\n", duration60ToUIFrames(currentInputTTL60, state.inputFPSMode), TOTK_VERSION, duration60ToUIFrames(elapsedPlayback60, state.inputFPSMode));
         }
-    }
-
-    u32 duration60ToUIFrames(u32 duration60) {
-        // how many "frames" is the timespan
-        if (config::inputMode == config::InputDurationScalingStrategy::FPS60_1X) {
-            return duration60;
-        } else if (config::inputMode == config::InputDurationScalingStrategy::FPS30_2X) {
-            return duration60 / 2;
-        } else if (config::inputMode == config::InputDurationScalingStrategy::FPS20_3X) {
-            return duration60 / 3;
-        }
-        return 0xdeaddead;
     }
 
 } // ns

@@ -32,11 +32,11 @@ namespace lotuskit::script::hotkey {
         if (hk->bindCooldownRemaining > 0) { return; } // nop: bind is on cooldown
         hk->bindCooldownRemaining = cooldownFrames; // begin cooldown
         if (hk->execType == 1) {
-            lotuskit::script::schedule::tas::pushExecLocalFileModule(hk->arg, "void main()", false); // defer execution to main loop
+            lotuskit::script::schedule::tas::pushExecLocalFileModule(hk->arg, "void main()", false, false); // defer execution to main loop, noblock on DebugPause
         } else if (hk->execType == 2) {
-            lotuskit::script::schedule::tas::pushExecLocalFileModuleNXTas(hk->arg, false); // defer execution to main loop
+            lotuskit::script::schedule::tas::pushExecLocalFileModuleNXTas(hk->arg, false, false); // defer execution to main loop, noblock on DebugPause
         } else if (hk->execType == 3) {
-            lotuskit::script::schedule::tas::pushExecEval(hk->arg, "void main()", false); // defer execution to main loop
+            lotuskit::script::schedule::tas::pushExecEval(hk->arg, "void main()", false, false); // defer execution to main loop, noblock on DebugPause
         } else { return; } // err: 0 or unknown type
     }
 

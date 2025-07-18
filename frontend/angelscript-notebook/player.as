@@ -9,3 +9,12 @@ PlayerUtil::doLStickAbsoluteCameraFreeze(); // up is where the camera is pointed
 // (interferes with aim turn, dive turn, ...)
 PlayerUtil::doLStickAbsolutePlayer(); // up is Player forward
 
+// stamina
+PlayerUtil::freezeStaminaRecovery(0); // vanilla/default recovery
+PlayerUtil::freezeStaminaRecovery(-1); // cannot recover
+PlayerUtil::freezeStaminaRecovery(30000); // speed 100x and bypass
+PlayerUtil::freezeStaminaExhaustion(true); // always exhausted
+PlayerUtil::getStamina(); // basic stamina (float)
+PlayerUtil::setStamina(float); // 1000 per wheel
+PlayerUtil::doTextWriterStaminaCalculator(true); // info
+
