@@ -18,6 +18,7 @@
 { util::ModuleIndex::Main, 0x04719328, "_ZN4sead7HeapMgr10sRootHeapsE" },
 { util::ModuleIndex::Main, 0x047193c0, "_ZN4sead7HeapMgr12sInstancePtrE" },
 { util::ModuleIndex::Main, 0x00ebb084, "_ZN4sead7HeapMgr15createRootHeap_Ev" },
+{ util::ModuleIndex::Main, 0x04719388, "_ZN4sead7HeapMgr22sNinVirtualAddressHeapE" },
 { util::ModuleIndex::Main, 0x007f6180, "_ZN6engine5actor12BaseProcLinkD2Ev" },
 { util::ModuleIndex::Main, 0x007612b0, "_ZNK4sead7HeapMgr15findContainHeapEPKv" },
 { util::ModuleIndex::Main, 0x00adb7cc, "agl::create_arg" },

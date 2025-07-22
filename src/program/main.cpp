@@ -28,10 +28,16 @@ using Logger = lotuskit::Logger;
 
 HOOK_DEFINE_INLINE(StealHeapHook) {
     static constexpr auto s_name = "engine::steal_heap"; // hacks
+    static constexpr bool use_vheap = true;
     inline static sead::Heap* stolenHeap = nullptr;
     static void Callback(exl::hook::InlineCtx* ctx) {
-        constexpr auto xi = TOTK_VERSION == 100 ? 19 : 22;
-        stolenHeap = reinterpret_cast<sead::Heap*>(ctx->X[xi]);
+        if (StealHeapHook::use_vheap) {
+            stolenHeap = *EXL_SYM_RESOLVE<sead::Heap**>("_ZN4sead7HeapMgr22sNinVirtualAddressHeapE");
+        } else {
+            constexpr auto xi = TOTK_VERSION == 100 ? 19 : 22;
+            stolenHeap = reinterpret_cast<sead::Heap*>(ctx->X[xi]);
+        }
+
         lotuskit::TextWriter::assignHeap(StealHeapHook::stolenHeap);
         lotuskit::PrimitiveImpl::assignHeap(StealHeapHook::stolenHeap);
 
