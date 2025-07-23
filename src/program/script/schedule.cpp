@@ -6,6 +6,7 @@
 #include "util/pause.hpp"
 #include "TextWriter.hpp"
 #include "Logger.hpp"
+#include <heap/seadHeap.h>
 using Logger = lotuskit::Logger;
 constexpr auto murmur32 = lotuskit::util::hash::murmur32;
 
@@ -130,8 +131,11 @@ namespace lotuskit::script::schedule::tas {
     }
 
     void initModuleStack() {
+        moduleStack = (ModuleStackFrame*)lotuskit::script::engine::engineHeap->alloc(MAX_MODULE_STACK_DEPTH * sizeof(ModuleStackFrame)); // never freed
+        std::memset((void*)moduleStack, 0, MAX_MODULE_STACK_DEPTH * sizeof(ModuleStackFrame));
         const auto engine = lotuskit::script::engine::asEngine;
         for (size_t i = 0; i < MAX_MODULE_STACK_DEPTH; i++) {
+            std::construct_at(&moduleStack[i]);
             moduleStack[i].asCtx = engine->CreateContext();
         }
     }

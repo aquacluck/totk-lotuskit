@@ -70,7 +70,7 @@ namespace lotuskit::script::schedule::tas {
 
     // stack impl
     constexpr size_t MAX_MODULE_STACK_DEPTH = 12;
-    inline ModuleStackFrame moduleStack[MAX_MODULE_STACK_DEPTH] = {0}; // XXX defer alloc to initModuleStack?
+    inline ModuleStackFrame* moduleStack = nullptr;
     inline u8 moduleStackIndex = 0;
     inline ModuleStackFrame* getSP() { return &moduleStack[moduleStackIndex]; }
     void initModuleStack(); // init AS contexts at bootup
