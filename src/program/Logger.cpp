@@ -57,7 +57,7 @@ namespace lotuskit {
 
     void Logger::dumpTextFileIntoNS(const std::string& filename, const std::string& ns) {
         constexpr size_t maxOut = 0x2000;
-        char out[maxOut];
+        char out[maxOut]; // TODO malloc for large files?
         lotuskit::util::fs::readTextFile(out, maxOut, filename.c_str());
         Logger::logText(out, ns, false, false);
         Logger::logJson(json::object({

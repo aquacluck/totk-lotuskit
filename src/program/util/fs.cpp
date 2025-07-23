@@ -51,6 +51,26 @@ namespace lotuskit::util::fs {
         return false; // ok
     }
 
+    bool readTextFile(char** out, sead::Heap* heap, const std::string& path) {
+        *out = nullptr;
+        const auto cpath = canonicalize(path);
+        nn::fs::FileHandle fd;
+        nn::Result res = nn::fs::OpenFile(&fd, cpath.c_str(), nn::fs::OpenMode_Read);
+        if (!res.IsSuccess()) { return true; } // err
+
+        s64 fdLen = 0;
+        res = nn::fs::GetFileSize(&fdLen, fd);
+        if (!res.IsSuccess()) { return true; } // err
+
+        *out = (char*)heap->alloc(fdLen+1, 8);
+        res = nn::fs::ReadFile(fd, 0, *out, fdLen);
+        if (!res.IsSuccess()) { heap->free(*out); *out = nullptr; return true; } // err
+
+        nn::fs::CloseFile(fd);
+        (*out)[fdLen] = '\0'; // terminate
+        return false; // ok
+    }
+
     bool writeTextFile(const char* src, const std::string& path) {
         return writeFile(src, strlen(src), path);
     }

@@ -1,11 +1,13 @@
 #pragma once
 #include "exlaunch.hpp"
+#include <heap/seadHeap.h>
 #include <nn/fs.h>
 #include <string>
 
 namespace lotuskit::util::fs {
     bool fileExists(const std::string& path);
     bool readTextFile(char* out, s64 maxOut, const std::string& path); // return true when out=error
+    bool readTextFile(char** out, sead::Heap* heap, const std::string& path); // return true when error
     bool writeTextFile(const char* src, const std::string& path); // return true when error
     bool writeFile(const void* src, size_t srcLen, const std::string& path); // return true when error
     std::string canonicalize(const std::string& path);

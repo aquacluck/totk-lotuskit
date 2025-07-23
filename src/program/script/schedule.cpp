@@ -305,15 +305,13 @@ namespace lotuskit::script::schedule::tas {
                 return;
             }
 
-            // FIXME larger scripts / text alloc
-            char scriptBuf[0x2000];
-            if (lotuskit::util::fs::readTextFile(scriptBuf, sizeof(scriptBuf), filename.c_str())) {
-                svcOutputDebugString(scriptBuf, strlen(scriptBuf));
+            char* scriptBuf = nullptr;
+            if (lotuskit::util::fs::readTextFile(&scriptBuf, lotuskit::script::engine::engineHeap, filename.c_str())) {
                 abortStackReq("[tas::schedule::pushExecLocalFileModule] unreadable");
                 return;
             }
             mod = buildOnceOrGetModule(filename, filename, scriptBuf);
-            // XXX free scriptBuf
+            lotuskit::script::engine::engineHeap->free(scriptBuf);
         }
 
         if (mod == nullptr) {
@@ -336,18 +334,17 @@ namespace lotuskit::script::schedule::tas {
                 return;
             }
 
-            // FIXME larger scripts / text alloc
-            char nxtasBuf[0x2000]; nxtasBuf[0] = '\0'; // ro source nxtas
-            char scriptBuf[0x2000]; scriptBuf[0] = '\0'; // wx output AS
-            if (lotuskit::util::fs::readTextFile(nxtasBuf, sizeof(nxtasBuf), filename.c_str())) {
-                svcOutputDebugString(nxtasBuf, strlen(nxtasBuf));
+            char* nxtasBuf = nullptr; // ro source nxtas
+            if (lotuskit::util::fs::readTextFile(&nxtasBuf, lotuskit::script::engine::engineHeap, filename.c_str())) {
                 abortStackReq("[tas::schedule::pushExecLocalFileModuleNXTas] unreadable");
                 return;
             }
-            transpileImpl_nxtas_to_as(nxtasBuf, scriptBuf, sizeof(scriptBuf));
-            // XXX free nxtasBuf
+            const size_t scriptSizeGuess = strlen(nxtasBuf)+1+256;// FIXME realloc/expand instead of hoping this works
+            char* scriptBuf = (char*)lotuskit::script::engine::engineHeap->alloc(scriptSizeGuess); scriptBuf[0] = '\0'; // wx output AS
+            transpileImpl_nxtas_to_as(nxtasBuf, scriptBuf, scriptSizeGuess);
+            lotuskit::script::engine::engineHeap->free(nxtasBuf);
             mod = buildOnceOrGetModule(filename, filename, scriptBuf);
-            // XXX free scriptBuf
+            lotuskit::script::engine::engineHeap->free(scriptBuf);
         }
 
         if (mod == nullptr) {
@@ -640,7 +637,7 @@ namespace lotuskit::script::schedule::tas {
                 accStick[3] != lineStick[3] ) {
 
                 // emit accumulated input
-                nn::util::SNPrintf(dstTmp, sizeof(dstTmp), "tas::input(%d, %llu, %d,%d, %d,%d);\n", accDuration, accButton, accStick[0], accStick[1], accStick[2], accStick[3]);
+                nn::util::SNPrintf(dstTmp, sizeof(dstTmp), "input(%d, %llu, %d,%d, %d,%d);\n", accDuration, accButton, accStick[0], accStick[1], accStick[2], accStick[3]);
                 dstn += strlen(dstTmp);
                 if (dstn >= limit) { svcOutputDebugString("xpile overflow", 14); break; } // err
                 strcpy(dst, dstTmp);
@@ -659,7 +656,7 @@ namespace lotuskit::script::schedule::tas {
 
         // emit final accumulated input
         if (accDuration > 0) {
-            nn::util::SNPrintf(dstTmp, sizeof(dstTmp), "tas::input(%d, %llu, %d,%d, %d,%d);\n", accDuration, accButton, accStick[0], accStick[1], accStick[2], accStick[3]);
+            nn::util::SNPrintf(dstTmp, sizeof(dstTmp), "input(%d, %llu, %d,%d, %d,%d);\n", accDuration, accButton, accStick[0], accStick[1], accStick[2], accStick[3]);
             dstn += strlen(dstTmp);
             if (dstn >= limit) { svcOutputDebugString("xpile overflow", 14); } // err
             else {
