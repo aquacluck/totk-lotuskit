@@ -19,6 +19,7 @@
 #include "tas/InputDisplay.hpp"
 #include "tas/Playback.hpp"
 #include "tas/Record.hpp"
+#include "util/alloc.hpp"
 #include "util/camera.hpp"
 #include "util/player.hpp"
 #include "util/pause.hpp"
@@ -38,6 +39,7 @@ HOOK_DEFINE_INLINE(StealHeapHook) {
             stolenHeap = reinterpret_cast<sead::Heap*>(ctx->X[xi]);
         }
 
+        lotuskit::util::alloc::vheap = stolenHeap;
         lotuskit::TextWriter::assignHeap(StealHeapHook::stolenHeap);
         lotuskit::PrimitiveImpl::assignHeap(StealHeapHook::stolenHeap);
 
