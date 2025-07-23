@@ -137,8 +137,8 @@ namespace lotuskit::tas {
         // format line, send it to emitInputImpl
         char buf[200];
         if (useFormat_nxTASButtons || useFormat_nxTASAll) {
-            std::string buttonsSep = useFormat_nxTASAll ? ";" : "|";
-            std::string buttonsStr = "";
+            String buttonsSep = useFormat_nxTASAll ? ";" : "|";
+            String buttonsStr = "";
             if (buttons) {
                 if (buttons & (1 << 0)) { buttonsStr += buttonsSep + "KEY_A"; }
                 if (buttons & (1 << 1)) { buttonsStr += buttonsSep + "KEY_B"; }

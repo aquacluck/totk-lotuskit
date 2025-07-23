@@ -21,10 +21,10 @@ namespace lotuskit::tas::Playback {
     bool applyCurrentGyro(nn::hid::SixAxisSensorState* dst_gyro); // true when dst mutated
 
     // script binds for: pause scheduling
-    void doScheduleAwaitPauseRequestStr(const std::string& requestKey);
-    void doScheduleAwaitUnpauseRequestStr(const std::string& requestKey);
-    void doScheduleAwaitPauseTargetStr(const std::string& targetKey);
-    void doScheduleAwaitUnpauseTargetStr(const std::string& targetKey);
+    void doScheduleAwaitPauseRequestStr(const String& requestKey);
+    void doScheduleAwaitUnpauseRequestStr(const String& requestKey);
+    void doScheduleAwaitPauseTargetStr(const String& targetKey);
+    void doScheduleAwaitUnpauseTargetStr(const String& targetKey);
     void doBlockOnDebugPause(bool);
     void doBlockOnLoadingPause(bool);
 

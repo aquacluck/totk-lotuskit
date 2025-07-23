@@ -90,7 +90,7 @@ namespace lotuskit::tas::Playback {
     }
 
     // script binds for: pause scheduling
-    void doScheduleAwaitPauseRequestStr(const std::string& requestKey) {
+    void doScheduleAwaitPauseRequestStr(const String& requestKey) {
         auto& state = lotuskit::script::schedule::tas::getSP()->state;
 
         state.awaitPauseVal = true;
@@ -100,7 +100,7 @@ namespace lotuskit::tas::Playback {
         lotuskit::script::schedule::tas::isPlaybackActive = true;
         lotuskit::script::schedule::tas::trySuspendCtx(); // yield execution from script back to game
     }
-    void doScheduleAwaitUnpauseRequestStr(const std::string& requestKey) {
+    void doScheduleAwaitUnpauseRequestStr(const String& requestKey) {
         auto& state = lotuskit::script::schedule::tas::getSP()->state;
 
         state.awaitPauseVal = false;
@@ -110,7 +110,7 @@ namespace lotuskit::tas::Playback {
         lotuskit::script::schedule::tas::isPlaybackActive = true;
         lotuskit::script::schedule::tas::trySuspendCtx(); // yield execution from script back to game
     }
-    void doScheduleAwaitPauseTargetStr(const std::string& targetKey) {
+    void doScheduleAwaitPauseTargetStr(const String& targetKey) {
         auto& state = lotuskit::script::schedule::tas::getSP()->state;
 
         state.awaitPauseVal = true;
@@ -120,7 +120,7 @@ namespace lotuskit::tas::Playback {
         lotuskit::script::schedule::tas::isPlaybackActive = true;
         lotuskit::script::schedule::tas::trySuspendCtx(); // yield execution from script back to game
     }
-    void doScheduleAwaitUnpauseTargetStr(const std::string& targetKey) {
+    void doScheduleAwaitUnpauseTargetStr(const String& targetKey) {
         auto& state = lotuskit::script::schedule::tas::getSP()->state;
 
         state.awaitPauseVal = false;

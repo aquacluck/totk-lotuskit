@@ -36,7 +36,7 @@ namespace lotuskit::tas {
         // completed inputs are emitted according to logging/file/etc options:
         inline static bool doEmitWS = true;
         inline static bool doEmitFile = false;
-        inline static std::string useEmitLocalFile = "";
+        inline static String useEmitLocalFile = "";
         inline static nn::fs::FileHandle useEmitLocalFileFd = {};
         inline static u32 useEmitLocalFileOffset = 0;
         inline static bool doEmitDebug = false;
@@ -60,7 +60,7 @@ namespace lotuskit::tas {
         // expose some ez presets for AS
         static void beginDumpImpl(); // start new record, reusing current settings
         static void endDump(); // close codegen block/footers, flush+close file, etc
-        inline static void beginFileDump(const std::string& filename) {
+        inline static void beginFileDump(const String& filename) {
             doEmitDebug = false;
             doEmitWS = false;
             doEmitFile = true;
@@ -71,7 +71,7 @@ namespace lotuskit::tas {
             useFormat_nxTASButtons = true;
             beginDumpImpl();
         }
-        inline static void beginFileDumpNXTas(const std::string& filename) {
+        inline static void beginFileDumpNXTas(const String& filename) {
             doEmitDebug = false;
             doEmitWS = false;
             doEmitFile = true;

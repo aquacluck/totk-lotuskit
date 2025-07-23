@@ -5,16 +5,16 @@
 #include <string>
 
 namespace lotuskit::util::fs {
-    bool fileExists(const std::string& path);
-    bool readTextFile(char* out, s64 maxOut, const std::string& path); // return true when out=error
-    bool readTextFile(char** out, sead::Heap* heap, const std::string& path); // return true when error
-    bool writeTextFile(const char* src, const std::string& path); // return true when error
-    bool writeFile(const void* src, size_t srcLen, const std::string& path); // return true when error
-    std::string canonicalize(const std::string& path);
+    bool fileExists(const String& path);
+    bool readTextFile(char* out, s64 maxOut, const String& path); // return true when out=error
+    bool readTextFile(char** out, sead::Heap* heap, const String& path); // return true when error
+    bool writeTextFile(const char* src, const String& path); // return true when error
+    bool writeFile(const void* src, size_t srcLen, const String& path); // return true when error
+    String canonicalize(const String& path);
 
     // write a file split across several calls -- gross hack
-    void writeFileChunked(nn::fs::FileHandle* workingFd, const void* src, size_t srcLen, const std::string& path, u32 chunkOp, u64 chunkOffset);
+    void writeFileChunked(nn::fs::FileHandle* workingFd, const void* src, size_t srcLen, const String& path, u32 chunkOp, u64 chunkOffset);
 
-    using VisitCallback = void(const std::string&, nn::fs::DirectoryEntry*); // parent path, child dentry
-    void visitDirectoryEntries(const std::string& path, s32 openMode, VisitCallback* cb);
+    using VisitCallback = void(const String&, nn::fs::DirectoryEntry*); // parent path, child dentry
+    void visitDirectoryEntries(const String& path, s32 openMode, VisitCallback* cb);
 }

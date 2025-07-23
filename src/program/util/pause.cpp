@@ -132,7 +132,7 @@ namespace lotuskit::util::pause {
         impl(reqHash);
     }
 
-    void requestPauseStr(const std::string& reqKey) {
+    void requestPauseStr(const String& reqKey) {
         u32 hash = lotuskit::util::hash::murmur32(reqKey);
         requestPause(hash);
     }
@@ -143,7 +143,7 @@ namespace lotuskit::util::pause {
         impl(reqHash);
     }
 
-    void releasePauseStr(const std::string& reqKey) {
+    void releasePauseStr(const String& reqKey) {
         u32 hash = lotuskit::util::hash::murmur32(reqKey);
         releasePause(hash);
     }
@@ -173,7 +173,7 @@ namespace lotuskit::util::pause {
         freezeTargetIndex(i, val, clearOthers);
     }
 
-    void freezeTargetStr(const std::string& targetKey, bool val, bool clearOthers) {
+    void freezeTargetStr(const String& targetKey, bool val, bool clearOthers) {
         u32 hash = lotuskit::util::hash::murmur32(targetKey);
         freezeTarget(hash, val, clearOthers);
     }
@@ -222,15 +222,15 @@ namespace lotuskit::util::pause {
         processFrozen();
     }
 
-    void freezeRequestStr(const std::string& requestKey, bool val, bool clearOthers) {
+    void freezeRequestStr(const String& requestKey, bool val, bool clearOthers) {
         u32 hash = lotuskit::util::hash::murmur32(requestKey);
         freezeRequest(hash, val, clearOthers);
     }
 
     bool isPauseRequest(u32 hash) { return pauseMgr->getPauseRequestCount(hash) > 0; }
     bool isPauseTarget(u32 hash)  { return pauseMgr->isTargetPaused(hash); }
-    bool isPauseRequestStr(const std::string& key) { return isPauseRequest(lotuskit::util::hash::murmur32(key)); }
-    bool isPauseTargetStr(const std::string& key)  { return isPauseTarget(lotuskit::util::hash::murmur32(key)); }
+    bool isPauseRequestStr(const String& key) { return isPauseRequest(lotuskit::util::hash::murmur32(key)); }
+    bool isPauseTargetStr(const String& key)  { return isPauseTarget(lotuskit::util::hash::murmur32(key)); }
 
     inline void processFrozen() {
         if (isFreezeMask) {

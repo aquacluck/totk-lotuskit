@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 
-using namespace std;
+//using namespace std;
 
 BEGIN_AS_NAMESPACE
 

@@ -3,7 +3,7 @@
 #include <cstring>
 
 namespace lotuskit::util::fs {
-    bool fileExists(const std::string& path) {
+    bool fileExists(const String& path) {
         const auto cpath = canonicalize(path);
         nn::fs::FileHandle fd;
         nn::Result res = nn::fs::OpenFile(&fd, cpath.c_str(), nn::fs::OpenMode_Read);
@@ -14,7 +14,7 @@ namespace lotuskit::util::fs {
         return true;
     }
 
-    bool readTextFile(char* out, s64 maxOut, const std::string& path) {
+    bool readTextFile(char* out, s64 maxOut, const String& path) {
         char errbuf[200]; // assert maxOut > 200
         const auto cpath = canonicalize(path);
         nn::fs::FileHandle fd;
@@ -51,7 +51,7 @@ namespace lotuskit::util::fs {
         return false; // ok
     }
 
-    bool readTextFile(char** out, sead::Heap* heap, const std::string& path) {
+    bool readTextFile(char** out, sead::Heap* heap, const String& path) {
         *out = nullptr;
         const auto cpath = canonicalize(path);
         nn::fs::FileHandle fd;
@@ -71,11 +71,11 @@ namespace lotuskit::util::fs {
         return false; // ok
     }
 
-    bool writeTextFile(const char* src, const std::string& path) {
+    bool writeTextFile(const char* src, const String& path) {
         return writeFile(src, strlen(src), path);
     }
 
-    bool writeFile(const void* src, size_t srcLen, const std::string& path) {
+    bool writeFile(const void* src, size_t srcLen, const String& path) {
         // ty Watertoon for mc_decompressor as reference (GPL2, https://gamebanana.com/tools/13236)
         const auto cpath = canonicalize(path);
         nn::fs::FileHandle fd;
@@ -100,7 +100,7 @@ namespace lotuskit::util::fs {
         return false; // ok
     }
 
-    void writeFileChunked(nn::fs::FileHandle* fd, const void* src, size_t srcLen, const std::string& path, u32 chunkOp, u64 chunkOffset) {
+    void writeFileChunked(nn::fs::FileHandle* fd, const void* src, size_t srcLen, const String& path, u32 chunkOp, u64 chunkOffset) {
         const auto cpath = canonicalize(path);
         if (chunkOp == 1) {
             // create/open/truncate (first call)
@@ -123,7 +123,7 @@ namespace lotuskit::util::fs {
         }
     }
 
-    void visitDirectoryEntries(const std::string& path, s32 openMode, VisitCallback* cb) {
+    void visitDirectoryEntries(const String& path, s32 openMode, VisitCallback* cb) {
         const auto cpath = canonicalize(path);
         nn::fs::DirectoryHandle dh = {};
         nn::Result res = nn::fs::OpenDirectory(&dh, cpath.c_str(), openMode);
@@ -139,8 +139,8 @@ namespace lotuskit::util::fs {
         nn::fs::CloseDirectory(dh);
     }
 
-    std::string canonicalize(const std::string& path) {
-        const std::string PREFIX = "sdcard:/totk_lotuskit/";
+    String canonicalize(const String& path) {
+        const String PREFIX = "sdcard:/totk_lotuskit/";
         for (const char* c = path.c_str(); true; c++) {
             if (*c == '\0') { break; }
             if (*c == ':') { return path; } // path apparently contains a mount point, return unaltered

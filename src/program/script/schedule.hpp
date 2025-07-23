@@ -1,5 +1,4 @@
 #pragma once
-#include <string>
 #include <angelscript.h>
 #include "exlaunch.hpp"
 #include "tas/Playback.hpp"
@@ -32,7 +31,7 @@ namespace lotuskit::script::schedule::tas {
     inline bool isPlaybackBeginPending = false;
     inline bool isAbortReq = false;
     inline bool isFrameAdvance = false; // hold DebugPause by default, momentarily unpause with bypassDebugPause60
-    inline std::string abortReqReason = "";
+    inline String abortReqReason = "";
 
     class ModuleStackFrameScheduleState {
         public:
@@ -82,15 +81,15 @@ namespace lotuskit::script::schedule::tas {
     void trySuspendCtx();
 
     // push/enqueue
-    AngelScript::asIScriptModule* buildOnceOrGetModule(const std::string& moduleName, const std::string& sectionName, const std::string& scriptText);
-    void pushExecLocalFileModule(const std::string& filename, const std::string& entryPoint, bool doImmediateExecute = true, bool blockOnDebugPause = true);
-    void pushExecLocalFileModuleNXTas(const std::string& filename, bool doImmediateExecute = true, bool blockOnDebugPause = true); // transpile+run nxtas source file in new module
-    void pushExecTextModule(const std::string& moduleName, const std::string& sectionName, const std::string& scriptText, const std::string& entryPoint, bool doImmediateExecute = true, bool blockOnDebugPause = true);
-    void pushExecEval(const std::string& scriptText, const std::string& entryPoint, bool doImmediateExecute = true, bool blockOnDebugPause = true); // sugar for AS
-    void pushExecModuleEntryPoint(AngelScript::asIScriptModule* mod, const std::string& entryPoint, bool doImmediateExecute = true, bool blockOnDebugPause = true);
+    AngelScript::asIScriptModule* buildOnceOrGetModule(const String& moduleName, const String& sectionName, const String& scriptText);
+    void pushExecLocalFileModule(const String& filename, const String& entryPoint, bool doImmediateExecute = true, bool blockOnDebugPause = true);
+    void pushExecLocalFileModuleNXTas(const String& filename, bool doImmediateExecute = true, bool blockOnDebugPause = true); // transpile+run nxtas source file in new module
+    void pushExecTextModule(const String& moduleName, const String& sectionName, const String& scriptText, const String& entryPoint, bool doImmediateExecute = true, bool blockOnDebugPause = true);
+    void pushExecEval(const String& scriptText, const String& entryPoint, bool doImmediateExecute = true, bool blockOnDebugPause = true); // sugar for AS
+    void pushExecModuleEntryPoint(AngelScript::asIScriptModule* mod, const String& entryPoint, bool doImmediateExecute = true, bool blockOnDebugPause = true);
 
     // util
-    void abortStackReq(const std::string& reason = "err");
+    void abortStackReq(const String& reason = "err");
     void abortStackImpl(); // process abort req
     void transpileImpl_nxtas_to_as(const char* src, char* dst, size_t dstMax); // XXX doesnt belong here but it'll be easier to fix up alloc stuff when its not scattered (translating/loading/etc large scripts is very fragile, prob because it uses fakeheap)
     void dumpStack();

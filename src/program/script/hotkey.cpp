@@ -94,7 +94,7 @@ namespace lotuskit::script::hotkey {
         return nullptr;
     }
 
-    HotkeyBinding* getByKeyboardTrigger(const std::string& trigger) {
+    HotkeyBinding* getByKeyboardTrigger(const String& trigger) {
         u64 buttons = keyboardTriggerToButtons(trigger);
         for (size_t i=0; i < MAX_HOTKEYS; i++) {
             if (bindings[i].bindType == 2 && bindings[i].buttons == buttons) {
@@ -104,7 +104,7 @@ namespace lotuskit::script::hotkey {
         return nullptr;
     }
 
-    void bindButtonsExecFile(u64 buttons, const std::string& filename) {
+    void bindButtonsExecFile(u64 buttons, const String& filename) {
         unbindButtons(buttons);
         auto hk = getUnassigned();
         if (hk == nullptr) { return; } // err: max hotkeys bound
@@ -114,7 +114,7 @@ namespace lotuskit::script::hotkey {
         hk->arg = filename;
     }
 
-    void bindButtonsExecFileNXTas(u64 buttons, const std::string& filename) {
+    void bindButtonsExecFileNXTas(u64 buttons, const String& filename) {
         unbindButtons(buttons);
         auto hk = getUnassigned();
         if (hk == nullptr) { return; } // err: max hotkeys bound
@@ -124,7 +124,7 @@ namespace lotuskit::script::hotkey {
         hk->arg = filename;
     }
 
-    void bindButtonsEval(u64 buttons, const std::string& scriptText) {
+    void bindButtonsEval(u64 buttons, const String& scriptText) {
         unbindButtons(buttons);
         auto hk = getUnassigned();
         if (hk == nullptr) { return; } // err: max hotkeys bound
@@ -138,7 +138,7 @@ namespace lotuskit::script::hotkey {
         unassign(getByButtons(buttons));
     }
 
-    void bindKeyboardExecFile(const std::string& trigger, const std::string& filename) {
+    void bindKeyboardExecFile(const String& trigger, const String& filename) {
         unbindKeyboard(trigger);
         auto hk = getUnassigned();
         if (hk == nullptr) { return; } // err: max hotkeys bound
@@ -148,7 +148,7 @@ namespace lotuskit::script::hotkey {
         hk->arg = filename;
     }
 
-    void bindKeyboardExecFileNXTas(const std::string& trigger, const std::string& filename) {
+    void bindKeyboardExecFileNXTas(const String& trigger, const String& filename) {
         unbindKeyboard(trigger);
         auto hk = getUnassigned();
         if (hk == nullptr) { return; } // err: max hotkeys bound
@@ -158,7 +158,7 @@ namespace lotuskit::script::hotkey {
         hk->arg = filename;
     }
 
-    void bindKeyboardEval(const std::string& trigger, const std::string& scriptText) {
+    void bindKeyboardEval(const String& trigger, const String& scriptText) {
         unbindKeyboard(trigger);
         auto hk = getUnassigned();
         if (hk == nullptr) { return; } // err: max hotkeys bound
@@ -168,11 +168,11 @@ namespace lotuskit::script::hotkey {
         hk->arg = scriptText;
     }
 
-    void unbindKeyboard(const std::string& trigger) {
+    void unbindKeyboard(const String& trigger) {
         unassign(getByKeyboardTrigger(trigger));
     }
 
-    u64 keyboardTriggerToButtons(const std::string& trigger) {
+    u64 keyboardTriggerToButtons(const String& trigger) {
         // nn::hid::KeyboardKey fits in 1B so we can just pack up to 8 in the u64 buttons field.
         // this conversion from string is somewhat sloppy/expensive, but it's only run when registering/etc binds, not every frame.
         u64 outRaw = 0;

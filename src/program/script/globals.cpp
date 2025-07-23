@@ -4,7 +4,6 @@
 #include "script/hotkey.hpp"
 
 #include <nn/util.h>
-#include <lib/json.hpp>
 #include "tas/Playback.hpp"
 #include "tas/Record.hpp"
 #include "tas/InputDisplay.hpp"
@@ -15,6 +14,7 @@
 #include "PrimitiveDrawer.hpp"
 #include "server/WebSocket.hpp"
 #include "util/actor.hpp"
+#include "util/alloc.hpp"
 #include "util/camera.hpp"
 #include "util/color.hpp"
 #include "util/gamedata.hpp"
@@ -23,8 +23,9 @@
 #include "util/player.hpp"
 #include "util/pause.hpp"
 #include "util/world.hpp"
-using json = nlohmann::json;
+using json = lotuskit::json;
 using Logger = lotuskit::Logger;
+using String = lotuskit::String;
 #include <gfx/seadColor.h>
 #include <gfx/seadPrimitiveRenderer.h>
 #include <math/seadVector.h>
@@ -265,7 +266,7 @@ namespace lotuskit::script::globals {
             AngelScript::asIScriptContext *ctx = AngelScript::asGetActiveContext();
             if (ctx != nullptr) { ctx->Suspend(); }
         }
-        void debugLog(const std::string& msg) {
+        void debugLog(const String& msg) {
             svcOutputDebugString(msg.c_str(), msg.size());
         }
         void wsListen() {
@@ -273,8 +274,8 @@ namespace lotuskit::script::globals {
         }
 
         // unchecked memory access
-        u64 ptr_from_sym(const std::string& name) {
-            return (u64)EXL_SYM_RESOLVE<void*>(name);
+        u64 ptr_from_sym(const String& name) {
+            return (u64)EXL_SYM_RESOLVE<void*>(name.c_str());
         }
         u64 ptr_from_ActorBase(::engine::actor::ActorBase* ptr) { return (u64)ptr; }
         u64 ptr_from_RigidBody(phive::RigidBodyBase* ptr) { return (u64)ptr; }
@@ -318,7 +319,7 @@ namespace lotuskit::script::globals {
         void ptr_write_Matrix44f(sead::Matrix44f* ptr, const sead::Matrix44f& v) { *ptr = v; }
         void ptr_write_BoundBox2f(sead::BoundBox2f* ptr, const sead::BoundBox2f& v) { *ptr = v; }
         void ptr_write_BoundBox3f(sead::BoundBox3f* ptr, const sead::BoundBox3f& v) { *ptr = v; }
-        void ptr_write_string(u8* ptr, const std::string& v, bool nullTerminate) {
+        void ptr_write_string(u8* ptr, const String& v, bool nullTerminate) {
             const auto n = v.length();
             std::memcpy(ptr, v.c_str(), n);
             if (nullTerminate) { *(ptr+n) = 0; }
@@ -327,8 +328,8 @@ namespace lotuskit::script::globals {
 
     } // ns
 
-    void textwriter_as_print(size_t drawList_i, const std::string& msg) { lotuskit::TextWriter::printf(drawList_i, msg.c_str()); }
-    void textwriter_as_toast(u32 ttlFrames, const std::string& msg) { lotuskit::TextWriter::toastf(ttlFrames, msg.c_str()); }
+    void textwriter_as_print(size_t drawList_i, const String& msg) { lotuskit::TextWriter::printf(drawList_i, msg.c_str()); }
+    void textwriter_as_toast(u32 ttlFrames, const String& msg) { lotuskit::TextWriter::toastf(ttlFrames, msg.c_str()); }
 
     void primq_wirecube(size_t drawList_i, const sead::BoundBox3f& box, const sead::Color4f& color) { lotuskit::PrimitiveDrawer::drawWireCube(drawList_i, sead::PrimitiveDrawer::CubeArg(box, color)); }
     void primq_wirecube2(size_t drawList_i, const sead::Vector3f& pos, const sead::Vector3f& size, const sead::Color4f& color) { lotuskit::PrimitiveDrawer::drawWireCube(drawList_i, sead::PrimitiveDrawer::CubeArg(pos, size, color)); }
@@ -342,7 +343,7 @@ namespace lotuskit::script::globals {
     void actor_pos_set_y(::engine::actor::ActorBase* actor, float y) { lotuskit::util::actor::setPosXYZ(actor, actor->mPosition.x, y, actor->mPosition.z); }
     void actor_pos_set_z(::engine::actor::ActorBase* actor, float z) { lotuskit::util::actor::setPosXYZ(actor, actor->mPosition.x, actor->mPosition.y, z); }
     sead::BoundBox3f actor_aabb_get(::engine::actor::ActorBase* actor) { return actor->mAABB; }
-    std::string actor_name_get(::engine::actor::ActorBase* actor) { return actor->mActorName.cstr(); }
+    String actor_name_get(::engine::actor::ActorBase* actor) { return actor->mActorName.cstr(); }
     sead::Matrix33f actor_rot_get(::engine::actor::ActorBase* actor) { return actor->mRotation; }
     sead::Matrix34f actor_posrot_get(::engine::actor::ActorBase* actor) { return sead::Matrix34f{actor->mRotation, actor->mPosition}; }
     sead::Vector3f actor_vel_get(::engine::actor::ActorBase* actor) { return actor->mLastLinearVelocity; }
@@ -1378,9 +1379,9 @@ namespace lotuskit::script::globals {
 
         // TODO
         //bool getBool64bitKey(u64 hash, bool default_=false, bool direct=false);
-        //bool getBool64bitKeyKey(const std::string& key, bool default_=false, bool direct=false);
+        //bool getBool64bitKeyKey(const String& key, bool default_=false, bool direct=false);
         //void setBool64bitKey(u64 hash, bool value);
-        //void setBool64bitKeyKey(const std::string& key, bool value);
+        //void setBool64bitKeyKey(const String& key, bool value);
 
         // TODO boolexp
 

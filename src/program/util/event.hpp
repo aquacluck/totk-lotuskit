@@ -5,7 +5,7 @@
 
 namespace lotuskit::util::event {
 
-    void requestSimple(const std::string &eventName, engine::actor::ActorBase* eventStarterActor = nullptr);
+    void requestSimple(const String &eventName, engine::actor::ActorBase* eventStarterActor = nullptr);
 
 } // ns
 

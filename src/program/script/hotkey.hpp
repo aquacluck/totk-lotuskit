@@ -8,7 +8,7 @@ namespace lotuskit::script::hotkey {
         public:
         u64 buttons; // bindType 1: nn::hid::NpadButtonSet flagset
                      // bindType 2: nn::hid::KeyboardKey u8[8]
-        std::string arg; // local filename (execType 1, 2), AS source (execType 3)
+        String arg; // local filename (execType 1, 2), AS source (execType 3)
         u8 bindType; // 0: none, 1: buttons, 2: keyboard
         u8 execType; // 0: none, 1: AS file, 2: nxtas file, 3: AS eval
         u8 bindCooldownRemaining; // naive callcount, reset to cooldownFrames on trigger
@@ -20,22 +20,22 @@ namespace lotuskit::script::hotkey {
     HotkeyBinding* getUnassigned();
     HotkeyBinding* getByButtons(u64 buttons);
     HotkeyBinding* getByKeyboardState(const nn::hid::KeyboardState& keyboard);
-    HotkeyBinding* getByKeyboardTrigger(const std::string& trigger);
-    u64 keyboardTriggerToButtons(const std::string& trigger);
+    HotkeyBinding* getByKeyboardTrigger(const String& trigger);
+    u64 keyboardTriggerToButtons(const String& trigger);
 
     void calc(); // each frame: check for triggers + react
     void calcDispatch(HotkeyBinding* hk);
     void calcCooldown();
 
-    void bindButtonsExecFile(u64 buttons, const std::string& filename);
-    void bindButtonsExecFileNXTas(u64 buttons, const std::string& filename);
-    void bindButtonsEval(u64 buttons, const std::string& scriptText);
+    void bindButtonsExecFile(u64 buttons, const String& filename);
+    void bindButtonsExecFileNXTas(u64 buttons, const String& filename);
+    void bindButtonsEval(u64 buttons, const String& scriptText);
     void unbindButtons(u64 buttons);
 
-    void bindKeyboardExecFile(const std::string& trigger, const std::string& filename);
-    void bindKeyboardExecFileNXTas(const std::string& trigger, const std::string& filename);
-    void bindKeyboardEval(const std::string& trigger, const std::string& scriptText);
-    void unbindKeyboard(const std::string& trigger);
+    void bindKeyboardExecFile(const String& trigger, const String& filename);
+    void bindKeyboardExecFileNXTas(const String& trigger, const String& filename);
+    void bindKeyboardEval(const String& trigger, const String& scriptText);
+    void unbindKeyboard(const String& trigger);
 
     inline u8 cooldownFrames = 15;
     inline void setCooldown(u8 frames) { cooldownFrames = frames; }

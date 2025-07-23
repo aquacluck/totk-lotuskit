@@ -10,7 +10,7 @@
 #include <regex>
 
 
-using namespace std;
+//using namespace std;
 
 // This macro is used to avoid warnings about unused variables.
 // Usually where the variables are only used in debug mode.
@@ -21,12 +21,12 @@ using namespace std;
 // cache, so the unordered_map is faster than the ordinary map
 #include <unordered_map>  // std::unordered_map
 BEGIN_AS_NAMESPACE
-typedef unordered_map<string, int> map_t;
+typedef std::unordered_map<string, int> map_t;
 END_AS_NAMESPACE
 #else
 #include <map>      // std::map
 BEGIN_AS_NAMESPACE
-typedef map<string, int> map_t;
+typedef std::map<string, int> map_t;
 END_AS_NAMESPACE
 #endif
 
@@ -680,7 +680,7 @@ static void StringFormat(asIScriptGeneric* gen)
 					break;
 
 #define AS_STRING_FORMAT_IMPL(tid, type) \
-	case tid: result += to_string(*(type*)ref); break
+        case tid: result += std::to_string(*(type*)ref); break
 
 					AS_STRING_FORMAT_IMPL(asTYPEID_INT8, int8_t);
 					AS_STRING_FORMAT_IMPL(asTYPEID_INT16, int16_t);
@@ -714,7 +714,7 @@ static void StringFormat(asIScriptGeneric* gen)
 					else // enums
 					{
 						// TODO: Format enum name
-						result += to_string(*(int*)ref);
+						result += std::to_string(*(int*)ref);
 					}
 				}
 			}
@@ -742,7 +742,7 @@ static void StringScan(asIScriptGeneric* gen)
 {
 	asIScriptEngine* engine = gen->GetEngine();
 
-	stringstream ss(*(string*)gen->GetArgObject(0));
+  std::stringstream ss(*(string*)gen->GetArgObject(0));
 	asUINT scanned = 0;
 
 	for (asUINT i = 1; i < (asUINT)gen->GetArgCount(); ++i)
@@ -971,9 +971,13 @@ static string StringSubString(asUINT start, int count, const string &str)
 // For some reason gcc 4.7 has difficulties resolving the
 // asFUNCTIONPR(operator==, (const string &, const string &)
 // makro, so this wrapper was introduced as work around.
-static bool StringEquals(const std::string& lhs, const std::string& rhs)
+static bool StringEquals(const string& lhs, const string& rhs)
 {
 	return lhs == rhs;
+}
+
+static string StringConcat(const string& lhs, const string& rhs) {
+    return lhs + rhs;
 }
 
 void RegisterStdString_Native(asIScriptEngine *engine)
@@ -1003,7 +1007,7 @@ void RegisterStdString_Native(asIScriptEngine *engine)
 	// Need to use a wrapper for operator== otherwise gcc 4.7 fails to compile
 	r = engine->RegisterObjectMethod("string", "bool opEquals(const string &in) const", asFUNCTIONPR(StringEquals, (const string &, const string &), bool), asCALL_CDECL_OBJFIRST); assert( r >= 0 );
 	r = engine->RegisterObjectMethod("string", "int opCmp(const string &in) const", asFUNCTION(StringCmp), asCALL_CDECL_OBJFIRST); assert( r >= 0 );
-	r = engine->RegisterObjectMethod("string", "string opAdd(const string &in) const", asFUNCTIONPR(operator +, (const string &, const string &), string), asCALL_CDECL_OBJFIRST); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("string", "string opAdd(const string &in) const", asFUNCTIONPR(StringConcat, (const string &, const string &), string), asCALL_CDECL_OBJFIRST); assert( r >= 0 );
 
 	// The string length can be accessed through methods or through virtual property
 	// TODO: Register as size() for consistency with other types

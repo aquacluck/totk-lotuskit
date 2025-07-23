@@ -1,5 +1,4 @@
 #pragma once
-#include <string>
 #include <cstring>
 #include <format>
 #include <gfx/seadPrimitiveRenderer.h>
@@ -7,10 +6,11 @@
 #include <math/seadVector.h>
 #include "structs/engineActor.hpp"
 #include "structs/phive.hpp"
+#include "util/alloc.hpp"
 #include "TextWriter.hpp"
 #include "PrimitiveDrawer.hpp"
-#include <lib/json.hpp>
-using json = nlohmann::json;
+using json = lotuskit::json;
+using String = lotuskit::String;
 
 //const sead::Color4f Transparent{0,0,0,0};
 //const sead::Color4f White{1,1,1,1};
@@ -30,7 +30,7 @@ namespace lotuskit {
         bool isCalc; // enable this slot to run
         bool isPendingSelection;
         u8 selectionType; // 0 = unused, 1 = next spawn, 2 = next dep to a given slot/actor (TODO?), 3 = preactor, 4 = recall hover, 5=free!, 6=banc entity mInstanceId actor hash,
-        std::string selectionStr;
+        String selectionStr;
         u64 selectionVal64;
         engine::actor::ActorBase* actorSelectorBaseProcDep;
         engine::actor::ActorBase* actor;
@@ -161,7 +161,7 @@ namespace lotuskit {
             slot.wsAnnounceState(i);
             slot.wsAnnounceConfig(i);
         }
-        inline static void assignSlotAwaitSpawn(size_t i, std::string actorName) {
+        inline static void assignSlotAwaitSpawn(size_t i, String actorName) {
             auto& slot = slots[i];
             slot.clear();
             slot.isCalc = true;
@@ -261,7 +261,7 @@ namespace lotuskit {
             }
         }
 
-        inline static s64 querySpawnSelectorSlot(const std::string actorName) {
+        inline static s64 querySpawnSelectorSlot(const String actorName) {
             for (u8 i=0; i < MAX_WATCHER_SLOTS; i++) {
                 auto& slot = slots[i];
                 if (!slot.isCalc) { continue; }

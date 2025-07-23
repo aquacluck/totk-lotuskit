@@ -16,7 +16,9 @@
 #include <angelscript.h>
 #endif
 
-#include <string>
+//#include <string>
+#include "exlaunch.hpp"
+using string = lotuskit::String;
 
 //---------------------------
 // Compilation settings
@@ -40,7 +42,7 @@
 
 // This option disables the implicit operators with primitives
 #ifndef AS_NO_IMPL_OPS_WITH_STRING_AND_PRIMITIVE
-#define AS_NO_IMPL_OPS_WITH_STRING_AND_PRIMITIVE 0
+#define AS_NO_IMPL_OPS_WITH_STRING_AND_PRIMITIVE 1
 #endif
 
 BEGIN_AS_NAMESPACE

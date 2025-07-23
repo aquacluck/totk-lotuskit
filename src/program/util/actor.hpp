@@ -8,15 +8,15 @@ using ActorBase = engine::actor::ActorBase;
 #include "structs/phive.hpp"
 
 namespace lotuskit::util::actor {
-    void createSimple(const std::string &actorName);
-    void createSimpleXYZ(const std::string &actorName, float x, float y, float z);
-    void createSimplePos(const std::string &actorName, const sead::Vector3f &pos);
-    void createSimplePosRot(const std::string &actorName, const sead::Vector3f &pos, const sead::Matrix33f &rot);
+    void createSimple(const String &actorName);
+    void createSimpleXYZ(const String &actorName, float x, float y, float z);
+    void createSimplePos(const String &actorName, const sead::Vector3f &pos);
+    void createSimplePosRot(const String &actorName, const sead::Vector3f &pos, const sead::Matrix33f &rot);
 
-    void createAndWatch(size_t slotIndex, const std::string &actorName);
-    void createAndWatchXYZ(size_t slotIndex, const std::string &actorName, float x, float y, float z);
-    void createAndWatchPos(size_t slotIndex, const std::string &actorName, const sead::Vector3f &pos);
-    void createAndWatchPosRot(size_t slotIndex, const std::string &actorName, const sead::Vector3f &pos, const sead::Matrix33f &rot);
+    void createAndWatch(size_t slotIndex, const String &actorName);
+    void createAndWatchXYZ(size_t slotIndex, const String &actorName, float x, float y, float z);
+    void createAndWatchPos(size_t slotIndex, const String &actorName, const sead::Vector3f &pos);
+    void createAndWatchPosRot(size_t slotIndex, const String &actorName, const sead::Vector3f &pos, const sead::Matrix33f &rot);
 
     void setPos(ActorBase* actor, const sead::Vector3f &pos);
     void setPosXYZ(ActorBase* actor, float x, float y, float z);
@@ -27,7 +27,7 @@ namespace lotuskit::util::actor {
     void setPosRot34(ActorBase* actor, const sead::Matrix34f &posrot);
 
     phive::RigidBodyEntity* getMainRigidBody(ActorBase* actor);
-    phive::RigidBodyEntity* getRigidBodyByName(ActorBase* actor, const std::string& name);
+    phive::RigidBodyEntity* getRigidBodyByName(ActorBase* actor, const String& name);
 
     // TODO extract what we can to dedicated ns: as/ai/bb/util/??? (good time to split decl/member/etc into separate methods too)
     enum class BBDumpMode: u32 { MEMBERS = 0, ENUMCLS_FILE_DECL = 1 };

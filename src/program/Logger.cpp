@@ -3,11 +3,10 @@
 #include "util/fs.hpp"
 #include <nn/fs.h>
 //#include <thread/seadThread.h>
-using json = nlohmann::json;
 
 namespace lotuskit {
     // TODO filters/flags/??? for log outputs (svcOutputDebugString, ws, perhaps textwriter)
-    void Logger::logJson(json obj, const std::string& ns, bool doBlocking, bool doDebugLog) {
+    void Logger::logJson(json obj, const String& ns, bool doBlocking, bool doDebugLog) {
         //sead::ThreadMgr* mgr = *EXL_SYM_RESOLVE<sead::ThreadMgr**>("sead::ThreadMgr::sInstance");
         //sead::Thread* thread = mgr->getCurrentThread(); // XXX what happens if we invoke this from a non-sead thread?
 
@@ -18,7 +17,7 @@ namespace lotuskit {
             //{"tid", thread->getId()},
             //{"tname", thread->getName().cstr()} // TODO INamable+SafeString overloads?
         });
-        std::string out = obj.dump();
+        String out = obj.dump();
 
         if (doBlocking) {
             if (doDebugLog) {
@@ -33,7 +32,7 @@ namespace lotuskit {
         }
     }
 
-    void Logger::logText(const std::string& msg, const std::string& ns, bool doBlocking, bool doDebugLog) {
+    void Logger::logText(const String& msg, const String& ns, bool doBlocking, bool doDebugLog) {
         return Logger::logJson(json::object({ {"msg", msg} }), ns, doBlocking, doDebugLog);
     }
 
@@ -55,7 +54,7 @@ namespace lotuskit {
     }
     */
 
-    void Logger::dumpTextFileIntoNS(const std::string& filename, const std::string& ns) {
+    void Logger::dumpTextFileIntoNS(const String& filename, const String& ns) {
         constexpr size_t maxOut = 0x2000;
         char out[maxOut]; // TODO malloc for large files?
         lotuskit::util::fs::readTextFile(out, maxOut, filename.c_str());
@@ -65,12 +64,12 @@ namespace lotuskit {
         }), ns, false, false);
     }
 
-    void Logger::dumpDirectoryIndexIntoNS(const std::string& path, const std::string& ns) {
+    void Logger::dumpDirectoryIndexIntoNS(const String& path, const String& ns) {
         const auto indexMode = nn::fs::OpenDirectoryMode::OpenDirectoryMode_All; // subdirs+files
         static const char* ns_;
         ns_ = ns.c_str(); // HACK no capture
 
-        lotuskit::util::fs::visitDirectoryEntries(path, indexMode, [](const std::string& cpath, nn::fs::DirectoryEntry* dentry) {
+        lotuskit::util::fs::visitDirectoryEntries(path, indexMode, [](const String& cpath, nn::fs::DirectoryEntry* dentry) {
             Logger::logJson(json::object({
                 {"name", dentry->mName},
                 {"size", dentry->mFileSize},

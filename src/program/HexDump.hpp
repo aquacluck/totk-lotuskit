@@ -31,7 +31,7 @@ namespace lotuskit {
         s32 dumpLen; // abs(dumpLen) capped at BUF_LEN, but +-2GB addressable. Should be a multiple of 0x10
         u32 drawLen; // capped at smallest of: abs(dumpLen) or BUF_LEN or about a screenful, to eg observe a large BUF_LEN but limit the output. default: about a screenful. Should be a multiple of 0x10
         u32 calcAge; // calc ticks since isCalc was last true / buf was refreshed
-        std::string label; // user chosen for reference
+        String label; // user chosen for reference
         HexDumpDataType dataType; // try to format data to this type
         bool formatHex; // prefer hex over decimal (when applicable)
 
@@ -56,7 +56,7 @@ namespace lotuskit {
 
         inline static void clearSlot(size_t i) { slots[i].clear(); }
         inline static void pauseSlot(size_t i) { slots[i].isCalc = false; }
-        inline static void assignSlotAbsolute(size_t i, void* dumpSrc, u32 dumpLen, u32 drawLen, const std::string &label, u32 dataType, bool formatHex) {
+        inline static void assignSlotAbsolute(size_t i, void* dumpSrc, u32 dumpLen, u32 drawLen, const String &label, u32 dataType, bool formatHex) {
             auto& slot = slots[i];
             slot.clear();
             slot.label = label;

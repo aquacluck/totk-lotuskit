@@ -53,7 +53,7 @@ namespace phive {
             return out;
         }
 
-        std::string getName() {
+        String getName() {
             using impl_t = const char* (RigidBodyBase*);
             auto impl = EXL_SYM_RESOLVE<impl_t*>("phive::RigidBodyBase::getName");
             return impl(this);

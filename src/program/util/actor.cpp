@@ -12,7 +12,7 @@ namespace lotuskit::util::actor {
                              engine::actor::CreateWatcherRef*, engine::actor::CreatePriority, engine::actor::PreActor*,
                              engine::actor::ActorFile*, sead::Function*, bool, engine::actor::BaseProcMgr::Result*, engine::actor::PreActor**);
 
-    void createSimple(const std::string &actorName) {
+    void createSimple(const String &actorName) {
         if (lotuskit::script::globals::ResidentActors::Player == nullptr) {
             return createSimpleXYZ(actorName, 0, 0, 0);
         }
@@ -20,15 +20,15 @@ namespace lotuskit::util::actor {
         createSimpleXYZ(actorName, pos.x, pos.y + 1.f, pos.z - 4.f); // just north
     }
 
-    void createSimpleXYZ(const std::string &actorName, float x, float y, float z) {
+    void createSimpleXYZ(const String &actorName, float x, float y, float z) {
         createSimplePosRot(actorName, sead::Vector3f{x, y, z}, sead::Matrix33f{1,0,0, 0,1,0, 0,0,1});
     }
 
-    void createSimplePos(const std::string &actorName, const sead::Vector3f &pos) {
+    void createSimplePos(const String &actorName, const sead::Vector3f &pos) {
         createSimplePosRot(actorName, pos, sead::Matrix33f{1,0,0, 0,1,0, 0,0,1});
     }
 
-    void createSimplePosRot(const std::string &actorName, const sead::Vector3f &pos, const sead::Matrix33f &rot) {
+    void createSimplePosRot(const String &actorName, const sead::Vector3f &pos, const sead::Matrix33f &rot) {
         bb::InitInfo<32> initInfo;
         //initInfo.setParam(sead::SafeString{"EquipmentUser_Bow"}, sead::SafeString{"Weapon_Bow_032"});
         //initInfo.setParam(sead::SafeString{"EquipmentUser_Shield"}, sead::SafeString{"Weapon_Shield_018"});
@@ -53,7 +53,7 @@ namespace lotuskit::util::actor {
         svcOutputDebugString(buf, strlen(buf));
     }
 
-    void createAndWatch(size_t slotIndex, const std::string &actorName) {
+    void createAndWatch(size_t slotIndex, const String &actorName) {
         if (lotuskit::script::globals::ResidentActors::Player == nullptr) {
             return createAndWatchXYZ(slotIndex, actorName, 0, 0, 0);
         }
@@ -61,15 +61,15 @@ namespace lotuskit::util::actor {
         createAndWatchXYZ(slotIndex, actorName, pos.x, pos.y + 1.f, pos.z - 4.f); // just north
     }
 
-    void createAndWatchXYZ(size_t slotIndex, const std::string &actorName, float x, float y, float z) {
+    void createAndWatchXYZ(size_t slotIndex, const String &actorName, float x, float y, float z) {
         createAndWatchPosRot(slotIndex, actorName, sead::Vector3f{x, y, z}, sead::Matrix33f{1,0,0, 0,1,0, 0,0,1});
     }
 
-    void createAndWatchPos(size_t slotIndex, const std::string &actorName, const sead::Vector3f &pos) {
+    void createAndWatchPos(size_t slotIndex, const String &actorName, const sead::Vector3f &pos) {
         createAndWatchPosRot(slotIndex, actorName, pos, sead::Matrix33f{1,0,0, 0,1,0, 0,0,1});
     }
 
-    void createAndWatchPosRot(size_t slotIndex, const std::string &actorName, const sead::Vector3f &pos, const sead::Matrix33f &rot) {
+    void createAndWatchPosRot(size_t slotIndex, const String &actorName, const sead::Vector3f &pos, const sead::Matrix33f &rot) {
         bb::InitInfo<32> initInfo;
         //initInfo.setParam(sead::SafeString{"EquipmentUser_Bow"}, sead::SafeString{"Weapon_Bow_032"});
         //initInfo.setParam(sead::SafeString{"EquipmentUser_Shield"}, sead::SafeString{"Weapon_Shield_018"});
@@ -137,7 +137,7 @@ namespace lotuskit::util::actor {
         return nullptr;
     }
 
-    phive::RigidBodyEntity* getRigidBodyByName(ActorBase* actor, const std::string& name) {
+    phive::RigidBodyEntity* getRigidBodyByName(ActorBase* actor, const String& name) {
         using impl_t = phive::RigidBodyEntity* (ActorBase*, const sead::SafeString&);
         auto impl = EXL_SYM_RESOLVE<impl_t*>("engine::actor::ActorBase::getRigidBodyEntityByName");
         return impl(actor, name.c_str());

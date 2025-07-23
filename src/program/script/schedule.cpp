@@ -292,7 +292,7 @@ namespace lotuskit::script::schedule::tas {
         return true; // err
     }
 
-    void pushExecLocalFileModule(const std::string& filename, const std::string& entryPoint, bool doImmediateExecute, bool blockOnDebugPause) {
+    void pushExecLocalFileModule(const String& filename, const String& entryPoint, bool doImmediateExecute, bool blockOnDebugPause) {
         // reuse any existing module by name during a single script execution -- do not check/rebuild file contents for update
         const auto engine = lotuskit::script::engine::asEngine;
         AngelScript::asIScriptModule* mod = engine->GetModule(filename.c_str(), AngelScript::asGM_ONLY_IF_EXISTS);
@@ -321,7 +321,7 @@ namespace lotuskit::script::schedule::tas {
         pushExecModuleEntryPoint(mod, entryPoint, doImmediateExecute, blockOnDebugPause);
     }
 
-    void pushExecLocalFileModuleNXTas(const std::string& filename, bool doImmediateExecute, bool blockOnDebugPause) {
+    void pushExecLocalFileModuleNXTas(const String& filename, bool doImmediateExecute, bool blockOnDebugPause) {
         // reuse any existing module by name during a single script execution -- do not check/rebuild file contents for update
         const auto engine = lotuskit::script::engine::asEngine;
         AngelScript::asIScriptModule* mod = engine->GetModule(filename.c_str(), AngelScript::asGM_ONLY_IF_EXISTS);
@@ -354,20 +354,20 @@ namespace lotuskit::script::schedule::tas {
         pushExecModuleEntryPoint(mod, "void main()", doImmediateExecute, blockOnDebugPause);
     }
 
-    void pushExecTextModule(const std::string& moduleName, const std::string& sectionName, const std::string& scriptText, const std::string& entryPoint, bool doImmediateExecute, bool blockOnDebugPause) {
+    void pushExecTextModule(const String& moduleName, const String& sectionName, const String& scriptText, const String& entryPoint, bool doImmediateExecute, bool blockOnDebugPause) {
         auto* mod = buildOnceOrGetModule(moduleName, sectionName, scriptText);
         if (mod == nullptr) { abortStackReq("[tas::schedule::pushExecTextModule] module failed to build"); return; } // err
         // XXX free scriptText
         pushExecModuleEntryPoint(mod, entryPoint, doImmediateExecute, blockOnDebugPause);
     }
 
-    void pushExecEval(const std::string& scriptText, const std::string& entryPoint, bool doImmediateExecute, bool blockOnDebugPause) {
+    void pushExecEval(const String& scriptText, const String& entryPoint, bool doImmediateExecute, bool blockOnDebugPause) {
         char moduleName[32];
         nn::util::SNPrintf(moduleName, sizeof(moduleName), "eval_%08x.as", murmur32(scriptText));
         pushExecTextModule(moduleName, moduleName, scriptText, entryPoint, doImmediateExecute, blockOnDebugPause);
     }
 
-    void pushExecModuleEntryPoint(AngelScript::asIScriptModule* mod, const std::string& entryPoint, bool doImmediateExecute, bool blockOnDebugPause) {
+    void pushExecModuleEntryPoint(AngelScript::asIScriptModule* mod, const String& entryPoint, bool doImmediateExecute, bool blockOnDebugPause) {
         bool spIsIncrement = false;
         { // decide advance sp + suspend any ongoing ctx
             const auto prevState = getSP()->asCtx->GetState();
@@ -439,7 +439,7 @@ namespace lotuskit::script::schedule::tas {
         }
     }
 
-    AngelScript::asIScriptModule* buildOnceOrGetModule(const std::string& moduleName, const std::string& sectionName, const std::string& scriptText) {
+    AngelScript::asIScriptModule* buildOnceOrGetModule(const String& moduleName, const String& sectionName, const String& scriptText) {
         const auto engine = lotuskit::script::engine::asEngine;
 
         // reuse any existing module by name during a single script execution -- do not rebuild/clobber even if scriptText might be different across calls.
@@ -478,7 +478,7 @@ namespace lotuskit::script::schedule::tas {
         lastModule->Discard(); // free
     }
 
-    void abortStackReq(const std::string& reason) {
+    void abortStackReq(const String& reason) {
         isAbortReq = true;
         abortReqReason = reason;
         for (size_t i = 0; i < MAX_MODULE_STACK_DEPTH; i++) {
@@ -515,7 +515,7 @@ namespace lotuskit::script::schedule::tas {
         char buf[420];
         for (size_t i = 0; i < MAX_MODULE_STACK_DEPTH; i++) {
             const auto* sp = &moduleStack[i];
-            std::string cs = "?";
+            String cs = "?";
             if (sp->asCtx) {
                 // https://www.angelcode.com/angelscript/sdk/docs/manual/angelscript_8h.html#a867f14b4137dd4602fda1e616b217a69
                 const auto state = sp->asCtx->GetState();
