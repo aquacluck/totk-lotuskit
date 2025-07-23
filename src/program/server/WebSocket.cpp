@@ -80,22 +80,26 @@ namespace lotuskit::server {
     namespace WebSocketImpl::SendQueue {
         nn::os::MutexType enqueueMutex;
         constexpr size_t SEND_QUEUE_SIZE = 0x100000;
-        alignas(PAGE_SIZE) u8 sendQueueBuf[SEND_QUEUE_SIZE];
-        const u8* sendQueueBufEnd = sendQueueBuf + SEND_QUEUE_SIZE - 1;
-        u8* sendQueueHead = sendQueueBuf;
-        u8* sendQueueTail = sendQueueBuf;
+        u8* sendQueueBuf = nullptr;
+        u8* sendQueueHead = nullptr;
+        u8* sendQueueTail = nullptr;
+        inline u8* sendQueueBufEnd() { return sendQueueBuf + SEND_QUEUE_SIZE - 1; }
 
         void init() {
+            sendQueueBuf = (u8*)WebSocket::stolenHeap->alloc(SEND_QUEUE_SIZE, PAGE_SIZE); // never freed
             std::memset(sendQueueBuf, 0, SEND_QUEUE_SIZE);
+            sendQueueHead = sendQueueBuf;
+            sendQueueTail = sendQueueBuf;
+
             nn::os::InitializeMutex(&enqueueMutex, true, 0);
         }
 
         inline u8* getNextFrameForEnqueue(u32 fLen) {
-            if (sendQueueHead + fLen <= sendQueueBufEnd - 0x10) {
+            if (sendQueueHead + fLen <= sendQueueBufEnd() - 0x10) {
                 return sendQueueHead; // not near the end, it fits
             }
             // it won't fit at the end, wrap to beginning
-            auto sendQueueBufRemainder = sendQueueBufEnd - sendQueueHead;
+            auto sendQueueBufRemainder = sendQueueBufEnd() - sendQueueHead;
             if (sendQueueBufRemainder > 0) {
                 // zero everything we're not using -- "terminating" null frameType will indicate no more frames for the send impl
                 std::memset(sendQueueHead, 0, sendQueueBufRemainder);
@@ -117,7 +121,7 @@ namespace lotuskit::server {
             std::memcpy(&dst[hLen], payload, pLen);
 
             sendQueueHead = (u8*)ALIGN_UP(dst + fLen, 8); // advance ptr to next
-            if (sendQueueHead >= sendQueueBufEnd) {
+            if (sendQueueHead >= sendQueueBufEnd()) {
                 sendQueueHead = sendQueueBuf; // wrap to beginning
             }
 
@@ -130,7 +134,7 @@ namespace lotuskit::server {
                 return;
             }
             sendQueueTail = (u8*)ALIGN_UP(sendQueueTail + fLen, 8);
-            if (sendQueueTail >= sendQueueBufEnd) {
+            if (sendQueueTail >= sendQueueBufEnd()) {
                 sendQueueTail = sendQueueBuf; // wrap to beginning
             }
         }
@@ -183,7 +187,7 @@ namespace lotuskit::server {
             // a null frame may terminate the queue if the last element left some remainder. Don't send it, just let dequeueFrame consume it.
             // FIXME better queue impl? its leaking. this still might drop 1 char messages? oh well
             if (fLen > 3) {
-                //lotuskit::TextWriter::printf(0, "\n[ws::send] fLen %d at %p (sendq %p - %p): \n", fLen, WebSocketImpl::SendQueue::sendQueueTail, WebSocketImpl::SendQueue::sendQueueBuf, WebSocketImpl::SendQueue::sendQueueBufEnd);
+                //lotuskit::TextWriter::printf(0, "\n[ws::send] fLen %d at %p (sendq %p - %p): \n", fLen, WebSocketImpl::SendQueue::sendQueueTail, WebSocketImpl::SendQueue::sendQueueBuf, WebSocketImpl::SendQueue::sendQueueBufEnd());
                 //lotuskit::HexDump::textwriter_printf_u8(0, WebSocketImpl::SendQueue::sendQueueTail, WebSocketImpl::SendQueue::sendQueueTail, 20); // 0x200 after
                 nn::socket::Send(clientSocketFd, WebSocketImpl::SendQueue::sendQueueTail, fLen, 0); // blocking
             }
@@ -243,31 +247,25 @@ namespace lotuskit::server {
             if (frameType__sizeByte__12more[0] != 0x81) { return; } // FIXME noob impl -- lets just hope browsers dont like to fragment
 
             // get size+mask from header
+            u8* payload = nullptr;
             u8 maskKey[4];
             u32 payloadLen = 0;
+
             u8 sizeByte = 0x7f & frameType__sizeByte__12more[1]; // remove mask bit
             if (sizeByte < 0x7e) {
                 payloadLen = sizeByte;
                 *(u32*)&maskKey = *(u32*)&(frameType__sizeByte__12more[2]);
                 // payload at [6...13]
+                payload = (u8*)stolenHeap->alloc(payloadLen+1);
+                *(u64*)payload = *(u64*)(&frameType__sizeByte__12more[6]);
+                recvSize = nn::socket::Recv(clientSocketFd, payload+8, payloadLen-8, 0); // blocking
+                // assert recvSize == payloadLen-8
+
             } else if (sizeByte == 0x7e) {
                 payloadLen = frameType__sizeByte__12more[2] * 0x100 + frameType__sizeByte__12more[3];
                 *(u32*)&maskKey = *(u32*)&(frameType__sizeByte__12more[4]);
                 // payload at [8...13]
-            } else if (sizeByte == 0x7f) {
-                // bytes 2345 ignored, really cant imagine anyone needed 64b lengths lmao
-                payloadLen = frameType__sizeByte__12more[6]*0x1000000 + frameType__sizeByte__12more[7]*0x10000 + frameType__sizeByte__12more[8]*0x100 + frameType__sizeByte__12more[9];
-                *(u32*)&maskKey = *(u32*)&(frameType__sizeByte__12more[10]);
-                // need to recv entire payload
-            }
-
-            // alloc payload, backfill excess header read bytes, recv remainder of payload -- this could block but we know its inflight
-            u8 payload[payloadLen+1];
-            if (sizeByte < 0x7e) {
-                *(u64*)payload = *(u64*)(&frameType__sizeByte__12more[6]);
-                recvSize = nn::socket::Recv(clientSocketFd, payload+8, payloadLen-8, 0); // blocking
-                // assert recvSize == payloadLen-8
-            } else if (sizeByte == 0x7e) {
+                payload = (u8*)stolenHeap->alloc(payloadLen+1, PAGE_SIZE);
                 payload[0] = frameType__sizeByte__12more[8];
                 payload[1] = frameType__sizeByte__12more[9];
                 payload[2] = frameType__sizeByte__12more[10];
@@ -276,8 +274,13 @@ namespace lotuskit::server {
                 payload[5] = frameType__sizeByte__12more[13];
                 recvSize = nn::socket::Recv(clientSocketFd, payload+6, payloadLen-6, 0); // blocking
                 // assert recvSize == payloadLen-6
+
             } else if (sizeByte == 0x7f) {
-                // FIXME stack limit? does payload need to be 0x1000 aligned? idk crash
+                // bytes 2345 ignored, really cant imagine anyone needed 64b lengths lmao
+                payloadLen = frameType__sizeByte__12more[6]*0x1000000 + frameType__sizeByte__12more[7]*0x10000 + frameType__sizeByte__12more[8]*0x100 + frameType__sizeByte__12more[9];
+                *(u32*)&maskKey = *(u32*)&(frameType__sizeByte__12more[10]);
+                // need to recv entire payload
+                payload = (u8*)stolenHeap->alloc(payloadLen+1, PAGE_SIZE);
                 recvSize = nn::socket::Recv(clientSocketFd, payload, payloadLen, 0); // blocking
                 // assert recvSize == payloadLen
             }
@@ -289,6 +292,7 @@ namespace lotuskit::server {
             payload[payloadLen] = '\0';
 
             lotuskit::server::JsonDispatch::dispatchText((char*)payload);
+            stolenHeap->free(payload);
         }
     }
 
@@ -434,8 +438,7 @@ namespace lotuskit::server {
     }
 
     void WebSocket::init() {
-        socketPool = (u8*)stolenHeap->alloc(SOCKET_POOL_SIZE + ALLOCATOR_POOL_SIZE + PAGE_SIZE);
-        socketPool = (u8*)ALIGN_UP(socketPool, PAGE_SIZE); // FIXME cant free this once we throw away alloc ptr
+        socketPool = (u8*)stolenHeap->alloc(SOCKET_POOL_SIZE + ALLOCATOR_POOL_SIZE, PAGE_SIZE); // never freed
 
         WebSocketImpl::SendQueue::init();
         nn::nifm::Initialize();
