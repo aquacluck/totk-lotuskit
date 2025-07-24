@@ -5626,7 +5626,7 @@ int asCBuilder::RegisterScriptFunction(asCScriptNode *node, asCScriptCode *file,
 					defaultArgs[n] = asNEW(asCString)(*defaultArgs[n]);
 
 			asCDataType dt = asCDataType::CreateObjectHandle(objType, false);
-			module->AddScriptFunction(file->idx, engine->scriptFunctions[funcId]->scriptData->declaredAt, factoryId, name, dt, parameterTypes, parameterNames, inOutFlags, defaultArgs, false, 0, false, funcTraits);
+			module->AddScriptFunction(file->idx, engine->scriptFunctions[funcId]->scriptData->declaredAt, factoryId, name, dt, parameterTypes, parameterNames, inOutFlags, defaultArgs, false, 0, false, funcTraits, objType->nameSpace);
 
 			// If the object is shared, then the factory must also be marked as shared
 			if( objType->flags & asOBJ_SHARED )
@@ -6135,16 +6135,19 @@ bool asCBuilder::FindObjectTypeOrMixinInNsHierarchy(const asCString& name, asSNa
 				sMixinClass* m = 0;
 				if (ot == 0 && outMixin)
 					m = GetMixinClass(name.AddressOf(), ns);
-				if ((objType || mixin) && (ot || m))
+				if (ot || m)
 				{
-					asCString msg;
-					msg.Format(TXT_AMBIGUOUS_SYMBOL_NAME_s, name.AddressOf());
-					WriteError(msg, script, errNode);
-					return false;
-				}
+					if (objType || mixin)
+					{
+						asCString msg;
+						msg.Format(TXT_AMBIGUOUS_SYMBOL_NAME_s, name.AddressOf());
+						WriteError(msg, script, errNode);
+						return false;
+					}
 
-				objType = ot;
-				mixin = m;
+					objType = ot;
+					mixin = m;
+				}
 			}
 		}
 

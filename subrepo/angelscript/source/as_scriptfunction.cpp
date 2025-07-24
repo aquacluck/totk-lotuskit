@@ -898,7 +898,7 @@ int asCScriptFunction::GetDeclaredAt(const char** scriptSection, int* row, int* 
 		if (col) *col = 0;
 		return asNOT_SUPPORTED;
 	}
-	if (scriptSection) *scriptSection = engine->scriptSectionNames[scriptData->scriptSectionIdx]->AddressOf();
+	if (scriptSection) *scriptSection = scriptData->scriptSectionIdx >= 0 ? engine->scriptSectionNames[scriptData->scriptSectionIdx]->AddressOf() : 0;
 	if (row) *row = scriptData->declaredAt & 0xFFFFF;
 	if (col) *col = scriptData->declaredAt >> 20;
 	return 0;
@@ -1522,6 +1522,8 @@ const char *asCScriptFunction::GetDeclaration(bool includeObjectName, bool inclu
 	return tempString->AddressOf();
 }
 
+#ifdef AS_DEPRECATED
+// deprecated since 2025-04-25, 2.38.0
 // interface
 const char *asCScriptFunction::GetScriptSectionName() const
 {
@@ -1530,6 +1532,7 @@ const char *asCScriptFunction::GetScriptSectionName() const
 
 	return 0;
 }
+#endif
 
 // interface
 const char *asCScriptFunction::GetConfigGroup() const
