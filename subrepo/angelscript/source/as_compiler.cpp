@@ -37,6 +37,12 @@
 
 #include <math.h> // fmodf() pow()
 
+#ifdef _MSC_VER
+// Apparently a bug in MSVC (or perhaps Windows SDK) caused use HUGE_VALF to issue a warning
+// ref: https://developercommunity.visualstudio.com/t/C4756-related-issues-in-VS-2022/10697767
+#pragma warning(disable:4756)
+#endif
+
 #include "as_config.h"
 
 #ifndef AS_NO_COMPILER
@@ -756,6 +762,10 @@ int asCCompiler::CompileFunction(asCBuilder *in_builder, asCScriptCode *in_scrip
 
 	int stackPos = SetupParametersAndReturnVariable(in_parameterNames, in_func);
 
+	// If there are compile errors, there is no reason to build the final code
+	if (hasCompileErrors || builder->numErrors != buildErrors)
+		return -1;
+
 	//--------------------------------------------
 	// Compile the statement block
 
@@ -831,9 +841,25 @@ int asCCompiler::CompileFunction(asCBuilder *in_builder, asCScriptCode *in_scrip
 
 			// Add the initialization of the members with explicit expressions
 			CompileMemberInitialization(&byteCode, false);
+
+			// If the base class' constructor was explicitly called it must be validated 
+			// that the inherited properties weren't accessed before the constructor
+			if (m_isConstructorCalled)
+			{
+				asSMapNode<asCObjectProperty*, asCScriptNode*>* node;
+				m_inheritedPropertyAccess.MoveFirst(&node);
+				while( node )
+				{
+					asCString msg;
+					msg.Format(TXT_MEMBER_s_ACCESSED_BEFORE_INIT, node->key->name.AddressOf());
+					Error(msg, node->value);
+					m_inheritedPropertyAccess.MoveNext(&node, node);
+				}
+			}
 		}
 		else
 		{
+			// Pre 2.38.0, members with init expr in declaration are initialized after super()
 			if (outFunc->objectType->derivedFrom)
 			{
 				// Call the base class' default constructor unless called manually in the code
@@ -1665,6 +1691,10 @@ void asCCompiler::CompileInitAsCopy(asCDataType &dt, int offset, asCExprContext 
 		if (func->traits.GetTrait(asTRAIT_EXPLICIT))
 			Error(TXT_CANNOT_IMPLICITLY_CALL_EXPLICIT_COPY_CONSTR, node);
 
+		// Consider the argument as non-const already to avoid PrepareForAssignment 
+		// trying to make another copy, leading to infinite recursive loop
+		arg->type.dataType.MakeReadOnly(false);
+		
 		PrepareForAssignment(&dt, arg, node, true);
 		int r = CallCopyConstructor(dt, offset, isObjectOnHeap, ctx, arg, node, isVarGlobOrMem, derefDestination);
 		if( r < 0 && tempVariables.Exists(offset) )
@@ -1687,6 +1717,10 @@ void asCCompiler::CompileInitAsCopy(asCDataType &dt, int offset, asCExprContext 
 
 		tmpBC.AddCode(&ctx->bc);
 		ctx->bc.AddCode(&tmpBC);
+
+		// Consider the argument as non-const already to avoid PrepareForAssignment 
+		// trying to make another copy, leading to infinite recursive loop
+		arg->type.dataType.MakeReadOnly(false);
 
 		// Assign the evaluated expression to the temporary variable
 		PrepareForAssignment(&dt, arg, node, true);
@@ -5339,9 +5373,8 @@ void asCCompiler::CompileForEachStatement(asCScriptNode* node, asCByteCode* bc)
 					int retTid = engine->scriptFunctions[opForValueIdN]->GetReturnTypeId(&retFlags);
 
 					bool isConst = itemDataTypes[i].IsReadOnly() || (retFlags & asTM_CONST);
-					bool isHandle = itemDataTypes[i].IsObjectHandle() ;
 					asCDataType dt = asCDataType::CreateById(engine, retTid, isConst);
-					dt.MakeHandle(isHandle);
+					dt.MakeHandle(true); // Always use handle for auto if possible
 					itemDataTypes[i] = dt;
 				}
 			}
@@ -8181,6 +8214,7 @@ asUINT asCCompiler::ImplicitConvObjectValue(asCExprContext *ctx, const asCDataTy
 				asCArray<asCExprContext *> args;
 				args.PushLast(ctx);
 
+				// Don't allow making copy of argument here, else the compiler can enter an infinite recursive loop
 				cost = asCC_TO_OBJECT_CONV + MatchFunctions(funcs, args, node, 0, 0, 0, false, true, false);
 
 				// Did we find a matching constructor?
@@ -8570,8 +8604,7 @@ asUINT asCCompiler::ImplicitConvObjectToObject(asCExprContext *ctx, const asCDat
 			}
 
 			// A const object can be converted to a non-const object through a copy
-			if( ctx->type.dataType.IsReadOnly() && !to.IsReadOnly() &&
-				allowObjectConstruct )
+			if( ctx->type.dataType.IsReadOnly() && !to.IsReadOnly() )
 			{
 				// Does the object type allow a copy to be made?
 				if( ctx->type.dataType.CanBeCopied() )
@@ -9525,7 +9558,11 @@ int asCCompiler::DoAssignment(asCExprContext *ctx, asCExprContext *lctx, asCExpr
 					// Give an error if the member has been accessed before
 					asSMapNode<asCObjectProperty*, asUINT>* node;
 					if (m_propertyAccessCount.MoveTo(&node, prop) && node->value > 1)
-						Error(TXT_MEMBER_ACCESSED_BEFORE_INIT, opNode);
+					{
+						asCString msg;
+						msg.Format(TXT_MEMBER_s_ACCESSED_BEFORE_INIT, prop->name.AddressOf());
+						Error(msg, opNode);
+					}
 
 					// Give error if a return has already been compiled
 					if (m_hasReturned)
@@ -9704,6 +9741,14 @@ int asCCompiler::DoAssignment(asCExprContext *ctx, asCExprContext *lctx, asCExpr
 			lctx->type.isLValue = true; // Handle may not have been an lvalue, but the dereferenced object is
 		}
 
+		// TODO: It must be possible to register specific types that should be allowed to be treated as lvalue even if they are temporary
+		//       These can for example be used by types that are really proxies for more complex types. When it is possible to do so
+		//       I can reintroduce this check to prevent accidental bugs with assigning value to temporary objects
+		if (lctx->type.dataType.IsObject() && !lctx->type.dataType.IsObjectHandle())
+		{
+			lctx->type.isLValue = true;
+		}
+		
 		if (!lctx->type.isLValue)
 		{
 			Error(TXT_NOT_LVALUE, lexpr);
@@ -11143,6 +11188,16 @@ int asCCompiler::CompileVariableAccess(const asCString &name, const asCString &s
 					node->value++;
 				else
 					m_propertyAccessCount.Insert(prop, 1);
+
+				// Give error if attempting to access inherited property before the parent constructor is called
+				// This validation will be deferred to later, since it is not known with the parent constructor will
+				// be called implicitly at the beginning of the constructor or explicitly later
+				if (prop->isInherited && !m_isConstructorCalled)
+				{
+					asSMapNode<asCObjectProperty*, asCScriptNode*> *node2;
+					if (!m_inheritedPropertyAccess.MoveTo(&node2, prop))
+						m_inheritedPropertyAccess.Insert(prop, errNode);
+				}
 			}
 
 			// Is the property access allowed?
@@ -12576,9 +12631,12 @@ int asCCompiler::CompileConstructCall(asCScriptNode *node, asCExprContext *ctx)
 
 			if( r == asSUCCESS )
 			{
-				asCByteCode objBC(engine);
-
 				PrepareFunctionCall(funcs[0], &ctx->bc, args);
+				if (builder->GetFunctionDescription(funcs[0])->IsVariadic())
+				{
+					// Argument count
+					ctx->bc.InstrDWORD(asBC_PshC4, (asDWORD)args.GetLength());
+				}
 
 				MoveArgsToStack(funcs[0], &ctx->bc, args, false);
 
@@ -12806,11 +12864,10 @@ int asCCompiler::CompileFunctionCall(asCScriptNode *node, asCExprContext *ctx, a
 				// If a break label is set we are either in a loop or a switch statements
 				Error(TXT_CANNOT_CALL_CONSTRUCTOR_IN_SWITCH, node);
 			}
-			else if (m_isConstructorCalled)
-			{
-				Error(TXT_CANNOT_CALL_CONSTRUCTOR_TWICE, node);
-			}
-			m_isConstructorCalled = true;
+
+			// Only set the m_isConstructorCalled after the call is actually made, so that we 
+			// can detect if the arguments access any inherited members too early
+			// m_isConstructorCalled = true;
 
 			// We need to initialize the class members, but only after all the deferred arguments have been completed
 			initializeMembers = true;
@@ -12969,6 +13026,13 @@ int asCCompiler::CompileFunctionCall(asCScriptNode *node, asCExprContext *ctx, a
 				{
 					ctx->type.SetDummy();
 					isOK = false;
+				}
+				
+				if (m_isConstructor && name == SUPER_TOKEN)
+				{
+					if (m_isConstructorCalled)
+						Error(TXT_CANNOT_CALL_CONSTRUCTOR_TWICE, node);
+					m_isConstructorCalled = true;
 				}
 			}
 			else
@@ -14743,70 +14807,86 @@ int asCCompiler::MatchArgument(asCScriptFunction *desc, const asCExprContext *ar
 		return 0;
 	}
 
+	// For &out references, ensure no match is given for impossible conversion from param type to arg type
+	// The cost for this conversion is not used, as we still want to use the same order of prioritization as for input arguments
+	if (desc->parameterTypes[paramNum].IsReference() && desc->inOutFlags[paramNum] == asTM_OUTREF && 
+		desc->parameterTypes[paramNum].GetTokenType() != ttQuestion &&
+		!argExpr->type.IsNullConstant() && !argExpr->IsVoidExpression() )
+	{
+		// For out references that are not vartype, the type of argument must be convertible to the type of the argument
+		asCExprContext ti(engine);
+		asCExprValue type;
+		type.dataType = desc->parameterTypes[paramNum];
+		ti.type = type;
+		ti.exprNode = argExpr->exprNode;
+
+		ImplicitConversion(&ti, argExpr->type.dataType, 0, asIC_IMPLICIT_CONV, false, allowObjectConstruct);
+		if (!argExpr->type.dataType.IsEqualExceptRef(ti.type.dataType))
+			return -1;
+	}
+
 	// Can we make the match by implicit conversion?
+	int cost = -1;
 	asCExprContext ti(engine);
 	ti.type = argExpr->type;
 	ti.methodName = argExpr->methodName;
 	ti.enumValue = argExpr->enumValue;
 	ti.exprNode = argExpr->exprNode;
-	if( argExpr->type.dataType.IsPrimitive() )
+	if (argExpr->type.dataType.IsPrimitive())
 		ti.type.dataType.MakeReference(false);
 
 	// Don't allow the implicit conversion to make a copy in case the argument is expecting a reference to the true value
 	if (desc->parameterTypes[paramNum].IsReference() && desc->inOutFlags[paramNum] == asTM_INOUTREF)
 		allowObjectConstruct = false;
 
-	int cost = ImplicitConversion(&ti, desc->parameterTypes[paramNum], 0, asIC_IMPLICIT_CONV, false, allowObjectConstruct);
+	cost = ImplicitConversion(&ti, desc->parameterTypes[paramNum], 0, asIC_IMPLICIT_CONV, false, allowObjectConstruct);
+	if (!desc->parameterTypes[paramNum].IsEqualExceptRef(ti.type.dataType))
+		return -1;
 
 	// If the function parameter is an inout-reference then it must not be possible to call the
 	// function with an incorrect argument type, even though the type can normally be converted.
-	if( desc->parameterTypes[paramNum].IsReference() &&
+	if (desc->parameterTypes[paramNum].IsReference() &&
 		desc->inOutFlags[paramNum] == asTM_INOUTREF &&
-		desc->parameterTypes[paramNum].GetTokenType() != ttQuestion )
+		desc->parameterTypes[paramNum].GetTokenType() != ttQuestion)
 	{
 		// Observe, that the below checks are only necessary for when unsafe references have been
 		// enabled by the application. Without this the &inout reference form wouldn't be allowed
 		// for these value types.
 
 		// Don't allow a primitive to be converted to a reference of another primitive type
-		if( desc->parameterTypes[paramNum].IsPrimitive() &&
-			desc->parameterTypes[paramNum].GetTokenType() != argExpr->type.dataType.GetTokenType() )
+		if (desc->parameterTypes[paramNum].IsPrimitive() &&
+			desc->parameterTypes[paramNum].GetTokenType() != argExpr->type.dataType.GetTokenType())
 		{
-			asASSERT( engine->ep.allowUnsafeReferences );
+			asASSERT(engine->ep.allowUnsafeReferences);
 			return -1;
 		}
 
 		// Don't allow an enum to be converted to a reference of another enum type
-		if( desc->parameterTypes[paramNum].IsEnumType() &&
-			desc->parameterTypes[paramNum].GetTypeInfo() != argExpr->type.dataType.GetTypeInfo() )
+		if (desc->parameterTypes[paramNum].IsEnumType() &&
+			desc->parameterTypes[paramNum].GetTypeInfo() != argExpr->type.dataType.GetTypeInfo())
 		{
-			asASSERT( engine->ep.allowUnsafeReferences );
+			asASSERT(engine->ep.allowUnsafeReferences);
 			return -1;
 		}
 
 		// Don't allow a non-handle expression to be converted to a reference to a handle
-		if( desc->parameterTypes[paramNum].IsObjectHandle() &&
-			!argExpr->type.dataType.IsObjectHandle() )
+		if (desc->parameterTypes[paramNum].IsObjectHandle() &&
+			!argExpr->type.dataType.IsObjectHandle())
 		{
-			asASSERT( engine->ep.allowUnsafeReferences );
+			asASSERT(engine->ep.allowUnsafeReferences);
 			return -1;
 		}
 
 		// Don't allow a value type to be converted
-		if( (desc->parameterTypes[paramNum].GetTypeInfo() && (desc->parameterTypes[paramNum].GetTypeInfo()->GetFlags() & asOBJ_VALUE)) &&
-			(desc->parameterTypes[paramNum].GetTypeInfo() != argExpr->type.dataType.GetTypeInfo()) )
+		if ((desc->parameterTypes[paramNum].GetTypeInfo() && (desc->parameterTypes[paramNum].GetTypeInfo()->GetFlags() & asOBJ_VALUE)) &&
+			(desc->parameterTypes[paramNum].GetTypeInfo() != argExpr->type.dataType.GetTypeInfo()))
 		{
-			asASSERT( engine->ep.allowUnsafeReferences );
+			asASSERT(engine->ep.allowUnsafeReferences);
 			return -1;
 		}
 	}
 
-	// How well does the argument match the function parameter?
-	if( desc->parameterTypes[paramNum].IsEqualExceptRef(ti.type.dataType) )
-		return cost;
-
-	// No match is available
-	return -1;
+	return cost;
 }
 
 int asCCompiler::PrepareArgument2(asCExprContext *ctx, asCExprContext *arg, asCDataType *paramType, bool isFunction, int refType, bool isMakingCopy)
@@ -15268,13 +15348,14 @@ int asCCompiler::MakeFunctionCall(asCExprContext *ctx, int funcId, asCObjectType
 	objBC.AddCode(&ctx->bc);
 
 	int r = PrepareFunctionCall(funcId, &ctx->bc, args);
+	if (r < 0)
+		return r;
+
 	if (descr->IsVariadic())
 	{
 		// Argument count
 		ctx->bc.InstrDWORD(asBC_PshC4, (asDWORD)args.GetLength());
 	}
-	if (r < 0)
-		return r;
 
 	// Verify if any of the args variable offsets are used in the other code.
 	// If they are exchange the offset for a new one
@@ -16043,8 +16124,7 @@ void asCCompiler::CompileMathOperator(asCScriptNode *node, asCExprContext *lctx,
 			else if( op == ttStarStar )
 			{
 				v = powf(lctx->type.GetConstantF(), rctx->type.GetConstantF());
-
-				if( v == HUGE_VAL )
+				if( v == HUGE_VALF || isinf(v) )
 					Error(TXT_POW_OVERFLOW, node);
 			}
 
@@ -16060,7 +16140,7 @@ void asCCompiler::CompileMathOperator(asCScriptNode *node, asCExprContext *lctx,
 				if( op == ttStarStar || op == ttPowAssign )
 				{
 					v = pow(lctx->type.GetConstantD(), int(rctx->type.GetConstantDW()));
-					if( v == HUGE_VAL )
+					if( v == HUGE_VAL || isinf(v) )
 						Error(TXT_POW_OVERFLOW, node);
 				}
 				else
@@ -16091,7 +16171,7 @@ void asCCompiler::CompileMathOperator(asCScriptNode *node, asCExprContext *lctx,
 				else if( op == ttStarStar )
 				{
 					v = pow(lctx->type.GetConstantD(), rctx->type.GetConstantD());
-					if( v == HUGE_VAL )
+					if( v == HUGE_VAL || isinf(v))
 						Error(TXT_POW_OVERFLOW, node);
 				}
 			}
