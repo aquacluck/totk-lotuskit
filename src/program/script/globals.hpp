@@ -1,6 +1,8 @@
 #pragma once
 #include "angelscript.h"
 #include "structs/engineActor.hpp"
+#include "util/alloc.hpp"
+using String = lotuskit::String;
 
 namespace lotuskit::script::globals {
     namespace ResidentActors {
@@ -13,7 +15,8 @@ namespace lotuskit::script::globals {
         u64 mainOffset();
         u32 totkVersion();
         u64 tick();
-        void heapInfo();
+        void heapInfoRoot(String filter="");
+        void heapInfoVAHeap(String filter="");
         void hookLimits();
         void memSearch(u64 needle);
         void threadInfo();

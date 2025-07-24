@@ -3,7 +3,6 @@
 #include "script/schedule.hpp"
 #include "script/hotkey.hpp"
 
-#include <nn/util.h>
 #include "tas/Playback.hpp"
 #include "tas/Record.hpp"
 #include "tas/InputDisplay.hpp"
@@ -14,7 +13,6 @@
 #include "PrimitiveDrawer.hpp"
 #include "server/WebSocket.hpp"
 #include "util/actor.hpp"
-#include "util/alloc.hpp"
 #include "util/camera.hpp"
 #include "util/color.hpp"
 #include "util/gamedata.hpp"
@@ -25,14 +23,13 @@
 #include "util/world.hpp"
 using json = lotuskit::json;
 using Logger = lotuskit::Logger;
-using String = lotuskit::String;
+#include <cmath>
 #include <gfx/seadColor.h>
 #include <gfx/seadPrimitiveRenderer.h>
 #include <math/seadVector.h>
 #include <heap/seadHeapMgr.h>
 #include <thread/seadThread.h>
-#include <cmath>
-#include <string>
+#include <nn/util.h>
 
 
 namespace lotuskit::script::globals {
@@ -138,16 +135,8 @@ namespace lotuskit::script::globals {
         u64 mainOffset() { return exl::util::GetMainModuleInfo().m_Total.m_Start; }
         u32 totkVersion() { return TOTK_VERSION; }
         u64 tick() { return svcGetSystemTick(); }
-        void heapInfo() {
-            sead::Heap* vaheap = *EXL_SYM_RESOLVE<sead::Heap**>("_ZN4sead7HeapMgr22sNinVirtualAddressHeapE");
-            Logger::logJson(json::object({
-                {"msg", vaheap->getName().cstr()},
-                {"size", vaheap->getSize()},
-                {"free", vaheap->getFreeSize()}
-            }), "/script/sys/heapInfo");
-
-            const auto rootheap0 = sead::HeapMgr::sRootHeaps[0];
-            sead::Heap* h = rootheap0; // current/visiting entry
+        void heapInfoImpl(sead::Heap* dumproot, String filter) {
+            sead::Heap* h = dumproot; // current/visiting entry
             sead::Heap* htmp = nullptr;
             u32 depth = 0;
             char printbuf[256];
@@ -156,13 +145,15 @@ namespace lotuskit::script::globals {
             HEAPINFO_VISIT:
             // log the entry
             leftpad[depth*4] = '\0'; // assert depth <= 16
-            nn::util::SNPrintf(printbuf, sizeof(printbuf), "%s%s(%p)", leftpad, h->getName().cstr(), h);
-            Logger::logJson(json::object({
-                {"msg", printbuf},
-                //{"ptr", h}, {"depth", depth}, // TODO hex string? proper tree/ptr structure? split up printbuf
-                {"size", h->getSize()},
-                {"free", h->getFreeSize()}
-            }), "/script/sys/heapInfo");
+            if (filter == "" || filter == h->getName().cstr()) {
+                nn::util::SNPrintf(printbuf, sizeof(printbuf), "%s%s(%p)", leftpad, h->getName().cstr(), h);
+                Logger::logJson(json::object({
+                    {"msg", printbuf},
+                    //{"ptr", h}, {"depth", depth}, // TODO hex string? proper tree/ptr structure? split up printbuf
+                    {"size", h->getSize()},
+                    {"free", h->getFreeSize()}
+                }), "/script/sys/heapInfo");
+            }
             leftpad[depth*4] = ' ';
 
             // keep descending into first child
@@ -176,7 +167,7 @@ namespace lotuskit::script::globals {
             // no children, proceed to siblings
             HEAPINFO_DO_NEXT:
             if (h->mParent == nullptr) {
-                // assert h == rootheap0
+                // assert h == dumproot
                 return; // ok
             }
             htmp = h->mParent->mChildren.next(h);
@@ -191,6 +182,14 @@ namespace lotuskit::script::globals {
             goto HEAPINFO_DO_NEXT; // advance through siblings
 
             return; // unreachable
+        }
+        void heapInfoRoot(String filter) {
+            sead::Heap* rootheap0 = sead::HeapMgr::sRootHeaps[0];
+            heapInfoImpl(rootheap0, filter);
+        }
+        void heapInfoVAHeap(String filter) {
+            sead::Heap* vaheap = *EXL_SYM_RESOLVE<sead::Heap**>("_ZN4sead7HeapMgr22sNinVirtualAddressHeapE");
+            heapInfoImpl(vaheap, filter);
         }
         void hookLimits() {
             Logger::logJson(json::object({
@@ -740,7 +739,8 @@ namespace lotuskit::script::globals {
         asErrno = engine->RegisterGlobalFunction("void yield()", AngelScript::asFUNCTION(sys::suspendCtx), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
 
         engine->SetDefaultNamespace("sys"); /// {
-            asErrno = engine->RegisterGlobalFunction("void heapInfo()", AngelScript::asFUNCTION(sys::heapInfo), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+            asErrno = engine->RegisterGlobalFunction("void heapInfoRoot(const string &in = \"\")", AngelScript::asFUNCTION(sys::heapInfoRoot), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+            asErrno = engine->RegisterGlobalFunction("void heapInfoVAHeap(const string &in = \"\")", AngelScript::asFUNCTION(sys::heapInfoVAHeap), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
             asErrno = engine->RegisterGlobalFunction("void hookLimits()", AngelScript::asFUNCTION(sys::hookLimits), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
             asErrno = engine->RegisterGlobalFunction("void memSearch(ptr_t)", AngelScript::asFUNCTION(sys::memSearch), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
             asErrno = engine->RegisterGlobalFunction("void threadInfo()", AngelScript::asFUNCTION(sys::threadInfo), AngelScript::asCALL_CDECL); assert(asErrno >= 0);

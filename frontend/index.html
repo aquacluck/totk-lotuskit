@@ -711,9 +711,17 @@
         // TODO display output somewhere?
         constructor() {
             super();
-            this.sleep_n = createRef();
+            //this.sleep_n = createRef();
+            this.heap_filter = createRef();
         }
-        do_heapInfo() { AngelScript.exec("sys::heapInfo();"); }
+        do_heapInfoRoot() {
+            const filter = this.heap_filter.current.value || "";
+            AngelScript.exec(`sys::heapInfoRoot("${filter}");`);
+        }
+        do_heapInfoVAHeap() {
+            const filter = this.heap_filter.current.value || "";
+            AngelScript.exec(`sys::heapInfoVAHeap("${filter}");`);
+        }
         do_threadInfo() { AngelScript.exec("sys::threadInfo();"); }
         do_hookLimits() { AngelScript.exec("sys::hookLimits();"); }
         doSleep() {
@@ -722,13 +730,17 @@
             AngelScript.exec(`tas::sleep(${frame_n});`);
         }
         render(props, state) {
+            //<button class="pushbutton hover_hasargs" title="tas::sleep(n);" onClick=${() => this.doSleep() }>sleep(</button><input class="hover_isarg" style="width: 48px" type="number" placeholder="1" size="2" min="1" step="any" ref=${this.sleep_n} /><span class="hover_isarg">)</span>
             return html`
                 <div class="quickdumps">
                     Quick dumps <br/>
-                    <button title="sys::heapInfo()" onClick=${ () => this.do_heapInfo() } class="pushbutton">heaps</button>
                     <button title="sys::threadInfo()" onClick=${ () => this.do_threadInfo() } class="pushbutton">threads</button>
                     <button title="sys::hookLimits()" onClick=${ () => this.do_hookLimits() } class="pushbutton">hooks</button>
-                    <button class="pushbutton hover_hasargs" title="tas::sleep(n);" onClick=${() => this.doSleep() }>sleep(</button><input class="hover_isarg" style="width: 48px" type="number" placeholder="1" size="2" min="1" step="any" ref=${this.sleep_n} /><span class="hover_isarg">)</span>
+                    <span class="hover_hasargs">
+                        <button title="sys::heapInfoRoot(filter=\"\")" onClick=${ () => this.do_heapInfoRoot() } class="pushbutton">rootheap</button>
+                        <button title="sys::heapInfoVAHeap(filter=\"\")" onClick=${ () => this.do_heapInfoVAHeap() } class="pushbutton">vaheap</button>
+                    </span>
+                    <input class="hover_isarg" style="width: 48px" placeholder="filter" size="5" ref=${this.heap_filter} />
                 </div>
             `;
         }

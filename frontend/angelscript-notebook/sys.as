@@ -1,4 +1,5 @@
-sys::heapInfo(); // quick heap overview through Logger
+sys::heapInfoRoot(); // heapmgr rootheap overview (via Logger)
+sys::heapInfoVAHeap("lotuskit::objpool"); // vaheap subheap info (by exact name)
 sys::hookLimits(); // exl hook info toast
 sys::memSearch(ptr_t); // search for ptr in the main heap
 sys::threadInfo(); // quick thread overview through Logger
