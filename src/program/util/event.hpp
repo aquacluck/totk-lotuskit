@@ -1,6 +1,7 @@
 #pragma once
-#include <string>
 #include "structs/engineEvent.hpp"
+#include "util/alloc.hpp"
+using String = lotuskit::String;
 
 
 namespace lotuskit::util::event {

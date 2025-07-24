@@ -2,7 +2,8 @@
 #include "exlaunch.hpp"
 #include <heap/seadHeap.h>
 #include <nn/fs.h>
-#include <string>
+#include "util/alloc.hpp"
+using String = lotuskit::String;
 
 namespace lotuskit::util::fs {
     bool fileExists(const String& path);

@@ -2,6 +2,8 @@
 #include "script/globals.hpp"
 #include "structs/engineActor.hpp"
 #include "util/event.hpp"
+#include "util/alloc.hpp"
+using String = lotuskit::String;
 
 
 namespace lotuskit::util::event {

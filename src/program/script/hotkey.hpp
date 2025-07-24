@@ -2,6 +2,8 @@
 #include <string>
 #include <nn/hid.h>
 #include "exlaunch.hpp"
+#include "util/alloc.hpp"
+using String = lotuskit::String;
 
 namespace lotuskit::script::hotkey {
     class HotkeyBinding {

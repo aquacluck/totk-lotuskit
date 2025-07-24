@@ -164,6 +164,7 @@
 { util::ModuleIndex::Main, 0x00000000, "phive::RigidBodyBase::getNextLinearVelocity" },
 { util::ModuleIndex::Main, 0x00000000, "phive::RigidBodyBase::requestSetLinearVelocity" },
 { util::ModuleIndex::Main, 0x00000000, "phive::RigidBodyEntity::getActorLink" },
+{ util::ModuleIndex::Main, 0x00000000, "sead::ExpHeap::create" },
 { util::ModuleIndex::Main, 0x00000000, "sead::FrameHeap::create" },
 { util::ModuleIndex::Main, 0x00000000, "sead::LookAtCamera::doUpdateMatrix" },
 { util::ModuleIndex::Main, 0x00000000, "sead::NinJoyNpadDevice::calc" },

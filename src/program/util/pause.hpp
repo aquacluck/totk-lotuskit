@@ -1,6 +1,7 @@
 #pragma once
-#include <string>
 #include "structs/engineSystemPause.hpp"
+#include "util/alloc.hpp"
+using String = lotuskit::String;
 
 namespace lotuskit::util::pause {
     void InstallHooks();

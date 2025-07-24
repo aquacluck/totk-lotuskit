@@ -1,7 +1,8 @@
 #pragma once
-#include <string>
 #include "structs/engineSystemPause.hpp"
 #include "exlaunch.hpp"
+#include "util/alloc.hpp"
+using String = lotuskit::String;
 
 namespace lotuskit::util::hash {
 

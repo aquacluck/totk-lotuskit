@@ -1,0 +1,13 @@
+diff --git a/subrepo/angelscript/include/scriptstdstring.h b/subrepo/angelscript/include/scriptstdstring.h
+index 28028ac..9d11064 100644
+--- a/subrepo/angelscript/include/scriptstdstring.h
++++ b/subrepo/angelscript/include/scriptstdstring.h
+@@ -17,7 +17,7 @@
+ #endif
+ 
+ //#include <string>
+-#include "exlaunch.hpp"
++#include "util/alloc.hpp"
+ using string = lotuskit::String;
+ 
+ //---------------------------

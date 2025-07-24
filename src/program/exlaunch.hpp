@@ -2,10 +2,6 @@
 // exlaunch
 #include <lib.hpp>
 
-#include "util/alloc.hpp"
-using String = lotuskit::String;
-using json = lotuskit::json;
-
 inline ptrdiff_t EXL_SYM_OFFSET(std::string sym) {
     auto search = exl::reloc::GetLookupTable().FindByName(sym);
     if (search == nullptr) { return 0; }

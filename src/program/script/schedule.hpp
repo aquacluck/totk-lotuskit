@@ -2,6 +2,8 @@
 #include <angelscript.h>
 #include "exlaunch.hpp"
 #include "tas/Playback.hpp"
+#include "util/alloc.hpp"
+using String = lotuskit::String;
 
 namespace lotuskit::script::schedule::tas {
     // AS source files are loaded 1:1 into AS modules, allowing scripts to "call into" different files and

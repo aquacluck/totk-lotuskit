@@ -14,3 +14,11 @@ EXKING("sead::FrameHeap::create", {
 # TOTK_100: 0215023c
 # TOTK_110: 021cf38c
 # TOTK_121: 021c4c9c
+
+#static ExpHeap* create(size_t size, const SafeString& name, Heap* parent, s32 alignment, HeapDirection direction, bool);
+EXKING("sead::ExpHeap::create", {
+    TOTK_100: 0x008eef10,
+    TOTK_110: 0x008ff23c,
+    TOTK_121: 0x008e6fe4,
+})
+

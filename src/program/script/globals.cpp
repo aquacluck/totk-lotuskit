@@ -139,11 +139,11 @@ namespace lotuskit::script::globals {
         u32 totkVersion() { return TOTK_VERSION; }
         u64 tick() { return svcGetSystemTick(); }
         void heapInfo() {
-            sead::Heap* vheap = *EXL_SYM_RESOLVE<sead::Heap**>("_ZN4sead7HeapMgr22sNinVirtualAddressHeapE");
+            sead::Heap* vaheap = *EXL_SYM_RESOLVE<sead::Heap**>("_ZN4sead7HeapMgr22sNinVirtualAddressHeapE");
             Logger::logJson(json::object({
-                {"msg", vheap->getName().cstr()},
-                {"size", vheap->getSize()},
-                {"free", vheap->getFreeSize()}
+                {"msg", vaheap->getName().cstr()},
+                {"size", vaheap->getSize()},
+                {"free", vaheap->getFreeSize()}
             }), "/script/sys/heapInfo");
 
             const auto rootheap0 = sead::HeapMgr::sRootHeaps[0];

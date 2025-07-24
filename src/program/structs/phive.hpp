@@ -4,9 +4,9 @@
 #include <math/seadBoundBox.h>
 #include <math/seadVector.h>
 #include <math/seadMatrix.h>
-#include <string>
-
 #include "exlaunch.hpp"
+#include "util/alloc.hpp"
+using String = lotuskit::String;
 
 namespace engine::actor { class ActorBaseLink; }
 

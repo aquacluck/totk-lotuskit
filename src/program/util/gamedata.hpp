@@ -1,5 +1,6 @@
 #pragma once
-#include <string>
+#include "util/alloc.hpp"
+using String = lotuskit::String;
 
 namespace lotuskit::util::gamedata {
     void* getGameDataMgr();

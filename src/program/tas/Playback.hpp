@@ -4,6 +4,8 @@
 #include <angelscript.h>
 #include <nn/hid.h>
 #include "structs/nnSixAxis.hpp"
+#include "util/alloc.hpp"
+using String = lotuskit::String;
 
 namespace lotuskit::tas::Playback {
     struct PlaybackInput {
