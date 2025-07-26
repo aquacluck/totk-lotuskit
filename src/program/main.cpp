@@ -27,26 +27,19 @@
 using Logger = lotuskit::Logger;
 
 
-HOOK_DEFINE_INLINE(StealHeapHook) {
+HOOK_DEFINE_INLINE(AllocInitHook) {
     static constexpr auto s_name = "engine::steal_heap"; // hacks
-    static constexpr bool use_vaheap = true;
-    inline static sead::Heap* stolenHeap = nullptr;
     static void Callback(exl::hook::InlineCtx* ctx) {
-        if (StealHeapHook::use_vaheap) {
-            stolenHeap = *EXL_SYM_RESOLVE<sead::Heap**>("_ZN4sead7HeapMgr22sNinVirtualAddressHeapE");
-        } else {
-            constexpr auto xi = TOTK_VERSION == 100 ? 19 : 22;
-            stolenHeap = reinterpret_cast<sead::Heap*>(ctx->X[xi]);
-        }
-
-        //lotuskit::util::alloc::vaheap = stolenHeap;
-        lotuskit::util::alloc::init();
-        lotuskit::TextWriter::assignHeap(StealHeapHook::stolenHeap);
-        lotuskit::PrimitiveImpl::assignHeap(StealHeapHook::stolenHeap);
-
-        char buf[32];
-        nn::util::SNPrintf(buf, sizeof(buf), "yoink(%p)", stolenHeap);
-        svcOutputDebugString(buf, strlen(buf));
+        // (misleading sym name: not stealing ptr at this hooksite anymore, this is just a convenient time to init)
+        // stolenHeap = reinterpret_cast<sead::Heap*>(ctx->X[TOTK_VERSION == 100 ? 19 : 22]);
+        namespace alloc = lotuskit::util::alloc;
+        alloc::init();
+        lotuskit::TextWriter::assignHeap(alloc::vaheap);
+        lotuskit::PrimitiveImpl::assignHeap(alloc::vaheap);
+        lotuskit::TextWriter::createFrameHeap();
+        lotuskit::PrimitiveImpl::createFrameHeap();
+        lotuskit::server::WebSocket::assignHeap(alloc::vaheap);
+        lotuskit::script::engine::assignHeap(alloc::vaheap); // FIXME using objheap here crashes? but afaik it works fine for strings...
     }
 };
 
@@ -244,10 +237,7 @@ HOOK_DEFINE_INLINE(SendEventPlayReportHook) {
         // main mod init
         nn::fs::MountSdCard("sdcard");
         nn::hid::InitializeKeyboard(); // for hotkey
-        lotuskit::server::WebSocket::assignHeap(StealHeapHook::stolenHeap);
-        lotuskit::TextWriter::createFrameHeap();
-        lotuskit::PrimitiveImpl::createFrameHeap();
-        lotuskit::script::engine::assignHeap(StealHeapHook::stolenHeap);
+
         lotuskit::script::engine::createAndConfigureEngine();
         lotuskit::script::engine::doAutorun();
 
@@ -279,7 +269,7 @@ extern "C" void exl_main(void* x0, void* x1) {
     svcOutputDebugString(buf, strlen(buf));
 
     // memory is tight until engine+game init is settled, so we defer most initialization until then
-    StealHeapHook::Install(); // called once mid bootup
+    AllocInitHook::Install(); // called once mid bootup
     SendEventPlayReportHook::Install(); // first called on title screen, used for mod init
     BaseProcMgr_addDependency::Install(); // XXX used to locate Player globally, could be deferred otherwise
     // XXX assert textwriter+primitivedrawer deps available
