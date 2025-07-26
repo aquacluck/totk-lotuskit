@@ -36,7 +36,8 @@
     - Many headers are mirrored+patched see `subrepo/*/CLOBBER_mirror.sh` to update or further patch them. tldr it rewrites the folder with upstream + local patches, which we commit into this repo.
     - `syms/build.py` is a symbol map+metadata build pipeline, keep this in sync! A header include file for each game version holding symbols prepared for exlaunch's lookup utilities will be generated. Symbols supplied mangled will also be included in the linker script.
 - Run `make` in a suitable build environment (such as [devkitPro](https://devkitpro.org/wiki/Getting_Started) or a [docker container](https://hub.docker.com/r/devkitpro/devkita64)) with cmake installed
-- Mod `exefs` files are at `build/main.npdm` and `build/subsdk9`, copy `romfs` folder from the repo
+- Mod `exefs` files are at `build/main.npdm` and `build/subsdk9`, copy `romfs` folder from the repo.
+    - `build/subsdk9.elf` is also useful for debugging and annotating stacktraces, it's not necessary but you'll find it in github releases as well.
 
 ## Repo overview
 - `.github` automatically builds and [releases](https://github.com/aquacluck/totk-lotuskit/releases) each commit. You could reproduce the build with this or set it up in your own repo clone.
