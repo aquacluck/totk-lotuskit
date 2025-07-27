@@ -57,10 +57,10 @@ namespace lotuskit::script::engine {
         // XXX ensure we can run other parts of script module with an existing context suspended -- tas+ws runner(s?) should be independent of eg hooking AS callbacks.
         // - tas scripts are intended to run asap/realtime and so they're executed in main loop, offloading to another thread isn't really desirable.
         // - hook callback scripts (TODO) need to run wherever they're invoked from. These may need to acquire a single asIScriptContext, until we can glue the TLS stuff needed for proper threading.
-        engine->SetEngineProperty(AngelScript::asEP_AUTO_GARBAGE_COLLECT, false); // TODO get a proper child sead::Heap, get some benchmarks, try default/full/onestep/etc
+        engine->SetEngineProperty(AngelScript::asEP_AUTO_GARBAGE_COLLECT, true); // TODO get a proper child sead::Heap, get some benchmarks, try default/full/onestep/etc
         // FIXME ^ figure out when to run gc, i don't think i'm supposed to be skipping this lol
         // (watch for cheap moments to proc? scheduling nested load+compile this way might be nice too if the script can provide advance notice. TODO measure how disruptive this stuff is)
-        engine->SetEngineProperty(AngelScript::asEP_DISABLE_SCRIPT_CLASS_GC, true); // surely i wouldnt make circular references :D
+        engine->SetEngineProperty(AngelScript::asEP_DISABLE_SCRIPT_CLASS_GC, false); // surely i wouldnt make circular references :D
         engine->SetEngineProperty(AngelScript::asEP_BUILD_WITHOUT_LINE_CUES, true);
 
         // Set the message callback to receive information on errors in human readable form.
