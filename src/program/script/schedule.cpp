@@ -636,7 +636,7 @@ namespace lotuskit::script::schedule::tas {
                 accStick[3] != lineStick[3] ) {
 
                 // emit accumulated input
-                nn::util::SNPrintf(dstTmp, sizeof(dstTmp), "tas::input(%d, %llu, %d,%d, %d,%d);\n", accDuration, accButton, accStick[0], accStick[1], accStick[2], accStick[3]);
+                nn::util::SNPrintf(dstTmp, sizeof(dstTmp), "input(%d, %llu, %d,%d, %d,%d);\n", accDuration, accButton, accStick[0], accStick[1], accStick[2], accStick[3]);
                 dstn += strlen(dstTmp);
                 if (dstn >= limit) { svcOutputDebugString("xpile overflow", 14); break; } // err
                 strcpy(dst, dstTmp);
@@ -655,7 +655,7 @@ namespace lotuskit::script::schedule::tas {
 
         // emit final accumulated input
         if (accDuration > 0) {
-            nn::util::SNPrintf(dstTmp, sizeof(dstTmp), "tas::input(%d, %llu, %d,%d, %d,%d);\n", accDuration, accButton, accStick[0], accStick[1], accStick[2], accStick[3]);
+            nn::util::SNPrintf(dstTmp, sizeof(dstTmp), "input(%d, %llu, %d,%d, %d,%d);\n", accDuration, accButton, accStick[0], accStick[1], accStick[2], accStick[3]);
             dstn += strlen(dstTmp);
             if (dstn >= limit) { svcOutputDebugString("xpile overflow", 14); } // err
             else {
