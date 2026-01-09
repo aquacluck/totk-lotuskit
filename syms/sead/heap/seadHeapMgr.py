@@ -7,6 +7,16 @@ EXKING("_ZN4sead7HeapMgr12sInstancePtrE", {
     TOTK_121: 0x04716ca0,
 })
 
+EXKING("_ZN4sead7HeapMgr6sArenaE", {
+    TOTK_100: 0x0463bde8,
+    TOTK_121: 0x04716be8,
+})
+
+EXKING("_ZN4sead7HeapMgr15sHeapMemorySizeE", {
+    TOTK_100: 0x04647458,
+    TOTK_121: 0x04722398, # engine::system::gTotalAvailableMemorySize
+})
+
 EXKING("_ZN4sead7HeapMgr10sRootHeapsE", {
     TOTK_100: 0x0463be08,
     TOTK_110: 0x04719328,

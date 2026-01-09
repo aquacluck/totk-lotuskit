@@ -34,15 +34,18 @@ EXKING("gmd::GameDataMgr::getStructBoolDirect", {
     TOTK_121: 0x006fe6b4,
 })
 EXKING("gmd::GameDataMgr::getStructStruct", {
+    TOTK_100: 0x0081fed4,
     TOTK_121: 0x0080e6c4,
 })
 EXKING("gmd::GameDataMgr::setStructUInt", {
     TOTK_121: 0x0080e7f4,
 })
 EXKING("gmd::GameDataMgr::setStructInt", {
+    TOTK_100: 0x008202b0,
     TOTK_121: 0x0080eb0c,
 })
 EXKING("gmd::GameDataMgr::setStructEnum", {
+    TOTK_100: 0x00820bfc,
     TOTK_121: 0x0080f2f0,
 })
 EXKING("gmd::GameDataMgr::setStructFloat", {
@@ -117,9 +120,9 @@ EXKING("gmd::GameDataMgr::getStructArraySize", {
 EXKING("gmd::GameDataMgr::setStructBool", {
     TOTK_121: 0x01579334,
 })
-EXKING("gmd::GameDataMgr::setStructInt", {
-    TOTK_121: 0x015d6930,
-})
+#EXKING("gmd::GameDataMgr::setStructInt", {
+#    TOTK_121: 0x015d6930, # XXX
+#})
 EXKING("gmd::GameDataMgr::setStructBinary", {
     TOTK_121: 0x016d6168,
 })

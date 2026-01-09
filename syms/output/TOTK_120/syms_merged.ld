@@ -20,6 +20,8 @@ _ZN4sead12GlobalRandom9sInstanceE = __main_start + 0x00000000;
 _ZN4sead7HeapMgr10sRootHeapsE    = __main_start + 0x00000000;
 _ZN4sead7HeapMgr12sInstancePtrE  = __main_start + 0x00000000;
 _ZN4sead7HeapMgr15createRootHeap_Ev = __main_start + 0x00000000;
+_ZN4sead7HeapMgr15sHeapMemorySizeE = __main_start + 0x00000000;
+_ZN4sead7HeapMgr6sArenaE         = __main_start + 0x00000000;
 _ZN6engine5actor12BaseProcLinkD2Ev = __main_start + 0x00000000;
 _ZNK4sead7HeapMgr15findContainHeapEPKv = __main_start + 0x00000000;
 
