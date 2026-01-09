@@ -179,6 +179,76 @@ HOOK_DEFINE_TRAMPOLINE(NinJoyNpadDevice_calcHook) {
     }
 };
 
+#define ENABLE_LOG_HEAP_MIN_FREE (false && TOTK_VERSION == 100)
+#if ENABLE_LOG_HEAP_MIN_FREE
+static u32 minFree[29] = {0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff};
+const char* watchHeaps[29] = {"ActorInstanceHeap", "SaveLoad", "EventHeap", "Sound", "GameUIWorkHeap", "NnVfxDataHeap", "VfxDynamicHeap", "ModuleSystem", "Create Terrain Scene Heap", "Cave Module", "agl::WorkHeap", "UIHeap", "EffectModel", "BancModule", "CreateModelScene", "Chm Module Heap L", "NavMeshMgr", "ReplaceModelHeap", "StaticCompoundBodyMgr", "Sound", "aglTextureDataMgr::Unit", "Terrain Resource Heap", "GameTerrain", "DummyGeneralFormatParamMgrHeap", "Terrain Temp Heap", "Chm Module Heap S", "PlayReporter", "Challenge", "zsdic"};
+void heap_postalloc(sead::Heap* heap) {
+    const char* name = heap->getName().cstr();
+    for(int i=0; i < 29; i++) {
+        if (!strcmp(name, watchHeaps[i])) {
+            auto free = heap->getFreeSize();
+            if (free < minFree[i]) {
+                minFree[i] = free;
+            }
+            break;
+        }
+    }
+}
+void heap_print_min_free() {
+    lotuskit::TextWriter::printf(0, "heap_min_free:\n");
+    for(int i=0; i < 29; i++) {
+        if (minFree[i] == 0xffffffff) {
+            lotuskit::TextWriter::printf(0, "no_alloc %s\n", watchHeaps[i]);
+        } else {
+            lotuskit::TextWriter::printf(0, "%08x %s\n", minFree[i], watchHeaps[i]);
+        }
+    }
+}
+HOOK_DEFINE_TRAMPOLINE(SeadHeapTryAllocHook) {
+    static void* Callback(sead::Heap* self, size_t size, s32 alignment) {
+        auto ret = Orig(self, size, alignment);
+        heap_postalloc(self);
+        return ret;
+    }
+};
+HOOK_DEFINE_TRAMPOLINE(SeadExpHeapTryAllocHook) {
+    static void* Callback(sead::Heap* self, size_t size, s32 alignment) {
+        auto ret = Orig(self, size, alignment);
+        heap_postalloc(self);
+        return ret;
+    }
+};
+HOOK_DEFINE_TRAMPOLINE(SeadFrameHeapTryAllocHook) {
+    static void* Callback(sead::Heap* self, size_t size, s32 alignment) {
+        auto ret = Orig(self, size, alignment);
+        heap_postalloc(self);
+        return ret;
+    }
+};
+HOOK_DEFINE_TRAMPOLINE(SeadSeparateHeapTryAllocHook) {
+    static void* Callback(sead::Heap* self, size_t size, s32 alignment) {
+        auto ret = Orig(self, size, alignment);
+        heap_postalloc(self);
+        return ret;
+    }
+};
+HOOK_DEFINE_TRAMPOLINE(SeadSpareExpHeapTryAllocHook) {
+    static void* Callback(sead::Heap* self, size_t size, s32 alignment) {
+        auto ret = Orig(self, size, alignment);
+        heap_postalloc(self);
+        return ret;
+    }
+};
+HOOK_DEFINE_TRAMPOLINE(SeadSpareFrameHeapTryAllocHook) {
+    static void* Callback(sead::Heap* self, size_t size, s32 alignment) {
+        auto ret = Orig(self, size, alignment);
+        heap_postalloc(self);
+        return ret;
+    }
+};
+#endif
+
 /*
 HOOK_DEFINE_TRAMPOLINE(FrameworkProcCalcHook) {
     static constexpr auto s_name = "engine::framework::Framework::procCalc_";
@@ -206,6 +276,10 @@ HOOK_DEFINE_TRAMPOLINE(FrameworkProcDrawHook) {
         lotuskit::util::pause::drawPauses();
         lotuskit::ActorWatcher::calc(); // may resolve actor selection via preactor
         lotuskit::HexDump::calc();
+
+        #if ENABLE_LOG_HEAP_MIN_FREE
+        heap_print_min_free();
+        #endif
 
         Orig(self); // perform tas+script+scheduling before draw for synced display
     }
@@ -268,6 +342,15 @@ extern "C" void exl_main(void* x0, void* x1) {
     char buf[200];
     nn::util::SNPrintf(buf, sizeof(buf), "[totk-lotuskit:%d] exl_main main_offset=%p", TOTK_VERSION, exl::util::GetMainModuleInfo().m_Total.m_Start);
     svcOutputDebugString(buf, strlen(buf));
+
+    #if ENABLE_LOG_HEAP_MIN_FREE
+    SeadHeapTryAllocHook::InstallAtOffset(0x010dc358); // 100
+    SeadExpHeapTryAllocHook::InstallAtOffset(0x00b21d50); // 100
+    SeadFrameHeapTryAllocHook::InstallAtOffset(0x00b21d50); // 100
+    SeadSeparateHeapTryAllocHook::InstallAtOffset(0x029bd888); // 100
+    SeadSpareExpHeapTryAllocHook::InstallAtOffset(0x00b21ab0); // 100
+    SeadSpareFrameHeapTryAllocHook::InstallAtOffset(0x029b8940); // 100
+    #endif
 
     // memory is tight until engine+game init is settled, so we defer most initialization until then
     StealHeapHook::Install(); // called once mid bootup
