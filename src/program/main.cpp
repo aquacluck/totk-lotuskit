@@ -425,11 +425,13 @@ HOOK_DEFINE_TRAMPOLINE(WorldManagerModuleBaseProcHook) {
 };
 */
 
-HOOK_DEFINE_INLINE(SendEventPlayReportHook) {
-    static constexpr auto s_name = "game::event::EventActorController::sendEventPlayReport";
+HOOK_DEFINE_TRAMPOLINE(InitLotuskitOnTitleScreenHook) {
+    static constexpr auto s_name = "game::ai::query::QueryIsTitleMuralEnable::calc";
     static inline s8 defer_init_callcount = 1; // XXX 0 never fires oops
 
-    static void Callback(exl::hook::InlineCtx* ctx) {
+    static void Callback(void* self) {
+        Orig(self);
+
         // ignore n calls, proc once, ignore all further calls
         if (defer_init_callcount < 0) { return; }
         if (--defer_init_callcount != 0) { return; }
@@ -501,7 +503,7 @@ extern "C" void exl_main(void* x0, void* x1) {
 
     // memory is tight until engine+game init is settled, so we defer most initialization until then
     StealHeapHook::Install(); // called once mid bootup
-    SendEventPlayReportHook::Install(); // first called on title screen, used for mod init
+    InitLotuskitOnTitleScreenHook::Install(); // first called on title screen, main mod init
     BaseProcMgr_addDependency::Install(); // XXX used to locate Player globally, could be deferred otherwise
     // XXX assert textwriter+primitivedrawer deps available
     lotuskit::DebugDrawHooks::BootupInitDebugDrawersHook::Install();

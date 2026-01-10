@@ -64,6 +64,7 @@
 { util::ModuleIndex::Main, 0x01cd0798, "game::ai::execute::ExecutePlayerCalcStick::updateImpl_::HACK_WriteLeftStickRadianCameraStandard" },
 { util::ModuleIndex::Main, 0x01d151a0, "game::ai::execute::ExecutePlayerReverseRecorder::updateImpl_::state0" },
 { util::ModuleIndex::Main, 0x01d2e1c4, "game::ai::execute::ExecutePlayerWhistle::enterImpl_" },
+{ util::ModuleIndex::Main, 0x01ff4b34, "game::ai::query::QueryIsTitleMuralEnable::calc" },
 { util::ModuleIndex::Main, 0x00c7de84, "game::component::GameCameraParam::HACK_cameraCalc" },
 { util::ModuleIndex::Main, 0x00975c20, "game::component::PlayerComponent::checkContactMiasma" },
 { util::ModuleIndex::Main, 0x00bf476c, "game::component::PlayerComponent::getLeftStickRadianCameraStandard" },
