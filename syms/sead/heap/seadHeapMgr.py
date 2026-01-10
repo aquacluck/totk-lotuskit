@@ -34,3 +34,10 @@ EXKING("_ZN4sead7HeapMgr15createRootHeap_Ev", {
     TOTK_110: 0x00ebb084,
     TOTK_121: 0x00e7cdc4,
 })
+
+EXKING("_ZN4sead7HeapMgr22sNinVirtualAddressHeapE", {
+    TOTK_100: 0x0463be68,
+    TOTK_110: 0x04719388,
+    TOTK_121: 0x04716c68,
+})
+

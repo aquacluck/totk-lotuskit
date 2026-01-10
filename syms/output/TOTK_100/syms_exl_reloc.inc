@@ -19,6 +19,7 @@
 { util::ModuleIndex::Main, 0x0463bea0, "_ZN4sead7HeapMgr12sInstancePtrE" },
 { util::ModuleIndex::Main, 0x00e9b7bc, "_ZN4sead7HeapMgr15createRootHeap_Ev" },
 { util::ModuleIndex::Main, 0x04647458, "_ZN4sead7HeapMgr15sHeapMemorySizeE" },
+{ util::ModuleIndex::Main, 0x0463be68, "_ZN4sead7HeapMgr22sNinVirtualAddressHeapE" },
 { util::ModuleIndex::Main, 0x0463bde8, "_ZN4sead7HeapMgr6sArenaE" },
 { util::ModuleIndex::Main, 0x009665d0, "_ZN6engine5actor12BaseProcLinkD2Ev" },
 { util::ModuleIndex::Main, 0x00783ac4, "_ZNK4sead7HeapMgr15findContainHeapEPKv" },
