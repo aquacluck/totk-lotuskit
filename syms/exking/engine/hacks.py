@@ -22,6 +22,12 @@ EXKING("engine::steal_heap", {
     TOTK_121: 0x007f61d0,
 }, SymbolType.INSTRUCTION)
 
+EXKING("engine::erepo::PlayReportModule::prepare_", {
+    TOTK_100: 0x011486c4,
+    TOTK_110: 0x0116cbe4,
+    TOTK_121: 0x011629b4,
+})
+
 """
 # TODO register annotation/aliasing
 MODULE("sym", {ALL: 0x0}, {

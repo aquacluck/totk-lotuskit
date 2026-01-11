@@ -466,6 +466,11 @@ HOOK_DEFINE_TRAMPOLINE(InitLotuskitOnTitleScreenHook) {
     }
 };
 
+HOOK_DEFINE_TRAMPOLINE(DisablePrepoHook) {
+    static constexpr auto s_name = "engine::erepo::PlayReportModule::prepare_";
+    static void Callback(void* self, void* ptr) { }
+};
+
 extern "C" void exl_main(void* x0, void* x1) {
     exl::hook::Initialize();
 
@@ -502,6 +507,7 @@ extern "C" void exl_main(void* x0, void* x1) {
     #endif
 
     // memory is tight until engine+game init is settled, so we defer most initialization until then
+    DisablePrepoHook::Install(); // saves ~1MB
     StealHeapHook::Install(); // called once mid bootup
     InitLotuskitOnTitleScreenHook::Install(); // first called on title screen, main mod init
     BaseProcMgr_addDependency::Install(); // XXX used to locate Player globally, could be deferred otherwise

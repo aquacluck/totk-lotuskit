@@ -45,6 +45,7 @@
 { util::ModuleIndex::Main, 0x023c72a0, "engine::actor::BaseProcMgr::addDependency" },
 { util::ModuleIndex::Main, 0x00ab8610, "engine::actor::BaseProcMgr::removeDependency" },
 { util::ModuleIndex::Main, 0x04647330, "engine::actor::BaseProcMgr::sInstance" },
+{ util::ModuleIndex::Main, 0x011486c4, "engine::erepo::PlayReportModule::prepare_" },
 { util::ModuleIndex::Main, 0x011e5300, "engine::event::EventMgr::requestEvent" },
 { util::ModuleIndex::Main, 0x0464a988, "engine::event::EventMgr::sInstance" },
 { util::ModuleIndex::Main, 0x009dcda4, "engine::framework::Framework::procCalc_" },
