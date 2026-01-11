@@ -5,6 +5,7 @@
 #endif
 #include <cstring>
 #include "HexDump.hpp"
+#include "TextWriter.hpp"
 // thanks dt-13269 for putting together initial impl
 
 namespace nn::diag::detail {
@@ -93,27 +94,48 @@ namespace lotuskit::util::trace {
             }
         }
 
-        inline void debugLog() {
+        inline void print(s64 drawList_i=-1) {
             char buf[200];
+            nn::util::SNPrintf(buf, sizeof(buf), "stack trace:\n");
+            if (drawList_i == -1) {
+                svcOutputDebugString(buf, strlen(buf)-1); // no newline
+            } else {
+                lotuskit::TextWriter::printf(drawList_i, buf);
+            }
             AddressInfo info;
             for (size_t i = 0; i < trace_size; ++i) {
                 info.read(trace[i]);
                 if (info.module_name) {
                     if (info.nearest_sym_name[0] == '\0') {
-                        nn::util::SNPrintf(buf, sizeof(buf), "%p => %s+%08x", info.addr, info.module_name, info.offset);
+                        nn::util::SNPrintf(buf, sizeof(buf), "%p => %s+%08x\n", info.addr, info.module_name, info.offset);
                     } else {
-                        nn::util::SNPrintf(buf, sizeof(buf), "%p => %s+%08x [%s+%08x]", info.addr, info.module_name, info.offset, info.nearest_sym_name, info.nearest_sym_offset);
+                        nn::util::SNPrintf(buf, sizeof(buf), "%p => %s+%08x [%s+%08x]\n", info.addr, info.module_name, info.offset, info.nearest_sym_name, info.nearest_sym_offset);
                     }
                 } else {
-                    nn::util::SNPrintf(buf, sizeof(buf), "%p", info.addr);
+                    nn::util::SNPrintf(buf, sizeof(buf), "%p\n", info.addr);
                 }
-                svcOutputDebugString(buf, strlen(buf));
+                if (drawList_i == -1) {
+                    svcOutputDebugString(buf, strlen(buf)-1); // no newline
+                } else {
+                    lotuskit::TextWriter::printf(drawList_i, buf);
+                }
             }
+        }
+    };
 
+    class StackDump {
+        public:
+        inline static void print(s64 drawList_i=-1, size_t linecount=8) {
+            // TODO add "sp+{offset}" hexdump leader format? textwriter mode?
             auto sp = (void*)exl::util::stack_trace::GetSp();
-            nn::util::SNPrintf(buf, sizeof(buf), "stack dump (sp=%p):", sp);
-            svcOutputDebugString(buf, strlen(buf));
-            lotuskit::HexDump::print_text(-1, sp-0x40, sp-0x40, 8); // +-4 lines
+            char buf[200];
+            nn::util::SNPrintf(buf, sizeof(buf), "stack dump (sp=%p):\n", sp);
+            if (drawList_i == -1) {
+                svcOutputDebugString(buf, strlen(buf)-1); // no newline
+            } else {
+                lotuskit::TextWriter::printf(drawList_i, buf);
+            }
+            lotuskit::HexDump::print_text(drawList_i, sp, sp, linecount);
         }
     };
 
