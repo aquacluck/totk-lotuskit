@@ -139,5 +139,30 @@ namespace lotuskit::util::trace {
         }
     };
 
+    class RegDump {
+        public:
+        inline static void print(s64 drawList_i=-1, exl::hook::InlineCtx* ctx=0) {
+            char buf[200];
+            nn::util::SNPrintf(buf, sizeof(buf), "InlineCtx:\n");
+            if (drawList_i == -1) {
+                svcOutputDebugString(buf, strlen(buf)-1); // no newline
+            } else {
+                lotuskit::TextWriter::printf(drawList_i, buf);
+            }
+            for (u8 xi = 0; xi < 31; xi++) {
+                nn::util::SNPrintf(buf, sizeof(buf), "X[%02d]: %p\n", xi, ctx->X[xi]);
+                if (drawList_i == -1) {
+                    svcOutputDebugString(buf, strlen(buf)-1); // no newline
+                } else {
+                    lotuskit::TextWriter::printf(drawList_i, buf);
+                }
+            }
+        }
+
+        inline static void print(s64 drawList_i=-1, exl::hook::InlineFloatCtx* ctx=0) {
+            // TODO
+        }
+    };
+
 } // namespace
 
