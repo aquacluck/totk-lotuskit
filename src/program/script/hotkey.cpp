@@ -14,8 +14,8 @@ namespace lotuskit::script::hotkey {
         nn::hid::GetKeyboardState(&keyboard);
         //void* dbg_mods = &keyboard.mModifiers._storage;
         //void* dbg_keys = &keyboard.mKeys._storage;
-        //lotuskit::HexDump::textwriter_printf_u8(0, dbg_mods, (u8*)dbg_mods, 1, true); // 32b, first 4 bytes here
-        //lotuskit::HexDump::textwriter_printf_u8(0, dbg_keys, (u8*)dbg_keys, 2, true); // 256b, both full lines here
+        //lotuskit::HexDump::print_u8(0, dbg_mods, (u8*)dbg_mods, 1, true); // 32b, first 4 bytes here
+        //lotuskit::HexDump::print_u8(0, dbg_keys, (u8*)dbg_keys, 2, true); // 256b, both full lines here
         calcDispatch(getByKeyboardState(keyboard));
     }
 

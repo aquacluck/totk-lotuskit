@@ -3,7 +3,7 @@
 #include <common.hpp>
 
 #define EXL_MODULE_NAME "lotuskit"
-#define EXL_DEBUG
+//#define EXL_DEBUG
 #define EXL_USE_FAKEHEAP
 //#define EXL_SUPPORTS_REBOOTPAYLOAD
 
