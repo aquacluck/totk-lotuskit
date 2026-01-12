@@ -24,6 +24,7 @@
 #include "util/camera.hpp"
 #include "util/player.hpp"
 #include "util/pause.hpp"
+#include "util/trace.hpp"
 #include "util/world.hpp"
 using Logger = lotuskit::Logger;
 
@@ -181,202 +182,6 @@ HOOK_DEFINE_TRAMPOLINE(NinJoyNpadDevice_calcHook) {
     }
 };
 
-#define ENABLE_LOG_HEAP_MIN_FREE (false && TOTK_VERSION == 100)
-#if ENABLE_LOG_HEAP_MIN_FREE
-static u32 minFree[30] = {0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff};
-const char* watchHeaps[30] = {"ActorInstanceHeap", "SaveLoad", "EventHeap", "Sound", "GameUIWorkHeap", "NnVfxDataHeap", "VfxDynamicHeap", "ModuleSystem", "Create Terrain Scene Heap", "Cave Module", "agl::WorkHeap", "UIHeap", "EffectModel", "BancModule", "CreateModelScene", "Chm Module Heap L", "NavMeshMgr", "ReplaceModelHeap", "StaticCompoundBodyMgr", "Sound", "aglTextureDataMgr::Unit", "Terrain Resource Heap", "GameTerrain", "DummyGeneralFormatParamMgrHeap", "Terrain Temp Heap", "Chm Module Heap S", "PlayReporter", "Challenge", "zsdic", "NinVirtualAddressHeap"};
-void heap_postalloc(sead::Heap* heap) {
-    const char* name = heap->getName().cstr();
-    for(int i=0; i < 30; i++) {
-        if (!strcmp(name, watchHeaps[i])) {
-            // XXX multiple of same name isn't correctly handled anywhere (ModuleSystem, Sound, Challenge, GameTerrain)
-            auto free = heap->getFreeSize();
-            if (free < minFree[i]) {
-                minFree[i] = free;
-            }
-            break;
-        }
-    }
-}
-void heap_print_min_free_impl(sead::Heap* dumproot) {
-    sead::Heap* h = dumproot; // current/visiting entry
-    sead::Heap* htmp = nullptr;
-    u32 depth = 0;
-
-    HEAPINFO_VISIT:
-    for(int i=0; i < 30; i++) {
-        if (strcmp(h->getName().cstr(), watchHeaps[i]) != 0) {
-            continue;
-        }
-        // log the entry
-        if (minFree[i] == 0xffffffff) {
-            lotuskit::TextWriter::printf(0, "no_alloc %08x %08x %s(%p)\n", h->getFreeSize(), h->getSize(), watchHeaps[i], h);
-        } else {
-            lotuskit::TextWriter::printf(0, "%08x %08x %08x %s(%p)\n", minFree[i], h->getFreeSize(), h->getSize(), watchHeaps[i], h);
-        }
-        break;
-    }
-
-    // keep descending into first child
-    htmp = h->mChildren.front();
-    if (htmp != nullptr) {
-        depth++;
-        h = htmp;
-        goto HEAPINFO_VISIT;
-    }
-
-    // no children, proceed to siblings
-    HEAPINFO_DO_NEXT:
-    if (h->mParent == nullptr) {
-        // assert h == dumproot
-        return; // ok
-    }
-    htmp = h->mParent->mChildren.next(h);
-    if (htmp != nullptr) {
-        h = htmp;
-        goto HEAPINFO_VISIT; // advance through siblings
-    }
-
-    // no more siblings, ascend and continue advancing through the aunts and uncles
-    depth--;
-    h = h->mParent;
-    goto HEAPINFO_DO_NEXT; // advance through siblings
-
-    return; // unreachable
-}
-void heap_print_min_free() {
-    lotuskit::TextWriter::printf(0, "min_free     free     size name(addr):\n");
-    heap_print_min_free_impl(*EXL_SYM_RESOLVE<sead::Heap**>("_ZN4sead7HeapMgr22sNinVirtualAddressHeapE"));
-    heap_print_min_free_impl(sead::HeapMgr::sRootHeaps[0]);
-}
-HOOK_DEFINE_TRAMPOLINE(SeadHeapTryAllocHook) {
-    static void* Callback(sead::Heap* self, size_t size, s32 alignment) {
-        auto ret = Orig(self, size, alignment);
-        heap_postalloc(self);
-        return ret;
-    }
-};
-HOOK_DEFINE_TRAMPOLINE(SeadExpHeapTryAllocHook) {
-    static void* Callback(sead::Heap* self, size_t size, s32 alignment) {
-        auto ret = Orig(self, size, alignment);
-        heap_postalloc(self);
-        return ret;
-    }
-};
-HOOK_DEFINE_TRAMPOLINE(SeadExpHeapFreeHook) {
-    static void Callback(sead::Heap* self, void* ptr) {
-        heap_postalloc(self);
-        Orig(self, ptr);
-    }
-};
-HOOK_DEFINE_TRAMPOLINE(SeadFrameHeapTryAllocHook) {
-    static void* Callback(sead::Heap* self, size_t size, s32 alignment) {
-        auto ret = Orig(self, size, alignment);
-        heap_postalloc(self);
-        return ret;
-    }
-};
-HOOK_DEFINE_TRAMPOLINE(SeadSeparateHeapTryAllocHook) {
-    static void* Callback(sead::Heap* self, size_t size, s32 alignment) {
-        auto ret = Orig(self, size, alignment);
-        heap_postalloc(self);
-        return ret;
-    }
-};
-HOOK_DEFINE_TRAMPOLINE(SeadSeparateHeapFreeHook) {
-    static void Callback(sead::Heap* self, void* ptr) {
-        heap_postalloc(self);
-        Orig(self, ptr);
-    }
-};
-HOOK_DEFINE_TRAMPOLINE(SeadSpareExpHeapTryAllocHook) {
-    static void* Callback(sead::Heap* self, size_t size, s32 alignment) {
-        auto ret = Orig(self, size, alignment);
-        heap_postalloc(self);
-        return ret;
-    }
-};
-HOOK_DEFINE_TRAMPOLINE(SeadSpareExpHeapFreeHook) {
-    static void Callback(sead::Heap* self, void* ptr) {
-        heap_postalloc(self);
-        Orig(self, ptr);
-    }
-};
-HOOK_DEFINE_TRAMPOLINE(SeadSpareFrameHeapTryAllocHook) {
-    static void* Callback(sead::Heap* self, size_t size, s32 alignment) {
-        auto ret = Orig(self, size, alignment);
-        heap_postalloc(self);
-        return ret;
-    }
-};
-HOOK_DEFINE_TRAMPOLINE(SeadUnknown0HeapTryAllocHook) {
-    static void* Callback(sead::Heap* self, size_t size, s32 alignment) {
-        auto ret = Orig(self, size, alignment);
-        heap_postalloc(self);
-        return ret;
-    }
-};
-HOOK_DEFINE_TRAMPOLINE(SeadUnknown1HeapTryAllocHook) {
-    static void* Callback(sead::Heap* self, size_t size, s32 alignment) {
-        auto ret = Orig(self, size, alignment);
-        heap_postalloc(self);
-        return ret;
-    }
-};
-HOOK_DEFINE_TRAMPOLINE(SeadUnknown1HeapFreeHook) {
-    static void Callback(sead::Heap* self, void* ptr) {
-        heap_postalloc(self);
-        Orig(self, ptr);
-    }
-};
-HOOK_DEFINE_TRAMPOLINE(SeadUnknown2HeapTryAllocHook) {
-    static void* Callback(sead::Heap* self, size_t size, s32 alignment) {
-        auto ret = Orig(self, size, alignment);
-        heap_postalloc(self);
-        return ret;
-    }
-};
-HOOK_DEFINE_TRAMPOLINE(SeadNinStandardAllocatorHeapTryAllocHook) {
-    static void* Callback(sead::Heap* self, size_t size, s32 alignment) {
-        auto ret = Orig(self, size, alignment);
-        heap_postalloc(self);
-        return ret;
-    }
-};
-HOOK_DEFINE_TRAMPOLINE(SeadNinStandardAllocatorHeapFreeHook) {
-    static void Callback(sead::Heap* self, void* ptr) {
-        heap_postalloc(self);
-        Orig(self, ptr);
-    }
-};
-HOOK_DEFINE_TRAMPOLINE(SeadUnitHeapTryAllocHook) {
-    static void* Callback(sead::Heap* self, size_t size, s32 alignment) {
-        auto ret = Orig(self, size, alignment);
-        heap_postalloc(self);
-        return ret;
-    }
-};
-HOOK_DEFINE_TRAMPOLINE(SeadUnitHeapFreeHook) {
-    static void Callback(sead::Heap* self, void* ptr) {
-        heap_postalloc(self);
-        Orig(self, ptr);
-    }
-};
-HOOK_DEFINE_TRAMPOLINE(SeadVirtualAddressHeapTryAllocHook) {
-    static void* Callback(sead::Heap* self, size_t size, s32 alignment) {
-        auto ret = Orig(self, size, alignment);
-        heap_postalloc(self);
-        return ret;
-    }
-};
-HOOK_DEFINE_TRAMPOLINE(SeadVirtualAddressHeapFreeHook) {
-    static void Callback(sead::Heap* self, void* ptr) {
-        heap_postalloc(self);
-        Orig(self, ptr);
-    }
-};
-#endif
-
 /*
 HOOK_DEFINE_TRAMPOLINE(FrameworkProcCalcHook) {
     static constexpr auto s_name = "engine::framework::Framework::procCalc_";
@@ -404,10 +209,8 @@ HOOK_DEFINE_TRAMPOLINE(FrameworkProcDrawHook) {
         lotuskit::util::pause::drawPauses();
         lotuskit::ActorWatcher::calc(); // may resolve actor selection via preactor
         lotuskit::HexDump::calc();
+        lotuskit::util::trace::HeapWatch::print_min_free();
 
-        #if ENABLE_LOG_HEAP_MIN_FREE
-        heap_print_min_free();
-        #endif
 
         Orig(self); // perform tas+script+scheduling before draw for synced display
     }
@@ -505,33 +308,6 @@ extern "C" void exl_main(void* x0, void* x1) {
     nn::util::SNPrintf(buf, sizeof(buf), "[totk-lotuskit:%d] exl_main main_offset=%p", TOTK_VERSION, exl::util::GetMainModuleInfo().m_Total.m_Start);
     svcOutputDebugString(buf, strlen(buf));
 
-    #if ENABLE_LOG_HEAP_MIN_FREE
-    // XXX 1.0 symbols only
-    SeadHeapTryAllocHook::InstallAtOffset(0x010dc358);
-    //SeadHeapFreeHook
-    SeadExpHeapTryAllocHook::InstallAtOffset(0x00b21d50);
-    SeadExpHeapFreeHook::InstallAtOffset(0x029b72fc);
-    SeadFrameHeapTryAllocHook::InstallAtOffset(0x00b21d50);
-    //SeadFrameHeapFreeHook
-    SeadSeparateHeapTryAllocHook::InstallAtOffset(0x029bd888);
-    SeadSeparateHeapFreeHook::InstallAtOffset(0x029bdad4);
-    SeadSpareExpHeapTryAllocHook::InstallAtOffset(0x00b21ab0);
-    SeadSpareExpHeapFreeHook::InstallAtOffset(0x029b83a8);
-    SeadSpareFrameHeapTryAllocHook::InstallAtOffset(0x029b8940);
-    //SeadSpareFrameHeapFreeHook
-    SeadUnknown0HeapTryAllocHook::InstallAtOffset(0x02a5f560);
-    //SeadUnknown0HeapFreeHook::InstallAtOffset(0x02a5f5ac); // empty impl (frameheap?)
-    SeadUnknown1HeapTryAllocHook::InstallAtOffset(0x02a609a0);
-    SeadUnknown1HeapFreeHook::InstallAtOffset(0x02a60a00);
-    SeadUnknown2HeapTryAllocHook::InstallAtOffset(0x02a61998);
-    //SeadUnknown2HeapFreeHook::InstallAtOffset(0x02a619e4); // empty impl (frameheap?)
-    SeadNinStandardAllocatorHeapTryAllocHook::InstallAtOffset(0x02a7fd38);
-    SeadNinStandardAllocatorHeapFreeHook::InstallAtOffset(0x02a7fde4);
-    SeadUnitHeapTryAllocHook::InstallAtOffset(0x029b90b8);
-    SeadUnitHeapFreeHook::InstallAtOffset(0x029b91d0);
-    SeadVirtualAddressHeapTryAllocHook::InstallAtOffset(0x008421d4);
-    SeadVirtualAddressHeapFreeHook::InstallAtOffset(0x02150920);
-    #endif
 
     // memory is tight until engine+game init is settled, so we defer most initialization until then
     DisablePrepoHook::Install(); // saves ~1MB
@@ -542,6 +318,7 @@ extern "C" void exl_main(void* x0, void* x1) {
     // XXX assert textwriter+primitivedrawer deps available
     lotuskit::DebugDrawHooks::BootupInitDebugDrawersHook::Install();
     lotuskit::util::pause::InstallHooks(); // XXX hooks PauseMgr init, could be deferred otherwise
+    lotuskit::util::trace::HeapWatch::install_hooks(); // 1.0 only, must be enabled at compile time
 }
 
 // Note: this is only applicable in the context of applets/sysmodules

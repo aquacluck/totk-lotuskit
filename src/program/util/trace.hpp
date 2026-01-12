@@ -1,167 +1,38 @@
 #pragma once
 #include "lib.hpp"
-#ifdef DEMANGLE
-#include "cxxabi.h"
-#endif
-#include <cstring>
-#include "HexDump.hpp"
-#include "TextWriter.hpp"
-// thanks dt-13269 for putting together initial impl
-
-namespace nn::diag::detail {
-    u64 GetNearestExportedSymbol(char const**, u64*, u64);
-}
+#define ENABLE_LOG_HEAP_MIN_FREE (false && TOTK_VERSION == 100)
 
 namespace lotuskit::util::trace {
-    /*
-    inline void demangle(char* mangled_name, char* out_buffer, size_t out_size) {
-        #ifdef DEMANGLE
-        int status;
-        char* demangled = abi::__cxa_demangle(mangled_name, nullptr, 0, &status);
-        if (status) {
-            size_t copy_size = strnlen(mangled_name, out_size);
-            memcpy(out_buffer, mangled_name, copy_size);
-            out_buffer[copy_size] = '\0';
-        } else {
-            size_t copy_size = strnlen(demangled, out_size);
-            memcpy(out_buffer, demangled, copy_size);
-            out_buffer[copy_size] = '\0';
-        }
-        free(demangled);
+    namespace HeapWatch {
+        #if ENABLE_LOG_HEAP_MIN_FREE
+            void install_hooks();
+            void print_min_free(); // TODO drawlist=-1/debug output
         #else
-        size_t copy_size = strnlen(mangled_name, out_size);
-        memcpy(out_buffer, mangled_name, copy_size);
-        out_buffer[copy_size] = '\0';
+            inline void install_hooks() { } // nop
+            inline void print_min_free() { } // nop
         #endif
     }
-    */
 
-    class AddressInfo {
+    class RegDump {
         public:
-        uintptr_t addr = 0;
-        const char* module_name = nullptr;
-        ptrdiff_t offset = 0;
-        char nearest_sym_name[0x80];
-        ptrdiff_t nearest_sym_offset = 0;
-
-        inline void read(uintptr_t addr) {
-            this->addr = addr;
-            auto module = exl::util::TryGetModule(addr);
-            if (module == nullptr) {
-                module_name = nullptr;
-                return;
-            }
-            offset = addr - module->m_Total.m_Start;
-            module_name = module->GetModuleName().data();
-
-            u64 sym_size;
-            char const* sym_name;
-            uintptr_t sym_addr = nn::diag::detail::GetNearestExportedSymbol(&sym_name, &sym_size, addr);
-            if (sym_addr == 0 || addr - sym_addr >= sym_size) {
-                nearest_sym_name[0] = '\0';
-                nearest_sym_offset = 0;
-            } else {
-                nearest_sym_offset = addr - sym_addr;
-                size_t copy_size = strnlen(sym_name, sizeof(nearest_sym_name));
-                memcpy(nearest_sym_name, sym_name, copy_size);
-                nearest_sym_name[copy_size] = '\0';
-            }
-        }
-    };
-
-    template <size_t max_trace_size = 0x20>
-    struct StackTrace {
-        StackTrace() = default;
-        size_t trace_size = 0;
-        uintptr_t trace[max_trace_size];
-
-        // this is essentially the atmosphere implementation
-        // https://github.com/Atmosphere-NX/Atmosphere/blob/master/stratosphere/creport/source/creport_threads.cpp#L37
-        inline void unwind() {
-            auto* current_frame = exl::util::stack_trace::GetCurrentFrame();
-            uintptr_t current_fp = current_frame->m_Fp;
-            trace_size = 0;
-            for (size_t i = 0; i < max_trace_size; ++i) {
-                if (current_fp == 0 || current_fp % sizeof(void*) != 0) {
-                    break;
-                }
-                current_frame = reinterpret_cast<exl::util::stack_trace::Frame*>(current_fp);
-                if (current_frame == 0 || current_frame->m_Lr == 0 || current_frame->m_Lr % 4 != 0) {
-                    break;
-                }
-                trace[trace_size++] = current_frame->m_Lr;
-                current_fp = current_frame->m_Fp;
-            }
-        }
-
-        inline void print(s64 drawList_i=-1) {
-            char buf[200];
-            nn::util::SNPrintf(buf, sizeof(buf), "stack trace:\n");
-            if (drawList_i == -1) {
-                svcOutputDebugString(buf, strlen(buf)-1); // no newline
-            } else {
-                lotuskit::TextWriter::printf(drawList_i, buf);
-            }
-            AddressInfo info;
-            for (size_t i = 0; i < trace_size; ++i) {
-                info.read(trace[i]);
-                if (info.module_name) {
-                    if (info.nearest_sym_name[0] == '\0') {
-                        nn::util::SNPrintf(buf, sizeof(buf), "%p => %s+%08x\n", info.addr, info.module_name, info.offset);
-                    } else {
-                        nn::util::SNPrintf(buf, sizeof(buf), "%p => %s+%08x [%s+%08x]\n", info.addr, info.module_name, info.offset, info.nearest_sym_name, info.nearest_sym_offset);
-                    }
-                } else {
-                    nn::util::SNPrintf(buf, sizeof(buf), "%p\n", info.addr);
-                }
-                if (drawList_i == -1) {
-                    svcOutputDebugString(buf, strlen(buf)-1); // no newline
-                } else {
-                    lotuskit::TextWriter::printf(drawList_i, buf);
-                }
-            }
-        }
+        static void print(s64 drawList_i=-1, exl::hook::InlineCtx* ctx=0, u8 x0=0, u8 xL=31);
+        //static void print(s64 drawList_i=-1, exl::hook::InlineFloatCtx* ctx=0); // TODO
     };
 
     class StackDump {
         public:
-        inline static void print(s64 drawList_i=-1, size_t linecount=8) {
-            // TODO add "sp+{offset}" hexdump leader format?
-            auto sp = (void*)exl::util::stack_trace::GetSp();
-            char buf[200];
-            nn::util::SNPrintf(buf, sizeof(buf), "stack dump (sp=%p):\n", sp);
-            if (drawList_i == -1) {
-                svcOutputDebugString(buf, strlen(buf)-1); // no newline
-            } else {
-                lotuskit::TextWriter::printf(drawList_i, buf);
-            }
-            lotuskit::HexDump::print_text(drawList_i, sp, sp, linecount);
-        }
+        static void print(s64 drawList_i=-1, size_t linecount=8);
     };
 
-    class RegDump {
-        public:
-        inline static void print(s64 drawList_i=-1, exl::hook::InlineCtx* ctx=0, u8 x0=0, u8 xL=31) {
-            char buf[200];
-            nn::util::SNPrintf(buf, sizeof(buf), "InlineCtx:\n");
-            if (drawList_i == -1) {
-                svcOutputDebugString(buf, strlen(buf)-1); // no newline
-            } else {
-                lotuskit::TextWriter::printf(drawList_i, buf);
-            }
-            for (u8 xi = x0; xi < xL; xi++) {
-                nn::util::SNPrintf(buf, sizeof(buf), "X[%02d]: %p\n", xi, ctx->X[xi]);
-                if (drawList_i == -1) {
-                    svcOutputDebugString(buf, strlen(buf)-1); // no newline
-                } else {
-                    lotuskit::TextWriter::printf(drawList_i, buf);
-                }
-            }
-        }
+    class StackTrace {
+        public: // thanks dt-13269 for initial StackTrace impl
+        StackTrace() = default;
+        size_t trace_size = 0;
+        static constexpr size_t max_trace_size = 0x20;
+        uintptr_t trace[max_trace_size];
 
-        inline static void print(s64 drawList_i=-1, exl::hook::InlineFloatCtx* ctx=0) {
-            // TODO
-        }
+        void unwind();
+        void print(s64 drawList_i=-1);
     };
 
 } // namespace
