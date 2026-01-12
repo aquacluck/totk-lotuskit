@@ -28,6 +28,12 @@ EXKING("engine::erepo::PlayReportModule::prepare_", {
     TOTK_121: 0x011629b4,
 })
 
+EXKING("ares::System::initialize", {
+    TOTK_100: 0x011258ac,
+    TOTK_110: 0x0113529c,
+    TOTK_121: 0x0112809c,
+})
+
 """
 # TODO register annotation/aliasing
 MODULE("sym", {ALL: 0x0}, {

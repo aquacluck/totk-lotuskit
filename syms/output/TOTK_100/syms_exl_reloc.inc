@@ -29,6 +29,7 @@
 { util::ModuleIndex::Main, 0x00858998, "agl::lyr::Layer::drawDebugInfo_" },
 { util::ModuleIndex::Main, 0x00857f28, "agl::lyr::RenderDisplay::drawLayer_::ensure_font" },
 { util::ModuleIndex::Main, 0x00b983b4, "agl::lyr::Renderer::draw" },
+{ util::ModuleIndex::Main, 0x011258ac, "ares::System::initialize" },
 { util::ModuleIndex::Main, 0x0069a18c, "engine::actor::ActorBase::forceSetMatrix" },
 { util::ModuleIndex::Main, 0x00ebb7d0, "engine::actor::ActorBase::getRigidBodyEntityByName" },
 { util::ModuleIndex::Main, 0x007f13c0, "engine::actor::ActorBase::setPositionAndRotationDirect" },

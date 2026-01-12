@@ -466,6 +466,33 @@ HOOK_DEFINE_TRAMPOLINE(InitLotuskitOnTitleScreenHook) {
     }
 };
 
+/*
+struct TestGetHeapSizeHookStruct { size_t size; size_t has_value; size_t more_bigger; };
+HOOK_DEFINE_TRAMPOLINE(TestGetHeapSizeHook) {
+    static constexpr auto s_name = "engine::util::HeapSizeDB::getHeapSize";
+    static TestGetHeapSizeHookStruct Callback(void* idk, sead::SafeString* name) {
+        auto ret = Orig(idk, name);
+        char buf[200];
+        if (ret.has_value) {
+            //if (!strcmp(name->cstr(), "AS")) { ret.size = 256; } // XXX try to break it
+            nn::util::SNPrintf(buf, sizeof(buf), "getHeapSize(%s) size=%p", name->cstr(), ret.size);
+        } else {
+            nn::util::SNPrintf(buf, sizeof(buf), "getHeapSize(%s) no_size", name->cstr());
+        }
+        svcOutputDebugString(buf, strlen(buf));
+        return ret;
+    }
+};
+*/
+
+HOOK_DEFINE_TRAMPOLINE(AresSystemInitializeHook) {
+    static constexpr auto s_name = "ares::System::initialize";
+    static void Callback(void* aresSystem, size_t* aresSystemInitializeArg) {
+        aresSystemInitializeArg[21] = 0x80000; // half size zsdic heap
+        Orig(aresSystem, aresSystemInitializeArg);
+    }
+};
+
 HOOK_DEFINE_TRAMPOLINE(DisablePrepoHook) {
     static constexpr auto s_name = "engine::erepo::PlayReportModule::prepare_";
     static void Callback(void* self, void* ptr) { }
@@ -508,6 +535,7 @@ extern "C" void exl_main(void* x0, void* x1) {
 
     // memory is tight until engine+game init is settled, so we defer most initialization until then
     DisablePrepoHook::Install(); // saves ~1MB
+    AresSystemInitializeHook::Install(); // saves 0.5MB
     StealHeapHook::Install(); // called once mid bootup
     InitLotuskitOnTitleScreenHook::Install(); // first called on title screen, main mod init
     BaseProcMgr_addDependency::Install(); // XXX used to locate Player globally, could be deferred otherwise
