@@ -34,6 +34,25 @@ EXKING("ares::System::initialize", {
     TOTK_121: 0x0112809c,
 })
 
+
+EXKING("nn::mem::StandardAllocator::sMemBlock", {
+    TOTK_100: 0x04598ec0,
+    #TOTK_110: 0x
+    TOTK_121: 0x046718e0,
+})
+
+EXKING("nn::mem::StandardAllocator::sSize", {
+    TOTK_100: 0x04598ec8,
+    #TOTK_110: 0x
+    TOTK_121: 0x046718e8,
+})
+
+EXKING("nn::mem::StandardAllocator::sInstance", {
+    TOTK_100: 0x04598ed0,
+    #TOTK_110: 0x
+    TOTK_121: 0x046718f0,
+})
+
 """
 # TODO register annotation/aliasing
 MODULE("sym", {ALL: 0x0}, {

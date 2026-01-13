@@ -3,6 +3,7 @@
 #include "cxxabi.h"
 #endif
 #include <cstring>
+#include <nn/mem.h>
 #include <heap/seadArena.h>
 #include <heap/seadHeap.h>
 #include <heap/seadHeapMgr.h>
@@ -94,8 +95,18 @@ namespace lotuskit::util::trace::HeapWatch {
         // 0x7c200000 = 1986 MB ams
         // 0x82c00000 = 2092 MB ryu
 
+        uintptr_t sa_memblock = *EXL_SYM_RESOLVE<uintptr_t*>("nn::mem::StandardAllocator::sMemBlock");
+        size_t sa_size = *EXL_SYM_RESOLVE<size_t*>("nn::mem::StandardAllocator::sSize");
+        auto sa = EXL_SYM_RESOLVE<nn::mem::StandardAllocator*>("nn::mem::StandardAllocator::sInstance");
+        size_t sa_free = sa->GetTotalFreeSize();
+        int sa_util = sa_size > 0 ? 100*(sa_size-sa_free)/sa_size : 100;
+        if (sa_util > 999) { sa_util = 999; }
+        static u32 sa_min_free = 0xffffffff;
+        if (sa_free < sa_min_free) { sa_min_free = sa_free; }
+
         lotuskit::TextWriter::printf(0, "min_free     free     size use name(addr):\n");
         lotuskit::TextWriter::printf(0, "                0 %8x 100 HeapMgr::sHeapMemorySize\n", size);
+        lotuskit::TextWriter::printf(0, "%8x %8x %8x %3d nn::mem::StandardAllocator(%p, sMemBlock=%p)\n", sa_min_free, sa_free, sa_size, sa_util, sa, sa_memblock);
         lotuskit::TextWriter::printf(0, "                0 %8x 100 HeapMgr::sArena(%p, start=%p)\n", arena->mSize, arena, arena->mStart);
 
         heap_print_min_free_impl(*EXL_SYM_RESOLVE<sead::Heap**>("_ZN4sead7HeapMgr22sNinVirtualAddressHeapE"));
