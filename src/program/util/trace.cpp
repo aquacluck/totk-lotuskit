@@ -3,6 +3,7 @@
 #include "cxxabi.h"
 #endif
 #include <cstring>
+#include <heap/seadArena.h>
 #include <heap/seadHeap.h>
 #include <heap/seadHeapMgr.h>
 #include "HexDump.hpp"
@@ -16,9 +17,9 @@ namespace lotuskit::util::trace::HeapWatch {
 
     const char* watchHeaps[30] = {"ActorInstanceHeap", "SaveLoad", "EventHeap", "Sound", "GameUIWorkHeap", "NnVfxDataHeap", "VfxDynamicHeap", "ModuleSystem",
                                   "Create Terrain Scene Heap", "Cave Module", "agl::WorkHeap", "UIHeap", "EffectModel", "BancModule", "CreateModelScene",
-                                  "Chm Module Heap L", "NavMeshMgr", "ReplaceModelHeap", "StaticCompoundBodyMgr", "Sound", "aglTextureDataMgr::Unit",
+                                  "Chm Module Heap L", "NavMeshMgr", "ReplaceModelHeap", "StaticCompoundBodyMgr", "aglTextureDataMgr::Unit",
                                   "Terrain Resource Heap", "GameTerrain", "DummyGeneralFormatParamMgrHeap", "Terrain Temp Heap", "Chm Module Heap S",
-                                  "PlayReporter", "Challenge", "zsdic", "NinVirtualAddressHeap"};
+                                  "PlayReporter", "Challenge", "zsdic", "NinVirtualAddressHeap", "RootHeap"};
 
     void heap_postalloc(sead::Heap* heap) {
         const char* name = heap->getName().cstr();
@@ -45,10 +46,14 @@ namespace lotuskit::util::trace::HeapWatch {
                 continue;
             }
             // log the entry
+            auto free = h->getFreeSize();
+            auto size = h->getSize();
+            int util = size > 0 ? 100*(size-free)/size : 100;
+            if (util > 999) { util = 999; }
             if (minFree[i] == 0xffffffff) {
-                lotuskit::TextWriter::printf(0, "no_alloc %08x %08x %s(%p)\n", h->getFreeSize(), h->getSize(), watchHeaps[i], h);
+                lotuskit::TextWriter::printf(0, "no_alloc %8x %8x %3d %s(%p)\n", free, size, util, watchHeaps[i], h);
             } else {
-                lotuskit::TextWriter::printf(0, "%08x %08x %08x %s(%p)\n", minFree[i], h->getFreeSize(), h->getSize(), watchHeaps[i], h);
+                lotuskit::TextWriter::printf(0, "%8x %8x %8x %3d %s(%p)\n", minFree[i], free, size, util, watchHeaps[i], h);
             }
             break;
         }
@@ -82,7 +87,17 @@ namespace lotuskit::util::trace::HeapWatch {
     }
 
     void PrintMinFree() {
-        lotuskit::TextWriter::printf(0, "min_free     free     size name(addr):\n");
+        sead::Arena* arena = *EXL_SYM_RESOLVE<sead::Arena**>("_ZN4sead7HeapMgr6sArenaE");
+        // 0x7b900000 = 1977 MB ams 1.10.1 master
+        // 0x82300000 = 2083 MB ryu
+        u64 size = *EXL_SYM_RESOLVE<u64*>("_ZN4sead7HeapMgr15sHeapMemorySizeE");
+        // 0x7c200000 = 1986 MB ams
+        // 0x82c00000 = 2092 MB ryu
+
+        lotuskit::TextWriter::printf(0, "min_free     free     size use name(addr):\n");
+        lotuskit::TextWriter::printf(0, "                0 %8x 100 HeapMgr::sHeapMemorySize\n", size);
+        lotuskit::TextWriter::printf(0, "                0 %8x 100 HeapMgr::sArena(%p, start=%p)\n", arena->mSize, arena, arena->mStart);
+
         heap_print_min_free_impl(*EXL_SYM_RESOLVE<sead::Heap**>("_ZN4sead7HeapMgr22sNinVirtualAddressHeapE"));
         heap_print_min_free_impl(sead::HeapMgr::sRootHeaps[0]);
     }

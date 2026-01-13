@@ -211,22 +211,9 @@ HOOK_DEFINE_TRAMPOLINE(FrameworkProcDrawHook) {
         lotuskit::HexDump::calc();
         lotuskit::util::trace::HeapWatch::PrintMinFree();
 
-
         Orig(self); // perform tas+script+scheduling before draw for synced display
     }
 };
-
-/*
-HOOK_DEFINE_TRAMPOLINE(WorldManagerModuleBaseProcHook) {
-    static constexpr auto s_name = "game::wm::WorldManagerModule::baseProcExe";
-    inline static u64 ctr = 0;
-
-    static void Callback(double self, double param_2, double param_3, double param_4, void *wmmodule, void *param_6) {
-        lotuskit::TextWriter::printf(0, "[wm::baseProcExe] ctr %llu \n", ctr++);
-        Orig(self, param_2, param_3, param_4, wmmodule, param_6);
-    }
-};
-*/
 
 HOOK_DEFINE_TRAMPOLINE(InitLotuskitOnTitleScreenHook) {
     static constexpr auto s_name = "game::ai::query::QueryIsTitleMuralEnable::calc";
@@ -249,7 +236,7 @@ HOOK_DEFINE_TRAMPOLINE(InitLotuskitOnTitleScreenHook) {
         lotuskit::script::engine::createAndConfigureEngine();
         lotuskit::script::engine::doAutorun();
 
-        //WorldManagerModuleBaseProcHook::Install(); // "main loop"
+        // setup main loop
         //FrameworkProcCalcHook::Install();
         FrameworkProcDrawHook::Install();
 
