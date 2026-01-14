@@ -105,11 +105,10 @@ namespace lotuskit::util::trace::HeapWatch {
         if (sa_free < sa_min_free) { sa_min_free = sa_free; }
 
         lotuskit::TextWriter::printf(0, "min_free     free     size use name(addr):\n");
+        heap_print_min_free_impl(*EXL_SYM_RESOLVE<sead::Heap**>("_ZN4sead7HeapMgr22sNinVirtualAddressHeapE"));
         lotuskit::TextWriter::printf(0, "                0 %8x 100 HeapMgr::sHeapMemorySize\n", size);
         lotuskit::TextWriter::printf(0, "%8x %8x %8x %3d nn::mem::StandardAllocator(%p, sMemBlock=%p)\n", sa_min_free, sa_free, sa_size, sa_util, sa, sa_memblock);
         lotuskit::TextWriter::printf(0, "                0 %8x 100 HeapMgr::sArena(%p, start=%p)\n", arena->mSize, arena, arena->mStart);
-
-        heap_print_min_free_impl(*EXL_SYM_RESOLVE<sead::Heap**>("_ZN4sead7HeapMgr22sNinVirtualAddressHeapE"));
         heap_print_min_free_impl(sead::HeapMgr::sRootHeaps[0]);
     }
 
