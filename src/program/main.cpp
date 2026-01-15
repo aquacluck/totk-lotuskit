@@ -3,9 +3,7 @@
 #include <nn/fs.h>
 #include <nn/hid.h>
 #include <nn/util.h>
-#include <heap/seadArena.h>
 #include <heap/seadHeap.h>
-#include <heap/seadHeapMgr.h>
 
 #include "structs/engineActor.hpp"
 #include "structs/nnSixAxis.hpp"
@@ -14,6 +12,8 @@
 #include "HexDump.hpp"
 #include "TextWriter.hpp"
 #include "PrimitiveDrawer.hpp"
+#include "PracticeMod/fabs_fix.hpp"
+//#include "PracticeMod/zuggle.hpp"
 #include "server/WebSocket.hpp"
 #include "script/engine.hpp"
 #include "script/globals.hpp"
@@ -253,6 +253,9 @@ HOOK_DEFINE_TRAMPOLINE(InitLotuskitOnTitleScreenHook) {
         lotuskit::DebugDrawHooks::DebugDrawLayerMaskHook::Install();
         lotuskit::DebugDrawHooks::DebugDrawHook::Install();
         lotuskit::PrimitiveImpl::setupStatic();
+
+        PracticeMod::fabs_fix::InstallHooks();
+        //PracticeMod::zuggle::InstallHooks();
     }
 };
 
