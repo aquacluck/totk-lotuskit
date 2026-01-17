@@ -13,7 +13,7 @@
 #include "TextWriter.hpp"
 #include "PrimitiveDrawer.hpp"
 #include "PracticeMod/fabs_fix.hpp"
-//#include "PracticeMod/zuggle.hpp"
+#include "PracticeMod/zuggle.hpp"
 #include "server/WebSocket.hpp"
 #include "script/engine.hpp"
 #include "script/globals.hpp"
@@ -253,9 +253,7 @@ HOOK_DEFINE_TRAMPOLINE(InitLotuskitOnTitleScreenHook) {
         lotuskit::DebugDrawHooks::DebugDrawLayerMaskHook::Install();
         lotuskit::DebugDrawHooks::DebugDrawHook::Install();
         lotuskit::PrimitiveImpl::setupStatic();
-
         PracticeMod::fabs_fix::InstallHooks();
-        //PracticeMod::zuggle::InstallHooks();
     }
 };
 
@@ -309,6 +307,7 @@ extern "C" void exl_main(void* x0, void* x1) {
     lotuskit::DebugDrawHooks::BootupInitDebugDrawersHook::Install();
     lotuskit::util::pause::InstallHooks(); // XXX hooks PauseMgr init, could be deferred otherwise
     lotuskit::util::trace::HeapWatch::InstallHooks(); // 1.0 only, must be enabled at compile time
+    PracticeMod::zuggle::SetupStatic();
 }
 
 // Note: this is only applicable in the context of applets/sysmodules

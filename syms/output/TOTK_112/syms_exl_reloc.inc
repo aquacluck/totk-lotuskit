@@ -9,6 +9,7 @@
 
 /* ======== BEGIN EX-King (main) =========== */
 
+{ util::ModuleIndex::Main, 0x00000000, "_ZN2ai18GetNodeFactoryListEv" },
 { util::ModuleIndex::Main, 0x0188e060, "_ZN4sead10TextWriter13setupGraphicsEPNS_11DrawContextE" },
 { util::ModuleIndex::Main, 0x00000000, "_ZN4sead10TextWriter20setCursorFromTopLeftERKNS_7Vector2IfEE" },
 { util::ModuleIndex::Main, 0x0188e2c8, "_ZN4sead10TextWriter6printfEPKcz" },
@@ -21,8 +22,10 @@
 { util::ModuleIndex::Main, 0x00000000, "_ZN4sead7HeapMgr15sHeapMemorySizeE" },
 { util::ModuleIndex::Main, 0x00000000, "_ZN4sead7HeapMgr22sNinVirtualAddressHeapE" },
 { util::ModuleIndex::Main, 0x00000000, "_ZN4sead7HeapMgr6sArenaE" },
+{ util::ModuleIndex::Main, 0x00000000, "_ZN4sead8ListNode12insertFront_EPS0_" },
 { util::ModuleIndex::Main, 0x00000000, "_ZN6engine5actor12BaseProcLinkD2Ev" },
 { util::ModuleIndex::Main, 0x00000000, "_ZNK4sead7HeapMgr15findContainHeapEPKv" },
+{ util::ModuleIndex::Main, 0x00000000, "_ZnwmPN4sead4HeapEi" },
 { util::ModuleIndex::Main, 0x00a9c6b4, "agl::create_arg" },
 { util::ModuleIndex::Main, 0x04713a28, "agl::default_font" },
 { util::ModuleIndex::Main, 0x00a9dddc, "agl::init_debug_drawers" },

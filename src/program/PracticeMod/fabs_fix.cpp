@@ -12,6 +12,7 @@ namespace PracticeMod::fabs_fix {
                 return;
             }
 
+            // FIXME we can remove auto? inline static instances exist in misc.h
             auto getStructStruct = reinterpret_cast<GetStructStruct*>(exl::util::modules::GetTargetOffset(0x0081fed4));
             auto setStructEnum = reinterpret_cast<SetStructEnum*>(exl::util::modules::GetTargetOffset(0x00820bfc));
             auto setStructInt = reinterpret_cast<SetStructInt*>(exl::util::modules::GetTargetOffset(0x008202b0));

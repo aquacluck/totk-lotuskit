@@ -11,6 +11,7 @@ __game_version = 110; /* TOTK_110 */
 
 __main_start_offset = 0x4dd6000;
 
+_ZN2ai18GetNodeFactoryListEv     = __main_start + 0x00000000;
 _ZN4sead10TextWriter13setupGraphicsEPNS_11DrawContextE = __main_start + 0x0189917c;
 _ZN4sead10TextWriter20setCursorFromTopLeftERKNS_7Vector2IfEE = __main_start + 0x010bfdb4;
 _ZN4sead10TextWriter6printfEPKcz = __main_start + 0x018993e4;
@@ -23,8 +24,10 @@ _ZN4sead7HeapMgr15createRootHeap_Ev = __main_start + 0x00ebb084;
 _ZN4sead7HeapMgr15sHeapMemorySizeE = __main_start + 0x00000000;
 _ZN4sead7HeapMgr22sNinVirtualAddressHeapE = __main_start + 0x04719388;
 _ZN4sead7HeapMgr6sArenaE         = __main_start + 0x00000000;
+_ZN4sead8ListNode12insertFront_EPS0_ = __main_start + 0x00000000;
 _ZN6engine5actor12BaseProcLinkD2Ev = __main_start + 0x007f6180;
 _ZNK4sead7HeapMgr15findContainHeapEPKv = __main_start + 0x007612b0;
+_ZnwmPN4sead4HeapEi              = __main_start + 0x00000000;
 
 /* ======== END EX-King (nso main) ============== */
 
