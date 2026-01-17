@@ -74,6 +74,48 @@ LOTUSKIT_IPS_PATCHES: PatchSetCollection = {
             0x01155ef4: b("08 01 64 91"), # add x8,x8,#0x900, LSL #12
         },
     },
+    "lotuskit-playercamera-unlock": {
+        BuildId.TOTK_100: {
+            # 48 bf a8 52  mov w8,#0x45fa0000 (8000) ->  08 f0 af 52   mov w8,#0x7f800000 (infinity)
+            0x007dd8f4: b("08 f0 af 52"),
+            0x007dd910: b("08 f0 af 52"),
+            0x007dd92c: b("08 f0 af 52"),
+            0x007dda48: b("08 f0 af 52"),
+            0x007dda64: b("08 f0 af 52"),
+            0x007dda80: b("08 f0 af 52"),
+            0x007ddcc0: b("08 f0 af 52"),
+            0x007ddcdc: b("08 f0 af 52"),
+            0x007ddcf8: b("08 f0 af 52"),
+            0x007dde00: b("08 f0 af 52"),
+            0x007dde1c: b("08 f0 af 52"),
+            0x007dde38: b("08 f0 af 52"),
+            0x007ddf40: b("08 f0 af 52"),
+            0x007ddf5c: b("08 f0 af 52"),
+            0x007ddf78: b("08 f0 af 52"),
+            0x007de334: b("08 f0 af 52"),
+            0x007de350: b("08 f0 af 52"),
+            0x007de36c: b("08 f0 af 52"),
+            #0x00852d68: b("08 f0 af 52"), # this is related to something else? local_d0 = (local_d0 + 5000.0) / 10000.0; fStack_cc = (fStack_cc + 4000.0) / 8000.0;
+            #0x0085302c: b("08 f0 af 52"), # w23, 10k 8k pair
+            #0x00a7abc4: b("08 f0 af 52"), # w9, something storing multiples of 8k but seems grass/terrain/tile related
+            #0x00b6d390: b("08 f0 af 52"), # gnarly terrain function, can't even find usage in decomp
+            #0x00c48ac4: b("08 f0 af 52"), #      10k 8k pair
+            0x00c570b8: b("0b f0 af 52"), # w11, something about aglsky params?
+            0x00cb9524: b("08 f0 af 52"),
+            #0x00f35d44: b("08 f0 af 52"), # x8, unrelated audio stuff
+            0x011b3818: b("09 f0 af 52"), # w9
+            0x0134b9b4: b("08 f0 af 52"),
+            0x0134b9d0: b("08 f0 af 52"),
+            0x0134b9ec: b("08 f0 af 52"),
+            0x0134ea24: b("08 f0 af 52"),
+            0x0134ea40: b("08 f0 af 52"),
+            0x0134ea5c: b("08 f0 af 52"),
+            0x0134ebb4: b("08 f0 af 52"),
+            0x0134ebd0: b("08 f0 af 52"),
+            0x0134ebec: b("08 f0 af 52"),
+            #0x0175c800: b("08 f0 af 52"), #      10k 8k pair
+        },
+    },
 }
 
 def main():
