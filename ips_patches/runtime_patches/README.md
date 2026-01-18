@@ -4,3 +4,5 @@ These patches are optional and loaded on request at runtime. They belong in `sdc
 
 You'll notice `.rips` (reverse IPS) files created here once lotuskit launches, these contain cached copies of vanilla code to quickly toggle patches. They're regenerated at bootup as needed and are safe to delete if you want.
 
+The earliest that `runtime_patches` may be applied is at the title screen, use static `exefs_patches` if you need to change code sooner.
+
