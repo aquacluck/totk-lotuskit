@@ -317,6 +317,13 @@ namespace lotuskit::script::globals {
             std::memcpy(ptr, v.c_str(), n);
             if (nullTerminate) { *(ptr+n) = 0; }
         }
+        void ptr_write_inst(uintptr_t offset, u32 inst) {
+            inst = ((inst >> 24) &       0xff) | // endian flip, ty https://stackoverflow.com/a/2182184
+                   ((inst <<  8) &   0xff0000) |
+                   ((inst >>  8) &     0xff00) |
+                   ((inst << 24) & 0xff000000);
+            exl::patch::CodePatcher(offset).WriteInst(exl::armv8::InstBitSet(inst));
+        }
         inline void* memcpy(void* dest, const void* src, size_t count) { return std::memcpy(dest, src, count); }
 
     } // ns
@@ -1493,6 +1500,7 @@ namespace lotuskit::script::globals {
         asErrno = engine->RegisterGlobalFunction("void ptr_write_BoundBox2f(ptr_t, const BoundBox2f &in)", AngelScript::asFUNCTION(sys::ptr_write_BoundBox2f), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
         asErrno = engine->RegisterGlobalFunction("void ptr_write_BoundBox3f(ptr_t, const BoundBox3f &in)", AngelScript::asFUNCTION(sys::ptr_write_BoundBox3f), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
         asErrno = engine->RegisterGlobalFunction("void ptr_write_string(ptr_t, const string &in, bool nullTerminate=false)", AngelScript::asFUNCTION(sys::ptr_write_string), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void ptr_write_inst(ptr_t offset, u32 inst)", AngelScript::asFUNCTION(sys::ptr_write_inst), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
         asErrno = engine->RegisterGlobalFunction("ptr_t memcpy(ptr_t dest, const ptr_t src, size_t count)", AngelScript::asFUNCTION(sys::memcpy), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
     }
 
