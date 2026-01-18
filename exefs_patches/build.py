@@ -53,7 +53,8 @@ def b(v) -> bytes: # ez input
         v = "0" + v # fromhex wants full bytes
     return bytes.fromhex(v)
 
-LOTUSKIT_IPS_PATCHES: PatchSetCollection = {
+# patches for installation at bootup:
+LOTUSKIT_EXEFS_PATCHES: PatchSetCollection = {
     "lotuskit-standardallocator-shrink-2MB": {
         BuildId.TOTK_100: {
             # StandardAllocator is 9MB -> 7MB
@@ -74,6 +75,10 @@ LOTUSKIT_IPS_PATCHES: PatchSetCollection = {
             0x01155ef4: b("08 01 64 91"), # add x8,x8,#0x900, LSL #12
         },
     },
+}
+
+# patches for runtime installation (often large or experimental):
+LOTUSKIT_RUNTIME_PATCHES: PatchSetCollection = {
     "lotuskit-playercamera-unlock": {
         BuildId.TOTK_100: {
             # 48 bf a8 52  mov w8,#0x45fa0000 (8000) ->  08 f0 af 52   mov w8,#0x7f800000 (infinity)
@@ -119,10 +124,20 @@ LOTUSKIT_IPS_PATCHES: PatchSetCollection = {
 }
 
 def main():
-    os.chdir(os.path.dirname(__file__))
-    write_ips_patchsets(LOTUSKIT_IPS_PATCHES)
+    folder_name = os.path.join(os.path.dirname(__file__), "exefs_patches")
+    pathlib.Path(folder_name).mkdir(parents=True, exist_ok=True)
+    os.chdir(folder_name)
+    write_ips_patchsets(LOTUSKIT_EXEFS_PATCHES)
+
+    folder_name = os.path.join(os.path.dirname(__file__), "runtime_patches")
+    pathlib.Path(folder_name).mkdir(parents=True, exist_ok=True)
+    os.chdir(folder_name)
+    write_ips_patchsets(LOTUSKIT_RUNTIME_PATCHES)
+
     if "install" in sys.argv:
-        os.system("rsync -r lotuskit-* ~/appdata/Roaming/Ryujinx/sdcard/atmosphere/exefs_patches")
+        os.chdir(os.path.dirname(__file__))
+        os.system("rsync -r exefs_patches/ ~/appdata/Roaming/Ryujinx/sdcard/atmosphere/exefs_patches/")
+        os.system("rsync -r runtime_patches/ ~/appdata/Roaming/Ryujinx/sdcard/atmosphere/contents/0100f2c0115b6000/runtime_patches/")
 
 if __name__ == "__main__":
     main()

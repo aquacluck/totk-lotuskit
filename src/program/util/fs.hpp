@@ -5,6 +5,7 @@
 
 namespace lotuskit::util::fs {
     bool fileExists(const std::string& path);
+    bool folderExists(const std::string& path);
     bool readTextFile(char* out, s64 maxOut, const std::string& path); // return true when out=error
     bool writeTextFile(const char* src, const std::string& path); // return true when error
     bool writeFile(const void* src, size_t srcLen, const std::string& path); // return true when error

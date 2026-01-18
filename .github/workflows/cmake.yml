@@ -36,7 +36,7 @@ jobs:
       run: |
         mkdir -p totk100-lotuskit/exefs
         cp build/main.npdm build/subsdk9 build/subsdk9.elf totk100-lotuskit/exefs
-        cp -r exefs_patches frontend romfs totk100-lotuskit
+        cp -r exefs_patches/{exefs,runtime}_patches frontend romfs totk100-lotuskit
         zip -r totk100-lotuskit-${{ github.sha }}.zip totk100-lotuskit
 
     - name: Build 110
@@ -46,7 +46,7 @@ jobs:
       run: |
         mkdir -p totk110-lotuskit/exefs
         cp build/main.npdm build/subsdk9 build/subsdk9.elf totk110-lotuskit/exefs
-        cp -r exefs_patches frontend romfs totk110-lotuskit
+        cp -r exefs_patches/{exefs,runtime}_patches frontend romfs totk110-lotuskit
         zip -r totk110-lotuskit-${{ github.sha }}.zip totk110-lotuskit
 
     - name: Build 121
@@ -56,7 +56,7 @@ jobs:
       run: |
         mkdir -p totk121-lotuskit/exefs
         cp build/main.npdm build/subsdk9 build/subsdk9.elf totk121-lotuskit/exefs
-        cp -r exefs_patches frontend romfs totk121-lotuskit
+        cp -r exefs_patches/{exefs,runtime}_patches frontend romfs totk121-lotuskit
         zip -r totk121-lotuskit-${{ github.sha }}.zip totk121-lotuskit
 
     - name: Create Release

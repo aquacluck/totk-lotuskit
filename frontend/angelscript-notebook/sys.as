@@ -8,6 +8,10 @@ TextWriter::toast(30, format("tick {} \n", sys::tick()));
 sys::debugLog("hello debug");
 sys::wsListen(); // start ws server
 
+// apply ips from runtime_patches/$patchset/$nsobid.ips
+sys::patchInstall("lotuskit-playercamera-unlock");
+sys::patchRevert("lotuskit-playercamera-unlock");
+
 // scripts are non-preemptive: `while(true){ }` will freeze your game,
 // and your scripts will never stop until they reach their end or you
 // voluntarily release control of execution:

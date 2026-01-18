@@ -14,6 +14,17 @@ namespace lotuskit::util::fs {
         return true;
     }
 
+    bool folderExists(const std::string& path) {
+        const auto cpath = canonicalize(path);
+        nn::fs::DirectoryHandle fd;
+        nn::Result res = nn::fs::OpenDirectory(&fd, cpath.c_str(), nn::fs::OpenDirectoryMode::OpenDirectoryMode_All);
+        if (!res.IsSuccess()) {
+            return false;
+        }
+        nn::fs::CloseDirectory(fd);
+        return true;
+    }
+
     bool readTextFile(char* out, s64 maxOut, const std::string& path) {
         char errbuf[200]; // assert maxOut > 200
         const auto cpath = canonicalize(path);

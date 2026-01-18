@@ -4,7 +4,6 @@
 #include <cmath>
 #include <math/seadVector.h>
 #include <gfx/seadColor.h>
-using namespace std;
 
 namespace lotuskit::util::color {
 
@@ -56,8 +55,8 @@ namespace lotuskit::util::color {
 
         */
         inline void RGBtoHSV(float fR, float fG, float fB, float& fH, float& fS, float& fV) {
-          float fCMax = max(max(fR, fG), fB);
-          float fCMin = min(min(fR, fG), fB);
+          float fCMax = std::max(std::max(fR, fG), fB);
+          float fCMin = std::min(std::min(fR, fG), fB);
           float fDelta = fCMax - fCMin;
 
           if(fDelta > 0) {

@@ -22,6 +22,7 @@
 #include "tas/Playback.hpp"
 #include "tas/Record.hpp"
 #include "util/camera.hpp"
+#include "util/patch.hpp"
 #include "util/player.hpp"
 #include "util/pause.hpp"
 #include "util/trace.hpp"
@@ -249,6 +250,7 @@ HOOK_DEFINE_TRAMPOLINE(InitLotuskitOnTitleScreenHook) {
 
         //TODO check the branch we're overwriting -- ensure our "off" does the same thing
         exl::patch::CodePatcher(EXL_SYM_OFFSET("game::component::GameCameraParam::HACK_cameraCalc")).BranchLinkInst((void*)lotuskit::util::camera::disgustingCameraHook);
+        lotuskit::util::patch::PrepareRevertPatches(); // generate/verify reverse ips patches on sdcard
 
         lotuskit::DebugDrawHooks::DebugDrawLayerMaskHook::Install();
         lotuskit::DebugDrawHooks::DebugDrawHook::Install();
