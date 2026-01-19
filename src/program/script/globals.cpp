@@ -17,6 +17,7 @@
 #include "util/actor.hpp"
 #include "util/camera.hpp"
 #include "util/color.hpp"
+#include "util/fps.hpp"
 #include "util/gamedata.hpp"
 #include "util/hash.hpp"
 #include "util/event.hpp"
@@ -814,6 +815,10 @@ namespace lotuskit::script::globals {
         asErrno = engine->RegisterGlobalFunction("void drawCircle32(index_t, const Vector3f &in, float, const Color4f &in)", AngelScript::asFUNCTION(lotuskit::PrimitiveDrawer::drawCircle32), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
         asErrno = engine->RegisterGlobalFunction("void drawCylinder16(index_t, const Vector3f &in, float, float, const Color4f &in, const Color4f &in)", AngelScript::asFUNCTION(lotuskit::PrimitiveDrawer::drawCylinder16), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
         asErrno = engine->RegisterGlobalFunction("void drawCylinder32(index_t, const Vector3f &in, float, float, const Color4f &in, const Color4f &in)", AngelScript::asFUNCTION(lotuskit::PrimitiveDrawer::drawCylinder32), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+
+        engine->SetDefaultNamespace("fps");
+        asErrno = engine->RegisterGlobalFunction("void doTextWriter(bool)", AngelScript::asFUNCTION(lotuskit::util::fps::doTextWriter_set), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+
     }
 
     void registerTAS(AngelScript::asIScriptEngine* engine) {

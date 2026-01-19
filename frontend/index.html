@@ -517,6 +517,28 @@
         }
     };
 
+    class FpsHacks extends Component {
+        constructor() {
+            super();
+            this.setState({});
+            WSTransport.subscribe_ns("/fps/log", payload => { this.setState(payload) });
+        }
+
+        do_send_toggle(opt) { const v = this.state[opt] ? "false" : "true"; AngelScript.exec(`fps::${opt}(${v});`); }
+
+        render(props, state) {
+            return html`
+                <span class="fpshacks" style="margin-left: 6px;">
+                    FPS
+                    <label title="fps::doTextWriter(checked)" class="faketoggle doTextWriter" for="fps_doTextWriter">
+                        <input type="checkbox" id="fps_doTextWriter" checked=${state.doTextWriter} onChange=${ e => this.do_send_toggle("doTextWriter") } />
+                        <span class="fakebutton pushbutton">txt</span>
+                    </label>
+                </span>
+            `;
+        }
+    }
+
     class PauseHacks extends Component {
         constructor() {
             super();
@@ -570,6 +592,7 @@
                         <input type="checkbox" id="pause_doTextWriterExtended" checked=${state.doTextWriterExtended} onChange=${ e => this.do_send_toggle("doTextWriterExtended") } />
                         <span class="fakebutton pushbutton">ext</span>
                     </label>
+                    <${FpsHacks} />
                     <br />
 
                     <select ref=${this.pausenameref} onChange=${this.on_select_pause} style="width: 200px;">

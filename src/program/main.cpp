@@ -22,6 +22,7 @@
 #include "tas/Playback.hpp"
 #include "tas/Record.hpp"
 #include "util/camera.hpp"
+#include "util/fps.hpp"
 #include "util/patch.hpp"
 #include "util/player.hpp"
 #include "util/pause.hpp"
@@ -204,6 +205,7 @@ HOOK_DEFINE_TRAMPOLINE(FrameworkProcDrawHook) {
         });
         lotuskit::server::WebSocket::calc(); // noblock recv, but blocking processing if enabled
         lotuskit::script::hotkey::calc(); // may schedule tas stackframes for Playback (incurs file read)
+        lotuskit::util::fps::PrintStats();
         lotuskit::tas::Playback::calc(); // may re-enter script when currently scheduled input is complete
         lotuskit::tas::Record::calc();
         lotuskit::tas::InputDisplay::draw();
