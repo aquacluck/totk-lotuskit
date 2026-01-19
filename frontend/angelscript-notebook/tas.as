@@ -67,9 +67,11 @@ tas::awaitEval("void main() { TextWriter::print(0, \"wow\n\"); }");
 /* by 2 and drop remainders in inputMode FPS30_2X, so unless you
 /* encounter a lot of lag you can pretend it's straight 30fps.
 /*
-/* TODO AS access to set InputDurationScalingStrategy
-/* TODO implement VFRCopingStrategy::FPS30_PEGGED
+/* FIXME InputDurationScalingStrategy is not adjusted for 20fps!
 /**********************************************************/
+fps::fixedFPS(0);  // vanilla dynamic fps
+fps::fixedFPS(30); // always 30fps
+fps::fixedFPS(20); // always 20fps (except in shrines)
 
 
 /*

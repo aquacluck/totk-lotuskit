@@ -818,6 +818,7 @@ namespace lotuskit::script::globals {
 
         engine->SetDefaultNamespace("fps");
         asErrno = engine->RegisterGlobalFunction("void doTextWriter(bool)", AngelScript::asFUNCTION(lotuskit::util::fps::doTextWriter_set), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void fixedFPS(u8)", AngelScript::asFUNCTION(lotuskit::util::fps::fixedFPS_set), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
 
     }
 

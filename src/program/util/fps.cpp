@@ -1,6 +1,7 @@
 #include "exlaunch.hpp"
 #include "structs/VFRMgr.hpp"
 #include "util/fps.hpp"
+#include "util/patch.hpp"
 #include "TextWriter.hpp"
 
 namespace lotuskit::util::fps {
@@ -47,14 +48,55 @@ namespace lotuskit::util::fps {
         float  instVFRFps = 60.0 / deltaFrames60;
         float   avgVFRFps = 60.0 / avgDeltaFrames60;
 
-        lotuskit::TextWriter::printf(1, "rta(fps, 1s) %.2f %.2f\nvfr(fps, 1s) %.2f %.2f\n", instTickFps, avgTickFps, instVFRFps, avgVFRFps);
+        lotuskit::TextWriter::printf(1, "rta(fps, 1s): %.1f, %.1f\nvfr(fps, 1s): %.1f, %.1f\n", instTickFps, avgTickFps, instVFRFps, avgVFRFps);
     }
 
     void wsAnnounceConfig() {
         Logger::logJson(json::object({
             {"doTextWriter", doTextWriter},
+            {"fixedFPS", fixedFPS},
         }), "/fps/log", false, false); // noblock, no debug log
     }
+
+    void fixedFPS_set(u8 v) {
+        if (v == 0 && fixedFPS != 0) {
+            // vanilla
+            // FIXME update AS input scaling: ModuleStackFrameScheduleState.inputFPSMode = InputDurationScalingStrategy::FPS30_2X;
+            lotuskit::util::patch::PatchRevert("lotuskit-fixed-30fps"); // assert it can revert 20fps too
+            fixedFPS = v;
+
+        } else if (v == 20 && fixedFPS != 20) {
+            // FIXME update AS input scaling: ModuleStackFrameScheduleState.inputFPSMode = InputDurationScalingStrategy::FPS20_3X;
+            lotuskit::util::patch::PatchInstall("lotuskit-fixed-20fps");
+            fixedFPS = v;
+
+        } else if (v == 30 && fixedFPS != 30) {
+            // FIXME update AS input scaling: ModuleStackFrameScheduleState.inputFPSMode = InputDurationScalingStrategy::FPS30_2X;
+            lotuskit::util::patch::PatchInstall("lotuskit-fixed-30fps");
+            fixedFPS = v;
+
+        } // else assert v in [0, 20, 30]
+        wsAnnounceConfig();
+    }
+
+    /*
+    HOOK_DEFINE_TRAMPOLINE(EngineFrameworkGpuHook) {
+        static constexpr auto s_name = "engine::framework::Framework::setGpuTimeStamp_";
+        static void Callback(void* self) {
+            Orig(self);
+
+            u64* gpuTimeStamp = (u64*)(self + 0x118); // ~500k is normal on console, ~200k on ryu
+            lotuskit::TextWriter::printf(0, "gpuTimeStamp=%d\n", *gpuTimeStamp);
+
+            // *gpuTimeStamp = 1; // peg to 30fps?
+            // *gpuTimeStamp = 1000000; // 20fps everywhere but shrines?
+        }
+    };
+
+    void InstallHooks() {
+        EngineFrameworkGpuHook::Install();
+    }
+    */
 
 } // ns
 

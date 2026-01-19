@@ -13,3 +13,9 @@ EXKING("engine::framework::Framework::procDraw_", {
     TOTK_121: 0x00b592a4,
 })
 
+EXKING("engine::framework::Framework::setGpuTimeStamp_", {
+    TOTK_100: 0x02a7b5f0,
+    TOTK_110: 0x02af4760,
+    TOTK_121: 0x02aed7b0,
+})
+

@@ -53,6 +53,8 @@ def b(v) -> bytes: # ez input
         v = "0" + v # fromhex wants full bytes
     return bytes.fromhex(v)
 
+NOP = b("1f 20 03 d5")
+
 # patches for installation at bootup:
 LOTUSKIT_EXEFS_PATCHES: PatchSetCollection = {
     "lotuskit-standardallocator-shrink-2MB": {
@@ -69,7 +71,7 @@ LOTUSKIT_EXEFS_PATCHES: PatchSetCollection = {
             0x01160554: b("08 01 64 91"), # add x8,x8,#0x900, LSL #12
         },
         BuildId.TOTK_121: {
-            # StandardAllocator is 11MB -> 9MB (untested)
+            # StandardAllocator is 11MB -> 9MB
             0x01155eb8: b("00 12 a0 52"), # mov w0,#0x900000
             0x01155ee4: b("01 12 a0 d2"), # mov x1,#0x900000
             0x01155ef4: b("08 01 64 91"), # add x8,x8,#0x900, LSL #12
@@ -119,6 +121,54 @@ LOTUSKIT_RUNTIME_PATCHES: PatchSetCollection = {
             0x0134ebd0: b("08 f0 af 52"),
             0x0134ebec: b("08 f0 af 52"),
             #0x0175c800: b("08 f0 af 52"), #      10k 8k pair
+        },
+    },
+    "lotuskit-fixed-20fps": {
+        # patch is applied by lotuskit tas when needed
+        BuildId.TOTK_100: {
+            0x02a7b654: b("08 02 a0 d2"), # mov x8,#0x10000
+            0x02a7b658: b("68 8e 00 f9"), # str x8, [x19, #0x118]
+            0x02a7b65c: NOP,
+            0x02a7b660: NOP,
+            0x02a7b664: NOP,
+        },
+        BuildId.TOTK_110: {
+            0x02af47c4: b("08 02 a0 d2"), # mov x8,#0x10000
+            0x02af47c8: b("68 8e 00 f9"), # str x8, [x19, #0x118]
+            0x02af47cc: NOP,
+            0x02af47d0: NOP,
+            0x02af47d4: NOP,
+        },
+        BuildId.TOTK_121: {
+            0x02aed814: b("08 02 a0 d2"), # mov x8,#0x10000
+            0x02aed818: b("68 8e 00 f9"), # str x8, [x19, #0x118]
+            0x02aed81c: NOP,
+            0x02aed820: NOP,
+            0x02aed824: NOP,
+        },
+    },
+    "lotuskit-fixed-30fps": {
+        # patch is applied by lotuskit tas when needed
+        BuildId.TOTK_100: {
+            0x02a7b654: b("28 00 80 d2"), # mov x8, #0x1           vanilla: 08 00 08 cb  sub  x8, x0,x8
+            0x02a7b658: b("68 8e 00 f9"), # str x8, [x19, #0x118]  vanilla: 69 8e 40 f9  ldr  x9, [x19, #0x118]
+            0x02a7b65c: NOP,                                     # vanilla: 3f 01 08 eb  cmp  x9, x8
+            0x02a7b660: NOP,                                     # vanilla: 4a 00 00 54  b.ge LAB_7102a7b668
+            0x02a7b664: NOP,                                     # vanilla: 68 8e 00 f9  str  x8, [x19, #0x118]
+        },
+        BuildId.TOTK_110: {
+            0x02af47c4: b("28 00 80 d2"), # mov x8, #0x1
+            0x02af47c8: b("68 8e 00 f9"), # str x8, [x19, #0x118]
+            0x02af47cc: NOP,
+            0x02af47d0: NOP,
+            0x02af47d4: NOP,
+        },
+        BuildId.TOTK_121: {
+            0x02aed814: b("28 00 80 d2"), # mov x8, #0x1
+            0x02aed818: b("68 8e 00 f9"), # str x8, [x19, #0x118]
+            0x02aed81c: NOP,
+            0x02aed820: NOP,
+            0x02aed824: NOP,
         },
     },
 }

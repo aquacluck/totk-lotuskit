@@ -529,11 +529,14 @@
         render(props, state) {
             return html`
                 <span class="fpshacks" style="margin-left: 6px;">
-                    FPS
+                    FPS:
                     <label title="fps::doTextWriter(checked)" class="faketoggle doTextWriter" for="fps_doTextWriter">
                         <input type="checkbox" id="fps_doTextWriter" checked=${state.doTextWriter} onChange=${ e => this.do_send_toggle("doTextWriter") } />
                         <span class="fakebutton pushbutton">txt</span>
                     </label>
+                    <button title="fps::fixedFPS(30)" onClick=${() => AngelScript.exec("fps::fixedFPS(30);") }>30</button>
+                    <button title="fps::fixedFPS(20)" onClick=${() => AngelScript.exec("fps::fixedFPS(20);") }>20</button>
+                    <button title="fps::fixedFPS(0)"  onClick=${() => AngelScript.exec("fps::fixedFPS(0);") } class="hint_recommended_hover">reset</button>
                 </span>
             `;
         }
@@ -583,7 +586,7 @@
 
             return html`
                 <div class="pausehacks">
-                    PauseMgr
+                    PauseMgr:
                     <label title="pause::doTextWriter(checked)" class="faketoggle doTextWriter" for="pause_doTextWriter">
                         <input type="checkbox" id="pause_doTextWriter" checked=${state.doTextWriter} onChange=${ e => this.do_send_toggle("doTextWriter") } />
                         <span class="fakebutton pushbutton">txt</span>
@@ -622,7 +625,7 @@
         render(props, state) {
             return html`
                 <div class="staminahacks" style="margin-left: 40px;">
-                    Stam
+                    Stam:
                     <button title="/* reset/default */ PlayerUtil::freezeStaminaExhaustion(false); PlayerUtil::freezeStaminaRecovery(0);" onClick=${() => this.do_freeze_vanilla() } class="pushbutton hint_recommended_hover"><img src="assets/img/stamina_normal.png" /></button>
                     <button title="PlayerUtil::freezeStaminaRecovery(30000); // always fast recover" onClick=${() => this.do_freeze_recover() } class="pushbutton"><img src="assets/img/stamina_extra.png" /></button>
                     <button title="PlayerUtil::freezeStaminaExhaustion(true); // always exhausted" onClick=${() => this.do_freeze_exhaust() } class="pushbutton"><img src="assets/img/stamina_red.png" /></button>

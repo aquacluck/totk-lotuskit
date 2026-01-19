@@ -51,6 +51,7 @@
 { util::ModuleIndex::Main, 0x047258c8, "engine::event::EventMgr::sInstance" },
 { util::ModuleIndex::Main, 0x009d1d2c, "engine::framework::Framework::procCalc_" },
 { util::ModuleIndex::Main, 0x00b592a4, "engine::framework::Framework::procDraw_" },
+{ util::ModuleIndex::Main, 0x02aed7b0, "engine::framework::Framework::setGpuTimeStamp_" },
 { util::ModuleIndex::Main, 0x007f7114, "engine::module::PauseMgr::initialize" },
 { util::ModuleIndex::Main, 0x007ee454, "engine::module::PauseMgr::processRequests" },
 { util::ModuleIndex::Main, 0x007ed1e0, "engine::module::PauseMgr::processRequests_inlineModuleCalc" },
