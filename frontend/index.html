@@ -10,6 +10,7 @@
     const html = htm.bind(h);
     import { signal } from "/assets/js-vendor/preact-signals@1.3.0.mjs";
     import fuzzysort from "/assets/js-vendor/fuzzysort@3.1.0.mjs";
+    import { getText } from "/assets/translate.mjs";
 
     // prepare actor search
     import { Actor_MasterList_prepare_fuzzysort } from "/assets/data/Actor_MasterList.mjs";
@@ -39,11 +40,11 @@
         }
 
         static _ws_on_open(e) {
-            console.log("ws open success");
+            console.log(getText("ws open success"));
             WSTransport.signals.config.frontend.ws_is_connected.value = true;
         }
         static _ws_on_close(e) {
-            console.log("ws closed");
+            console.log(getText("ws closed"));
             WSTransport.signals.config.frontend.ws_is_connected.value = false;
         }
         static _ws_on_message(e) {
@@ -52,7 +53,7 @@
 
         static connect(ws_location) {
             if (WSTransport.signals.config.frontend.ws_is_connected.value) {
-                console.log("ws closing to reopen");
+                console.log(getText("ws closing to reopen"));
                 WSTransport.signals.config.frontend.ws_is_connected.value = false;
             }
             if (WSTransport.websock) {
@@ -64,7 +65,7 @@
             }
 
             ws_location = ws_location || "ws://127.0.0.1:7072";
-            console.log("ws open try", ws_location);
+            console.log(getText("ws open try"), ws_location);
             WSTransport.websock = new WebSocket(ws_location);
             WSTransport.websock.addEventListener("open", WSTransport._ws_on_open);
             WSTransport.websock.addEventListener("close", WSTransport._ws_on_close);
@@ -292,8 +293,8 @@
         render(props, state) {
             return html`
                 <dialog ref=${this.dialogRef} onKeyDown=${this.do_dialog_keydown} open>
-                    <button title="drag to move window" onMouseDown=${this.do_drag_begin} onMouseUp=${this.do_drag_end} class="pushbutton move"></button>
-                    <button title="esc when focused to close" onClick=${props.onClose} class="pushbutton hint_destructive_hover esc"></button>
+                    <button title=${getText("drag to move window")} onMouseDown=${this.do_drag_begin} onMouseUp=${this.do_drag_end} class="pushbutton move"></button>
+                    <button title=${getText("esc when focused to close")} onClick=${props.onClose} class="pushbutton hint_destructive_hover esc"></button>
                     ${props.children}
                 </dialog>
             `;
@@ -325,9 +326,9 @@
 
         render() {
             return html`
-                <span style="margin-left: 32px;">World:</span>
-                <button title="Perfect day (noon, clear fog, clear weather, clear wind)" onClick=${() => this.doPresetPerfectDay() } class="pushbutton hint_sparkles_corner">☀️</button>
-                <button title="Perfect night (midnight, clear+hack fog, clear weather, clear wind)" onClick=${() => this.doPresetPerfectNight() } class="pushbutton hint_sparkles_corner">🌘</button>
+                <span style="margin-left: 32px;">${getText("World")}:</span>
+                <button title=${getText("Perfect day (noon, clear fog, clear weather, clear wind)")} onClick=${() => this.doPresetPerfectDay() } class="pushbutton hint_sparkles_corner">☀️</button>
+                <button title=${getText("Perfect night (midnight, clear+hack fog, clear weather, clear wind)")} onClick=${() => this.doPresetPerfectNight() } class="pushbutton hint_sparkles_corner">🌘</button>
             `;
         }
     };
@@ -366,10 +367,10 @@
         render(props, state) {
             return html`
                 <span class="frameadvance" style="margin-left: 16px;">
-                    Frame:
-                    <button title="DebugPause increment/decrement" onClick=${() => this.doTogglePausePlay() } class="pushbutton" style="font-size:1.5rem;">\u23ef</button>
-                    <button title="step ahead (in an already-running script)" onClick=${() => this.doStepAS() } class="pushbutton hint_blueprint_strong hover_hasargs" style="font-size: 2.5rem; vertical-align: bottom; line-height: 0;"><span style="transform: rotateY(180deg); display: inline-block;">\u293d</span></button>
-                    <button title="step ahead (controller passthrough)" onClick=${() => this.doStepSleep() } class="pushbutton hint_controller_corner hover_hasargs hover_isarg" style="font-size: 2.5rem; vertical-align: bottom; line-height: 0;"><span style="transform: rotateY(180deg); display: inline-block;">\u293d</span></button>
+                    ${getText("Frame")}:
+                    <button title=${getText("DebugPause increment/decrement")} onClick=${() => this.doTogglePausePlay() } class="pushbutton" style="font-size:1.5rem;">\u23ef</button>
+                    <button title=${getText("step ahead (in an already-running script)")} onClick=${() => this.doStepAS() } class="pushbutton hint_blueprint_strong hover_hasargs" style="font-size: 2.5rem; vertical-align: bottom; line-height: 0;"><span style="transform: rotateY(180deg); display: inline-block;">\u293d</span></button>
+                    <button title=${getText("step ahead (controller passthrough)")} onClick=${() => this.doStepSleep() } class="pushbutton hint_controller_corner hover_hasargs hover_isarg" style="font-size: 2.5rem; vertical-align: bottom; line-height: 0;"><span style="transform: rotateY(180deg); display: inline-block;">\u293d</span></button>
                     <input class="hover_isarg" style="width: 48px" type="number" placeholder="1" size="2" min="1" step="any" ref=${this.step_n} />
                 </span>
             `;
@@ -460,56 +461,56 @@
 
         render(props, state) {
             const rel = state.relative === true;
-            const titleAW = "camera::freezeAtActorWatcher(slot_i, dist, Vector3f, elev, follow, relative)";
+            const titleAW = `camera::freezeAtActorWatcher(${getText("slot_i")}, ${getText("dist")}, Vector3f, ${getText("elev")}, ${getText("follow")}, ${getText("relative")})`;
 
             return html`
                 <div class="camerahacks" style="margin-top: 8px;">
-                    Camera
+                    ${getText("Camera")}
                     <button title="camera::toggleFreeze()" onClick=${() => this.reqToggleFreeze() } class="pushbutton hint_recommended_hover" style="font-size:1.5rem;">\u23ef</button>
-                    <label title="update with ActorWatcher position" for="camerahacks_follow">follow:</label>
+                    <label title=${getText("update with ActorWatcher position")} for="camerahacks_follow">${getText("follow")}:</label>
                     <input type="checkbox" id="camerahacks_follow" ref=${this.follow} checked />
-                    <label title="rotate relative to actor" for="camerahacks_relative">rel:</label>
+                    <label title=${getText("rotate relative to actor")} for="camerahacks_relative">${getText("rel")}:</label>
                     <input type="checkbox" id="camerahacks_relative" ref=${this.relative} onChange=${() => this.setState({relative: this.relative.current.checked}) } />
                     <${WorldHacks} />
 
                     <div style="float:right;">
-                        <button title="camera::log()" onClick=${() => this.reqCameraLog() } class="pushbutton">dump</button>
-                        <button title="camera::freeze(up, pos, at)" onClick=${() => this.reqFreezeAtDumpRefs() } class="pushbutton">assign</button>
+                        <button title="camera::log()" onClick=${() => this.reqCameraLog() } class="pushbutton">${getText("dump")}</button>
+                        <button title="camera::freeze(${getText("up")}, ${getText("pos")}, ${getText("at")})" onClick=${() => this.reqFreezeAtDumpRefs() } class="pushbutton">${getText("assign")}</button>
                         <br/>
-                        pos: <input placeholder="x, y, z" ref=${this.pos} size=20 /><br />
-                        at\xa0: <input placeholder="x, y, z" ref=${this.at} size=20 /><br />
-                        up\xa0: <input placeholder="0, 0.707161, -0.707161" ref=${this.up} size=20 /><br />
+                        ${getText("pos")}: <input placeholder="x, y, z" ref=${this.pos} size=20 /><br />
+                        ${getText("at")}: <input placeholder="x, y, z" ref=${this.at} size=20 /><br />
+                        ${getText("up")}: <input placeholder="0, 0.707161, -0.707161" ref=${this.up} size=20 /><br />
                     </div>
                     <br/>
 
-                    <button title=${titleAW} onClick=${() => this.reqFreezeAtActorWatcher("NW") } class="pushbutton">${rel ? "↘"  : "NW"}</button>
-                    <button title=${titleAW} onClick=${() => this.reqFreezeAtActorWatcher("N" ) } class="pushbutton">${rel ? "12" : "N" }</button>
-                    <button title=${titleAW} onClick=${() => this.reqFreezeAtActorWatcher("NE") } class="pushbutton">${rel ? "↙"  : "NE"}</button>
+                    <button title=${titleAW} onClick=${() => this.reqFreezeAtActorWatcher("NW") } class="pushbutton">${rel ? "↘"  : getText("NW")}</button>
+                    <button title=${titleAW} onClick=${() => this.reqFreezeAtActorWatcher("N" ) } class="pushbutton">${rel ? "12" : getText("N" )}</button>
+                    <button title=${titleAW} onClick=${() => this.reqFreezeAtActorWatcher("NE") } class="pushbutton">${rel ? "↙"  : getText("NE")}</button>
                     <button inert class="pushbutton pushbutton_inert_spacer">__</button>
-                    <span><label title="target camera to selected actor slot" for="camerahacks_slot_i">ActorWatcher[</label><input id="camerahacks_slot_i" style="width: 35px" type="number" placeholder="0" size="2" min="0" step="any" ref=${this.slot_i} />]</span>
+                    <span><label title=${getText("target camera to selected actor slot")} for="camerahacks_slot_i">ActorWatcher[</label><input id="camerahacks_slot_i" style="width: 35px" type="number" placeholder="0" size="2" min="0" step="any" ref=${this.slot_i} />]</span>
 
                     <br/>
-                    <button title=${titleAW} onClick=${() => this.reqFreezeAtActorWatcher("W" ) } class="pushbutton">${rel ? "9" : "W" }</button>
+                    <button title=${titleAW} onClick=${() => this.reqFreezeAtActorWatcher("W" ) } class="pushbutton">${rel ? "9" : getText("W" )}</button>
                     <button inert class="pushbutton pushbutton_inert_spacer">🌐</button>
-                    <button title=${titleAW} onClick=${() => this.reqFreezeAtActorWatcher("E" ) } class="pushbutton">${rel ? "3" : "E "}</button>
+                    <button title=${titleAW} onClick=${() => this.reqFreezeAtActorWatcher("E" ) } class="pushbutton">${rel ? "3" : getText("E" )}</button>
                     <button inert class="pushbutton pushbutton_inert_spacer">__</button>
-                    <span><label title="xz distance from target (offset = dist * direction)" for="camerahacks_dist">dist: </label><input id="camerahacks_dist" style="width: 60px;" type="number" placeholder="20" size="4" min="-10000" max="10000" step="any" ref=${this.dist} />m</span>
+                    <span><label title=${getText("xz distance from target (offset = dist * direction)")} for="camerahacks_dist">dist: </label><input id="camerahacks_dist" style="width: 60px;" type="number" placeholder="20" size="4" min="-10000" max="10000" step="any" ref=${this.dist} />m</span>
 
                     <br/>
-                    <button title=${titleAW} onClick=${() => this.reqFreezeAtActorWatcher("SW") } class="pushbutton">${rel ? "↗" : "SW"}</button>
-                    <button title=${titleAW} onClick=${() => this.reqFreezeAtActorWatcher("S" ) } class="pushbutton">${rel ? "6" : "S" }</button>
-                    <button title=${titleAW} onClick=${() => this.reqFreezeAtActorWatcher("SE") } class="pushbutton">${rel ? "↖" : "SE"}</button>
+                    <button title=${titleAW} onClick=${() => this.reqFreezeAtActorWatcher("SW") } class="pushbutton">${rel ? "↗" : getText("SW")}</button>
+                    <button title=${titleAW} onClick=${() => this.reqFreezeAtActorWatcher("S" ) } class="pushbutton">${rel ? "6" : getText("S" )}</button>
+                    <button title=${titleAW} onClick=${() => this.reqFreezeAtActorWatcher("SE") } class="pushbutton">${rel ? "↖" : getText("SE")}</button>
                     <button inert class="pushbutton pushbutton_inert_spacer">__</button>
-                    <span><label title="camera.pos_y = target.pos_y + elev" for="camerahacks_elev">elev: </label><input id="camerahacks_elev" style="width: 60px;" type="number" placeholder="5" size="4" min="-10000" max="10000" step="any" ref=${this.elev} />m</span>
+                    <span><label title=${getText("camera.pos_y = target.pos_y + elev")} for="camerahacks_elev">elev: </label><input id="camerahacks_elev" style="width: 60px;" type="number" placeholder="5" size="4" min="-10000" max="10000" step="any" ref=${this.elev} />m</span>
 
                     <!--<button title="camera::toggleFreeze()" onClick=${() => this.reqToggleFreeze() } class="pushbutton" style="transform: rotate(-45deg);">⟵45°</button>-->
 
-                    <br /><span style="margin-top: 12px; display: inline-block;">LStick:</span>
-                    <button class="hint_recommended_hover" title="PlayerUtil::doLStickAbsoluteVanilla(); // reset/default" onClick=${() => this.reqLStickAbsVanilla() }>\u23f5</button>
-                    <button title="PlayerUtil::doLStickAbsoluteCameraFreeze(); // hold controls based on current view" onClick=${() => this.reqLStickAbsCam() }>🎥</button>
-                    <button title="PlayerUtil::doLStickAbsolutePlayer(); // up is Link's forward" onClick=${() => this.reqLStickAbsPlayer() } style="color: #f9fc31; transform: scaleY(1.5); line-height: 14px;">⮝</button>
-                    <button style="margin-left: 8px;" class="hover_hasargs" title="PlayerUtil::doLStickAbsoluteRadOffset(rad); // up is: 0 south, PI north, -PI_2 west, +PI_2 east" onClick=${() => this.reqLStickAbsRad() }>🌐</button><input class="hover_isarg" placeholder="PI" ref=${this.lstick_rad} size=4 />
-                    <button style="margin-left: 8px;" class="hover_hasargs" title="PlayerUtil::doLStickAbsoluteTargetActorWatcher(slot_i);" onClick=${() => this.reqLStickAbsAW() }>AW[</button><input class="hover_isarg" style="width: 35px" type="number" placeholder="0" size="2" min="0" step="any" ref=${this.lstick_slot_i} /><span class="hover_isarg">]</span>
+                    <br /><span style="margin-top: 12px; display: inline-block;">${getText("LStick")}:</span>
+                    <button class="hint_recommended_hover" title="PlayerUtil::doLStickAbsoluteVanilla(); // ${getText("reset/default")}" onClick=${() => this.reqLStickAbsVanilla() }>\u23f5</button>
+                    <button title="PlayerUtil::doLStickAbsoluteCameraFreeze(); // ${getText("hold controls based on current view")}" onClick=${() => this.reqLStickAbsCam() }>🎥</button>
+                    <button title="PlayerUtil::doLStickAbsolutePlayer(); // ${getText("up is Link's forward")}" onClick=${() => this.reqLStickAbsPlayer() } style="color: #f9fc31; transform: scaleY(1.5); line-height: 14px;">⮝</button>
+                    <button style="margin-left: 8px;" class="hover_hasargs" title="PlayerUtil::doLStickAbsoluteRadOffset(rad); // ${getText("up is: 0 south, PI north, -PI_2 west, +PI_2 east")}" onClick=${() => this.reqLStickAbsRad() }>🌐</button><input class="hover_isarg" placeholder="PI" ref=${this.lstick_rad} size=4 />
+                    <button style="margin-left: 8px;" class="hover_hasargs" title="PlayerUtil::doLStickAbsoluteTargetActorWatcher(${getText("slot_i")});" onClick=${() => this.reqLStickAbsAW() }>AW[</button><input class="hover_isarg" style="width: 35px" type="number" placeholder="0" size="2" min="0" step="any" ref=${this.lstick_slot_i} /><span class="hover_isarg">]</span>
                     <button style="margin-left: 8px;" class="hover_hasargs" title="PlayerUtil::doLStickAbsoluteTargetPos(Vector3f);" onClick=${() => this.reqLStickAbsPos() }>pos:</button><input class="hover_isarg" placeholder="x, y, z" ref=${this.lstick_pos} size=20 />
 
                 </div>
@@ -528,15 +529,15 @@
 
         render(props, state) {
             return html`
-                <span class="fpshacks" style="margin-left: 6px;">
+                <span class=${getText("fpshacks")} style="margin-left: 6px;">
                     FPS:
-                    <label title="fps::doTextWriter(checked)" class="faketoggle doTextWriter" for="fps_doTextWriter">
+                    <label title="fps::doTextWriter(${getText('checked')})" class="faketoggle doTextWriter" for="fps_doTextWriter">
                         <input type="checkbox" id="fps_doTextWriter" checked=${state.doTextWriter} onChange=${ e => this.do_send_toggle("doTextWriter") } />
-                        <span class="fakebutton pushbutton">txt</span>
+                        <span class="fakebutton pushbutton">${getText("txt")}</span>
                     </label>
                     <button title="fps::fixedFPS(30)" onClick=${() => AngelScript.exec("fps::fixedFPS(30);") }>30</button>
                     <button title="fps::fixedFPS(20)" onClick=${() => AngelScript.exec("fps::fixedFPS(20);") }>20</button>
-                    <button title="fps::fixedFPS(0)"  onClick=${() => AngelScript.exec("fps::fixedFPS(0);") } class="hint_recommended_hover">reset</button>
+                    <button title="fps::fixedFPS(0)"  onClick=${() => AngelScript.exec("fps::fixedFPS(0);") } class="hint_recommended_hover">${getText("reset")}</button>
                 </span>
             `;
         }
@@ -580,20 +581,20 @@
 
         render(props, state) {
             const reqStyle = state.isPauseReq ? "" : "background: #666; color: #aaa;";
-            const reqFreezeTitle = state.isPauseReq ? "pause::freezeRequest(string)" : "pause::freezeTarget(string)";
-            const reqTitle = state.isPauseReq ? "pause::requestPause(string)" : "[invalid for PauseTargets]";
-            const relTitle = state.isPauseReq ? "pause::releasePause(string)" : "[invalid for PauseTargets]";
+            const reqFreezeTitle = state.isPauseReq ? `pause::freezeRequest(${getText("string")})` : `pause::freezeTarget(${getText("string")})`;
+            const reqTitle = state.isPauseReq ? `pause::requestPause(${getText("string")})` : getText(`[invalid for PauseTargets]`);
+            const relTitle = state.isPauseReq ? `pause::releasePause(${getText("string")})` : getText(`[invalid for PauseTargets]`);
 
             return html`
                 <div class="pausehacks">
                     PauseMgr:
-                    <label title="pause::doTextWriter(checked)" class="faketoggle doTextWriter" for="pause_doTextWriter">
+                    <label title="pause::doTextWriter(${getText('checked')})" class="faketoggle doTextWriter" for="pause_doTextWriter">
                         <input type="checkbox" id="pause_doTextWriter" checked=${state.doTextWriter} onChange=${ e => this.do_send_toggle("doTextWriter") } />
-                        <span class="fakebutton pushbutton">txt</span>
+                        <span class="fakebutton pushbutton">${getText("txt")}</span>
                     </label>
-                    <label title="pause::doTextWriterExtended(checked)" class="faketoggle doTextWriterExtended" for="pause_doTextWriterExtended">
+                    <label title="pause::doTextWriterExtended(${getText('checked')})" class="faketoggle doTextWriterExtended" for="pause_doTextWriterExtended">
                         <input type="checkbox" id="pause_doTextWriterExtended" checked=${state.doTextWriterExtended} onChange=${ e => this.do_send_toggle("doTextWriterExtended") } />
-                        <span class="fakebutton pushbutton">ext</span>
+                        <span class="fakebutton pushbutton">${getText("ext")}</span>
                     </label>
                     <${FpsHacks} />
                     <br />
@@ -607,8 +608,8 @@
                         </optgroup>
                     </select>
                     <button title=${reqFreezeTitle} onClick=${() => this.do_freeze_selection() } class="pushbutton">\u23f8</button>
-                    <button title="pause::doFreezeMask(false); // end pause freezing" onClick=${() => this.do_unfreeze() } class="pushbutton hint_recommended_hover">\u23f5</button>
-                    <button title="pause::freezeMask(0, 0, 0, 0); // force unpause" onClick=${() => this.do_freeze_nopause() } class="pushbutton">0</button>
+                    <button title="pause::doFreezeMask(false); // ${getText("end pause freezing")}" onClick=${() => this.do_unfreeze() } class="pushbutton hint_recommended_hover">\u23f5</button>
+                    <button title="pause::freezeMask(0, 0, 0, 0); // ${getText("force unpause")}" onClick=${() => this.do_freeze_nopause() } class="pushbutton">0</button>
                     <button style=${reqStyle} title=${relTitle} onClick=${() => this.do_releasePause() } class="pushbutton dec">-</button>
                     <button style=${reqStyle} title=${reqTitle} onClick=${() => this.do_requestPause() } class="pushbutton inc">+</button>
                 </div>
@@ -625,11 +626,11 @@
         render(props, state) {
             return html`
                 <div class="staminahacks" style="margin-left: 40px;">
-                    Stam:
-                    <button title="/* reset/default */ PlayerUtil::freezeStaminaExhaustion(false); PlayerUtil::freezeStaminaRecovery(0);" onClick=${() => this.do_freeze_vanilla() } class="pushbutton hint_recommended_hover"><img src="assets/img/stamina_normal.png" /></button>
-                    <button title="PlayerUtil::freezeStaminaRecovery(30000); // always fast recover" onClick=${() => this.do_freeze_recover() } class="pushbutton"><img src="assets/img/stamina_extra.png" /></button>
-                    <button title="PlayerUtil::freezeStaminaExhaustion(true); // always exhausted" onClick=${() => this.do_freeze_exhaust() } class="pushbutton"><img src="assets/img/stamina_red.png" /></button>
-                    <button title="PlayerUtil::freezeStaminaRecovery(-1); // never recover" onClick=${() => this.do_freeze_norecover() } class="pushbutton hint_snowflake_corner"><img src="assets/img/stamina_low.png" /></button>
+                    ${getText("Stam")}:
+                    <button title="/* ${getText("reset/default")} */ PlayerUtil::freezeStaminaExhaustion(false); PlayerUtil::freezeStaminaRecovery(0);" onClick=${() => this.do_freeze_vanilla() } class="pushbutton hint_recommended_hover"><img src="assets/img/stamina_normal.png" /></button>
+                    <button title="PlayerUtil::freezeStaminaRecovery(30000); // ${getText("always fast recover")}" onClick=${() => this.do_freeze_recover() } class="pushbutton"><img src="assets/img/stamina_extra.png" /></button>
+                    <button title="PlayerUtil::freezeStaminaExhaustion(true); // ${getText("always exhausted")}" onClick=${() => this.do_freeze_exhaust() } class="pushbutton"><img src="assets/img/stamina_red.png" /></button>
+                    <button title="PlayerUtil::freezeStaminaRecovery(-1); // ${getText("never recover")}" onClick=${() => this.do_freeze_norecover() } class="pushbutton hint_snowflake_corner"><img src="assets/img/stamina_low.png" /></button>
                 </div>
             `;
         }
@@ -653,17 +654,17 @@
             const ptr = this.slotTargetPtrRef.current.value || 0;
             const dataType = this.slotDataTypeRef.current.value || 0; // default u8
             const formatHex = this.slotFormatHexRef.current.checked;
-            if (!ptr) { console.log("hexdump user lookin sussy", i); return; }
+            if (!ptr) { console.log(getText("bad hexdump pointer?"), i); return; }
             AngelScript.exec(`HexDump::assignSlotAbsolute(${i}, ${ptr}, ${dumpLen}, ${drawLen}, "${label}", ${dataType}, ${formatHex});`);
-            console.log("hexdump absolute", i, ptr, {dumpLen, drawLen, label});
+            console.log(getText("hexdump absolute"), i, ptr, {dumpLen, drawLen, label});
         }
         do_pause(i) {
             AngelScript.exec(`HexDump::pauseSlot(${i});`);
-            console.log("hexdump pause", i);
+            console.log(getText("hexdump pause"), i);
         }
         do_clear(i) {
             AngelScript.exec(`HexDump::clearSlot(${i});`);
-            console.log("hexdump clear", i);
+            console.log(getText("hexdump clear"), i);
         }
         on_select_datatype = (e) => {
             const datatype = parseInt(e.currentTarget.value);
@@ -671,7 +672,7 @@
             // hex or raw default: u8, u16, u32, u64, text
             if ([0, 1, 2, 3, 10].indexOf(datatype) !== -1) { this.slotFormatHexRef.current.checked = true; }
             // dec or formatted default: s8, s16, s32, s64, code (prefer addr formatting instead of raw hex)
-            if ([4, 5, 6, 7, 11].indexOf(datatype) !== -1) {   this.slotFormatHexRef.current.checked = false; }
+            if ([4, 5, 6, 7, 11].indexOf(datatype) !== -1) { this.slotFormatHexRef.current.checked = false; }
         }
 
         render({slot_i}, state) {
@@ -680,13 +681,13 @@
             return html`
                 <div class="hexdump_slot">
                     ${slot_i}${"\xa0"}
-                    <input placeholder="label" size="6" ref=${this.slotLabelRef} />
-                    <!-- TODO <select>absolute, main, ...</select> -->
-                    <input placeholder="target ptr" size="30" ref=${this.slotTargetPtrRef} />
+                    <input placeholder=${getText("label")} size="6" ref=${this.slotLabelRef} />
+                    <!-- TODO <select>${getText("absolute, main, ...")}</select> -->
+                    <input placeholder=${getText("target ptr")} size="30" ref=${this.slotTargetPtrRef} />
                     <!--<input placeholder="0x20" size="6" ref=${this.dumpLen} />-->
                     <input placeholder="0x20" size="6" ref=${this.drawLen} />
-                    <label title="format as hex or decimal" for="hexdump_fmthex_${slot_i}">0x</label>
-                    <input title="format as hex or decimal"  id="hexdump_fmthex_${slot_i}" type="checkbox" ref=${this.slotFormatHexRef} checked />
+                    <label title=${getText("format as hex or decimal")} for="hexdump_fmthex_${slot_i}">0x</label>
+                    <input title=${getText("format as hex or decimal")}  id="hexdump_fmthex_${slot_i}" type="checkbox" ref=${this.slotFormatHexRef} checked />
                     <select style="max-width: 64px;" ref=${this.slotDataTypeRef} onChange=${this.on_select_datatype}>
                         <option value="0">\xa0u8</option>
                         <option value="1">u16</option>
@@ -696,14 +697,14 @@
                         <option value="5">s16</option>
                         <option value="6">s32</option>
                         <option value="7">s64</option>
-                        <option value="8">float</option>
-                        <option value="9">double</option>
-                        <option value="10">text</option>
-                        <option value="11">code</option>
+                        <option value="8">${getText("float")}</option>
+                        <option value="9">${getText("double")}</option>
+                        <option value="10">${getText("text")}</option>
+                        <option value="11">${getText("code")}</option>
                     </select>
-                    <button onClick=${ () => this.do_absolute(slot_i) } class="pushbutton hint_recommended_hover">dump</button>
-                    <button onClick=${ () => this.do_pause(slot_i) } class="pushbutton">pause</button>
-                    <button onClick=${ () => this.do_clear(slot_i) } class="pushbutton hint_destructive_hover">clear</button>
+                    <button onClick=${ () => this.do_absolute(slot_i) } class="pushbutton hint_recommended_hover">${getText("dump")}</button>
+                    <button onClick=${ () => this.do_pause(slot_i) } class="pushbutton">${getText("pause")}</button>
+                    <button onClick=${ () => this.do_clear(slot_i) } class="pushbutton hint_destructive_hover">${getText("clear")}</button>
                 </div>
             `;
         }
@@ -725,9 +726,9 @@
             // TODO region/scope picker
             return html`
                 <div class="memsearch">
-                    Memory search<span title="crashes on console">⚠️</span><br/>
-                    <input placeholder="target ptr" size="20" ref=${this.needle_ptr_ref} />
-                    <button title="sys::memSearch(input)" onClick=${ () => this.do_search("sead::HeapMgr::sRootHeaps") } class="pushbutton">heap</button>
+                    ${getText("Memory search")}<span title=${getText("crashes on console")}>⚠️</span><br/>
+                    <input placeholder=${getText("target ptr")} size="20" ref=${this.needle_ptr_ref} />
+                    <button title="sys::memSearch(${getText("input")})" onClick=${ () => this.do_search("sead::HeapMgr::sRootHeaps") } class="pushbutton">${getText("heap")}</button>
                 </div>
             `;
         }
@@ -750,10 +751,10 @@
         render(props, state) {
             return html`
                 <div class="quickdumps">
-                    Quick dumps <br/>
-                    <button title="sys::heapInfo()" onClick=${ () => this.do_heapInfo() } class="pushbutton">heaps</button>
-                    <button title="sys::threadInfo()" onClick=${ () => this.do_threadInfo() } class="pushbutton">threads</button>
-                    <button title="sys::hookLimits()" onClick=${ () => this.do_hookLimits() } class="pushbutton">hooks</button>
+                    ${getText("Quick dumps")} <br/>
+                    <button title="sys::heapInfo()" onClick=${ () => this.do_heapInfo() } class="pushbutton">${getText("heaps")}</button>
+                    <button title="sys::threadInfo()" onClick=${ () => this.do_threadInfo() } class="pushbutton">${getText("threads")}</button>
+                    <button title="sys::hookLimits()" onClick=${ () => this.do_hookLimits() } class="pushbutton">${getText("hooks")}</button>
                     <button class="pushbutton hover_hasargs" title="tas::sleep(n);" onClick=${() => this.doSleep() }>sleep(</button><input class="hover_isarg" style="width: 48px" type="number" placeholder="1" size="2" min="1" step="any" ref=${this.sleep_n} /><span class="hover_isarg">)</span>
                 </div>
             `;
@@ -843,17 +844,17 @@
 
         on_drop_terrifying_subsdk9_upload = async (e) => {
             const file = e.currentTarget.files[0];
-            console.log("dropped:", file);
-            if (!file) { console.log("no file!"); return; }
-            if (file.name != "subsdk9") { console.log("weird filename!"); return; }
-            if (file.size < 64*1024) { console.log("file seems quite small!"); return; }
+            console.log(getText("dropped:"), file);
+            if (!file) { console.log(getText("no file!")); return; }
+            if (file.name != "subsdk9") { console.log(getText("weird filename!")); return; }
+            if (file.size < 64*1024) { console.log(getText("file seems quite small!")); return; }
             const reader = new FileReader(); // TODO wrap in promise? dumb api
             reader.addEventListener("load", async () => {
                 const prefix = "data:application/octet-stream;base64,"; // need to strip this
-                if (reader.result.indexOf(prefix) !== 0) { console.log("weird readAsDataURL!"); return; }
+                if (reader.result.indexOf(prefix) !== 0) { console.log(getText("weird readAsDataURL!")); return; }
                 const b64Payload = reader.result.slice(prefix.length);
                 const rawPayload = window.atob(b64Payload);
-                if (rawPayload.slice(0, 4) !== "NSO0") { console.log("missing nso header!"); return; }
+                if (rawPayload.slice(0, 4) !== "NSO0") { console.log(getText("missing nso header!")); return; }
 
                 const remote_filename = "sdcard:/atmosphere/contents/0100f2c0115b6000/exefs/subsdk9";
                 //const remote_filename = "sdcard:/totk_lotuskit/web_test.bin";
@@ -881,34 +882,34 @@
 
         renderTasDump(props, state) {
             // TODO extract new component class for dump
-            const recordTitle = state.isDumping ? "End recording" : "Configure + Begin record";
+            const recordTitle = state.isDumping ? getText("End recording") : getText("Configure + Begin record");
             const recordToggleChar = state.isDumping ? "\u23f9" : "\u23fa";
             const recordActiveClass = state.isDumping ? "recording" : "notrecording";
             const sd_hasargs = state.dumpMode == "sdcard" ? "hover_hasargs" : "";
             const sd_arg = state.dumpMode == "sdcard" ? html`<input class="hover_isarg" placeholder="dump_latest.as" ref=${this.tas_dump_filename_ref} size=36 />` : "";
 
-            const sd_arg_browse = state.dumpMode == "sdcard" ? html`<button title="Open sdcard browser" onClick=${ () => this.begin_browse_sd() } class="pushbutton hover_isarg hint_folder_corner" style="color: #aaa; transform: scaleX(0.8); padding: 0 9px; margin-right: -4px;">⛘</button>` : "";
+            const sd_arg_browse = state.dumpMode == "sdcard" ? html`<button title=${getText("Open sdcard browser")} onClick=${ () => this.begin_browse_sd() } class="pushbutton hover_isarg hint_folder_corner" style="color: #aaa; transform: scaleX(0.8); padding: 0 9px; margin-right: -4px;">⛘</button>` : "";
             const sd_arg_window = state.isBrowseSD ? html`<${RemoteFileBrowser} onClose=${ () => this.end_browse_sd() } onPick=${ path => this.pick_browse_sd(path) } />` : "";
 
-            const sd_download = state.dumpMode == "sdcard" ?  html`<button title="View remote file (display below)" onClick=${ () => this.do_tas_download_filename(false) } class="pushbutton hover_isarg hint_eye_corner">📥︎</button>` : "";
-            const sd_download_save = state.dumpMode == "sdcard" ?  html`<button title="Download remote file (browser save + display below)" onClick=${ () => this.do_tas_download_filename(true) } class="pushbutton hover_isarg hint_floppy_corner">📥︎</button>` : "";
-            const sd_upload = state.dumpMode == "sdcard" ?  html`<button title="Upload remote file (using contents below)" onClick=${ () => this.do_tas_upload_filename() } class="pushbutton hover_isarg hint_destructive_hover">📤︎</button>` : "";
+            const sd_download = state.dumpMode == "sdcard" ?  html`<button title=${getText("View remote file (display below)")} onClick=${ () => this.do_tas_download_filename(false) } class="pushbutton hover_isarg hint_eye_corner">📥︎</button>` : "";
+            const sd_download_save = state.dumpMode == "sdcard" ?  html`<button title=${getText("Download remote file (browser save + display below)")} onClick=${ () => this.do_tas_download_filename(true) } class="pushbutton hover_isarg hint_floppy_corner">📥︎</button>` : "";
+            const sd_upload = state.dumpMode == "sdcard" ?  html`<button title=${getText("Upload remote file (using contents below)")} onClick=${ () => this.do_tas_upload_filename() } class="pushbutton hover_isarg hint_destructive_hover">📤︎</button>` : "";
             const HACK_suppressHeightReflow = html`<button class="pushbutton pushbutton_inert_spacer" inert>📥︎</button>`; // always keep a 📥︎ button in layout
 
             return html`
-                    <span title="Manages tas dumps/transfers">REC</span>
+                    <span title=${getText("Manages tas dumps/transfers")}>${getText("REC")}</span>
                     <button title="${recordTitle}" onClick=${ () => this.do_tas_dump_toggle() } class="pushbutton record_red ${recordActiveClass}">${recordToggleChar}</button>
 
                     <select style="width: 48px; margin-left: 8px;" ref=${this.tas_dump_use_nxtas_ref} >
-                        <option disabled>[Dump Format]</option>
-                        <option value="as" title="Use default AngelScript format">as</option>
-                        <option value="nx" title="Use line-based nx-TAS format">nx</option>
+                        <option disabled>[${getText("Dump Format")}]</option>
+                        <option value="as" title=${getText("Use default AngelScript format")}>as</option>
+                        <option value="nx" title=${getText("Use line-based nx-TAS format")}>nx</option>
                     </select>
 
                     <select class="${sd_hasargs}" onChange=${this.do_tas_dump_mode_select} style="width: 48px;">
-                        <option disabled>[Dump Destination]</option>
-                        <option value="ws" title="Dump only to ws (output below)">ws</option>
-                        <option value="sdcard" title="Dump only to sdcard (relative to sdcard:/totk_lotuskit/ by default)">sd</option>
+                        <option disabled>[${getText("Dump Destination")}]</option>
+                        <option value="ws" title=${getText("Dump only to ws (output below)")}>ws</option>
+                        <option value="sdcard" title=${getText("Dump only to sdcard (relative to sdcard:/totk_lotuskit/ by default)")}>sd</option>
                     </select>
 
                     ${sd_arg}
@@ -919,7 +920,7 @@
                     ${sd_upload}
                     ${HACK_suppressHeightReflow}
 
-                    <textarea style="text-wrap: nowrap;" placeholder="[tas output]" ref=${this.tas_dump_ws_output_text_ref}></textarea>
+                    <textarea style="text-wrap: nowrap;" placeholder=${getText("[tas output]")} ref=${this.tas_dump_ws_output_text_ref}></textarea>
             `;
         }
 
@@ -930,19 +931,19 @@
 
             return html`
                 <div class="execscript">
-                    <span title="Manages AngelScript execution/playback for the tas stack">AS:</span>
-                    <button title="Run the script below" onClick=${ () => this.do_exec() } class="pushbutton hint_blueprint_strong">exec</button>
-                    <button title="tas::abort()" onClick=${ () => AngelScript.exec("tas::abort();", AngelScript.TAS_MODULE_INTERRUPT) } class="pushbutton hint_destructive_hover">abort</button>
-                    <label title="Automatically wrap input into void main() {...} entry point" for="execscript_use_implicit_main">main:</label>
+                    <span title=${getText("Manages AngelScript execution/playback for the tas stack")}>AS:</span>
+                    <button title=${getText("Run the script below")} onClick=${ () => this.do_exec() } class="pushbutton hint_blueprint_strong">exec</button>
+                    <button title="tas::abort()" onClick=${ () => AngelScript.exec("tas::abort();", AngelScript.TAS_MODULE_INTERRUPT) } class="pushbutton hint_destructive_hover">${getText("abort")}</button>
+                    <label title=${getText("Automatically wrap input into void main() {...} entry point")} for="execscript_use_implicit_main">main:</label>
                     <input type="checkbox" id="execscript_use_implicit_main" ref=${this.use_implicit_main_ref} checked />
 
                     <${FrameAdvance} />
                     <span style="float: right; display: ${nsoDisplay};">
-                        <label title="⚠️update subsdk9 (drop onto button)" for="subsdkupload"> nso: </label>
+                        <label title=${getText("update subsdk9 (drop onto button)")} for="subsdkupload"> nso: </label>
                         <input type="file" title="WSTransport.send({persistFileBinary, persistFileName})" onChange=${this.on_drop_terrifying_subsdk9_upload} class="pushbutton hint_destructive_hover" style="width:32px;" id="subsdkupload" />
                     </span>
                     <br/>
-                    <textarea class="as_source" placeholder='// check blue AS📖 button below for help \nPlayer.pos += 100*Vector3f::UP;\n\ntas::input(30, KEY_A|KEY_B, 32767,-32768, 0,0);\ntas::input(15, KEY_B, 0.5*STICK_UP_MAX /*, 8000*STICK_LEFT */);\n\nactor::createAndWatch( \n    1, "SpObj_LiftGeneratorWing_A_01", \n    Player.pos + 5*Vector3f::DOWN\n);\n\ntas::awaitExecFile("sdcard:/totk_lotuskit/autorun.as");' ref=${this.script_text_ref}></textarea>
+                    <textarea class="as_source" placeholder=${getText("execscript_placeholder")} ref=${this.script_text_ref}></textarea>
 
                     ${ this.renderTasDump(props, state) }
 
@@ -955,7 +956,7 @@
         constructor() {
             super();
             this.setState({
-                actorName: "[null]",
+                actorName: `[${getText("null")}]`,
                 actorPtr: 0,
                 pos: [0, 0, 0],
                 vel: [0, 0, 0],
@@ -984,7 +985,7 @@
         assignSlotAwaitBancEntityHash(slot_i) {
             let hash = this.selector_textbox_ref.current.value || ""; // u64, needs BigInt for js numeric! leaving as string
             hash = hash.trim();
-            if (!hash) { console.error(`assignSlotAwaitBancEntityHash: invalid hash ${hash}`); }
+            if (!hash) { console.error(`assignSlotAwaitBancEntityHash: ${getText("invalid hash")} ${hash}`); }
             AngelScript.exec(`ActorWatcher::assignSlotAwaitBancEntityHash(${slot_i}, ${hash});`);
         }
 
@@ -1043,33 +1044,33 @@
                         ${actorName}(${ptr})
                         <div class="actor_toggles">
                             <div>
-                                <label title="ActorWatcher::doWSLog(${i}, checked)" class="faketoggle doWSLog" for="aw${i}_doWSLog">
+                                <label title="ActorWatcher::doWSLog(${i}, ${getText('checked')})" class="faketoggle doWSLog" for="aw${i}_doWSLog">
                                     <input type="checkbox" id="aw${i}_doWSLog" checked=${state.doWSLog} onChange=${ e => this.do_send_toggle(i, "doWSLog", e.target.checked) } />
-                                    <span class="fakebutton pushbutton">ws</span>
+                                    <span class="fakebutton pushbutton">${getText("ws")}</span>
                                 </label>
-                                <label title="ActorWatcher::doTextWriter(${i}, checked)" class="faketoggle doTextWriter" for="aw${i}_doTextWriter">
+                                <label title="ActorWatcher::doTextWriter(${i}, ${getText('checked')})" class="faketoggle doTextWriter" for="aw${i}_doTextWriter">
                                     <input type="checkbox" id="aw${i}_doTextWriter" checked=${state.doTextWriter} onChange=${ e => this.do_send_toggle(i, "doTextWriter", e.target.checked) } />
-                                    <span class="fakebutton pushbutton">txt</span>
+                                    <span class="fakebutton pushbutton">${getText("txt")}</span>
                                 </label>
-                                <label title="ActorWatcher::doDrawPos(${i}, checked)" class="faketoggle doDrawPos" for="aw${i}_doDrawPos">
+                                <label title="ActorWatcher::doDrawPos(${i}, ${getText('checked')})" class="faketoggle doDrawPos" for="aw${i}_doDrawPos">
                                     <input type="checkbox" id="aw${i}_doDrawPos" checked=${state.doDrawPos} onChange=${ e => this.do_send_toggle(i, "doDrawPos", e.target.checked) } />
-                                    <span class="fakebutton pushbutton">pos</span>
+                                    <span class="fakebutton pushbutton">${getText("pos")}</span>
                                 </label>
-                                <label title="ActorWatcher::doDrawAABB(${i}, checked)" class="faketoggle doDrawAABB" for="aw${i}_doDrawAABB">
+                                <label title="ActorWatcher::doDrawAABB(${i}, ${getText('checked')})" class="faketoggle doDrawAABB" for="aw${i}_doDrawAABB">
                                     <input type="checkbox" id="aw${i}_doDrawAABB" checked=${state.doDrawAABB} onChange=${ e => this.do_send_toggle(i, "doDrawAABB", e.target.checked) } />
-                                    <span class="fakebutton pushbutton">AABB</span>
+                                    <span class="fakebutton pushbutton">${getText("AABB")}</span>
                                 </label>
-                                <label title="ActorWatcher::doDrawVel(${i}, checked)" class="faketoggle doDrawVel" for="aw${i}_doDrawVel">
+                                <label title="ActorWatcher::doDrawVel(${i}, ${getText('checked')})" class="faketoggle doDrawVel" for="aw${i}_doDrawVel">
                                     <input type="checkbox" id="aw${i}_doDrawVel" checked=${state.doDrawVel} onChange=${ e => this.do_send_toggle(i, "doDrawVel", e.target.checked) } />
-                                    <span class="fakebutton pushbutton">vel</span>
+                                    <span class="fakebutton pushbutton">${getText("vel")}</span>
                                 </label>
-                                <label title="ActorWatcher::doDrawAngVel(${i}, checked)" class="faketoggle doDrawAngVel" for="aw${i}_doDrawAngVel">
+                                <label title="ActorWatcher::doDrawAngVel(${i}, ${getText('checked')})" class="faketoggle doDrawAngVel" for="aw${i}_doDrawAngVel">
                                     <input type="checkbox" id="aw${i}_doDrawAngVel" checked=${state.doDrawAngVel} onChange=${ e => this.do_send_toggle(i, "doDrawAngVel", e.target.checked) } />
-                                    <span class="fakebutton pushbutton">angv</span>
+                                    <span class="fakebutton pushbutton">${getText("angv")}</span>
                                 </label>
-                                <label title="ActorWatcher::doDrawModelPos(${i}, checked)" class="faketoggle doDrawModelPos" for="aw${i}_doDrawModelPos">
+                                <label title="ActorWatcher::doDrawModelPos(${i}, ${getText('checked')})" class="faketoggle doDrawModelPos" for="aw${i}_doDrawModelPos">
                                     <input type="checkbox" id="aw${i}_doDrawModelPos" checked=${state.doDrawModelPos} onChange=${ e => this.do_send_toggle(i, "doDrawModelPos", e.target.checked) } />
-                                    <span class="fakebutton pushbutton">pos</span>
+                                    <span class="fakebutton pushbutton">${getText("pos")}</span>
                                 </label>
                             </div>
 
@@ -1077,48 +1078,48 @@
                                 <label title="ActorWatcher::doWSRigidBody(${i}, flagset_t)" class="faketoggle doWSRigidBody" for="aw${i}_doWSRigidBody">
                                     <input type="checkbox" id="aw${i}_doWSRigidBody" checked=${state.doWSRigidBody}
                                            onChange=${ e => this.do_send_toggle(i, "doWSRigidBody", e.target.checked, 0, 0xffffffffffffffffn) } />
-                                    <span class="fakebutton pushbutton">ws</span>
+                                    <span class="fakebutton pushbutton">${getText("ws")}</span>
                                 </label>
                                 <label title="ActorWatcher::doTextWriterRigidBody(${i}, flagset_t)" class="faketoggle doTextWriterRigidBody" for="aw${i}_doTextWriterRigidBody">
                                     <input type="checkbox" id="aw${i}_doTextWriterRigidBody" checked=${state.doTextWriterRigidBody}
                                            onChange=${ e => this.do_send_toggle(i, "doTextWriterRigidBody", e.target.checked, 0, 0xffffffffffffffffn) } />
-                                    <span class="fakebutton pushbutton">txt</span>
+                                    <span class="fakebutton pushbutton">${getText("txt")}</span>
                                 </label>
                                 <label title="ActorWatcher::doDrawRigidBodyPos(${i}, flagset_t)" class="faketoggle doDrawRigidBodyPos" for="aw${i}_doDrawRigidBodyPos">
                                     <input type="checkbox" id="aw${i}_doDrawRigidBodyPos" checked=${state.doDrawRigidBodyPos}
                                            onChange=${ e => this.do_send_toggle(i, "doDrawRigidBodyPos", e.target.checked, 0, 0xffffffffffffffffn) } />
-                                    <span class="fakebutton pushbutton">pos</span>
+                                    <span class="fakebutton pushbutton">${getText("pos")}</span>
                                 </label>
 
                                 <label title="ActorWatcher::doDrawRigidBodyPosPast(${i}, flagset_t)" class="faketoggle doDrawRigidBodyPosPast" for="aw${i}_doDrawRigidBodyPosPast">
                                     <input type="checkbox" id="aw${i}_doDrawRigidBodyPosPast" checked=${state.doDrawRigidBodyPosPast}
                                            onChange=${ e => this.do_send_toggle(i, "doDrawRigidBodyPosPast", e.target.checked, 0, 0xffffffffffffffffn) } />
-                                    <span class="fakebutton pushbutton">pos-</span>
+                                    <span class="fakebutton pushbutton">${getText("pos-")}</span>
                                 </label>
 
                                 <label title="ActorWatcher::doDrawRigidBodyPosFuture(${i}, flagset_t)" class="faketoggle doDrawRigidBodyPosFuture" for="aw${i}_doDrawRigidBodyPosFuture">
                                     <input type="checkbox" id="aw${i}_doDrawRigidBodyPosFuture" checked=${state.doDrawRigidBodyPosFuture}
                                            onChange=${ e => this.do_send_toggle(i, "doDrawRigidBodyPosFuture", e.target.checked, 0, 0xffffffffffffffffn) } />
-                                    <span class="fakebutton pushbutton">pos+</span>
+                                    <span class="fakebutton pushbutton">${getText("pos+")}</span>
                                 </label>
 
                                 <label title="ActorWatcher::doDrawRigidBodyAABB(${i}, flagset_t)" class="faketoggle doDrawRigidBodyAABB" for="aw${i}_doDrawRigidBodyAABB">
                                     <input type="checkbox" id="aw${i}_doDrawRigidBodyAABB" checked=${state.doDrawRigidBodyAABB}
                                            onChange=${ e => this.do_send_toggle(i, "doDrawRigidBodyAABB", e.target.checked, 0, 0xffffffffffffffffn) } />
-                                    <span class="fakebutton pushbutton">AABB</span>
+                                    <span class="fakebutton pushbutton">${getText("AABB")}</span>
                                 </label>
                             </div>
                         </div>
                     </div>
 
                     <div class="actor_selector_options">
-                        Select:
-                        <button title="ActorWatcher::clearSlot(${i})" onClick=${ () => this.clear_slot(i) } class="pushbutton hint_destructive_hover">null</button>
+                        ${getText("Select")}:
+                        <button title="ActorWatcher::clearSlot(${i})" onClick=${ () => this.clear_slot(i) } class="pushbutton hint_destructive_hover">${getText("null")}</button>
                         <button title="ActorWatcher::assignSlotAwaitRecall(${i})" onClick=${ () => this.assignSlotAwaitRecall(i) } class="pushbutton"><img src="assets/img/Obj_ReverseRecorder.png" /></button>
-                        <button title="ActorWatcher::assignSlotAwaitSpawn(${i}, string actorName); // optional filter by name" onClick=${ () => this.assignSlotAwaitSpawn(i) } class="pushbutton">spawn</button>
-                        <button title="ActorWatcher::assignSlotAwaitBancEntityHash(${i}, u64 hash); // eg 0x07b4e71cd2536055" onClick=${ () => this.assignSlotAwaitBancEntityHash(i) } class="pushbutton">Banc</button>
+                        <button title="ActorWatcher::assignSlotAwaitSpawn(${i}, ${getText("string")} ${getText("actorName")}); // ${getText("optional filter by name")}" onClick=${ () => this.assignSlotAwaitSpawn(i) } class="pushbutton">${getText("spawn")}</button>
+                        <button title="ActorWatcher::assignSlotAwaitBancEntityHash(${i}, u64 hash); // ${getText("eg")} 0x07b4e71cd2536055" onClick=${ () => this.assignSlotAwaitBancEntityHash(i) } class="pushbutton">Banc</button>
                         <br/>
-                        <input placeholder="selector arg" size="40" ref=${this.selector_textbox_ref} />
+                        <input placeholder=${getText("selector arg")} size="40" ref=${this.selector_textbox_ref} />
                         <!-- TODO on specific actor's next dep, ... -->
                         <!--<input type="number" placeholder="0" size="2" min="0" max="3" size=2 />-->
                     </div>
@@ -1131,46 +1132,46 @@
                         <${ReadoutVec3} title="x, -z, y-105.5" label="ui\xa0" value=${VecUtil.engine_to_ui(pos)} vecComponentPattern=${VecComponentPatterns.XZY} />
                     </div>
                     <div class="actor_vel_frame">
-                        <${ReadoutVec3} label="vel" value=${vel} vecComponentPattern=${VecComponentPatterns.XYZ} /><br />
+                        <${ReadoutVec3} label=${getText("vel")} value=${vel} vecComponentPattern=${VecComponentPatterns.XYZ} /><br />
                     </div>
 
                     <!--
                     <div class="actor_pos64">
-                        <${ReadoutVec3} label="pos" value=${dummy} vecComponentPattern=${VecComponentPatterns.XYZ} />
+                        <${ReadoutVec3} label=${getText("pos")} value=${dummy} vecComponentPattern=${VecComponentPatterns.XYZ} />
                     </div>
                     <div class="actor_pos64_ui">
-                        <${ReadoutVec3} label="ui\xa0" value=${VecUtil.engine_to_ui(dummy)} vecComponentPattern=${VecComponentPatterns.XZY} />
+                        <${ReadoutVec3} label=${getText("ui\xa0")} value=${VecUtil.engine_to_ui(dummy)} vecComponentPattern=${VecComponentPatterns.XZY} />
                     </div>
                     <div class="actor_compass">
-                        <${ReadoutVec2} label="rot\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0" value=${dummy} vecComponentPattern=${VecComponentPatterns.ZX} />
+                        <${ReadoutVec2} label=${getText("rot\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0")} value=${dummy} vecComponentPattern=${VecComponentPatterns.ZX} />
                         <${CompassSpinny} value=${dummy} />
                         <br />
-                        <${ReadoutQuat} label="rot_physics" value=${dummy} />
+                        <${ReadoutQuat} label=${getText("rot_physics")} value=${dummy} />
                         <${CompassSpinnyPhysics} value=${dummy} />
                         <br />
-                        <${ReadoutVec3} label="ang vel\xa0\xa0\xa0\xa0" value=${dummy} />
+                        <${ReadoutVec3} label=${getText("ang vel\xa0\xa0\xa0\xa0")} value=${dummy} />
                     </div>
                     -->
 
                     <div class="bumper_pushbuttons">
-                        <span>Move by <input style="width: 60px;" type="number" placeholder="10" size="4" min="0" max="10000" step="any" ref=${this.bumper_increment_ref} />m:</span>
+                        <span>${getText("Move by")} <input style="width: 60px;" type="number" placeholder="10" size="4" min="0" max="10000" step="any" ref=${this.bumper_increment_ref} />m:</span>
                         <br />
                         <br />
-                        <button title="y-" style="color: var(--vec-green);" onClick=${ () => this.do_relative_move(i, "DOWN" ) } class="pushbutton">down</button>
-                        <button title="z-" style="color: var(--vec-blue);"  onClick=${ () => this.do_relative_move(i, "NORTH") } class="pushbutton">north</button>
-                        <button title="y+" style="color: var(--vec-green);" onClick=${ () => this.do_relative_move(i, "UP"   ) } class="pushbutton">\xa0up\xa0</button>
+                        <button title="y-" style="color: var(--vec-green);" onClick=${ () => this.do_relative_move(i, "DOWN" ) } class="pushbutton">${getText("down")}</button>
+                        <button title="z-" style="color: var(--vec-blue);"  onClick=${ () => this.do_relative_move(i, "NORTH") } class="pushbutton">${getText("north")}</button>
+                        <button title="y+" style="color: var(--vec-green);" onClick=${ () => this.do_relative_move(i, "UP"   ) } class="pushbutton">${getText("\xa0up\xa0")}</button>
                         <br />
-                        <button title="x-" style="color: var(--vec-red);"   onClick=${ () => this.do_relative_move(i, "WEST" ) } class="pushbutton">west</button>
-                        <button title="z+" style="color: var(--vec-blue);"  onClick=${ () => this.do_relative_move(i, "SOUTH") } class="pushbutton">south</button>
-                        <button title="x+" style="color: var(--vec-red);"   onClick=${ () => this.do_relative_move(i, "EAST" ) } class="pushbutton">east</button>
+                        <button title="x-" style="color: var(--vec-red);"   onClick=${ () => this.do_relative_move(i, "WEST" ) } class="pushbutton">${getText("west")}</button>
+                        <button title="z+" style="color: var(--vec-blue);"  onClick=${ () => this.do_relative_move(i, "SOUTH") } class="pushbutton">${getText("south")}</button>
+                        <button title="x+" style="color: var(--vec-red);"   onClick=${ () => this.do_relative_move(i, "EAST" ) } class="pushbutton">${getText("east")}</button>
                     </div>
 
                     <div class="savestate_slot_actions">
-                        Coords:
-                        <button class="pushbutton" onClick=${() => this.dump_pos_to_savestate_textbox() }>dump</button>
-                        <button class="pushbutton" onClick=${() => this.do_absolute_move(i)}>assign</button>
+                        ${getText("Coords")}:
+                        <button class="pushbutton" onClick=${() => this.dump_pos_to_savestate_textbox() }>${getText("dump")}</button>
+                        <button class="pushbutton" onClick=${() => this.do_absolute_move(i)}>${getText("assign")}</button>
                         <br />
-                        <input placeholder="x, y, z (engine)" ref=${this.savestate_textbox_pos_ref} size=40 />
+                        <input placeholder="x, y, z (${getText("engine")})" ref=${this.savestate_textbox_pos_ref} size=40 />
                         <input placeholder="1,0,0, 0,1,0, 0,0,1" ref=${this.savestate_textbox_rot_ref} size=40 />
                     </div>
                 </section>
@@ -1224,13 +1225,13 @@
                 //console.log(fz.obj.actor.target, fz.score, fz);
                 const actorName = fz.obj.actor.target;
                 // type+actor always present+visible
-                const type = html`<label>[${fz.obj.type.target}]</label>`;
+                const type = html`<label>[${getText(fz.obj.type.target)}]</label>`;
                 const actor = fz[0].target ? html`<span class="copy_fake_target" dangerouslySetInnerHTML=${{ __html: fz[0].highlight() }}></span>` : html`<span class="copy_fake_target">${actorName}</span>`;
 
                 // HACK setting innerHTML violates vdom. not worth the effort: add state({copySuccess: actorName}), compare for 📋✅ in here, maybe setTimeout+debounce to reset
-                const copy = html`<button class="copy" title="copy" onClick=${e => { navigator.clipboard.writeText(actorName); e.target.innerHTML = "✅"; }}>📋</button>`;
-                const spawn = html`<button title="actor::createSimple(string)" onClick=${() => this.do_spawn(actorName) }>new</button>`;
-                const objmap = html`<button title="find in objmap" onClick=${() => this.do_objmap(actorName) }>objmap</button>`;
+                const copy = html`<button class="copy" title=${getText("copy")} onClick=${e => { navigator.clipboard.writeText(actorName); e.target.innerHTML = "✅"; }}>📋</button>`;
+                const spawn = html`<button title="actor::createSimple(${getText("string")})" onClick=${() => this.do_spawn(actorName) }>${getText("new")}</button>`;
+                const objmap = html`<button title=${getText("find in objmap")} onClick=${() => this.do_objmap(actorName) }>${getText("objmap")}</button>`;
 
                 let model = "";
                 if (fz[1].target && !fz[0].target) {
@@ -1238,7 +1239,7 @@
                     model = html`<span dangerouslySetInnerHTML=${{ __html: fz[1].highlight() }}></span>`;
                 }
                 // wrap or leave empty
-                model &&= html`<div class="model"><label>Model: </label>${model}</div>`;
+                model &&= html`<div class="model"><label>${getText("Model")}: </label>${model}</div>`;
 
                 let gameName = "";
                 if (fz[2].target) {
@@ -1250,7 +1251,7 @@
                     gameName ||= fz.obj.gameName.target;
                 }
                 // wrap or leave empty
-                gameName &&= html`<div class="gameName"><label>GameName: </label>${gameName}</div>`;
+                gameName &&= html`<div class="gameName"><label>${getText("GameName")}: </label>${gameName}</div>`;
 
                 let philName = "";
                 if (fz[3].target) {
@@ -1264,7 +1265,7 @@
                 // hide gameName duplicates
                 philName &&= (fz.obj.gameName && fz.obj.philName.target === fz.obj.gameName.target) ? "" : philName;
                 // wrap or leave empty
-                philName &&= html`<div class="philName"><label>PhilName: </label>${philName}</div>`;
+                philName &&= html`<div class="philName"><label>${getText("PhilName")}: </label>${philName}</div>`;
 
                 return html`<div key=${actorName} class="fuzzysort_results_item">
                     <div class="actor">${type} ${actor} ${copy}${objmap}${spawn}</div>
@@ -1277,7 +1278,7 @@
 
             return html`
                 <${SimpleWindow} onClose=${this.do_search_clear}>
-                    Actors like "${state.fuzzysort_query}" (${state.fuzzysort_results.length}):<br />
+                    ${getText("Actors like")} "${state.fuzzysort_query}" (${state.fuzzysort_results.length}):<br />
                     <div class="fuzzysort_results content">${items}</div>
                 </${SimpleWindow}>
             `;
@@ -1287,8 +1288,8 @@
             const fuzzyWidth = state.ui_size == "medium" ? 20 : 4;
             return html`
                 <div class="Actor_MasterList_Search size_${state.ui_size}">
-                    <button title="Expand/Collapse" onClick=${ () => this.toggle_size() }>${ state.ui_size == "medium" ? "[-]" : "[+]" }</button>
-                    <label class="size_small_hidden" for="Actor_MasterList_Search__fuzzy_input_ref">ActorDB </label>
+                    <button title=${getText("Expand/Collapse")} onClick=${ () => this.toggle_size() }>${ state.ui_size == "medium" ? "[-]" : "[+]" }</button>
+                    <label class="size_small_hidden" for="Actor_MasterList_Search__fuzzy_input_ref">${getText("ActorDB ")} </label>
                     <input onInput=${this.do_search_change} placeholder="kokko" size=${fuzzyWidth} ref=${this.fuzzy_input_ref} id="Actor_MasterList_Search__fuzzy_input_ref" />
                     ${this.render_fuzzysort_results_dialog(props, state)}
                 </div>
@@ -1339,8 +1340,8 @@
                 const eventflow = fz[0].target ? html`<span class="copy_fake_target" dangerouslySetInnerHTML=${{ __html: fz[0].highlight() }}></span>` : html`<span class="copy_fake_target">${flowchartName}</span>`;
 
                 // HACK setting innerHTML violates vdom
-                const copy = html`<button class="copy" title="copy" onClick=${e => { navigator.clipboard.writeText(flowchartName); e.target.innerHTML = "✅"; }}>📋</button>`;
-                const req = html`<button title="event::requestSimple(string)" onClick=${() => this.do_request(flowchartName) }>req</button>`;
+                const copy = html`<button class="copy" title=${getText("copy")} onClick=${e => { navigator.clipboard.writeText(flowchartName); e.target.innerHTML = "✅"; }}>📋</button>`;
+                const req = html`<button title="event::requestSimple(${getText("string")})" onClick=${() => this.do_request(flowchartName) }>req</button>`;
 
                 return html`<div key=${flowchartName} class="fuzzysort_results_item">
                     <div class="eventflow">${eventflow} ${copy}${req}</div>
@@ -1350,7 +1351,7 @@
 
             return html`
                 <${SimpleWindow} onClose=${this.do_search_clear}>
-                    EventFlows like "${state.fuzzysort_query}" (${state.fuzzysort_results.length}):<br />
+                    ${getText("EventFlows like")} "${state.fuzzysort_query}" (${state.fuzzysort_results.length}):<br />
                     <div class="fuzzysort_results content">${items}</div>
                 </${SimpleWindow}>
             `;
@@ -1360,8 +1361,8 @@
             const fuzzyWidth = state.ui_size == "medium" ? 20 : 4;
             return html`
                 <div class="Event_NameList_Search size_${state.ui_size}">
-                    <button title="Expand/Collapse" onClick=${ () => this.toggle_size() }>${ state.ui_size == "medium" ? "[-]" : "[+]" }</button>
-                    <label class="size_small_hidden" for="Event_NameList_Search__fuzzy_input_ref">EventDB </label>
+                    <button title=${getText("Expand/Collapse")} onClick=${ () => this.toggle_size() }>${ state.ui_size == "medium" ? "[-]" : "[+]" }</button>
+                    <label class="size_small_hidden" for="Event_NameList_Search__fuzzy_input_ref">${getText("EventDB ")} </label>
                     <input onInput=${this.do_search_change} placeholder="DmF_SY_Camp" size=${fuzzyWidth} ref=${this.fuzzy_input_ref} id="Event_NameList_Search__fuzzy_input_ref" />
                     ${this.render_fuzzysort_results_dialog(props, state)}
                 </div>
@@ -1423,20 +1424,19 @@
                 const hexLabel = fz[0].target ? html`<label class="copy_fake_target" dangerouslySetInnerHTML=${{ __html: fz[0].highlight() }}></label>` : html`<label class="copy_fake_target">${fz.obj.hex.target}</label>`;
 
                 const key = fz.obj.key ? fz.obj.key.target : undefined;
-                let keyLabel = key || "[unknown]";
+                let keyLabel = key || getText("[unknown]");
                 keyLabel = fz[1].target ? html`<span class="copy_fake_target" dangerouslySetInnerHTML=${{ __html: fz[1].highlight() }}></span>` : html`<span class="copy_fake_target">${keyLabel}</span>`;
 
                 // HACK setting innerHTML violates vdom
-                const copyHex = html`<button class="copy" title="copy" onClick=${e => { navigator.clipboard.writeText(fz.obj.hex.target); e.target.innerHTML = "✅"; }}>📋</button>`;
-                const copyKey = html`<button class="copy" title="copy" onClick=${e => { navigator.clipboard.writeText(key); e.target.innerHTML = "✅"; }}>📋</button>`;
-                //const req = html`<button title="uhh" onClick=${() => this.do_request(keyLabel) }>req</button>`;
+                const copyHex = html`<button class="copy" title=${getText("copy")} onClick=${e => { navigator.clipboard.writeText(fz.obj.hex.target); e.target.innerHTML = "✅"; }}>📋</button>`;
+                const copyKey = html`<button class="copy" title=${getText("copy")} onClick=${e => { navigator.clipboard.writeText(key); e.target.innerHTML = "✅"; }}>📋</button>`;
 
                 const commentDiv = fz.obj.comment ? html`<div><label>// ${fz.obj.comment.target}</label></div>` : "";
-                const typesDiv = fz.obj.types ? html`<div><label>Types: ${fz.obj.types.target}</label></div>` : "";
+                const typesDiv = fz.obj.types ? html`<div><label>${getText("Types")}: ${fz.obj.types.target}</label></div>` : "";
                 const owners = fz.obj.owners ? fz.obj.owners.target : undefined;
                 const members = fz.obj.members ? fz.obj.members.target : undefined;
-                const ownersDiv = owners ? html`<div><label>Owners: </label>${owners}</div>` : "";
-                const membersDiv = members ? html`<div><label>Members: </label>${members}</div>` : "";
+                const ownersDiv = owners ? html`<div><label>${getText("Owners")}: </label>${owners}</div>` : "";
+                const membersDiv = members ? html`<div><label>${getText("Members")}: </label>${members}</div>` : "";
 
                 return html`<div key=${fz.obj.hash.target} class="fuzzysort_results_item">
                     <div class="hashinfo">
@@ -1452,7 +1452,7 @@
 
             return html`
                 <${SimpleWindow} onClose=${this.do_search_clear}>
-                    GameData hashes like "${state.fuzzysort_query}" (${state.fuzzysort_results.length}):<br />
+                    ${getText("GameData hashes like")} "${state.fuzzysort_query}" (${state.fuzzysort_results.length}):<br />
                     <div class="fuzzysort_results content">${items}</div>
                 </${SimpleWindow}>
             `;
@@ -1462,8 +1462,8 @@
             const fuzzyWidth = state.ui_size == "medium" ? 20 : 4;
             return html`
                 <div class="GMDHash_InfoList_Search size_${state.ui_size}">
-                    <button title="Expand/Collapse" onClick=${ () => this.toggle_size() }>${ state.ui_size == "medium" ? "[-]" : "[+]" }</button>
-                    <label class="size_small_hidden" for="GMDHash_InfoList_Search__fuzzy_input_ref">GMDHash </label>
+                    <button title=${getText("Expand/Collapse")} onClick=${ () => this.toggle_size() }>${ state.ui_size == "medium" ? "[-]" : "[+]" }</button>
+                    <label class="size_small_hidden" for="GMDHash_InfoList_Search__fuzzy_input_ref">${getText("GMDHash")} </label>
                     <input onInput=${this.do_search_change} placeholder="TripMaster" size=${fuzzyWidth} ref=${this.fuzzy_input_ref} id="GMDHash_InfoList_Search__fuzzy_input_ref" />
                     ${this.render_fuzzysort_results_dialog(props, state)}
                 </div>
@@ -1531,7 +1531,7 @@
         }
 
         render(props, state) {
-            const index_names = state.index_names.map(x => html`<option>${x}</option>`);
+            const index_names = state.index_names.map(x => html`<option value="${x}">${getText(x)}</option>`);
             const notebook_names = state[`index_${state.selected_index}`].map(x => html`<option>${x}</option>`);
             const dialog = !(state.dialog_contents) ? "" : html`
                 <${SimpleWindow} onClose=${this.do_dialog_clear}>
@@ -1542,8 +1542,8 @@
 
             return html`
                 <div class="angelscript_notebook size_${state.ui_size}">
-                    <button title="Expand/Collapse" onClick=${ () => this.toggle_size() }>${ state.ui_size == "medium" ? "[-]" : "[+]" }</button>
-                    <button class="hint_blueprint_strong" title="Open/Toggle AngelScript notebook" onClick=${ () => this.do_notebook_open() }>AS📖</button>
+                    <button title=${getText("Expand/Collapse")} onClick=${ () => this.toggle_size() }>${ state.ui_size == "medium" ? "[-]" : "[+]" }</button>
+                    <button class="hint_blueprint_strong" title=${getText("Open/Toggle AngelScript notebook")} onClick=${ () => this.do_notebook_open() }>AS📖</button>
                     <select class="size_small_hidden" onChange=${this.do_index_select}>
                         ${index_names}
                     </select>
@@ -1611,19 +1611,19 @@
                     if (cpath.length > 0 && cpath.slice(-1) != "/") { cpath += "/"; } // root dirs don't need separators
                     cpath += dentry.name;
                     // HACK setting innerHTML violates vdom
-                    const copy = html`<button class="copy" title="copy" onClick=${e => { navigator.clipboard.writeText(cpath); e.target.innerHTML = "✅"; }}>📋</button>`;
+                    const copy = html`<button class="copy" title=${getText("copy")} onClick=${e => { navigator.clipboard.writeText(cpath); e.target.innerHTML = "✅"; }}>📋</button>`;
 
-                    const pick = props.onPick ? html`<button class="copy" title="pick" onClick=${() => { props.onPick(cpath); }}>pick</button>` : "";
+                    const pick = props.onPick ? html`<button class="copy" title=${getText("pick")} onClick=${() => { props.onPick(cpath); }}>${getText("pick")}</button>` : "";
 
                     return html`<li><span class="copy_fake_target">${dentry.name}</span> ${copy} ${pick} ${fmtSize}</li>`;
                 }
 
             });
-            if (dentryList.length == 0) { dentryList = [html`<li style="color: #666;">[empty folder]</li>`]; }
+            if (dentryList.length == 0) { dentryList = [html`<li style="color: #666;">[${getText("empty folder")}]</li>`]; }
 
             return html`
                 <${SimpleWindow} onClose=${props.onClose}>
-                    Remote files
+                    ${getText("Remote files")}
                     <a href="#" onClick=${ e => { this.load_remote_index("sdcard:/"); e.preventDefault(); return false; } } style="margin: 0 12px 0 48px">sdcard:/</a>
                     <a href="#" onClick=${ e => { this.load_remote_index("content:/"); e.preventDefault(); return false; } }>content:/</a>
                     <br /><br />
@@ -1716,24 +1716,24 @@
 
             const isWsBusy = state.is_polling || WSTransport.signals.config.frontend.ws_is_connected.value;
             const connectStyle = isWsBusy ? "background: #666; color: #aaa;" :  "";
-            const connectTitle = isWsBusy ? "ctrl+click to force close ws" : "connect ws";
+            const connectTitle = isWsBusy ? getText("ctrl+click to force close ws") : getText("connect ws");
 
             return html`
                 <div class="ws size_${state.ui_size}">
-                    <button title="Expand/Collapse" onClick=${ () => this.toggle_size() }>${ state.ui_size == "medium" ? "[-]" : "[+]" }</button>
-                    <span class="size_small_hidden">Mod Socket</span>${flag}
+                    <button title=${getText("Expand/Collapse")} onClick=${ () => this.toggle_size() }>${ state.ui_size == "medium" ? "[-]" : "[+]" }</button>
+                    <span class="size_small_hidden">${getText("Mod Socket")}</span>${flag}
                     <input class="size_small_hidden" placeholder="ws://127.0.0.1:7072" size="20" ref=${this.ws_location_ref} />
-                    <button class="hint_recommended_strong" title=${connectTitle} style=${connectStyle} onClick=${this.do_connect_submit}>go</button>
+                    <button class="hint_recommended_strong" title=${connectTitle} style=${connectStyle} onClick=${this.do_connect_submit}>${getText("go")}</button>
                     <div class="size_small_hidden">
                         <select onChange=${this.do_recent_select}>
-                            <option>[Session Recents]</option>
+                            <option>[${getText("Session Recents")}]</option>
                             ${recents}
                         </select>
                         <select onChange=${this.do_retry_mode_select}>
-                            <option disabled>[Connect/Retry Mode]</option>
-                            <option value="once">Try once</option>
-                            <option value="poll_once" title="Must 'go' again after disconnect">Poll until success</option>
-                            <option value="poll_forever" title="After first 'go', will always retry even after disconnect">Poll forever</option>
+                            <option disabled>[${getText("Connect/Retry Mode")}]</option>
+                            <option value="once">${getText("Try once")}</option>
+                            <option value="poll_once" title=${getText("Must 'go' again after disconnect")}>${getText("Poll until success")}</option>
+                            <option value="poll_forever" title=${getText("After first 'go', will always retry even after disconnect")}>${getText("Poll forever")}</option>
                         </select>
                     </div>
                 </div>

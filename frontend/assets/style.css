@@ -363,9 +363,9 @@ dialog {
         top: 0px;
         right: 35px;
         cursor: grab;
-        &:before { content: "[move]"; }
+        &:before { content: "[move]"; } /* TODO translate/getText? */
         &:active { cursor: grabbing; }
-        &:active:before { content: "[drag]"; }
+        &:active:before { content: "[drag]"; } /* TODO translate/getText? */
     }
 
     &> .content {

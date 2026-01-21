@@ -124,7 +124,8 @@ LOTUSKIT_RUNTIME_PATCHES: PatchSetCollection = {
         },
     },
     "lotuskit-fixed-20fps": {
-        # patch is applied by lotuskit tas when needed
+        # Patch is applied by lotuskit tas when needed.
+        # Writes large Framework.mGpuTimeStamp
         BuildId.TOTK_100: {
             0x02a7b654: b("08 02 a0 d2"), # mov x8,#0x10000
             0x02a7b658: b("68 8e 00 f9"), # str x8, [x19, #0x118]
@@ -148,7 +149,8 @@ LOTUSKIT_RUNTIME_PATCHES: PatchSetCollection = {
         },
     },
     "lotuskit-fixed-30fps": {
-        # patch is applied by lotuskit tas when needed
+        # Patch is applied by lotuskit tas when needed.
+        # Writes small Framework.mGpuTimeStamp
         BuildId.TOTK_100: {
             0x02a7b654: b("28 00 80 d2"), # mov x8, #0x1           vanilla: 08 00 08 cb  sub  x8, x0,x8
             0x02a7b658: b("68 8e 00 f9"), # str x8, [x19, #0x118]  vanilla: 69 8e 40 f9  ldr  x9, [x19, #0x118]
