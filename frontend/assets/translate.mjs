@@ -1,4 +1,5 @@
 const TRANSLATIONS_FR = {
+    "5 line sequence for Mozdor jumps.": null,
     "AABB": null,
     "Accessory": "Accessoire",
     "ActorDB": null,
@@ -8,10 +9,12 @@ const TRANSLATIONS_FR = {
     "Automatically wrap input into void main() {...} entry point": "Envelopper automatiquement l'entrée dans le point d'entrée void main() {...}",
     "Base": null,
     "Camera": "Caméra",
+    "Code empty": "Code vide",
     "Collectible": null,
     "Configure + Begin record": "Configurer + Commencer l'enregistrement",
     "Connect/Retry Mode": "Mode connexion/nouvelle tentative",
     "Coords": "Coordonnées",
+    "Copied linecount:": "Copié lignes:",
     "Creature": "Créature",
     "Cutscene": "Cinématique",
     "DebugPause increment/decrement": "Augmentation/diminution de DebugPause",
@@ -20,8 +23,9 @@ const TRANSLATIONS_FR = {
     "Dump Format": "Format du dump",
     "Dump only to sdcard (relative to sdcard:/totk_lotuskit/ by default)": "Dump uniquement sur la carte SD (par rapport à sdcard:/totk_lotuskit/ par défaut)",
     "Dump only to ws (output below)": "Dump uniquement sur ws (sortie ci-dessous)",
-    "E": null,
+    "E": null, // east
     "Enemy": "Ennemi",
+    "Enter Text": null,
     "EventDB": null,
     "EventFlows like": "EventFlows similaires",
     "Expand/Collapse": "Développer/Réduire",
@@ -29,6 +33,9 @@ const TRANSLATIONS_FR = {
     "GMDHash": null,
     "GameData hashes like": "Hashes GameData similaires",
     "GameName": "NomJeu",
+    "Input sequence for optimal running.": null,
+    "Input sequence ZR -> X -> Y for frame-perfect cancel.": null,
+    "Jumpslash Cancel": null,
     "LStick": null,
     "Location": "Emplacement",
     "Manages AngelScript execution/playback for the tas stack": "Gère l'exécution/la lecture d'AngelScript pour la pile tas",
@@ -45,7 +52,10 @@ const TRANSLATIONS_FR = {
     "NW": "NO",
     "Object": "Objet",
     "Open sdcard browser": "Ouvrir le navigateur sdcard",
+    "Open Visual TAS Editor": null,
     "Open/Toggle AngelScript notebook": "Ouvrir/Basculer le bloc-notes AngelScript",
+    "Optimal Mozdor": null,
+    "Optimal Run": null,
     "Other": "Autre",
     "Owners": "Propriétaires",
     "Perfect day (noon, clear fog, clear weather, clear wind)": "Journée parfaite (midi, pas de brouillard, ciel dégagé et pas de vent)",
@@ -95,6 +105,7 @@ const TRANSLATIONS_FR = {
     "drag to move window": "glisser pour déplacer la fenêtre",
     "dump": "dump",
     "east": "est",
+    "editor": null,
     "eg": "ex",
     "elev": "élév",
     "empty folder": "dossier vide",
@@ -159,6 +170,28 @@ const TRANSLATIONS_FR = {
     "ws open try": "essayer d'ouvrir ws",
     "xz distance from target (offset = dist * direction)": "distance xz par rapport à la cible (décalage = dist * direction)",
 
+    "+ Input Line": "+ Ligne Input",
+    "Compact": "Nettoyer",
+    "Merge identical input rows": "Fusionner les lignes d'entrée identiques",
+    "Import": "Importer",
+    "📚 Presets": null,
+    "Lines:": "Lignes:",
+    "Total Frames:": null,
+    "Update Code 🚀": null,
+    "// Comment": "// Commentaire",
+    "For Loop": "Boucle (for)",
+    "Gyro: Set": null,
+    "Gyro: Clear": null,
+    "Set Pos/Rot": null,
+    "Duration / Type": "Durée / Type",
+    "Importing a TAS Script (AS)": "Importation d'un script TAS (AS)",
+    "Paste your code below. (Replaces all)": "Collez votre code ci-dessous. (Remplace tout)",
+    "Cancel": "Annuler",
+    "Load the Script": "Charger le script",
+    "Preset Library": "Bibliothéque de Presets",
+    "Click to insert after the selection.": "Cliquez pour insérer à la suite de la sélection.",
+    "Close": "Fermer",
+
     "execscript_placeholder": '// consultez le bouton bleu AS📖 ci-dessous pour obtenir de l\'aide \nPlayer.pos += 100*Vector3f::UP;\n\ninput(30, A|B, 32767,-32768, 0,0);\ninput(15, B, 0.5*STICK_UP_MAX /*, 8000*STICK_LEFT */);\n\nactor::createAndWatch( \n    1, "SpObj_LiftGeneratorWing_A_01", \n    Player.pos + 5*Vector3f::DOWN\n);\n\ntas::awaitExecFile("sdcard:/totk_lotuskit/autorun.as");',
 
 };
@@ -193,4 +226,15 @@ function getText(str) {
     return out ? out : str; // return original string if no translation found
 }
 
-export { getText };
+function translateSelectedElementText(selector) {
+    document.querySelectorAll(selector).forEach(element => {
+        if (element.children.length > 0) { return; } // leaf elements only
+        element.textContent = getText(element.textContent);
+        if (element.title) {
+            element.title = getText(element.title);
+        }
+    });
+}
+
+export { getText, translateSelectedElementText };
+

@@ -5,22 +5,22 @@
     <title>TOTK TAS Editor</title>
 <style>
         :root {
-            --bg-color: #0d1117;       
-            --panel-color: #161b22;    
-            --header-bg: #0d1117;      
-            --text-main: #c9d1d9;      
-            --text-muted: #8b949e;     
-            --accent-zonai: #4ef5a3;   
-            --accent-sheikah: #58a6ff; 
-            --accent-secret: #f2cc60;  
-            --accent-danger: #f85149;  
-            --accent-comment: #8b949e; 
-            --accent-loop: #d2a8ff;    
+            --bg-color: #0d1117;
+            --panel-color: #161b22;
+            --header-bg: #0d1117;
+            --text-main: #c9d1d9;
+            --text-muted: #8b949e;
+            --accent-zonai: #4ef5a3;
+            --accent-sheikah: #58a6ff;
+            --accent-secret: #f2cc60;
+            --accent-danger: #f85149;
+            --accent-comment: #8b949e;
+            --accent-loop: #d2a8ff;
             --accent-preset: #a371f7;
             --bg-loop-content: rgba(210, 168, 255, 0.04);
-            --border-color: #30363d;   
-            --input-bg: #090c10;       
-            --select-color: rgba(78, 245, 163, 0.15); 
+            --border-color: #30363d;
+            --input-bg: #090c10;
+            --select-color: rgba(78, 245, 163, 0.15);
             --drag-target-color: #58a6ff;
         }
         * { box-sizing: border-box; }
@@ -39,7 +39,7 @@
         ::-webkit-scrollbar-track { background: var(--bg-color); }
         ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 5px; border: 2px solid var(--bg-color); }
         ::-webkit-scrollbar-thumb:hover { background: #555; }
-        
+
         /* --- TOOLBARS --- */
         .toolbar {
             background-color: var(--panel-color);
@@ -51,7 +51,7 @@
             z-index: 20;
         }
         .actions-toolbar {
-            background-color: #11151c; 
+            background-color: #11151c;
             padding: 6px 20px;
             display: flex;
             gap: 10px;
@@ -84,19 +84,19 @@
 
         /* BOUTONS D'ACTION */
         .btn-action { font-size: 11px; padding: 4px 10px; background: transparent; }
-        
+
         .btn-comment { border-color: rgba(139, 148, 158, 0.3); color: var(--accent-comment); }
         .btn-comment:hover { background: rgba(139, 148, 158, 0.1); border-color: var(--accent-comment); }
-        
+
         .btn-loop { border-color: rgba(210, 168, 255, 0.3); color: var(--accent-loop); }
         .btn-loop:hover { background: rgba(210, 168, 255, 0.1); border-color: var(--accent-loop); }
-        
+
         .btn-gyro-set { border-color: rgba(88, 166, 255, 0.3); color: var(--accent-sheikah); }
         .btn-gyro-set:hover { background: rgba(88, 166, 255, 0.1); border-color: var(--accent-sheikah); }
-        
+
         .btn-gyro-clear { border-color: rgba(248, 81, 73, 0.3); color: var(--accent-danger); }
         .btn-gyro-clear:hover { background: rgba(248, 81, 73, 0.1); border-color: var(--accent-danger); }
-        
+
         .btn-pos-set { border-color: rgba(242, 204, 96, 0.3); color: var(--accent-secret); }
         .btn-pos-set:hover { background: rgba(242, 204, 96, 0.1); border-color: var(--accent-secret); }
 
@@ -128,7 +128,7 @@
         tr:hover td { background: rgba(255,255,255,0.03); }
         tr.selected td { background-color: rgba(78, 245, 163, 0.08) !important; border-bottom-color: var(--accent-zonai); }
         tr.selected td:first-child { border-left: 3px solid var(--accent-zonai); }
-        
+
         .indent-1 td { background-color: var(--bg-loop-content); }
         .indent-2 td { background-color: rgba(210, 168, 255, 0.08); }
         .indent-1 { border-left: 2px solid rgba(210, 168, 255, 0.2); }
@@ -139,10 +139,10 @@
         .btn-mini:hover { background: var(--border-color); color: white; }
         .btn-check { width: 24px; height: 24px; background: var(--input-bg); border: 1px solid var(--border-color); margin: auto; cursor: pointer; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 800; color: #444; }
         .btn-check.active { background-color: var(--accent-zonai); border-color: var(--accent-zonai); color: #000; }
-        
+
         .std-input { background: #0d1117; border: 1px solid var(--border-color); color: var(--text-main); padding: 6px; border-radius: 4px; font-family: 'Consolas', monospace; font-size: 12px; outline: none; }
         .gyro-input { width: 120px; text-align: center; border-color: var(--border-color); color: var(--accent-sheikah); }
-        
+
         /* TYPES SPECIAUX */
         .gyro-row td { background: rgba(88, 166, 255, 0.04); border-bottom: 1px dashed rgba(88, 166, 255, 0.3); }
         .gyro-cell { color: var(--accent-sheikah); font-family: 'Segoe UI', sans-serif; display: flex; justify-content: center; align-items: center; gap: 10px; }
@@ -186,64 +186,70 @@
 </head>
 <body>
 
-<script>
-    const PRESETS = {
-        "mozdor": {
-            name: "Optimal Mozdor",
-            desc: "5-lines sequence optimized for Mozdor.",
-            code: `input(1, R, 0,32767);
-                    input(1, NONE, 0,32767);
-                    input(1, B, 0,32767);
-                    input(2, Y, 0,32767);
-                    input(18, NONE, 0,32767);`
-        },
-        "jumpslash": {
-            name: "Jumpslash Cancel",
-            desc: "Sequence ZR > X > Y to cancel the jump attack.",
-            code: `input(1, ZR);
-                    input(20);
-                    input(3);
-                    input(1, X);
-                    input(8);
-                    input(1, Y);`
-        },
-        "run": {
-            name: "Optimal Run",
-            desc: "Sequence of the optimal run.",
-            code: `input(1, B, 0,32767);
-                    input(1, B, 0,0);`
-        }
-    };
+<script type="module">
+    import { getText, translateSelectedElementText } from "/assets/translate.mjs";
+    window.addEventListener("load", async function() {
+        window.getText = getText;
+        translateSelectedElementText(".translate");
+
+        window.PRESETS = {
+            "mozdor": {
+                name: getText("Optimal Mozdor"),
+                desc: getText("5 line sequence for Mozdor jumps."),
+                code: `input(1, R, 0,32767);
+                        input(1, NONE, 0,32767);
+                        input(1, B, 0,32767);
+                        input(2, Y, 0,32767);
+                        input(18, NONE, 0,32767);`
+            },
+            "jumpslash": {
+                name: getText("Jumpslash Cancel"),
+                desc: getText("Input sequence ZR -> X -> Y for frame-perfect cancel."),
+                code: `input(1, ZR);
+                        input(20);
+                        input(3);
+                        input(1, X);
+                        input(8);
+                        input(1, Y);`
+            },
+            "run": {
+                name: getText("Optimal Run"),
+                desc: getText("Input sequence for optimal running."),
+                code: `input(1, B, 0,32767);
+                        input(1, B, 0,0);`
+            }
+        };
+    });
 </script>
 
 <div class="toolbar">
-    <button class="btn-add" onclick="addRow()">+ Input Line</button>
-    <button onclick="compactTableUI()">Clean</button>
+    <button class="btn-add translate" onclick="addRow()">+ Input Line</button>
+    <button class="translate" title="Merge identical input rows" onclick="compactTableUI()">Compact</button>
     <div style="width: 1px; height: 20px; background: #444; margin: 0 5px;"></div>
-    <button onclick="openImportModal()">Import</button>
-    <button class="btn-preset" onclick="openPresetModal()">📚 Presets</button>
+    <button class="translate" onclick="openImportModal()">Import</button>
+    <button class="btn-preset translate" onclick="openPresetModal()">📚 Presets</button>
     <div style="width: 1px; height: 20px; background: #444; margin: 0 5px;"></div>
     <button onclick="undo()" title="Ctrl+Z">↩</button>
     <button onclick="redo()" title="Ctrl+Y">↪</button>
     <div class="counters-box">
-        <span>Lignes: <span id="lineCounter" class="counter-val">0</span></span>
-        <span>Total Frames: <span id="totalFramesCounter" class="counter-val" style="color: var(--accent-zonai);">0</span></span>
+        <span><span class="translate">Lines:</span> <span id="lineCounter" class="counter-val">0</span></span>
+        <span><span class="translate">Total Frames:</span> <span id="totalFramesCounter" class="counter-val" style="color: var(--accent-zonai);">0</span></span>
     </div>
-    <button class="btn-export" onclick="broadcastState()">Update Code 🚀</button>
+    <button class="btn-export translate" onclick="broadcastState()">Update Code 🚀</button>
 </div>
 
 <div class="actions-toolbar">
-    <button class="btn-action btn-comment" onclick="addComment()">// Comment</button>
-    <button class="btn-action btn-loop" onclick="addLoop()">While (For)</button>
-    
+    <button class="btn-action btn-comment translate" onclick="addComment()">// Comment</button>
+    <button class="btn-action btn-loop translate" onclick="addLoop()">For Loop</button>
+
     <div class="separator"></div>
-    
-    <button class="btn-action btn-gyro-set" onclick="addGyroSet()">Gyro: Set</button>
-    <button class="btn-action btn-gyro-clear" onclick="addGyroClear()">Gyro: Clear</button>
-    
+
+    <button class="btn-action btn-gyro-set translate" onclick="addGyroSet()">Gyro: Set</button>
+    <button class="btn-action btn-gyro-clear translate" onclick="addGyroClear()">Gyro: Clear</button>
+
     <div class="separator"></div>
-    
-    <button class="btn-action btn-pos-set" onclick="addPosRot()">Set Pos/Rot</button>
+
+    <button class="btn-action btn-pos-set translate" onclick="addPosRot()">Set Pos/Rot</button>
 </div>
 
 <div class="main-container">
@@ -252,7 +258,7 @@
             <thead>
                 <tr id="header-row">
                     <th>#</th>
-                    <th style="min-width: 160px;">Duration / Type</th>
+                    <th class="translate" style="min-width: 160px;">Duration / Type</th>
                     <th>L-Stick</th>
                     <th>R-Stick</th>
                 </tr>
@@ -268,13 +274,13 @@
         <div class="coords-container">
             <div class="coord-group">
                 <span class="coord-label">X</span>
-                <input type="number" id="lstick-x" class="coord-input" value="0" step="100" 
+                <input type="number" id="lstick-x" class="coord-input" value="0" step="100"
                     oninput="updateStickManual('lstick', 'x', this.value)"
                     onfocus="isEditingCoords=true" onblur="isEditingCoords=false">
             </div>
             <div class="coord-group">
                 <span class="coord-label">Y</span>
-                <input type="number" id="lstick-y" class="coord-input" value="0" step="100" 
+                <input type="number" id="lstick-y" class="coord-input" value="0" step="100"
                     oninput="updateStickManual('lstick', 'y', this.value)"
                     onfocus="isEditingCoords=true" onblur="isEditingCoords=false">
             </div>
@@ -287,13 +293,13 @@
         <div class="coords-container">
             <div class="coord-group">
                 <span class="coord-label">X</span>
-                <input type="number" id="rstick-x" class="coord-input" value="0" step="100" 
+                <input type="number" id="rstick-x" class="coord-input" value="0" step="100"
                     oninput="updateStickManual('rstick', 'x', this.value)"
                     onfocus="isEditingCoords=true" onblur="isEditingCoords=false">
             </div>
             <div class="coord-group">
                 <span class="coord-label">Y</span>
-                <input type="number" id="rstick-y" class="coord-input" value="0" step="100" 
+                <input type="number" id="rstick-y" class="coord-input" value="0" step="100"
                     oninput="updateStickManual('rstick', 'y', this.value)"
                     onfocus="isEditingCoords=true" onblur="isEditingCoords=false">
             </div>
@@ -303,23 +309,23 @@
 
 <div id="importModal" class="modal">
     <div class="modal-content">
-        <div style="font-size:16px; font-weight:bold; color:var(--accent-zonai);">Importing a TAS Script (AS)</div>
-        <div style="font-size:12px; color:#888;">Paste your code below. (Replaces all)</div>
+        <div class="translate" style="font-size:16px; font-weight:bold; color:var(--accent-zonai);">Importing a TAS Script (AS)</div>
+        <div class="translate" style="font-size:12px; color:#888;">Paste your code below. (Replaces all)</div>
         <textarea id="importTextarea" class="modal-textarea" placeholder="input(1, A, ...);"></textarea>
         <div class="modal-footer">
-            <button class="btn-cancel" onclick="closeImportModal()">Cancel</button>
-            <button class="btn-confirm" onclick="confirmImport()">Load the Script</button>
+            <button class="btn-cancel translate" onclick="closeImportModal()">Cancel</button>
+            <button class="btn-confirm translate" onclick="confirmImport()">Load the Script</button>
         </div>
     </div>
 </div>
 
 <div id="presetModal" class="modal">
     <div class="modal-content" style="max-width: 500px;">
-        <div style="font-size:16px; font-weight:bold; color:var(--accent-preset);">Preset Library</div>
-        <div style="font-size:12px; color:#888;">Click to insert after the selection.</div>
+        <div class="translate" style="font-size:16px; font-weight:bold; color:var(--accent-preset);">Preset Library</div>
+        <div class="translate" style="font-size:12px; color:#888;">Click to insert after the selection.</div>
         <div id="presetListContainer" class="preset-list"></div>
         <div class="modal-footer">
-            <button class="btn-cancel" onclick="closePresetModal()">Close</button>
+            <button class="btn-cancel translate" onclick="closePresetModal()">Close</button>
         </div>
     </div>
 </div>
@@ -331,17 +337,17 @@
     let internalClipboard = null;
     let selectedIndices = new Set();
     let history = []; let redoStack = []; const MAX_HISTORY = 50;
-    
+
 // --- FLAGS DE CONTROLE ---
-    let isEditingCoords = false;       
-    let isImportingFromParent = false; 
-    const SYNC_DELAY = 500; 
+    let isEditingCoords = false;
+    let isImportingFromParent = false;
+    const SYNC_DELAY = 500;
     let lastBroadcastTime = 0;
     let broadcastTimer = null;
 
-function broadcastState() {
+    function broadcastState() {
         const finalFrames = getOptimizedFrames(frames);
-        
+
         let output = finalFrames.map(f => {
             if (f.type === 'comment') return `// ${f.text}`;
             if (f.type === 'loop_start') return `for(int ${f.variable}=0; ${f.variable} < ${f.count}; ${f.variable}++) {`;
@@ -349,7 +355,7 @@ function broadcastState() {
             if (f.type === 'gyro_set') return `tas::setGyroRotation(Matrix33f::${f.orientation});\ntas::setGyroAngularVelocity(Vector3f(${f.x}, ${f.y}, ${f.z}));`;
             if (f.type === 'gyro_clear') return `tas::clearGyro();`;
             if (f.type === 'pos_rot') return `Player.setPosRot(${f.pos.x}, ${f.pos.y}, ${f.pos.z}, ${f.rot.join(', ')});`;
-            
+
             const btns = f.buttons.size > 0 ? Array.from(f.buttons).join('|') : 'NONE';
             return `input(${f.duration}, ${btns}, ${f.lstick.x},${f.lstick.y}, ${f.rstick.x},${f.rstick.y});`;
         }).join('\n');
@@ -375,8 +381,8 @@ function broadcastState() {
 
     function saveHistory() {
             const state = JSON.stringify(frames, (k, v) => (v instanceof Set) ? Array.from(v) : v);
-            history.push(state); 
-            if (history.length > MAX_HISTORY) history.shift(); 
+            history.push(state);
+            if (history.length > MAX_HISTORY) history.shift();
             redoStack = [];
         }
 
@@ -426,9 +432,9 @@ function broadcastState() {
 
             let m = lt.match(rGyroRot);
             if (m) {
-                let orientation = m[1]; 
+                let orientation = m[1];
                 let x = 0.0, y = 0.0, z = 0.0;
-                
+
                 let mVel = lt.match(rGyroVel);
                 if (!mVel && i + 1 < lines.length) {
                     let nextLine = lines[i+1].trim();
@@ -459,11 +465,11 @@ function broadcastState() {
                 let btnRaw = m[2] ? m[2].trim() : 'NONE';
                 if (btnRaw === '0') btnRaw = 'NONE';
                 let btns = new Set(btnRaw === 'NONE' ? [] : btnRaw.split('|'));
-                let lx = m[3] ? parseInt(m[3]) : 0; 
+                let lx = m[3] ? parseInt(m[3]) : 0;
                 let ly = m[4] ? parseInt(m[4]) : 0;
-                let rx = m[5] ? parseInt(m[5]) : 0; 
+                let rx = m[5] ? parseInt(m[5]) : 0;
                 let ry = m[6] ? parseInt(m[6]) : 0;
-                
+
                 parsedFrames.push({ type: 'input', duration: dur, buttons: btns, lstick: { x: lx, y: ly }, rstick: { x: rx, y: ry } });
             }
         }
@@ -484,7 +490,7 @@ function broadcastState() {
     function addGyroSet() { insertAfterSelection({ type: 'gyro_set', orientation: 'NORTH', x: 0.0, y: 0.0, z: 0.0 }); }
     function addGyroClear() { insertAfterSelection({ type: 'gyro_clear' }); }
     function addPosRot() { insertAfterSelection({ type: 'pos_rot', pos: { x: 0, y: 0, z: 0 }, rot: [ 0, 0, 0, 0, 0, 0, 0, 0, 0 ] }); }
-    function addComment() { insertAfterSelection({ type: 'comment', text: 'Enter Text' }); }
+    function addComment() { insertAfterSelection({ type: 'comment', text: getText('Enter Text') }); }
     function addLoop() {
         saveHistory();
         let insertIndex = frames.length;
@@ -518,16 +524,16 @@ function broadcastState() {
     function renderTable() {
         const tbody = document.getElementById('tas-body');
         tbody.innerHTML = '';
-        
-        let totalFrames = 0; 
-        let inputStep = 0; 
-        let lineCount = 0; 
+
+        let totalFrames = 0;
+        let inputStep = 0;
+        let lineCount = 0;
         let indentLevel = 0;
 
         frames.forEach((frame, index) => {
             lineCount++;
             const tr = document.createElement('tr');
-            tr.dataset.index = index; 
+            tr.dataset.index = index;
             tr.addEventListener('mousedown', (e) => handleRowMouseDown(e, index));
             tr.addEventListener('mouseenter', (e) => handleRowMouseEnter(e, index));
             tr.addEventListener('dragstart', (e) => handleDragStart(e, index));
@@ -536,44 +542,44 @@ function broadcastState() {
 
             const isSelected = selectedIndices.has(index);
             if (frame.type === 'loop_end') indentLevel = Math.max(0, indentLevel - 1);
-            
-            const colSpan = 2 + BUTTONS.length + 2; 
+
+            const colSpan = 2 + BUTTONS.length + 2;
             const indentClass = indentLevel > 0 ? `indent-${Math.min(3, indentLevel)}` : '';
-            
+
             if (frame.type === 'comment') {
                 tr.classList.add('comment-row'); if(isSelected) tr.classList.add('selected');
                 tr.innerHTML = `<td><span style="color:var(--accent-comment);">//</span></td><td colspan="${colSpan}" class="${indentClass}"><div style="display:flex; align-items:center;"><span style="color:var(--accent-comment); margin-right:10px;">//</span><input type="text" class="comment-input" value="${frame.text}" onchange="updateProp(${index}, 'text', this.value)"></div></td>`;
-            } 
+            }
             else if (frame.type === 'loop_start') {
                 tr.classList.add('loop-row'); if(isSelected) tr.classList.add('selected');
                 tr.innerHTML = `<td><span style="color:var(--accent-loop);">LOOP</span></td><td colspan="${colSpan}" class="${indentClass}"><div class="loop-cell">Loop <input type="text" class="std-input loop-input" value="${frame.variable}" onchange="updateProp(${index}, 'variable', this.value)"> for <input type="number" class="std-input loop-input" value="${frame.count}" onchange="updateProp(${index}, 'count', this.value)"> Frames {</div></td>`;
                 indentLevel++;
-            } 
+            }
             else if (frame.type === 'loop_end') {
                 tr.classList.add('loop-row'); if(isSelected) tr.classList.add('selected');
                 tr.innerHTML = `<td><span style="color:var(--accent-loop);">END</span></td><td colspan="${colSpan}" class="${indentClass}"><div class="loop-cell">}</div></td>`;
-            } 
+            }
             else if (frame.type === 'gyro_set') {
                 tr.classList.add('gyro-row'); if(isSelected) tr.classList.add('selected');
                 const options = MATRIX_OPTIONS.map(opt => `<option value="${opt}" ${frame.orientation === opt ? 'selected' : ''}>${opt}</option>`).join('');
                 tr.innerHTML = `<td><span style="color:var(--accent-sheikah);">GYRO</span></td><td colspan="${colSpan}" class="${indentClass}"><div class="gyro-cell">ROT: <select class="std-input" onchange="updateProp(${index}, 'orientation', this.value)">${options}</select> VEL: <input type="number" step="0.1" class="std-input gyro-input" value="${frame.x}" onchange="updateProp(${index}, 'x', this.value)"> <input type="number" step="0.1" class="std-input gyro-input" value="${frame.y}" onchange="updateProp(${index}, 'y', this.value)"> <input type="number" step="0.1" class="std-input gyro-input" value="${frame.z}" onchange="updateProp(${index}, 'z', this.value)"></div></td>`;
-            } 
+            }
             else if (frame.type === 'gyro_clear') {
                 tr.classList.add('gyro-clear-row'); if(isSelected) tr.classList.add('selected');
                 tr.innerHTML = `<td><span style="color:var(--accent-danger);">CLR</span></td><td colspan="${colSpan}" class="${indentClass}"><div style="color:var(--accent-danger); font-weight:bold;">>>> clearGyro();</div></td>`;
-            } 
+            }
             else if (frame.type === 'pos_rot') {
                 tr.classList.add('pos-row'); if(isSelected) tr.classList.add('selected');
                 const posStr = `${frame.pos.x}, ${frame.pos.y}, ${frame.pos.z}`;
                 const rotStr = frame.rot.join(', ');
                 tr.innerHTML = `<td><span style="color:var(--accent-secret);">POS</span></td><td colspan="${colSpan}" class="${indentClass}"><div class="pos-container"><div class="pos-line"><span class="pos-label">POS:</span><input type="text" class="std-input pos-input-large" value="${posStr}" onchange="updatePosString(${index}, this.value)"></div><div class="pos-line"><span class="pos-label">ROT:</span><input type="text" class="std-input pos-input-large" value="${rotStr}" onchange="updateRotString(${index}, this.value)"></div></div></td>`;
-            } 
+            }
             else {
                 inputStep++;
                 totalFrames += frame.duration;
                 if(isSelected) tr.classList.add('selected');
                 let html = `<td>${inputStep}</td><td><div class="duration-cell"><button class="btn-mini" onclick="updateDuration(${index}, -10)">-10</button><button class="btn-mini" onclick="updateDuration(${index}, -1)">-</button><span class="dur-val">${frame.duration}</span><button class="btn-mini" onclick="updateDuration(${index}, 1)">+</button><button class="btn-mini" onclick="updateDuration(${index}, 10)">+10</button></div></td>`;
-                
+
                 const btnLabels = { "PLUS": "+", "MINUS": "-", "DUP": "▲", "DDOWN": "▼", "DLEFT": "◀", "DRIGHT": "▶" };
                 let firstBtn = true;
                 BUTTONS.forEach(btn => {
@@ -589,7 +595,7 @@ function broadcastState() {
             tbody.appendChild(tr);
         });
 
-        document.getElementById('lineCounter').textContent = inputStep; 
+        document.getElementById('lineCounter').textContent = inputStep;
         document.getElementById('totalFramesCounter').textContent = totalFrames;
     }
 
@@ -615,11 +621,11 @@ function broadcastState() {
         e.dataTransfer.setData('text/plain', JSON.stringify(draggedIndices));
     }
     function handleDragOver(e, index) {
-        e.preventDefault(); if (draggedIndices.includes(index)) return; 
+        e.preventDefault(); if (draggedIndices.includes(index)) return;
         const rect = e.currentTarget.getBoundingClientRect();
         const midY = rect.top + rect.height / 2;
         document.querySelectorAll('.drop-target-top, .drop-target-bottom').forEach(el => el.classList.remove('drop-target-top', 'drop-target-bottom'));
-        if (e.clientY < midY) { e.currentTarget.classList.add('drop-target-top'); dragTargetPosition = 'top'; } 
+        if (e.clientY < midY) { e.currentTarget.classList.add('drop-target-top'); dragTargetPosition = 'top'; }
         else { e.currentTarget.classList.add('drop-target-bottom'); dragTargetPosition = 'bottom'; }
         dragTargetIndex = index;
     }
@@ -642,7 +648,7 @@ function broadcastState() {
         let val = 0;
         if (value !== "" && value !== "-") val = parseInt(value);
         let clampedVal = Math.max(-32768, Math.min(32767, val));
-        
+
         let changed = false;
         if (selectedIndices.size > 0) {
             selectedIndices.forEach(idx => {
@@ -660,7 +666,7 @@ function broadcastState() {
                 }
             });
         }
-        
+
         if (changed) {
             broadcastState();
         }
@@ -700,7 +706,7 @@ function broadcastState() {
         const canvas = document.getElementById(id);
         const container = canvas.parentElement;
         const ctx = canvas.getContext('2d');
-        const centerX = 70, centerY = 70, radius = 60; 
+        const centerX = 70, centerY = 70, radius = 60;
         let isDragging = false;
         const inputX = document.getElementById(`${side}-x`);
         const inputY = document.getElementById(`${side}-y`);
@@ -709,10 +715,10 @@ function broadcastState() {
             const rect = canvas.getBoundingClientRect();
             const valX = Math.round(((clientX - rect.left - centerX) / radius) * 32767);
             const valY = Math.round(((clientY - rect.top - centerY) / radius) * -32767);
-            
+
             const fx = Math.max(-32768, Math.min(32767, valX));
             const fy = Math.max(-32768, Math.min(32767, valY));
-            
+
             let changed = false;
             if (selectedIndices.size > 0) {
                 let hasInput = false;
@@ -744,7 +750,7 @@ function broadcastState() {
             ctx.beginPath(); ctx.arc(centerX, centerY, 70, 0, Math.PI*2); ctx.fill();
 
             ctx.lineWidth = 1;
-            ctx.strokeStyle = '#21262d'; 
+            ctx.strokeStyle = '#21262d';
 
             ctx.beginPath();
             const diagOffset = 70 * Math.cos(Math.PI/4);
@@ -752,7 +758,7 @@ function broadcastState() {
             ctx.moveTo(centerX + diagOffset, centerY - diagOffset); ctx.lineTo(centerX - diagOffset, centerY + diagOffset);
             ctx.stroke();
 
-            ctx.strokeStyle = '#30363d'; 
+            ctx.strokeStyle = '#30363d';
             ctx.beginPath(); ctx.arc(centerX, centerY, radius, 0, Math.PI * 2); ctx.stroke(); // 100%
             ctx.strokeStyle = '#21262d';
             ctx.beginPath(); ctx.setLineDash([2, 4]); ctx.arc(centerX, centerY, radius/2, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]); // 50% dashed
@@ -768,15 +774,15 @@ function broadcastState() {
                         const stickData = frames[idx][side];
                         if (!firstFound && !isDragging && !isEditingCoords) { inputX.value = stickData.x; inputY.value = stickData.y; firstFound = true; }
                         let rawX = (stickData.x / 32767.0) * radius;
-                        let rawY = (stickData.y / -32767.0) * radius; 
+                        let rawY = (stickData.y / -32767.0) * radius;
                         const mag = Math.sqrt(rawX*rawX + rawY*rawY);
-                        if (mag > radius + 1) { 
+                        if (mag > radius + 1) {
                             rawX = (rawX / mag) * radius;
                             rawY = (rawY / mag) * radius;
                         }
                         const displayX = centerX + rawX;
                         const displayY = centerY + rawY;
-                        
+
                         ctx.beginPath();
                         ctx.moveTo(centerX, centerY);
                         ctx.lineTo(displayX, displayY);
@@ -785,7 +791,7 @@ function broadcastState() {
                         lineGrad.addColorStop(0, 'rgba(78, 245, 163, 0.3)');
                         lineGrad.addColorStop(1, '#4ef5a3');
                         ctx.strokeStyle = lineGrad;
-                        ctx.shadowColor = '#4ef5a3'; ctx.shadowBlur = 10; 
+                        ctx.shadowColor = '#4ef5a3'; ctx.shadowBlur = 10;
                         ctx.stroke();
                         ctx.shadowBlur = 0;
                         ctx.beginPath();
@@ -794,8 +800,8 @@ function broadcastState() {
                         ctx.fill();
                         ctx.beginPath();
                         ctx.arc(displayX, displayY, 3.5, 0, Math.PI * 2);
-                        ctx.fillStyle = '#ffffff'; 
-                        ctx.shadowColor = '#4ef5a3'; ctx.shadowBlur = 15; 
+                        ctx.fillStyle = '#ffffff';
+                        ctx.shadowColor = '#4ef5a3'; ctx.shadowBlur = 15;
                         ctx.fill();
                         ctx.shadowBlur = 0;
                     }
@@ -820,19 +826,19 @@ function broadcastState() {
 
         if (e.ctrlKey && e.key === 'c') {
             if (selectedIndices.size === 0) return;
-            e.preventDefault(); 
+            e.preventDefault();
             const sortedIndices = Array.from(selectedIndices).sort((a, b) => a - b);
             const rowsToCopy = sortedIndices.map(idx => frames[idx]);
-    
+
             internalClipboard = JSON.stringify(rowsToCopy, (k, v) => (v instanceof Set) ? Array.from(v) : v);
-            
-            console.log(`Copié ${rowsToCopy.length} lignes`);
+
+            console.log(getText("Copied linecount:"), rowsToCopy.length);
         }
 
         if (e.ctrlKey && e.key === 'v') {
             if (!internalClipboard) return;
             e.preventDefault();
-            saveHistory(); 
+            saveHistory();
             const newRows = JSON.parse(internalClipboard, (k, v) => (k === 'buttons') ? new Set(v) : v);
             let insertIndex = frames.length;
             if (selectedIndices.size > 0) {
@@ -856,13 +862,25 @@ function broadcastState() {
         }
     });
 
-    function openImportModal() { document.getElementById('importModal').style.display = "block"; document.getElementById('importTextarea').focus(); }
-    function closeImportModal() { document.getElementById('importModal').style.display = "none"; }
-    window.onclick = function(event) { if (event.target == document.getElementById('importModal')) closeImportModal(); if (event.target == document.getElementById('presetModal')) closePresetModal(); }
+    function openImportModal() {
+        // FIXME modal opens beneath editor in firefox
+        // FIXME awkward SimpleWindow drag interaction with iframe
+        document.getElementById('importModal').style.display = "block";
+        document.getElementById('importTextarea').focus();
+    }
+
+    function closeImportModal() {
+        document.getElementById('importModal').style.display = "none";
+    }
+
+    window.onclick = function(event) {
+        if (event.target == document.getElementById('importModal')) { closeImportModal(); }
+        if (event.target == document.getElementById('presetModal')) { closePresetModal(); }
+    }
 
     function confirmImport() {
         const text = document.getElementById('importTextarea').value;
-        if (!text.trim()) { alert("Code vide"); return; }
+        if (!text.trim()) { alert(getText("Code empty")); return; }
         saveHistory();
         frames = parseScriptToFrames(text);
         selectedIndices.clear(); renderTable(); closeImportModal();

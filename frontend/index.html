@@ -822,14 +822,14 @@ class ExecScript extends Component {
         constructor() {
             super();
             const defaultScript = '';
-            
+
             this.state = {
                 isDumping: false,
                 dumpMode: "ws",
                 isBrowseSD: false,
                 showTasEditor: false,
-                scriptText: defaultScript, 
-                lastSource: 'init' 
+                scriptText: defaultScript,
+                lastSource: 'init',
             };
 
             this.script_text_ref = createRef();
@@ -845,22 +845,22 @@ class ExecScript extends Component {
         }
 
         onScriptInput = (e) => {
-            this.setState({ 
-                scriptText: e.target.value, 
-                lastSource: 'text' 
+            this.setState({
+                scriptText: e.target.value,
+                lastSource: 'text',
             });
         }
 
         handleTasUpdate = (code) => {
-            this.setState({ 
-                scriptText: code, 
-                lastSource: 'tas' 
+            this.setState({
+                scriptText: code,
+                lastSource: 'tas',
             });
             if(this.script_text_ref.current) this.script_text_ref.current.value = code;
         }
 
         do_exec() {
-            const script_text = this.state.scriptText; 
+            const script_text = this.state.scriptText;
             const main = this.use_implicit_main_ref.current.checked;
 
             WSTransport.send({
@@ -1004,14 +1004,14 @@ class ExecScript extends Component {
 
         render(props, state) {
             const nsoDisplay = false ? "inline" : "none";
-            
-            const tasEditorWindow = state.showTasEditor 
-                ? html`<${TasEditor} 
-                        scriptText=${state.scriptText} 
+
+            const tasEditorWindow = state.showTasEditor
+                ? html`<${TasEditor}
+                        scriptText=${state.scriptText}
                         lastSource=${state.lastSource}
-                        onUpdate=${this.handleTasUpdate} 
-                        onClose=${() => this.toggleTasEditor()} 
-                    />` 
+                        onUpdate=${this.handleTasUpdate}
+                        onClose=${() => this.toggleTasEditor()}
+                    />`
                 : "";
 
             return html`
@@ -1019,12 +1019,12 @@ class ExecScript extends Component {
                     <span title=${getText("Manages AngelScript execution/playback for the tas stack")}>AS:</span>
                     <button title=${getText("Run the script below")} onClick=${ () => this.do_exec() } class="pushbutton hint_blueprint_strong">exec</button>
                     <button title="tas::abort()" onClick=${ () => AngelScript.exec("tas::abort();", AngelScript.TAS_MODULE_INTERRUPT) } class="pushbutton hint_destructive_hover">${getText("abort")}</button>
-                    <button 
+                    <button
                         title=${getText("Open Visual TAS Editor")}
-                        onClick=${() => this.toggleTasEditor()} 
+                        onClick=${() => this.toggleTasEditor()}
                         class="pushbutton hint_sparkles_corner" 
                         style="background: rgba(78, 245, 163, 0.1); color: #4ef5a3; font-weight:bold; border-color: #4ef5a3;"
-                    >Editor</button>
+                    >${getText("editor")}</button>
                     <label title=${getText("Automatically wrap input into void main() {...} entry point")} for="execscript_use_implicit_main">main:</label>
                     <input type="checkbox" id="execscript_use_implicit_main" ref=${this.use_implicit_main_ref} checked />
 
@@ -1035,8 +1035,8 @@ class ExecScript extends Component {
                     </span>
                     <br/>
 
-                    <textarea 
-                        class="as_source" 
+                    <textarea
+                        class="as_source"
                         placeholder=${getText("execscript_placeholder")}
                         ref=${this.script_text_ref}
                         value=${state.scriptText}
