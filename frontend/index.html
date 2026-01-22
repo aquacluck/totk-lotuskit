@@ -761,27 +761,106 @@
         }
     };
 
-    class ExecScript extends Component {
+class TasEditor extends Component {
         constructor() {
             super();
-            this.setState({
-                // tas dump
+            this.iframeRef = createRef();
+        }
+
+        componentDidMount() {
+            window.addEventListener("message", this.handleMessage);
+        }
+
+        componentWillUnmount() {
+            window.removeEventListener("message", this.handleMessage);
+        }
+
+        componentDidUpdate(prevProps) {
+            if (this.props.scriptText !== prevProps.scriptText && this.props.lastSource !== 'tas') {
+                this.sendToIframe(this.props.scriptText);
+            }
+        }
+
+        handleMessage = (event) => {
+            if (event.data && event.data.type === 'TAS_UPDATE') {
+                this.props.onUpdate(event.data.code);
+            }
+        }
+
+        sendToIframe(code) {
+            if (this.iframeRef.current && this.iframeRef.current.contentWindow) {
+                setTimeout(() => {
+                    this.iframeRef.current.contentWindow.postMessage({
+                        type: 'TAS_IMPORT_SILENT',
+                        code: code
+                    }, '*');
+                }, 0);
+            }
+        }
+
+        handleIframeLoad = () => {
+            this.sendToIframe(this.props.scriptText);
+        }
+
+        render(props) {
+            return html`
+                <${SimpleWindow} onClose=${props.onClose}>
+                    <div style="width: 1300px; height: 900px; resize: both; overflow: hidden; background: #000;">
+                        <iframe 
+                            ref=${this.iframeRef} 
+                            src=${"taseditor.html?v=" + Date.now()} 
+                            onLoad=${this.handleIframeLoad}
+                            style="width: 100%; height: 100%; border: none;"
+                        ></iframe>
+                    </div>
+                </${SimpleWindow}>
+            `;
+        }
+    }
+
+class ExecScript extends Component {
+        constructor() {
+            super();
+            const defaultScript = '';
+            
+            this.state = {
                 isDumping: false,
                 dumpMode: "ws",
                 isBrowseSD: false,
-            });
+                showTasEditor: false,
+                scriptText: defaultScript, 
+                lastSource: 'init' 
+            };
 
             this.script_text_ref = createRef();
             this.use_implicit_main_ref = createRef();
-
-            WSTransport.subscribe_ns("/tas/Record", this.recv_tas_dump_ws.bind(this))
             this.tas_dump_filename_ref = createRef();
             this.tas_dump_ws_output_text_ref = createRef();
             this.tas_dump_use_nxtas_ref = createRef();
+            WSTransport.subscribe_ns("/tas/Record", this.recv_tas_dump_ws.bind(this));
+        }
+
+        toggleTasEditor() {
+            this.setState({ showTasEditor: !this.state.showTasEditor });
+        }
+
+        onScriptInput = (e) => {
+            this.setState({ 
+                scriptText: e.target.value, 
+                lastSource: 'text' 
+            });
+        }
+
+        handleTasUpdate = (code) => {
+            this.setState({ 
+                scriptText: code, 
+                lastSource: 'tas' 
+            });
+            if(this.script_text_ref.current) this.script_text_ref.current.value = code;
         }
 
         do_exec() {
-            const script_text = this.script_text_ref.current.value;
+            const script_text = this.state.scriptText; 
             const main = this.use_implicit_main_ref.current.checked;
 
             WSTransport.send({
@@ -881,7 +960,6 @@
         }
 
         renderTasDump(props, state) {
-            // TODO extract new component class for dump
             const recordTitle = state.isDumping ? getText("End recording") : getText("Configure + Begin record");
             const recordToggleChar = state.isDumping ? "\u23f9" : "\u23fa";
             const recordActiveClass = state.isDumping ? "recording" : "notrecording";
@@ -925,15 +1003,28 @@
         }
 
         render(props, state) {
-            // TODO local (web client) file save/load, copy, drop to remote, ...
-            // TODO ctrl+enter do_exec()
-            const nsoDisplay = false ? "inline" : "none"; // XXX feature flags in sessionStorage?
+            const nsoDisplay = false ? "inline" : "none";
+            
+            const tasEditorWindow = state.showTasEditor 
+                ? html`<${TasEditor} 
+                        scriptText=${state.scriptText} 
+                        lastSource=${state.lastSource}
+                        onUpdate=${this.handleTasUpdate} 
+                        onClose=${() => this.toggleTasEditor()} 
+                    />` 
+                : "";
 
             return html`
                 <div class="execscript">
                     <span title=${getText("Manages AngelScript execution/playback for the tas stack")}>AS:</span>
                     <button title=${getText("Run the script below")} onClick=${ () => this.do_exec() } class="pushbutton hint_blueprint_strong">exec</button>
                     <button title="tas::abort()" onClick=${ () => AngelScript.exec("tas::abort();", AngelScript.TAS_MODULE_INTERRUPT) } class="pushbutton hint_destructive_hover">${getText("abort")}</button>
+                    <button 
+                        title=${getText("Open Visual TAS Editor")}
+                        onClick=${() => this.toggleTasEditor()} 
+                        class="pushbutton hint_sparkles_corner" 
+                        style="background: rgba(78, 245, 163, 0.1); color: #4ef5a3; font-weight:bold; border-color: #4ef5a3;"
+                    >Editor</button>
                     <label title=${getText("Automatically wrap input into void main() {...} entry point")} for="execscript_use_implicit_main">main:</label>
                     <input type="checkbox" id="execscript_use_implicit_main" ref=${this.use_implicit_main_ref} checked />
 
@@ -943,10 +1034,17 @@
                         <input type="file" title="WSTransport.send({persistFileBinary, persistFileName})" onChange=${this.on_drop_terrifying_subsdk9_upload} class="pushbutton hint_destructive_hover" style="width:32px;" id="subsdkupload" />
                     </span>
                     <br/>
-                    <textarea class="as_source" placeholder=${getText("execscript_placeholder")} ref=${this.script_text_ref}></textarea>
+
+                    <textarea 
+                        class="as_source" 
+                        placeholder=${getText("execscript_placeholder")}
+                        ref=${this.script_text_ref}
+                        value=${state.scriptText}
+                        onInput=${this.onScriptInput}
+                    ></textarea>
 
                     ${ this.renderTasDump(props, state) }
-
+                    ${tasEditorWindow}
                 </div>
             `;
         }

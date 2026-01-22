@@ -558,4 +558,30 @@ dialog {
     border-color: hsl(var(--hue-physical) 45% 30%);
 }
 
+/* --- STYLE TAS EDITOR --- */
+.tas-editor-wrapper {
+    background-color: #0d1117;
+    color: #c9d1d9;
+    font-family: "Consolas", monospace;
+    display: flex;
+    flex-direction: column;
+    height: 1600px;
+    width: 300%;
+    overflow: hidden;
+    font-size: 12px;
+    --accent-zonai: #4ef5a3;
+    --accent-sheikah: #58a6ff;
+    --accent-secret: #f2cc60;
+    --accent-danger: #f85149;
+    --accent-comment: #8b949e;
+    --accent-loop: #d2a8ff;
+    --accent-preset: #a371f7;
+    --border-color: #30363d;
+    --panel-color: #161b22;
+    --input-bg: #090c10;
+    --drag-target-color: #58a6ff;
+    --bg-loop-content: rgba(210, 168, 255, 0.04);
+}
+
+.tas-editor-wrapper * { box-sizing: border-box; }
 

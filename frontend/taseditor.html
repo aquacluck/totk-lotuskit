@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>TOTK TAS Editor</title>
+<style>
+        :root {
+            --bg-color: #0d1117;       
+            --panel-color: #161b22;    
+            --header-bg: #0d1117;      
+            --text-main: #c9d1d9;      
+            --text-muted: #8b949e;     
+            --accent-zonai: #4ef5a3;   
+            --accent-sheikah: #58a6ff; 
+            --accent-secret: #f2cc60;  
+            --accent-danger: #f85149;  
+            --accent-comment: #8b949e; 
+            --accent-loop: #d2a8ff;    
+            --accent-preset: #a371f7;
+            --bg-loop-content: rgba(210, 168, 255, 0.04);
+            --border-color: #30363d;   
+            --input-bg: #090c10;       
+            --select-color: rgba(78, 245, 163, 0.15); 
+            --drag-target-color: #58a6ff;
+        }
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            user-select: none;
+            font-size: 13px;
+        }
+        ::-webkit-scrollbar { width: 10px; height: 10px; }
+        ::-webkit-scrollbar-track { background: var(--bg-color); }
+        ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 5px; border: 2px solid var(--bg-color); }
+        ::-webkit-scrollbar-thumb:hover { background: #555; }
+        
+        /* --- TOOLBARS --- */
+        .toolbar {
+            background-color: var(--panel-color);
+            padding: 8px 20px;
+            display: flex;
+            gap: 12px;
+            border-bottom: 1px solid var(--border-color);
+            align-items: center;
+            z-index: 20;
+        }
+        .actions-toolbar {
+            background-color: #11151c; 
+            padding: 6px 20px;
+            display: flex;
+            gap: 10px;
+            border-bottom: 1px solid var(--border-color);
+            align-items: center;
+            z-index: 19;
+            overflow-x: auto;
+        }
+
+        .separator { width: 1px; height: 16px; background: #30363d; margin: 0 5px; }
+
+        button {
+            background: var(--panel-color);
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+            padding: 6px 12px;
+            cursor: pointer;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+        }
+        button:hover { background: #21262d; border-color: #8b949e; transform: translateY(-1px); }
+
+        .btn-add { background: rgba(78, 245, 163, 0.1); color: var(--accent-zonai); border-color: rgba(78, 245, 163, 0.4); }
+        .btn-add:hover { background: var(--accent-zonai); color: #000; }
+        .btn-preset { background: rgba(163, 113, 247, 0.1); color: var(--accent-preset); border-color: rgba(163, 113, 247, 0.4); }
+        .btn-preset:hover { background: var(--accent-preset); color: #fff; }
+
+        /* BOUTONS D'ACTION */
+        .btn-action { font-size: 11px; padding: 4px 10px; background: transparent; }
+        
+        .btn-comment { border-color: rgba(139, 148, 158, 0.3); color: var(--accent-comment); }
+        .btn-comment:hover { background: rgba(139, 148, 158, 0.1); border-color: var(--accent-comment); }
+        
+        .btn-loop { border-color: rgba(210, 168, 255, 0.3); color: var(--accent-loop); }
+        .btn-loop:hover { background: rgba(210, 168, 255, 0.1); border-color: var(--accent-loop); }
+        
+        .btn-gyro-set { border-color: rgba(88, 166, 255, 0.3); color: var(--accent-sheikah); }
+        .btn-gyro-set:hover { background: rgba(88, 166, 255, 0.1); border-color: var(--accent-sheikah); }
+        
+        .btn-gyro-clear { border-color: rgba(248, 81, 73, 0.3); color: var(--accent-danger); }
+        .btn-gyro-clear:hover { background: rgba(248, 81, 73, 0.1); border-color: var(--accent-danger); }
+        
+        .btn-pos-set { border-color: rgba(242, 204, 96, 0.3); color: var(--accent-secret); }
+        .btn-pos-set:hover { background: rgba(242, 204, 96, 0.1); border-color: var(--accent-secret); }
+
+        .counters-box {
+            display: flex; gap: 20px; color: var(--text-muted); font-family: 'Consolas', monospace;
+            font-size: 12px; background: var(--input-bg); padding: 6px 12px;
+            border-radius: 4px; border: 1px solid var(--border-color);
+        }
+        .counter-val { color: var(--accent-zonai); margin-left: 5px; }
+
+        .main-container { display: flex; flex: 1; overflow: hidden; }
+        .editor-container { flex: 1; overflow: auto; background: var(--bg-color); }
+
+        /* --- TABLE --- */
+        table { width: 100%; border-collapse: separate; border-spacing: 0; }
+        th {
+            position: sticky; top: 0; background: var(--panel-color); color: var(--text-muted);
+            padding: 10px 5px; font-weight: 600; font-size: 11px; text-transform: uppercase;
+            border-bottom: 2px solid var(--border-color); z-index: 10;
+        }
+        td {
+            border-bottom: 1px solid var(--border-color); text-align: center; padding: 6px 4px;
+            font-family: 'Consolas', monospace; color: var(--text-main);
+        }
+        tr[draggable="true"] { cursor: grab; }
+        tr[draggable="true"]:active { cursor: grabbing; }
+        tr.drop-target-top td { border-top: 2px solid var(--drag-target-color) !important; }
+        tr.drop-target-bottom td { border-bottom: 2px solid var(--drag-target-color) !important; }
+        tr:hover td { background: rgba(255,255,255,0.03); }
+        tr.selected td { background-color: rgba(78, 245, 163, 0.08) !important; border-bottom-color: var(--accent-zonai); }
+        tr.selected td:first-child { border-left: 3px solid var(--accent-zonai); }
+        
+        .indent-1 td { background-color: var(--bg-loop-content); }
+        .indent-2 td { background-color: rgba(210, 168, 255, 0.08); }
+        .indent-1 { border-left: 2px solid rgba(210, 168, 255, 0.2); }
+
+        .duration-cell { display: flex; align-items: center; justify-content: center; gap: 4px; }
+        .dur-val { font-weight: bold; min-width: 35px; color: var(--accent-zonai); font-size: 14px; }
+        .btn-mini { padding: 0; width: 24px; height: 24px; line-height: 22px; font-size: 10px; border-radius: 4px; background: transparent; border: 1px solid var(--border-color); color: var(--text-muted); }
+        .btn-mini:hover { background: var(--border-color); color: white; }
+        .btn-check { width: 24px; height: 24px; background: var(--input-bg); border: 1px solid var(--border-color); margin: auto; cursor: pointer; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 800; color: #444; }
+        .btn-check.active { background-color: var(--accent-zonai); border-color: var(--accent-zonai); color: #000; }
+        
+        .std-input { background: #0d1117; border: 1px solid var(--border-color); color: var(--text-main); padding: 6px; border-radius: 4px; font-family: 'Consolas', monospace; font-size: 12px; outline: none; }
+        .gyro-input { width: 120px; text-align: center; border-color: var(--border-color); color: var(--accent-sheikah); }
+        
+        /* TYPES SPECIAUX */
+        .gyro-row td { background: rgba(88, 166, 255, 0.04); border-bottom: 1px dashed rgba(88, 166, 255, 0.3); }
+        .gyro-cell { color: var(--accent-sheikah); font-family: 'Segoe UI', sans-serif; display: flex; justify-content: center; align-items: center; gap: 10px; }
+        .gyro-clear-row td { background: rgba(248, 81, 73, 0.04); }
+        .pos-row td { background: rgba(242, 204, 96, 0.04); border-bottom: 1px dashed rgba(242, 204, 96, 0.3); }
+        .pos-container { display: flex; flex-direction: column; align-items: center; width: 100%; gap: 4px; }
+        .pos-line { display: flex; align-items: center; width: 95%; gap: 10px; }
+        .pos-label { color: var(--accent-secret); font-weight: bold; width: 30px; text-align: right; }
+        .pos-input-large { flex: 1; text-align: center; color: var(--accent-secret); }
+        .comment-row td { background: rgba(139, 148, 158, 0.05); }
+        .comment-input { width: 100%; background: transparent; border: none; color: var(--accent-comment); font-style: italic; outline: none; font-family: 'Consolas'; }
+        .loop-row td { background: rgba(210, 168, 255, 0.15); border-bottom: 1px solid rgba(210, 168, 255, 0.3); border-top: 1px solid rgba(210, 168, 255, 0.3); }
+        .loop-cell { display: flex; align-items: center; gap: 8px; color: var(--accent-loop); font-weight: bold; }
+        .loop-input { border-color: #30363d; color: var(--accent-loop); text-align: center; width: 60px; padding: 2px; font-weight: bold; }
+
+        /* --- SIDEBAR (Sticks only) --- */
+        .sidebar { width: 320px; background: var(--panel-color); border-left: 1px solid var(--border-color); padding: 20px; display: flex; flex-direction: column; gap: 24px; box-shadow: -4px 0 15px rgba(0,0,0,0.2); z-index: 20; }
+        .stick-container { background: #050608; padding: 15px; border-radius: 8px; border: 1px solid #30363d; display: flex; flex-direction: column; align-items: center; box-shadow: inset 0 0 30px rgba(0,0,0,0.9); position: relative; cursor: crosshair; }
+        .stick-container div:first-child { font-weight: 800; color: var(--accent-zonai); margin-bottom: 8px; font-size: 10px; letter-spacing: 2px; text-transform: uppercase; opacity: 0.8; }
+        canvas { background-color: #090c10; border: 1px solid #30363d; border-radius: 50%; pointer-events: none; box-shadow: inset 0 0 20px rgba(0,0,0,0.5);}
+        .coords-container { display: flex; gap: 5px; margin-top: 10px; background: #0d1117; padding: 5px; border-radius: 6px; border: 1px solid #30363d; }
+        .coord-group { display: flex; align-items: center; gap: 3px; flex: 1; }
+        .coord-label { font-size: 10px; font-weight: bold; color: #8b949e; }
+        .coord-input { width: 100%; background: #161b22; border: 1px solid #30363d; color: var(--accent-zonai); font-family: 'Consolas', monospace; font-size: 11px; text-align: center; padding: 4px 0; border-radius: 4px; outline: none; }
+        .coord-input:focus { border-color: var(--accent-zonai); background: #050608; }
+        .coord-input::-webkit-outer-spin-button, .coord-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+        /* --- MODALS --- */
+        .modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); backdrop-filter: blur(5px); }
+        .modal-content { background-color: var(--panel-color); margin: 5% auto; padding: 20px; border: 1px solid var(--accent-zonai); width: 80%; max-width: 800px; border-radius: 8px; box-shadow: 0 0 20px rgba(78, 245, 163, 0.2); display: flex; flex-direction: column; gap: 15px; }
+        .modal-textarea { width: 100%; height: 400px; background-color: var(--input-bg); border: 1px solid var(--border-color); color: var(--text-main); font-family: 'Consolas', monospace; font-size: 12px; padding: 10px; resize: vertical; outline: none; }
+        .modal-footer { display: flex; justify-content: flex-end; gap: 10px; }
+        .btn-confirm { background: var(--accent-zonai); color: #000; border: none; }
+        .btn-cancel { border-color: var(--accent-danger); color: var(--accent-danger); background: transparent; }
+        .preset-list { display: flex; flex-direction: column; gap: 8px; max-height: 400px; overflow-y: auto; padding-right: 5px; }
+        .preset-item { background: #21262d; border: 1px solid #30363d; padding: 10px; border-radius: 4px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: all 0.2s; }
+        .preset-item:hover { background: #30363d; border-color: var(--accent-preset); }
+        .preset-name { font-weight: bold; color: var(--accent-preset); font-size: 13px; }
+        .preset-desc { font-size: 11px; color: #8b949e; }
+    </style>
+</head>
+<body>
+
+<script>
+    const PRESETS = {
+        "mozdor": {
+            name: "Optimal Mozdor",
+            desc: "5-lines sequence optimized for Mozdor.",
+            code: `input(1, R, 0,32767);
+                    input(1, NONE, 0,32767);
+                    input(1, B, 0,32767);
+                    input(2, Y, 0,32767);
+                    input(18, NONE, 0,32767);`
+        },
+        "jumpslash": {
+            name: "Jumpslash Cancel",
+            desc: "Sequence ZR > X > Y to cancel the jump attack.",
+            code: `input(1, ZR);
+                    input(20);
+                    input(3);
+                    input(1, X);
+                    input(8);
+                    input(1, Y);`
+        },
+        "run": {
+            name: "Optimal Run",
+            desc: "Sequence of the optimal run.",
+            code: `input(1, B, 0,32767);
+                    input(1, B, 0,0);`
+        }
+    };
+</script>
+
+<div class="toolbar">
+    <button class="btn-add" onclick="addRow()">+ Input Line</button>
+    <button onclick="compactTableUI()">Clean</button>
+    <div style="width: 1px; height: 20px; background: #444; margin: 0 5px;"></div>
+    <button onclick="openImportModal()">Import</button>
+    <button class="btn-preset" onclick="openPresetModal()">📚 Presets</button>
+    <div style="width: 1px; height: 20px; background: #444; margin: 0 5px;"></div>
+    <button onclick="undo()" title="Ctrl+Z">↩</button>
+    <button onclick="redo()" title="Ctrl+Y">↪</button>
+    <div class="counters-box">
+        <span>Lignes: <span id="lineCounter" class="counter-val">0</span></span>
+        <span>Total Frames: <span id="totalFramesCounter" class="counter-val" style="color: var(--accent-zonai);">0</span></span>
+    </div>
+    <button class="btn-export" onclick="broadcastState()">Update Code 🚀</button>
+</div>
+
+<div class="actions-toolbar">
+    <button class="btn-action btn-comment" onclick="addComment()">// Comment</button>
+    <button class="btn-action btn-loop" onclick="addLoop()">While (For)</button>
+    
+    <div class="separator"></div>
+    
+    <button class="btn-action btn-gyro-set" onclick="addGyroSet()">Gyro: Set</button>
+    <button class="btn-action btn-gyro-clear" onclick="addGyroClear()">Gyro: Clear</button>
+    
+    <div class="separator"></div>
+    
+    <button class="btn-action btn-pos-set" onclick="addPosRot()">Set Pos/Rot</button>
+</div>
+
+<div class="main-container">
+    <div class="editor-container">
+        <table id="tas-table">
+            <thead>
+                <tr id="header-row">
+                    <th>#</th>
+                    <th style="min-width: 160px;">Duration / Type</th>
+                    <th>L-Stick</th>
+                    <th>R-Stick</th>
+                </tr>
+            </thead>
+            <tbody id="tas-body"></tbody>
+        </table>
+    </div>
+
+    <div class="sidebar">
+    <div class="stick-container">
+        <div>L-STICK</div>
+        <canvas id="lstick-canvas" width="140" height="140"></canvas>
+        <div class="coords-container">
+            <div class="coord-group">
+                <span class="coord-label">X</span>
+                <input type="number" id="lstick-x" class="coord-input" value="0" step="100" 
+                    oninput="updateStickManual('lstick', 'x', this.value)"
+                    onfocus="isEditingCoords=true" onblur="isEditingCoords=false">
+            </div>
+            <div class="coord-group">
+                <span class="coord-label">Y</span>
+                <input type="number" id="lstick-y" class="coord-input" value="0" step="100" 
+                    oninput="updateStickManual('lstick', 'y', this.value)"
+                    onfocus="isEditingCoords=true" onblur="isEditingCoords=false">
+            </div>
+        </div>
+    </div>
+
+    <div class="stick-container">
+        <div>R-STICK</div>
+        <canvas id="rstick-canvas" width="140" height="140"></canvas>
+        <div class="coords-container">
+            <div class="coord-group">
+                <span class="coord-label">X</span>
+                <input type="number" id="rstick-x" class="coord-input" value="0" step="100" 
+                    oninput="updateStickManual('rstick', 'x', this.value)"
+                    onfocus="isEditingCoords=true" onblur="isEditingCoords=false">
+            </div>
+            <div class="coord-group">
+                <span class="coord-label">Y</span>
+                <input type="number" id="rstick-y" class="coord-input" value="0" step="100" 
+                    oninput="updateStickManual('rstick', 'y', this.value)"
+                    onfocus="isEditingCoords=true" onblur="isEditingCoords=false">
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="importModal" class="modal">
+    <div class="modal-content">
+        <div style="font-size:16px; font-weight:bold; color:var(--accent-zonai);">Importing a TAS Script (AS)</div>
+        <div style="font-size:12px; color:#888;">Paste your code below. (Replaces all)</div>
+        <textarea id="importTextarea" class="modal-textarea" placeholder="input(1, A, ...);"></textarea>
+        <div class="modal-footer">
+            <button class="btn-cancel" onclick="closeImportModal()">Cancel</button>
+            <button class="btn-confirm" onclick="confirmImport()">Load the Script</button>
+        </div>
+    </div>
+</div>
+
+<div id="presetModal" class="modal">
+    <div class="modal-content" style="max-width: 500px;">
+        <div style="font-size:16px; font-weight:bold; color:var(--accent-preset);">Preset Library</div>
+        <div style="font-size:12px; color:#888;">Click to insert after the selection.</div>
+        <div id="presetListContainer" class="preset-list"></div>
+        <div class="modal-footer">
+            <button class="btn-cancel" onclick="closePresetModal()">Close</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const BUTTONS = ["A", "B", "X", "Y", "L", "R", "ZL", "ZR", "PLUS", "MINUS", "DLEFT", "DRIGHT", "DUP", "DDOWN"];
+    const MATRIX_OPTIONS = ["NORTH", "SOUTH", "EAST", "WEST", "IDENTITY"];
+    let frames = [];
+    let internalClipboard = null;
+    let selectedIndices = new Set();
+    let history = []; let redoStack = []; const MAX_HISTORY = 50;
+    
+// --- FLAGS DE CONTROLE ---
+    let isEditingCoords = false;       
+    let isImportingFromParent = false; 
+    const SYNC_DELAY = 500; 
+    let lastBroadcastTime = 0;
+    let broadcastTimer = null;
+
+function broadcastState() {
+        const finalFrames = getOptimizedFrames(frames);
+        
+        let output = finalFrames.map(f => {
+            if (f.type === 'comment') return `// ${f.text}`;
+            if (f.type === 'loop_start') return `for(int ${f.variable}=0; ${f.variable} < ${f.count}; ${f.variable}++) {`;
+            if (f.type === 'loop_end') return `}`;
+            if (f.type === 'gyro_set') return `tas::setGyroRotation(Matrix33f::${f.orientation});\ntas::setGyroAngularVelocity(Vector3f(${f.x}, ${f.y}, ${f.z}));`;
+            if (f.type === 'gyro_clear') return `tas::clearGyro();`;
+            if (f.type === 'pos_rot') return `Player.setPosRot(${f.pos.x}, ${f.pos.y}, ${f.pos.z}, ${f.rot.join(', ')});`;
+            
+            const btns = f.buttons.size > 0 ? Array.from(f.buttons).join('|') : 'NONE';
+            return `input(${f.duration}, ${btns}, ${f.lstick.x},${f.lstick.y}, ${f.rstick.x},${f.rstick.y});`;
+        }).join('\n');
+
+        if (window.parent !== window) {
+            window.parent.postMessage({ type: 'TAS_UPDATE', code: output }, '*');
+        } else {
+            console.log("Code généré :", output);
+        }
+    }
+
+    window.addEventListener('message', (event) => {
+        if (event.data && event.data.type === 'TAS_IMPORT_SILENT') {
+            const code = event.data.code;
+            if (typeof code !== 'string') return;
+            isImportingFromParent = true;
+            frames = parseScriptToFrames(code);
+            selectedIndices.clear();
+            renderTable();
+            isImportingFromParent = false;
+        }
+    });
+
+    function saveHistory() {
+            const state = JSON.stringify(frames, (k, v) => (v instanceof Set) ? Array.from(v) : v);
+            history.push(state); 
+            if (history.length > MAX_HISTORY) history.shift(); 
+            redoStack = [];
+        }
+
+    function undo() {
+        if (history.length === 0) return;
+        redoStack.push(JSON.stringify(frames, (k, v) => v instanceof Set ? Array.from(v) : v));
+        restoreState(history.pop());
+    }
+    function redo() {
+        if (redoStack.length === 0) return;
+        history.push(JSON.stringify(frames, (k, v) => v instanceof Set ? Array.from(v) : v));
+        restoreState(redoStack.pop());
+    }
+    function restoreState(jsonString) {
+        frames = JSON.parse(jsonString, (k, v) => (k === 'buttons') ? new Set(v) : v);
+        selectedIndices.clear(); renderTable();
+    }
+
+    let draggedIndices = []; let dragTargetIndex = null; let dragTargetPosition = ''; let isSelectionDrag = false;
+
+    const headerRow = document.getElementById('header-row');
+    const lStickHeader = headerRow.children[2];
+    BUTTONS.forEach(btn => {
+        const th = document.createElement('th');
+        th.textContent = btn;
+        headerRow.insertBefore(th, lStickHeader);
+    });
+
+    // --- PARSEUR ---
+    function parseScriptToFrames(text) {
+        const lines = text.split('\n').filter(l => l.trim() !== '');
+        const parsedFrames = [];
+        const rInputFlex = /input\((\d+)(?:,\s*([^,)]+))?(?:,\s*(-?\d+),\s*(-?\d+))?(?:,\s*(-?\d+),\s*(-?\d+))?\);/;
+        const rGyroRot = /(?:tas::)?setGyroRotation\(Matrix33f::([A-Z]+)\);/;
+        const rGyroVel = /(?:tas::)?setGyroAngularVelocity\(Vector3f\((-?\d*\.?\d+),\s*(-?\d*\.?\d+),\s*(-?\d*\.?\d+)\)\);/;
+        const rGyroClear = /(?:tas::)?clearGyro\(\);/;
+        const rPosRot = /Player\.setPosRot\((.*)\);/;
+        const rComment = /^\s*\/\/\s*(.*)/;
+        const rLoopStart = /for\s*\(\s*int\s+(\w+)\s*=\s*0\s*;\s*\1\s*<\s*(\d+)\s*;\s*\1\+\+\s*\)\s*\{/;
+        const rLoopEnd = /^\s*\}\s*$/;
+
+        for (let i = 0; i < lines.length; i++) {
+            let lt = lines[i].trim();
+            if(!lt) continue;
+
+            if (rGyroClear.test(lt)) { parsedFrames.push({ type: 'gyro_clear' }); continue; }
+
+            let m = lt.match(rGyroRot);
+            if (m) {
+                let orientation = m[1]; 
+                let x = 0.0, y = 0.0, z = 0.0;
+                
+                let mVel = lt.match(rGyroVel);
+                if (!mVel && i + 1 < lines.length) {
+                    let nextLine = lines[i+1].trim();
+                    let mVelNext = nextLine.match(rGyroVel);
+                    if (mVelNext) { mVel = mVelNext; i++; }
+                }
+
+                if (mVel) { x = parseFloat(mVel[1]); y = parseFloat(mVel[2]); z = parseFloat(mVel[3]); }
+                parsedFrames.push({ type: 'gyro_set', orientation: orientation, x: x, y: y, z: z });
+                continue;
+            }
+
+            m = lt.match(rPosRot);
+            if (m) {
+                const args = m[1].split(',').map(s => parseFloat(s.trim()));
+                if (args.length >= 12) { parsedFrames.push({ type: 'pos_rot', pos: {x:args[0], y:args[1], z:args[2]}, rot: args.slice(3,12) }); }
+                continue;
+            }
+
+            if (rLoopEnd.test(lt)) { parsedFrames.push({ type: 'loop_end' }); continue; }
+            m = lt.match(rComment);
+            if (m) { parsedFrames.push({ type: 'comment', text: m[1] }); continue; }
+            m = lt.match(rLoopStart);
+            if (m) { parsedFrames.push({ type: 'loop_start', variable: m[1], count: parseInt(m[2]) }); continue; }
+            m = lt.match(rInputFlex);
+            if (m) {
+                let dur = parseInt(m[1]);
+                let btnRaw = m[2] ? m[2].trim() : 'NONE';
+                if (btnRaw === '0') btnRaw = 'NONE';
+                let btns = new Set(btnRaw === 'NONE' ? [] : btnRaw.split('|'));
+                let lx = m[3] ? parseInt(m[3]) : 0; 
+                let ly = m[4] ? parseInt(m[4]) : 0;
+                let rx = m[5] ? parseInt(m[5]) : 0; 
+                let ry = m[6] ? parseInt(m[6]) : 0;
+                
+                parsedFrames.push({ type: 'input', duration: dur, buttons: btns, lstick: { x: lx, y: ly }, rstick: { x: rx, y: ry } });
+            }
+        }
+        return parsedFrames;
+    }
+
+    function insertAfterSelection(item) {
+        saveHistory();
+        let insertIndex = frames.length;
+        if (selectedIndices.size > 0) insertIndex = Math.max(...selectedIndices) + 1;
+        if (Array.isArray(item)) frames.splice(insertIndex, 0, ...item);
+        else frames.splice(insertIndex, 0, item);
+        selectedIndices.clear(); renderTable();
+        if(insertIndex >= frames.length - 1) document.querySelector('.editor-container').scrollTop = document.querySelector('.editor-container').scrollHeight;
+    }
+
+    function addRow() { insertAfterSelection({ type: 'input', duration: 1, buttons: new Set(), lstick: { x: 0, y: 0 }, rstick: { x: 0, y: 0 } }); }
+    function addGyroSet() { insertAfterSelection({ type: 'gyro_set', orientation: 'NORTH', x: 0.0, y: 0.0, z: 0.0 }); }
+    function addGyroClear() { insertAfterSelection({ type: 'gyro_clear' }); }
+    function addPosRot() { insertAfterSelection({ type: 'pos_rot', pos: { x: 0, y: 0, z: 0 }, rot: [ 0, 0, 0, 0, 0, 0, 0, 0, 0 ] }); }
+    function addComment() { insertAfterSelection({ type: 'comment', text: 'Enter Text' }); }
+    function addLoop() {
+        saveHistory();
+        let insertIndex = frames.length;
+        if (selectedIndices.size > 0) insertIndex = Math.max(...selectedIndices) + 1;
+        frames.splice(insertIndex, 0, { type: 'loop_start', variable: 'i', count: 10 });
+        frames.splice(insertIndex + 1, 0, { type: 'loop_end' });
+        selectedIndices.clear(); renderTable();
+    }
+
+    function openPresetModal() {
+        const container = document.getElementById('presetListContainer');
+        container.innerHTML = '';
+        Object.keys(PRESETS).forEach(key => {
+            const p = PRESETS[key];
+            const div = document.createElement('div');
+            div.className = 'preset-item';
+            div.innerHTML = `<div><div class="preset-name">${p.name}</div><div class="preset-desc">${p.desc}</div></div><div style="font-size:20px;">+</div>`;
+            div.onclick = () => applyPreset(key);
+            container.appendChild(div);
+        });
+        document.getElementById('presetModal').style.display = "block";
+    }
+    function closePresetModal() { document.getElementById('presetModal').style.display = "none"; }
+    function applyPreset(key) {
+        const code = PRESETS[key].code;
+        const newFrames = parseScriptToFrames(code);
+        insertAfterSelection(newFrames);
+        closePresetModal();
+    }
+
+    function renderTable() {
+        const tbody = document.getElementById('tas-body');
+        tbody.innerHTML = '';
+        
+        let totalFrames = 0; 
+        let inputStep = 0; 
+        let lineCount = 0; 
+        let indentLevel = 0;
+
+        frames.forEach((frame, index) => {
+            lineCount++;
+            const tr = document.createElement('tr');
+            tr.dataset.index = index; 
+            tr.addEventListener('mousedown', (e) => handleRowMouseDown(e, index));
+            tr.addEventListener('mouseenter', (e) => handleRowMouseEnter(e, index));
+            tr.addEventListener('dragstart', (e) => handleDragStart(e, index));
+            tr.addEventListener('dragover', (e) => handleDragOver(e, index));
+            tr.addEventListener('drop', (e) => handleDrop(e));
+
+            const isSelected = selectedIndices.has(index);
+            if (frame.type === 'loop_end') indentLevel = Math.max(0, indentLevel - 1);
+            
+            const colSpan = 2 + BUTTONS.length + 2; 
+            const indentClass = indentLevel > 0 ? `indent-${Math.min(3, indentLevel)}` : '';
+            
+            if (frame.type === 'comment') {
+                tr.classList.add('comment-row'); if(isSelected) tr.classList.add('selected');
+                tr.innerHTML = `<td><span style="color:var(--accent-comment);">//</span></td><td colspan="${colSpan}" class="${indentClass}"><div style="display:flex; align-items:center;"><span style="color:var(--accent-comment); margin-right:10px;">//</span><input type="text" class="comment-input" value="${frame.text}" onchange="updateProp(${index}, 'text', this.value)"></div></td>`;
+            } 
+            else if (frame.type === 'loop_start') {
+                tr.classList.add('loop-row'); if(isSelected) tr.classList.add('selected');
+                tr.innerHTML = `<td><span style="color:var(--accent-loop);">LOOP</span></td><td colspan="${colSpan}" class="${indentClass}"><div class="loop-cell">Loop <input type="text" class="std-input loop-input" value="${frame.variable}" onchange="updateProp(${index}, 'variable', this.value)"> for <input type="number" class="std-input loop-input" value="${frame.count}" onchange="updateProp(${index}, 'count', this.value)"> Frames {</div></td>`;
+                indentLevel++;
+            } 
+            else if (frame.type === 'loop_end') {
+                tr.classList.add('loop-row'); if(isSelected) tr.classList.add('selected');
+                tr.innerHTML = `<td><span style="color:var(--accent-loop);">END</span></td><td colspan="${colSpan}" class="${indentClass}"><div class="loop-cell">}</div></td>`;
+            } 
+            else if (frame.type === 'gyro_set') {
+                tr.classList.add('gyro-row'); if(isSelected) tr.classList.add('selected');
+                const options = MATRIX_OPTIONS.map(opt => `<option value="${opt}" ${frame.orientation === opt ? 'selected' : ''}>${opt}</option>`).join('');
+                tr.innerHTML = `<td><span style="color:var(--accent-sheikah);">GYRO</span></td><td colspan="${colSpan}" class="${indentClass}"><div class="gyro-cell">ROT: <select class="std-input" onchange="updateProp(${index}, 'orientation', this.value)">${options}</select> VEL: <input type="number" step="0.1" class="std-input gyro-input" value="${frame.x}" onchange="updateProp(${index}, 'x', this.value)"> <input type="number" step="0.1" class="std-input gyro-input" value="${frame.y}" onchange="updateProp(${index}, 'y', this.value)"> <input type="number" step="0.1" class="std-input gyro-input" value="${frame.z}" onchange="updateProp(${index}, 'z', this.value)"></div></td>`;
+            } 
+            else if (frame.type === 'gyro_clear') {
+                tr.classList.add('gyro-clear-row'); if(isSelected) tr.classList.add('selected');
+                tr.innerHTML = `<td><span style="color:var(--accent-danger);">CLR</span></td><td colspan="${colSpan}" class="${indentClass}"><div style="color:var(--accent-danger); font-weight:bold;">>>> clearGyro();</div></td>`;
+            } 
+            else if (frame.type === 'pos_rot') {
+                tr.classList.add('pos-row'); if(isSelected) tr.classList.add('selected');
+                const posStr = `${frame.pos.x}, ${frame.pos.y}, ${frame.pos.z}`;
+                const rotStr = frame.rot.join(', ');
+                tr.innerHTML = `<td><span style="color:var(--accent-secret);">POS</span></td><td colspan="${colSpan}" class="${indentClass}"><div class="pos-container"><div class="pos-line"><span class="pos-label">POS:</span><input type="text" class="std-input pos-input-large" value="${posStr}" onchange="updatePosString(${index}, this.value)"></div><div class="pos-line"><span class="pos-label">ROT:</span><input type="text" class="std-input pos-input-large" value="${rotStr}" onchange="updateRotString(${index}, this.value)"></div></div></td>`;
+            } 
+            else {
+                inputStep++;
+                totalFrames += frame.duration;
+                if(isSelected) tr.classList.add('selected');
+                let html = `<td>${inputStep}</td><td><div class="duration-cell"><button class="btn-mini" onclick="updateDuration(${index}, -10)">-10</button><button class="btn-mini" onclick="updateDuration(${index}, -1)">-</button><span class="dur-val">${frame.duration}</span><button class="btn-mini" onclick="updateDuration(${index}, 1)">+</button><button class="btn-mini" onclick="updateDuration(${index}, 10)">+10</button></div></td>`;
+                
+                const btnLabels = { "PLUS": "+", "MINUS": "-", "DUP": "▲", "DDOWN": "▼", "DLEFT": "◀", "DRIGHT": "▶" };
+                let firstBtn = true;
+                BUTTONS.forEach(btn => {
+                    const isActive = frame.buttons.has(btn) ? 'active' : '';
+                    const style = firstBtn ? `class="${indentClass}"` : '';
+                    const displayLabel = btnLabels[btn] || btn;
+                    html += `<td ${style}><div class="btn-check ${isActive}" onclick="toggleButton(this, ${index}, '${btn}')">${displayLabel}</div></td>`;
+                    firstBtn = false;
+                });
+                html += `<td class="l-coords">${frame.lstick.x},${frame.lstick.y}</td><td class="r-coords">${frame.rstick.x},${frame.rstick.y}</td>`;
+                tr.innerHTML = html;
+            }
+            tbody.appendChild(tr);
+        });
+
+        document.getElementById('lineCounter').textContent = inputStep; 
+        document.getElementById('totalFramesCounter').textContent = totalFrames;
+    }
+
+    function handleRowMouseDown(e, index) {
+        if (['BUTTON', 'INPUT', 'SELECT', 'TEXTAREA'].includes(e.target.tagName) || e.target.classList.contains('btn-check')) return;
+        if (e.ctrlKey) {
+            isSelectionDrag = true;
+            if (!selectedIndices.has(index)) selectedIndices.add(index);
+            renderTable();
+        } else {
+            const tr = e.currentTarget; tr.setAttribute('draggable', 'true');
+            if (!selectedIndices.has(index)) { selectedIndices.clear(); selectedIndices.add(index); renderTable(); }
+        }
+    }
+    function handleRowMouseEnter(e, index) { if (isSelectionDrag && e.ctrlKey) { selectedIndices.add(index); renderTable(); } }
+    window.addEventListener('mouseup', () => { isSelectionDrag = false; });
+
+    function handleDragStart(e, index) {
+        if (e.ctrlKey) { e.preventDefault(); return; }
+        if (selectedIndices.has(index)) draggedIndices = Array.from(selectedIndices).sort((a,b) => a-b);
+        else draggedIndices = [index];
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', JSON.stringify(draggedIndices));
+    }
+    function handleDragOver(e, index) {
+        e.preventDefault(); if (draggedIndices.includes(index)) return; 
+        const rect = e.currentTarget.getBoundingClientRect();
+        const midY = rect.top + rect.height / 2;
+        document.querySelectorAll('.drop-target-top, .drop-target-bottom').forEach(el => el.classList.remove('drop-target-top', 'drop-target-bottom'));
+        if (e.clientY < midY) { e.currentTarget.classList.add('drop-target-top'); dragTargetPosition = 'top'; } 
+        else { e.currentTarget.classList.add('drop-target-bottom'); dragTargetPosition = 'bottom'; }
+        dragTargetIndex = index;
+    }
+    function handleDrop(e) {
+        e.preventDefault();
+        document.querySelectorAll('.drop-target-top, .drop-target-bottom').forEach(el => el.classList.remove('drop-target-top', 'drop-target-bottom'));
+        if (dragTargetIndex === null || draggedIndices.includes(dragTargetIndex)) return;
+        saveHistory();
+        const itemsToMove = [];
+        for (let i = draggedIndices.length - 1; i >= 0; i--) { itemsToMove.unshift(frames[draggedIndices[i]]); frames.splice(draggedIndices[i], 1); }
+        let adjustment = 0; draggedIndices.forEach(removedIdx => { if (removedIdx < dragTargetIndex) adjustment++; });
+        let finalIndex = dragTargetIndex - adjustment;
+        if (dragTargetPosition === 'bottom') finalIndex++;
+        frames.splice(finalIndex, 0, ...itemsToMove);
+        selectedIndices.clear(); for(let i=0; i<itemsToMove.length; i++) selectedIndices.add(finalIndex + i);
+        dragTargetIndex = null; renderTable();
+    }
+
+    function updateStickManual(side, axis, value) {
+        let val = 0;
+        if (value !== "" && value !== "-") val = parseInt(value);
+        let clampedVal = Math.max(-32768, Math.min(32767, val));
+        
+        let changed = false;
+        if (selectedIndices.size > 0) {
+            selectedIndices.forEach(idx => {
+                if (frames[idx].type === 'input') {
+                    frames[idx][side][axis] = clampedVal;
+                    const row = document.querySelector(`tr[data-index="${idx}"]`);
+                    if(row) {
+                        const cell = row.querySelector(`.${side[0]}-coords`);
+                        const otherAxis = axis === 'x' ? 'y' : 'x';
+                        const otherVal = frames[idx][side][otherAxis];
+                        if(axis === 'x') cell.textContent = `${clampedVal},${otherVal}`;
+                        else cell.textContent = `${otherVal},${clampedVal}`;
+                    }
+                    changed = true;
+                }
+            });
+        }
+        
+        if (changed) {
+            broadcastState();
+        }
+    }
+
+    function updateProp(index, prop, value) { saveHistory(); if(['text', 'variable', 'orientation'].includes(prop)) frames[index][prop] = value; else frames[index][prop] = parseFloat(value); }
+    function updatePosString(index, value) { saveHistory(); const parts = value.split(',').map(s => parseFloat(s.trim())); if (parts.length >= 3) frames[index].pos = { x: parts[0], y: parts[1], z: parts[2] }; }
+    function updateRotString(index, value) { saveHistory(); const parts = value.split(',').map(s => parseFloat(s.trim())); if (parts.length >= 9) frames[index].rot = parts.slice(0, 9); }
+    function updateDuration(idx, val) { if(frames[idx].type !== 'input') return; saveHistory(); frames[idx].duration = Math.max(1, frames[idx].duration + val); renderTable(); }
+    function toggleButton(element, index, btn) { saveHistory(); if (frames[index].buttons.has(btn)) { frames[index].buttons.delete(btn); element.classList.remove('active'); } else { frames[index].buttons.add(btn); element.classList.add('active'); } }
+    function getOptimizedFrames(sourceFrames) {
+        if (sourceFrames.length === 0) return [];
+        let optimized = [];
+        let current = null;
+        for (let i = 0; i < sourceFrames.length; i++) {
+            let next = sourceFrames[i];
+            if (['gyro_set', 'gyro_clear', 'pos_rot', 'comment', 'loop_start', 'loop_end'].includes(next.type)) {
+                if (current) { optimized.push(current); current = null; }
+                optimized.push(next);
+                continue;
+            }
+            if (!current) {
+                current = { type: 'input', duration: next.duration, buttons: new Set(next.buttons), lstick: { ...next.lstick }, rstick: { ...next.rstick } };
+                continue;
+            }
+            const sticksMatch = (current.lstick.x === next.lstick.x) && (current.lstick.y === next.lstick.y) && (current.rstick.x === next.rstick.x) && (current.rstick.y === next.rstick.y);
+            let buttonsMatch = (current.buttons.size === next.buttons.size) && [...current.buttons].every(btn => next.buttons.has(btn));
+            if (sticksMatch && buttonsMatch) current.duration += next.duration;
+            else { optimized.push(current); current = { type: 'input', duration: next.duration, buttons: new Set(next.buttons), lstick: { ...next.lstick }, rstick: { ...next.rstick } }; }
+        }
+        if (current) optimized.push(current);
+        return optimized;
+    }
+    function compactTableUI() { saveHistory(); frames = getOptimizedFrames(frames); selectedIndices.clear(); renderTable(); }
+
+    function setupStick(id, side) {
+        const canvas = document.getElementById(id);
+        const container = canvas.parentElement;
+        const ctx = canvas.getContext('2d');
+        const centerX = 70, centerY = 70, radius = 60; 
+        let isDragging = false;
+        const inputX = document.getElementById(`${side}-x`);
+        const inputY = document.getElementById(`${side}-y`);
+
+        const updateStickFromMouse = (clientX, clientY) => {
+            const rect = canvas.getBoundingClientRect();
+            const valX = Math.round(((clientX - rect.left - centerX) / radius) * 32767);
+            const valY = Math.round(((clientY - rect.top - centerY) / radius) * -32767);
+            
+            const fx = Math.max(-32768, Math.min(32767, valX));
+            const fy = Math.max(-32768, Math.min(32767, valY));
+            
+            let changed = false;
+            if (selectedIndices.size > 0) {
+                let hasInput = false;
+                selectedIndices.forEach(idx => {
+                    if (frames[idx].type === 'input') {
+                        if(frames[idx][side].x !== fx || frames[idx][side].y !== fy) changed = true;
+                        frames[idx][side].x = fx; frames[idx][side].y = fy;
+                        const row = document.querySelector(`tr[data-index="${idx}"]`);
+                        if(row) row.querySelector(`.${side[0]}-coords`).textContent = `${fx},${fy}`;
+                        hasInput = true;
+                    }
+                });
+                if(hasInput && !isEditingCoords) { inputX.value = fx; inputY.value = fy; }
+            }
+        };
+
+        container.addEventListener('mousedown', (e) => { if (e.target.tagName === 'INPUT' || e.button !== 0) return; isDragging = true; saveHistory(); updateStickFromMouse(e.clientX, e.clientY); });
+        container.addEventListener('mousemove', (e) => { if (isDragging) updateStickFromMouse(e.clientX, e.clientY); });
+        window.addEventListener('mouseup', () => { isDragging = false; });
+        container.addEventListener('mouseleave', () => { isDragging = false; });
+
+        function draw() {
+            ctx.clearRect(0, 0, 140, 140);
+
+            let grd = ctx.createRadialGradient(centerX, centerY, 10, centerX, centerY, radius + 10);
+            grd.addColorStop(0, '#161b22');
+            grd.addColorStop(1, '#050608');
+            ctx.fillStyle = grd;
+            ctx.beginPath(); ctx.arc(centerX, centerY, 70, 0, Math.PI*2); ctx.fill();
+
+            ctx.lineWidth = 1;
+            ctx.strokeStyle = '#21262d'; 
+
+            ctx.beginPath();
+            const diagOffset = 70 * Math.cos(Math.PI/4);
+            ctx.moveTo(centerX - diagOffset, centerY - diagOffset); ctx.lineTo(centerX + diagOffset, centerY + diagOffset);
+            ctx.moveTo(centerX + diagOffset, centerY - diagOffset); ctx.lineTo(centerX - diagOffset, centerY + diagOffset);
+            ctx.stroke();
+
+            ctx.strokeStyle = '#30363d'; 
+            ctx.beginPath(); ctx.arc(centerX, centerY, radius, 0, Math.PI * 2); ctx.stroke(); // 100%
+            ctx.strokeStyle = '#21262d';
+            ctx.beginPath(); ctx.setLineDash([2, 4]); ctx.arc(centerX, centerY, radius/2, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]); // 50% dashed
+
+            ctx.strokeStyle = '#30363d';
+            ctx.beginPath(); ctx.moveTo(centerX, 0); ctx.lineTo(centerX, 140); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(0, centerY); ctx.lineTo(140, centerY); ctx.stroke();
+
+            if (selectedIndices.size > 0) {
+                let firstFound = false;
+                selectedIndices.forEach(idx => {
+                    if(frames[idx] && frames[idx].type === 'input') {
+                        const stickData = frames[idx][side];
+                        if (!firstFound && !isDragging && !isEditingCoords) { inputX.value = stickData.x; inputY.value = stickData.y; firstFound = true; }
+                        let rawX = (stickData.x / 32767.0) * radius;
+                        let rawY = (stickData.y / -32767.0) * radius; 
+                        const mag = Math.sqrt(rawX*rawX + rawY*rawY);
+                        if (mag > radius + 1) { 
+                            rawX = (rawX / mag) * radius;
+                            rawY = (rawY / mag) * radius;
+                        }
+                        const displayX = centerX + rawX;
+                        const displayY = centerY + rawY;
+                        
+                        ctx.beginPath();
+                        ctx.moveTo(centerX, centerY);
+                        ctx.lineTo(displayX, displayY);
+                        ctx.lineWidth = 3;
+                        let lineGrad = ctx.createLinearGradient(centerX, centerY, displayX, displayY);
+                        lineGrad.addColorStop(0, 'rgba(78, 245, 163, 0.3)');
+                        lineGrad.addColorStop(1, '#4ef5a3');
+                        ctx.strokeStyle = lineGrad;
+                        ctx.shadowColor = '#4ef5a3'; ctx.shadowBlur = 10; 
+                        ctx.stroke();
+                        ctx.shadowBlur = 0;
+                        ctx.beginPath();
+                        ctx.arc(displayX, displayY, 6, 0, Math.PI * 2);
+                        ctx.fillStyle = 'rgba(78, 245, 163, 0.4)';
+                        ctx.fill();
+                        ctx.beginPath();
+                        ctx.arc(displayX, displayY, 3.5, 0, Math.PI * 2);
+                        ctx.fillStyle = '#ffffff'; 
+                        ctx.shadowColor = '#4ef5a3'; ctx.shadowBlur = 15; 
+                        ctx.fill();
+                        ctx.shadowBlur = 0;
+                    }
+                });
+            } else {
+                ctx.beginPath(); ctx.arc(centerX, centerY, 2, 0, Math.PI*2); ctx.fillStyle = '#444'; ctx.fill();
+                if(!isDragging && !isEditingCoords) { inputX.value = 0; inputY.value = 0; }
+            }
+            requestAnimationFrame(draw);
+        }
+        draw();
+    }
+    setupStick('lstick-canvas', 'lstick'); setupStick('rstick-canvas', 'rstick');
+
+    window.addEventListener('keydown', (e) => {
+        const activeTag = document.activeElement.tagName;
+        const isInputActive = ['INPUT', 'TEXTAREA', 'SELECT'].includes(activeTag);
+
+        if (e.ctrlKey && e.key === 'z') { e.preventDefault(); undo(); return; }
+        if (e.ctrlKey && e.key === 'y') { e.preventDefault(); redo(); return; }
+        if (isInputActive) return;
+
+        if (e.ctrlKey && e.key === 'c') {
+            if (selectedIndices.size === 0) return;
+            e.preventDefault(); 
+            const sortedIndices = Array.from(selectedIndices).sort((a, b) => a - b);
+            const rowsToCopy = sortedIndices.map(idx => frames[idx]);
+    
+            internalClipboard = JSON.stringify(rowsToCopy, (k, v) => (v instanceof Set) ? Array.from(v) : v);
+            
+            console.log(`Copié ${rowsToCopy.length} lignes`);
+        }
+
+        if (e.ctrlKey && e.key === 'v') {
+            if (!internalClipboard) return;
+            e.preventDefault();
+            saveHistory(); 
+            const newRows = JSON.parse(internalClipboard, (k, v) => (k === 'buttons') ? new Set(v) : v);
+            let insertIndex = frames.length;
+            if (selectedIndices.size > 0) {
+                insertIndex = Math.max(...selectedIndices) + 1;
+            }
+            frames.splice(insertIndex, 0, ...newRows);
+            selectedIndices.clear();
+            for(let i=0; i<newRows.length; i++) {
+                selectedIndices.add(insertIndex + i);
+            }
+
+            renderTable();
+        }
+        if (e.key === "Delete" || (e.key === "Backspace" && selectedIndices.size > 0)) {
+            e.preventDefault();
+            saveHistory();
+            const toDelete = Array.from(selectedIndices).sort((a, b) => b - a);
+            toDelete.forEach(idx => frames.splice(idx, 1));
+            selectedIndices.clear();
+            renderTable();
+        }
+    });
+
+    function openImportModal() { document.getElementById('importModal').style.display = "block"; document.getElementById('importTextarea').focus(); }
+    function closeImportModal() { document.getElementById('importModal').style.display = "none"; }
+    window.onclick = function(event) { if (event.target == document.getElementById('importModal')) closeImportModal(); if (event.target == document.getElementById('presetModal')) closePresetModal(); }
+
+    function confirmImport() {
+        const text = document.getElementById('importTextarea').value;
+        if (!text.trim()) { alert("Code vide"); return; }
+        saveHistory();
+        frames = parseScriptToFrames(text);
+        selectedIndices.clear(); renderTable(); closeImportModal();
+    }
+</script>
+</body>
+</html>
