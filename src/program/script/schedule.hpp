@@ -95,6 +95,7 @@ namespace lotuskit::script::schedule::tas {
     void transpileImpl_nxtas_to_as(const char* src, char* dst, size_t dstMax); // XXX doesnt belong here but it'll be easier to fix up alloc stuff when its not scattered (translating/loading/etc large scripts is very fragile, prob because it uses fakeheap)
     void dumpStack();
     u32 duration60ToUIFrames(u32 duration60, InputDurationScalingStrategy inputFPSMode);
+    u32 getElapsedFrames();
 
 } // ns
 

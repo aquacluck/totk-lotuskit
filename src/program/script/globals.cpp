@@ -1151,6 +1151,13 @@ namespace lotuskit::script::globals {
                 AngelScript::asCALL_CDECL
             ); assert( asErrno >= 0 );
 
+            // current frame count adjusted for fps
+            asErrno = engine->RegisterGlobalFunction(
+                "u32 getElapsedFrames()",
+                AngelScript::asFUNCTION(lotuskit::script::schedule::tas::getElapsedFrames),
+                AngelScript::asCALL_CDECL
+            ); assert( asErrno >= 0 );
+
         /// }
     }
 

@@ -552,6 +552,10 @@ namespace lotuskit::script::schedule::tas {
         return 0xdeaddead;
     }
 
+    u32 getElapsedFrames() {
+        return duration60ToUIFrames(elapsedPlayback60, getSP()->state.inputFPSMode);
+    }
+
     void transpileImpl_nxtas_to_as(const char* src, char* dst, size_t dstMax) {
         // Converts nxtas to AS intermediate (not really meant for human editing, eg raw button flags).
         // Input must be well-formed! Excess whitespace between token groups is generally tolerated, not much else nonsense.

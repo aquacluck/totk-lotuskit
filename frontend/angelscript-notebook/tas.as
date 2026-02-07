@@ -225,6 +225,9 @@ tas::awaitUnpauseTarget("Custom_Footprint");
 tas::doBlockOnDebugPause(false);
 tas::doBlockOnLoadingPause(false);
 
+// current frame count
+u32 n = tas::getElapsedFrames();
+
 // toggle input display
 tas::doTextWriterInputDisplay(false);
 tas::doTextWriterGyro(true);
