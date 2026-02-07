@@ -229,6 +229,10 @@ function getText(str) {
     return out ? out : str; // return original string if no translation found
 }
 
+function setDocumentLang() {
+    document.documentElement.setAttribute("lang", getLang());
+}
+
 function translateSelectedElementText(selector) {
     document.querySelectorAll(selector).forEach(element => {
         if (element.children.length > 0) { return; } // leaf elements only
@@ -239,5 +243,5 @@ function translateSelectedElementText(selector) {
     });
 }
 
-export { getText, translateSelectedElementText };
+export { getText, setDocumentLang, translateSelectedElementText };
 

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html>
 <head>
     <meta charset="UTF-8">
     <title>TOTK TAS Editor</title>
@@ -190,9 +190,10 @@
 <body>
 
 <script type="module">
-    import { getText, translateSelectedElementText } from "/assets/translate.mjs";
+    import { getText, setDocumentLang, translateSelectedElementText } from "/assets/translate.mjs";
     window.addEventListener("load", async function() {
         window.getText = getText;
+        setDocumentLang();
         translateSelectedElementText(".translate");
 
         window.PRESETS = {
