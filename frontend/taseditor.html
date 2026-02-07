@@ -182,6 +182,9 @@
         .preset-item:hover { background: #30363d; border-color: var(--accent-preset); }
         .preset-name { font-weight: bold; color: var(--accent-preset); font-size: 13px; }
         .preset-desc { font-size: 11px; color: #8b949e; }
+        .exec-row td { background: rgba(255, 140, 0, 0.1); border-bottom: 1px dashed rgba(255, 140, 0, 0.4); border-top: 1px dashed rgba(255, 140, 0, 0.4); }
+        .exec-cell { display: flex; align-items: center; gap: 8px; color: #ff8c00; font-weight: bold; }
+        .exec-input { border-color: #30363d; color: #ff8c00; width: 250px; text-align: left; padding-left: 5px; }
     </style>
 </head>
 <body>
@@ -235,7 +238,7 @@
         <span><span class="translate">Lines:</span> <span id="lineCounter" class="counter-val">0</span></span>
         <span><span class="translate">Total Frames:</span> <span id="totalFramesCounter" class="counter-val" style="color: var(--accent-zonai);">0</span></span>
     </div>
-    <button class="btn-export translate" onclick="broadcastState()">Update Code 🚀</button>
+    <button class="btn-export translate" onclick="broadcastState()">Update Code</button>
 </div>
 
 <div class="actions-toolbar">
@@ -243,13 +246,14 @@
     <button class="btn-action btn-loop translate" onclick="addLoop()">For Loop</button>
 
     <div class="separator"></div>
-
     <button class="btn-action btn-gyro-set translate" onclick="addGyroSet()">Gyro: Set</button>
     <button class="btn-action btn-gyro-clear translate" onclick="addGyroClear()">Gyro: Clear</button>
 
     <div class="separator"></div>
-
     <button class="btn-action btn-pos-set translate" onclick="addPosRot()">Set Pos/Rot</button>
+
+    <div class="separator"></div>
+    <button class="btn-action translate" style="color:#ff8c00; border-color:rgba(255,140,0,0.3);" onclick="addExecFile()">exec_file</button>
 </div>
 
 <div class="main-container">
@@ -334,6 +338,7 @@
     const BUTTONS = ["A", "B", "X", "Y", "L", "R", "ZL", "ZR", "PLUS", "MINUS", "DLEFT", "DRIGHT", "DUP", "DDOWN"];
     const MATRIX_OPTIONS = ["NORTH", "SOUTH", "EAST", "WEST", "IDENTITY"];
     let frames = [];
+    let knownSdFiles = [];
     let internalClipboard = null;
     let selectedIndices = new Set();
     let history = []; let redoStack = []; const MAX_HISTORY = 50;
@@ -347,23 +352,24 @@
 
     function broadcastState() {
         const finalFrames = getOptimizedFrames(frames);
-
-        let output = finalFrames.map(f => {
-            if (f.type === 'comment') return `// ${f.text}`;
-            if (f.type === 'loop_start') return `for(int ${f.variable}=0; ${f.variable} < ${f.count}; ${f.variable}++) {`;
-            if (f.type === 'loop_end') return `}`;
-            if (f.type === 'gyro_set') return `tas::setGyroRotation(Matrix33f::${f.orientation});\ntas::setGyroAngularVelocity(Vector3f(${f.x}, ${f.y}, ${f.z}));`;
-            if (f.type === 'gyro_clear') return `tas::clearGyro();`;
-            if (f.type === 'pos_rot') return `Player.setPosRot(${f.pos.x}, ${f.pos.y}, ${f.pos.z}, ${f.rot.join(', ')});`;
+        let innerCode = finalFrames.map(f => {
+            if (f.type === 'comment') return `    // ${f.text}`;
+            if (f.type === 'loop_start') return `    for(int ${f.variable}=0; ${f.variable} < ${f.count}; ${f.variable}++) {`;
+            if (f.type === 'loop_end') return `    }`;
+            if (f.type === 'gyro_set') return `    tas::setGyroRotation(Matrix33f::${f.orientation});\n    tas::setGyroAngularVelocity(Vector3f(${f.x}, ${f.y}, ${f.z}));`;
+            if (f.type === 'gyro_clear') return `    tas::clearGyro();`
+            if (f.type === 'pos_rot') return `    Player.setPosRot(${f.pos.x}, ${f.pos.y}, ${f.pos.z}, ${f.rot.join(', ')});`;
+            if (f.type === 'exec_file') {
+                return `    tas::awaitExecFile("sdcard:/totk_lotuskit/${f.filename}");`;
+            }
 
             const btns = f.buttons.size > 0 ? Array.from(f.buttons).join('|') : 'NONE';
-            return `input(${f.duration}, ${btns}, ${f.lstick.x},${f.lstick.y}, ${f.rstick.x},${f.rstick.y});`;
+            return `    input(${f.duration}, ${btns}, ${f.lstick.x},${f.lstick.y}, ${f.rstick.x},${f.rstick.y});`;
         }).join('\n');
+        let output = `void main() {\n${innerCode}\n}`;
 
         if (window.parent !== window) {
             window.parent.postMessage({ type: 'TAS_UPDATE', code: output }, '*');
-        } else {
-            console.log("Code généré :", output);
         }
     }
 
@@ -376,6 +382,10 @@
             selectedIndices.clear();
             renderTable();
             isImportingFromParent = false;
+        }
+        if (event.data && event.data.type === 'TAS_UPDATE_FILELIST') {
+            knownSdFiles = event.data.files || [];
+            renderTable();
         }
     });
 
@@ -411,37 +421,52 @@
         headerRow.insertBefore(th, lStickHeader);
     });
 
-    // --- PARSEUR ---
     function parseScriptToFrames(text) {
         const lines = text.split('\n').filter(l => l.trim() !== '');
         const parsedFrames = [];
-        const rInputFlex = /input\((\d+)(?:,\s*([^,)]+))?(?:,\s*(-?\d+),\s*(-?\d+))?(?:,\s*(-?\d+),\s*(-?\d+))?\);/;
+        const rExecFile = /awaitExecFile\(\s*"sdcard:\/totk_lotuskit\/([^"]+)"\s*\);/;
+        const rMainStart = /void\s+main\s*\(\s*\)\s*\{/;
+        const rLoopStart = /for\s*\(\s*int\s+(\w+)\s*=\s*0\s*;\s*\1\s*<\s*(\d+)\s*;\s*\1\+\+\s*\)\s*\{/;
+        const rLoopEnd = /^\s*\}\s*$/;
+        const rInputFlex = /input\((\d+)(?:,\s*([^,)]+))?(?:,\s*(-?\d+)(?:,\s*(-?\d+))?)?(?:,\s*(-?\d+)(?:,\s*(-?\d+))?)?\);/;
         const rGyroRot = /(?:tas::)?setGyroRotation\(Matrix33f::([A-Z]+)\);/;
         const rGyroVel = /(?:tas::)?setGyroAngularVelocity\(Vector3f\((-?\d*\.?\d+),\s*(-?\d*\.?\d+),\s*(-?\d*\.?\d+)\)\);/;
         const rGyroClear = /(?:tas::)?clearGyro\(\);/;
         const rPosRot = /Player\.setPosRot\((.*)\);/;
         const rComment = /^\s*\/\/\s*(.*)/;
-        const rLoopStart = /for\s*\(\s*int\s+(\w+)\s*=\s*0\s*;\s*\1\s*<\s*(\d+)\s*;\s*\1\+\+\s*\)\s*\{/;
-        const rLoopEnd = /^\s*\}\s*$/;
+
+        let loopDepth = 0;
 
         for (let i = 0; i < lines.length; i++) {
             let lt = lines[i].trim();
             if(!lt) continue;
+            if (rMainStart.test(lt)) continue;
+
+            if (rLoopEnd.test(lt)) {
+                if (loopDepth > 0) {
+                    loopDepth--;
+                    parsedFrames.push({ type: 'loop_end' });
+                }
+                continue;
+            }
+            let m = lt.match(rExecFile);
+            if (m) {
+                parsedFrames.push({ type: 'exec_file', filename: m[1] });
+                continue;
+            }
 
             if (rGyroClear.test(lt)) { parsedFrames.push({ type: 'gyro_clear' }); continue; }
 
-            let m = lt.match(rGyroRot);
+            m = lt.match(rGyroRot);
             if (m) {
                 let orientation = m[1];
                 let x = 0.0, y = 0.0, z = 0.0;
-
                 let mVel = lt.match(rGyroVel);
                 if (!mVel && i + 1 < lines.length) {
                     let nextLine = lines[i+1].trim();
                     let mVelNext = nextLine.match(rGyroVel);
                     if (mVelNext) { mVel = mVelNext; i++; }
                 }
-
                 if (mVel) { x = parseFloat(mVel[1]); y = parseFloat(mVel[2]); z = parseFloat(mVel[3]); }
                 parsedFrames.push({ type: 'gyro_set', orientation: orientation, x: x, y: y, z: z });
                 continue;
@@ -454,22 +479,24 @@
                 continue;
             }
 
-            if (rLoopEnd.test(lt)) { parsedFrames.push({ type: 'loop_end' }); continue; }
             m = lt.match(rComment);
             if (m) { parsedFrames.push({ type: 'comment', text: m[1] }); continue; }
+
             m = lt.match(rLoopStart);
-            if (m) { parsedFrames.push({ type: 'loop_start', variable: m[1], count: parseInt(m[2]) }); continue; }
+            if (m) {
+                loopDepth++;
+                parsedFrames.push({ type: 'loop_start', variable: m[1], count: parseInt(m[2]) });
+                continue;
+            }
+
             m = lt.match(rInputFlex);
             if (m) {
                 let dur = parseInt(m[1]);
                 let btnRaw = m[2] ? m[2].trim() : 'NONE';
                 if (btnRaw === '0') btnRaw = 'NONE';
                 let btns = new Set(btnRaw === 'NONE' ? [] : btnRaw.split('|'));
-                let lx = m[3] ? parseInt(m[3]) : 0;
-                let ly = m[4] ? parseInt(m[4]) : 0;
-                let rx = m[5] ? parseInt(m[5]) : 0;
-                let ry = m[6] ? parseInt(m[6]) : 0;
-
+                let lx = m[3] ? parseInt(m[3]) : 0; let ly = m[4] ? parseInt(m[4]) : 0;
+                let rx = m[5] ? parseInt(m[5]) : 0; let ry = m[6] ? parseInt(m[6]) : 0;
                 parsedFrames.push({ type: 'input', duration: dur, buttons: btns, lstick: { x: lx, y: ly }, rstick: { x: rx, y: ry } });
             }
         }
@@ -490,6 +517,7 @@
     function addGyroSet() { insertAfterSelection({ type: 'gyro_set', orientation: 'NORTH', x: 0.0, y: 0.0, z: 0.0 }); }
     function addGyroClear() { insertAfterSelection({ type: 'gyro_clear' }); }
     function addPosRot() { insertAfterSelection({ type: 'pos_rot', pos: { x: 0, y: 0, z: 0 }, rot: [ 0, 0, 0, 0, 0, 0, 0, 0, 0 ] }); }
+    function addExecFile() { insertAfterSelection({ type: 'exec_file', filename: 'script_name.as' }); }
     function addComment() { insertAfterSelection({ type: 'comment', text: getText('Enter Text') }); }
     function addLoop() {
         saveHistory();
@@ -573,6 +601,33 @@
                 const posStr = `${frame.pos.x}, ${frame.pos.y}, ${frame.pos.z}`;
                 const rotStr = frame.rot.join(', ');
                 tr.innerHTML = `<td><span style="color:var(--accent-secret);">POS</span></td><td colspan="${colSpan}" class="${indentClass}"><div class="pos-container"><div class="pos-line"><span class="pos-label">POS:</span><input type="text" class="std-input pos-input-large" value="${posStr}" onchange="updatePosString(${index}, this.value)"></div><div class="pos-line"><span class="pos-label">ROT:</span><input type="text" class="std-input pos-input-large" value="${rotStr}" onchange="updateRotString(${index}, this.value)"></div></div></td>`;
+            }
+            else if (frame.type === 'exec_file') {
+                tr.classList.add('exec-row'); if(isSelected) tr.classList.add('selected');
+
+                let optionsHtml = '';
+                let found = false;
+
+                knownSdFiles.forEach(f => {
+                    const isSelected = f === frame.filename ? 'selected' : '';
+                    if (isSelected) found = true;
+                    optionsHtml += `<option value="${f}" ${isSelected}>${f}</option>`;
+                });
+                if (!found && frame.filename) {
+                  optionsHtml += `<option value="${frame.filename}" selected>${frame.filename} (${getText('Missing')})</option>`;
+                }
+
+                tr.innerHTML = `
+                    <td><span style="color:#ff8c00; font-size:11px;">${getText('exec_file')}</span></td>
+                    <td colspan="${colSpan}" class="${indentClass}">
+                        <div class="exec-cell">
+                            <span style="color:#888;">${getText('name')}</span>
+                            sdcard:/totk_lotuskit/
+                            <select class="std-input exec-input" onchange="updateProp(${index}, 'filename', this.value)">
+                                ${optionsHtml}
+                            </select>
+                        </div>
+                    </td>`;
             }
             else {
                 inputStep++;
@@ -672,7 +727,7 @@
         }
     }
 
-    function updateProp(index, prop, value) { saveHistory(); if(['text', 'variable', 'orientation'].includes(prop)) frames[index][prop] = value; else frames[index][prop] = parseFloat(value); }
+    function updateProp(index, prop, value) { saveHistory(); if(['text', 'variable', 'orientation', 'filename'].includes(prop)) { frames[index][prop] = value; } else { frames[index][prop] = parseFloat(value); }}
     function updatePosString(index, value) { saveHistory(); const parts = value.split(',').map(s => parseFloat(s.trim())); if (parts.length >= 3) frames[index].pos = { x: parts[0], y: parts[1], z: parts[2] }; }
     function updateRotString(index, value) { saveHistory(); const parts = value.split(',').map(s => parseFloat(s.trim())); if (parts.length >= 9) frames[index].rot = parts.slice(0, 9); }
     function updateDuration(idx, val) { if(frames[idx].type !== 'input') return; saveHistory(); frames[idx].duration = Math.max(1, frames[idx].duration + val); renderTable(); }
@@ -683,11 +738,13 @@
         let current = null;
         for (let i = 0; i < sourceFrames.length; i++) {
             let next = sourceFrames[i];
-            if (['gyro_set', 'gyro_clear', 'pos_rot', 'comment', 'loop_start', 'loop_end'].includes(next.type)) {
+
+            if (['gyro_set', 'gyro_clear', 'pos_rot', 'comment', 'loop_start', 'loop_end', 'exec_file'].includes(next.type)) {
                 if (current) { optimized.push(current); current = null; }
                 optimized.push(next);
                 continue;
             }
+
             if (!current) {
                 current = { type: 'input', duration: next.duration, buttons: new Set(next.buttons), lstick: { ...next.lstick }, rstick: { ...next.rstick } };
                 continue;

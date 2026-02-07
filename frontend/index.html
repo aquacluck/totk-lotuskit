@@ -779,6 +779,9 @@ class TasEditor extends Component {
             if (this.props.scriptText !== prevProps.scriptText && this.props.lastSource !== 'tas') {
                 this.sendToIframe(this.props.scriptText);
             }
+            if (this.props.fileList !== prevProps.fileList) {
+                this.sendFileList(this.props.fileList);
+            }
         }
 
         handleMessage = (event) => {
@@ -789,26 +792,35 @@ class TasEditor extends Component {
 
         sendToIframe(code) {
             if (this.iframeRef.current && this.iframeRef.current.contentWindow) {
-                setTimeout(() => {
-                    this.iframeRef.current.contentWindow.postMessage({
-                        type: 'TAS_IMPORT_SILENT',
-                        code: code
-                    }, '*');
-                }, 0);
+                this.iframeRef.current.contentWindow.postMessage({
+                    type: 'TAS_IMPORT_SILENT',
+                    code: code
+                }, '*');
+            }
+        }
+
+        sendFileList(list) {
+            if (this.iframeRef.current && this.iframeRef.current.contentWindow) {
+                const fileNames = list.map(f => f.name);
+                this.iframeRef.current.contentWindow.postMessage({
+                    type: 'TAS_UPDATE_FILELIST',
+                    files: fileNames
+                }, '*');
             }
         }
 
         handleIframeLoad = () => {
             this.sendToIframe(this.props.scriptText);
+            this.sendFileList(this.props.fileList || []);
         }
 
         render(props) {
             return html`
                 <${SimpleWindow} onClose=${props.onClose}>
                     <div style="width: 1300px; height: 900px; resize: both; overflow: hidden; background: #000;">
-                        <iframe 
-                            ref=${this.iframeRef} 
-                            src=${"taseditor.html?v=" + Date.now()} 
+                        <iframe
+                            ref=${this.iframeRef}
+                            src=${"taseditor.html?v=" + Date.now()}
                             onLoad=${this.handleIframeLoad}
                             style="width: 100%; height: 100%; border: none;"
                         ></iframe>
@@ -828,6 +840,13 @@ class ExecScript extends Component {
                 dumpMode: "ws",
                 isBrowseSD: false,
                 showTasEditor: false,
+                showFileSelector: false,
+                currentSdFile: null,
+                loadedFileContent: "",
+
+                sdFileList: [],
+                newFileName: "",
+
                 scriptText: defaultScript,
                 lastSource: 'init',
             };
@@ -840,6 +859,75 @@ class ExecScript extends Component {
             WSTransport.subscribe_ns("/tas/Record", this.recv_tas_dump_ws.bind(this));
         }
 
+        openFileSelector() {
+            this.setState({ showFileSelector: true });
+            this.refreshSdFiles();
+        }
+
+        closeFileSelector() {
+            this.setState({ showFileSelector: false });
+        }
+
+        async refreshSdFiles() {
+            const basePath = "sdcard:/totk_lotuskit";
+            const files = await RemoteFileUtil.reqDirectoryIndex(basePath);
+            const asFiles = files.filter(f => f.type === 1 && f.name.endsWith(".as") && f.size > 0);
+            this.setState({ sdFileList: asFiles });
+        }
+
+        async loadAndEditFile(filename) {
+            const fullPath = `sdcard:/totk_lotuskit/${filename}`;
+            console.log("Loading Project:", fullPath);
+
+            const content = await RemoteFileUtil.reqDumpTextFile(fullPath);
+
+            this.setState({
+                scriptText: `tas::awaitExecFile("${fullPath}");`,
+                loadedFileContent: content,
+                currentSdFile: fullPath,
+                lastSource: 'text',
+                showFileSelector: false,
+                showTasEditor: true,
+            });
+
+            if(this.script_text_ref.current) { this.script_text_ref.current.value = `tas::awaitExecFile("${fullPath}");`; }
+        }
+
+        createAndEditFile() {
+            let name = this.state.newFileName.trim();
+            if (!name) { return; }
+            if (!name.endsWith(".as")) { name += ".as"; }
+
+            const fullPath = `sdcard:/totk_lotuskit/${name}`;
+            const defaultContent = "void main() {\n\n}";
+            WSTransport.send({ persistFileString: defaultContent, persistFileName: fullPath });
+
+            this.setState({
+                scriptText: `tas::awaitExecFile("${fullPath}");`,
+                loadedFileContent: defaultContent,
+                currentSdFile: fullPath,
+                lastSource: 'text',
+                showFileSelector: false,
+                showTasEditor: true,
+                newFileName: "",
+            });
+
+            if(this.script_text_ref.current) { this.script_text_ref.current.value = `tas::awaitExecFile("${fullPath}");`; }
+        }
+
+        deleteSdFile(filename) {
+            if (!confirm(`Supprimer "${filename}" ? (Soft Delete)`)) { return; }
+            const fullPath = `sdcard:/totk_lotuskit/${filename}`;
+
+            if (this.state.currentSdFile === fullPath) {
+                this.setState({ currentSdFile: null, loadedFileContent: "", scriptText: "" });
+            }
+
+            WSTransport.send({ persistFileString: "", persistFileName: fullPath });
+            const newList = this.state.sdFileList.filter(f => f.name !== filename);
+            this.setState({ sdFileList: newList });
+        }
+
         toggleTasEditor() {
             this.setState({ showTasEditor: !this.state.showTasEditor });
         }
@@ -848,15 +936,31 @@ class ExecScript extends Component {
             this.setState({
                 scriptText: e.target.value,
                 lastSource: 'text',
+                currentSdFile: null,
             });
         }
 
         handleTasUpdate = (code) => {
-            this.setState({
-                scriptText: code,
-                lastSource: 'tas',
-            });
-            if(this.script_text_ref.current) this.script_text_ref.current.value = code;
+            if (this.state.currentSdFile) {
+                console.log("Auto-saving to SD:", this.state.currentSdFile);
+
+                this.setState({
+                    loadedFileContent: code,
+                    lastSource: 'tas',
+                });
+
+                WSTransport.send({
+                    persistFileString: code,
+                    persistFileName: this.state.currentSdFile,
+                });
+
+            } else {
+                this.setState({
+                    scriptText: code,
+                    lastSource: 'tas',
+                });
+                if(this.script_text_ref.current) { this.script_text_ref.current.value = code; }
+            }
         }
 
         do_exec() {
@@ -1004,10 +1108,49 @@ class ExecScript extends Component {
 
         render(props, state) {
             const nsoDisplay = false ? "inline" : "none";
+            const fileSelectorWindow = state.showFileSelector ? html`
+                <${SimpleWindow} onClose=${() => this.closeFileSelector()}>
+                    <div style="min-width: 450px; min-height: 350px; display:flex; flex-direction:column;">
+                        <h3 style="margin-top:0; color:var(--accent-zonai);">📂 SD Card Projects</h3>
+
+                        <div style="background:#161b22; padding:10px; border-radius:6px; margin-bottom:15px; border:1px solid #30363d;">
+                            <label style="font-size:12px; color:#8b949e; display:block; margin-bottom:5px;">Create New Script:</label>
+                            <div style="display:flex; gap:5px;">
+                                <input
+                                    style="flex:1; background:#0d1117; border:1px solid #30363d; color:#fff; padding:5px;"
+                                    placeholder="new_script_name"
+                                    value=${state.newFileName}
+                                    onInput=${(e) => this.setState({newFileName: e.target.value})}
+                                />
+                                <button class="pushbutton hint_blueprint_strong" onClick=${() => this.createAndEditFile()}>Create & Open</button>
+                            </div>
+                        </div>
+
+                        <div style="flex:1; overflow-y: auto; background:#0d1117; border:1px solid #30363d; border-radius:6px; padding:5px;">
+                            ${state.sdFileList.length === 0 ? html`<div style="color:#888; padding:10px; text-align:center;">Empty folder or loading...</div>` : ""}
+
+                            ${state.sdFileList.map(f => html`
+                                <div style="display:flex; justify-content:space-between; background:#21262d; margin:4px 0; padding:8px 10px; align-items:center; border-radius: 4px; border:1px solid #30363d;">
+                                    <div style="display:flex; align-items:center; overflow:hidden;">
+                                        <span style="font-size:16px; margin-right:8px;">📄</span>
+                                        <span style="font-weight:bold; color:#c9d1d9; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title=${f.name}>${f.name}</span>
+                                        <span style="font-size:11px; color:#8b949e; margin-left:10px;">${(f.size/1024).toFixed(1)} KB</span>
+                                    </div>
+                                    <div style="display:flex; gap:6px;">
+                                        <button class="pushbutton" style="padding: 4px 12px; background:#238636; border-color:rgba(240,246,252,0.1); color:#fff;" onClick=${() => this.loadAndEditFile(f.name)}>Open</button>
+                                        <button class="pushbutton hint_destructive_hover" style="padding: 4px 8px;" title="Delete (Clear content)" onClick=${() => this.deleteSdFile(f.name)}>🗑️</button>
+                                    </div>
+                                </div>
+                            `)}
+                        </div>
+                    </div>
+                </${SimpleWindow}>
+            ` : "";
 
             const tasEditorWindow = state.showTasEditor
                 ? html`<${TasEditor}
-                        scriptText=${state.scriptText}
+                        scriptText=${state.currentSdFile ? state.loadedFileContent : state.scriptText}
+                        fileList=${state.sdFileList}
                         lastSource=${state.lastSource}
                         onUpdate=${this.handleTasUpdate}
                         onClose=${() => this.toggleTasEditor()}
@@ -1019,12 +1162,14 @@ class ExecScript extends Component {
                     <span title=${getText("Manages AngelScript execution/playback for the tas stack")}>AS:</span>
                     <button title=${getText("Run the script below")} onClick=${ () => this.do_exec() } class="pushbutton hint_blueprint_strong">exec</button>
                     <button title="tas::abort()" onClick=${ () => AngelScript.exec("tas::abort();", AngelScript.TAS_MODULE_INTERRUPT) } class="pushbutton hint_destructive_hover">${getText("abort")}</button>
+
                     <button
-                        title=${getText("Open Visual TAS Editor")}
-                        onClick=${() => this.toggleTasEditor()}
-                        class="pushbutton hint_sparkles_corner" 
+                        title=${getText("Open TAS Projects Manager")}
+                        onClick=${() => this.openFileSelector()}
+                        class="pushbutton hint_sparkles_corner"
                         style="background: rgba(78, 245, 163, 0.1); color: #4ef5a3; font-weight:bold; border-color: #4ef5a3;"
                     >${getText("editor")}</button>
+
                     <label title=${getText("Automatically wrap input into void main() {...} entry point")} for="execscript_use_implicit_main">main:</label>
                     <input type="checkbox" id="execscript_use_implicit_main" ref=${this.use_implicit_main_ref} checked />
 
@@ -1041,9 +1186,11 @@ class ExecScript extends Component {
                         ref=${this.script_text_ref}
                         value=${state.scriptText}
                         onInput=${this.onScriptInput}
+                        spellcheck="false"
                     ></textarea>
 
                     ${ this.renderTasDump(props, state) }
+                    ${fileSelectorWindow}
                     ${tasEditorWindow}
                 </div>
             `;

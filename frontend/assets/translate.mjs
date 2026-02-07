@@ -52,7 +52,7 @@ const TRANSLATIONS_FR = {
     "NW": "NO",
     "Object": "Objet",
     "Open sdcard browser": "Ouvrir le navigateur sdcard",
-    "Open Visual TAS Editor": null,
+    "Open TAS Projects Manager": null,
     "Open/Toggle AngelScript notebook": "Ouvrir/Basculer le bloc-notes AngelScript",
     "Optimal Mozdor": null,
     "Optimal Run": null,
@@ -177,7 +177,7 @@ const TRANSLATIONS_FR = {
     "📚 Presets": null,
     "Lines:": "Lignes:",
     "Total Frames:": null,
-    "Update Code 🚀": null,
+    "Update Code": null,
     "// Comment": "// Commentaire",
     "For Loop": "Boucle (for)",
     "Gyro: Set": null,
@@ -191,6 +191,9 @@ const TRANSLATIONS_FR = {
     "Preset Library": "Bibliothéque de Presets",
     "Click to insert after the selection.": "Cliquez pour insérer à la suite de la sélection.",
     "Close": "Fermer",
+    "Missing": "Manquant",
+    "exec_file": "Pointeur",
+    "name": "nom",
 
     "execscript_placeholder": '// consultez le bouton bleu AS📖 ci-dessous pour obtenir de l\'aide \nPlayer.pos += 100*Vector3f::UP;\n\ninput(30, A|B, 32767,-32768, 0,0);\ninput(15, B, 0.5*STICK_UP_MAX /*, 8000*STICK_LEFT */);\n\nactor::createAndWatch( \n    1, "SpObj_LiftGeneratorWing_A_01", \n    Player.pos + 5*Vector3f::DOWN\n);\n\ntas::awaitExecFile("sdcard:/totk_lotuskit/autorun.as");',
 
