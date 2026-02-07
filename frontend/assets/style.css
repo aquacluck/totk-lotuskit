@@ -368,6 +368,14 @@ dialog {
         &:active:before { content: "[drag]"; } /* TODO translate/getText? */
     }
 
+    &:has(iframe) > .move:active {
+        /* HACK enlarge button during drag to prevent iframe from stealing events */
+        padding: 7px 2px 770px 736px;
+        width: 800px;
+        height: 800px;
+        background-color: rgba(0, 0, 0, 0.75);
+    }
+
     &> .content {
         min-width: 200px;
         min-height: 100px;
