@@ -836,6 +836,7 @@ class ExecScript extends Component {
             const defaultScript = '';
 
             this.state = {
+                useImplicitMain: true,
                 isDumping: false,
                 dumpMode: "ws",
                 isBrowseSD: false,
@@ -852,7 +853,6 @@ class ExecScript extends Component {
             };
 
             this.script_text_ref = createRef();
-            this.use_implicit_main_ref = createRef();
             this.tas_dump_filename_ref = createRef();
             this.tas_dump_ws_output_text_ref = createRef();
             this.tas_dump_use_nxtas_ref = createRef();
@@ -940,6 +940,10 @@ class ExecScript extends Component {
             });
         }
 
+        onChangeUseImplicitMain = (e) => {
+            this.setState({"useImplicitMain": !this.state.useImplicitMain});
+        }
+
         handleTasUpdate = (code) => {
             if (this.state.currentSdFile) {
                 console.log("Auto-saving to SD:", this.state.currentSdFile);
@@ -965,7 +969,7 @@ class ExecScript extends Component {
 
         do_exec() {
             const script_text = this.state.scriptText;
-            const main = this.use_implicit_main_ref.current.checked;
+            const main = this.state.useImplicitMain;
 
             WSTransport.send({
                 execScriptString: main ? AngelScript.wrap_implicit_main(script_text) : script_text,
@@ -1171,7 +1175,7 @@ class ExecScript extends Component {
                     >${getText("editor")}</button>
 
                     <label title=${getText("Automatically wrap input into void main() {...} entry point")} for="execscript_use_implicit_main">main:</label>
-                    <input type="checkbox" id="execscript_use_implicit_main" ref=${this.use_implicit_main_ref} checked />
+                    <input type="checkbox" id="execscript_use_implicit_main" checked=${state.useImplicitMain} onChange=${this.onChangeUseImplicitMain} />
 
                     <${FrameAdvance} />
                     <span style="float: right; display: ${nsoDisplay};">
