@@ -636,6 +636,57 @@
         }
     };
 
+    class Patches extends Component {
+        constructor() {
+            super();
+            this.state = {
+                patchsetNames: [],
+            };
+            this.selectedPatchRef = createRef();
+        }
+
+        async refresh() {
+            let output = [];
+            await WSTransport.subscribe_ns_async(
+                () => AngelScript.exec(`sys::patchIndex();`), // begin
+                payload => {
+                    if (payload.name) { output.push(payload.name); } // accumulate patchset index
+                    if (payload.endDump) { return true; } // resolve
+                },
+                "/util/patch/index" // accumulation scope
+            );
+            this.setState({patchsetNames: output});
+        }
+
+        install_selected() {
+            const patchset = this.selectedPatchRef.current.value;
+            if (!patchset || patchset == "[null]") { return; }
+            AngelScript.exec(`sys::patchInstall("${patchset}");`);
+        }
+
+        revert_selected() {
+            const patchset = this.selectedPatchRef.current.value;
+            if (!patchset || patchset == "[null]") { return; }
+            AngelScript.exec(`sys::patchRevert("${patchset}");`);
+        }
+
+        render(props, state) {
+            let patchOptions = state.patchsetNames.map(name => html`<option>${name}</option>`);
+            if (patchOptions.length == 0) { patchOptions = [html`<option inert>[null]</option>`]; }
+            return html`
+                <span class="patches">
+                    Patch:
+                    <select onClick=${ () => this.refresh() } style="max-width: 256px;" ref=${this.selectedPatchRef}>
+                        ${patchOptions}
+                    </select>
+                    <button onClick=${ () => this.install_selected() } class="pushbutton" title="sys::patchInstall(string);">+</button>
+                    <button onClick=${ () => this.revert_selected() } class="pushbutton hint_recommended_hover" title="sys::patchRevert(string);">-</button>
+                    <button onClick=${ () => this.refresh() } class="pushbutton" title="javascript:this.setState(AngelScript.exec('sys::patchIndex();'); // refresh">↻</button>
+                </span>
+            `;
+        }
+    };
+
     class HexDumpSlot extends Component {
         constructor() {
             super();
@@ -2003,6 +2054,7 @@
                 <${PauseHacks} />
                 <${StaminaHacks} />
                 <${CameraHacks} />
+                <${Patches} />
                 <div class="hexdump" style="margin-top: 8px;">
                     HexDump
                     <${HexDumpSlot} slot_i=0 />

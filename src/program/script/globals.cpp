@@ -751,6 +751,7 @@ namespace lotuskit::script::globals {
             asErrno = engine->RegisterGlobalFunction("u32 totkVersion()", AngelScript::asFUNCTION(sys::totkVersion), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
             asErrno = engine->RegisterGlobalFunction("u64 tick()", AngelScript::asFUNCTION(sys::tick), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
             asErrno = engine->RegisterGlobalFunction("void debugLog(const string &in)", AngelScript::asFUNCTION(sys::debugLog), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+            asErrno = engine->RegisterGlobalFunction("void patchIndex()", AngelScript::asFUNCTION(lotuskit::util::patch::PatchIndex), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
             asErrno = engine->RegisterGlobalFunction("void patchInstall(const string &in)", AngelScript::asFUNCTION(lotuskit::util::patch::PatchInstall), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
             asErrno = engine->RegisterGlobalFunction("void patchRevert(const string &in)", AngelScript::asFUNCTION(lotuskit::util::patch::PatchRevert), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
         /// }

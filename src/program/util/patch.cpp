@@ -1,7 +1,9 @@
 #include "exlaunch.hpp"
+#include "Logger.hpp"
 #include "util/fs.hpp"
 #include "util/patch.hpp"
 #include <nn/fs.h>
+using json = nlohmann::json;
 
 namespace lotuskit::util::patch {
     const std::string RUNTIME_PATCHES_DIR = "sdcard:/atmosphere/contents/0100f2c0115b6000/runtime_patches"; // XXX lowercase
@@ -205,6 +207,23 @@ namespace lotuskit::util::patch {
 
         RETURN:
         nn::fs::CloseFile(ipsFd);
+    }
+
+    void PatchIndex() {
+        if (lotuskit::util::fs::folderExists(RUNTIME_PATCHES_DIR)) {
+            lotuskit::util::fs::visitDirectoryEntries(RUNTIME_PATCHES_DIR, nn::fs::OpenDirectoryMode::OpenDirectoryMode_Directory, [](const std::string& cpath, nn::fs::DirectoryEntry* dentry) {
+                // TODO filter to only patchsets containing an ips for current MAIN_NSOBID?
+                Logger::logJson(json::object({
+                    {"name", dentry->mName},
+                }), "/util/patch/index", false, false);
+            });
+        } else {
+            svcOutputDebugString("no RUNTIME_PATCHES_DIR", 18);
+        }
+
+        Logger::logJson(json::object({
+            {"endDump", true} // announce
+        }), "/util/patch/index", false, false);
     }
 
     void PatchInstall(const std::string& patchsetName) {

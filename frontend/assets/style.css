@@ -305,17 +305,18 @@ textarea {
 
 .toolset_rightbar {
     position: absolute;
-    height: 490px; /* FIXME trash layout -- height manually adjusted to draw border around dense cluster toolset */
+    height: 540px; /* FIXME trash layout -- height manually adjusted to draw border around dense cluster toolset */
     padding: 8px;
     background: #000;
     border: 1px solid #444;
 
     display: inline-grid;
-    grid-template-rows: 1fr 1fr 1fr 1fr 1fr;
+    grid-template-rows: 1fr 1fr 1fr 1fr 1fr 1fr;
     grid-template-columns: 1fr 1fr;
     grid-template-areas:
     'pausehacks staminahacks'
     'camerahacks camerahacks'
+    'patches patches'
     'hexdump hexdump'
     'memsearch quickdumps'
     'execscript execscript';
@@ -323,6 +324,7 @@ textarea {
 .toolset_rightbar > .camerahacks { grid-area: camerahacks; }
 .toolset_rightbar > .pausehacks { grid-area: pausehacks; }
 .toolset_rightbar > .staminahacks { grid-area: staminahacks; }
+.toolset_rightbar > .patches { grid-area: patches; }
 .toolset_rightbar > .hexdump { grid-area: hexdump; }
 .toolset_rightbar > .memsearch { grid-area: memsearch; }
 .toolset_rightbar > .quickdumps { grid-area: quickdumps; }
