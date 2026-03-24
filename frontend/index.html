@@ -372,6 +372,7 @@
                     <button title=${getText("step ahead (in an already-running script)")} onClick=${() => this.doStepAS() } class="pushbutton hint_blueprint_strong hover_hasargs" style="font-size: 2.5rem; vertical-align: bottom; line-height: 0;"><span style="transform: rotateY(180deg); display: inline-block;">\u293d</span></button>
                     <button title=${getText("step ahead (controller passthrough)")} onClick=${() => this.doStepSleep() } class="pushbutton hint_controller_corner hover_hasargs hover_isarg" style="font-size: 2.5rem; vertical-align: bottom; line-height: 0;"><span style="transform: rotateY(180deg); display: inline-block;">\u293d</span></button>
                     <input class="hover_isarg" style="width: 48px" type="number" placeholder="1" size="2" min="1" step="any" ref=${this.step_n} />
+                    <span class="hover_isarg" title="FIXME crashy">⚠️</span>
                 </span>
             `;
         }
