@@ -74,5 +74,7 @@ namespace lotuskit::util::camera {
         return impl(self, dst);
     }
 
+    void InstallHooks();
+
 } // ns
 

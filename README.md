@@ -11,7 +11,7 @@
 - The mod version must match your game version, be sure to switch them together. Separate builds simplify certain version interop problems like differing structs or register usage. Don't worry about this for files under `frontend`, the frontend will handle all game versions with the same installation/assets.
 - To update the mod, copy/drag the new `romfs` and `exefs` folders into their destination. It's always safe to overwrite with the new zip contents. Also serve the updated frontend, refresh it in your browser if needed, etc.
 - `ips_patches/runtime_patches` are required for fixed fps and may also be loaded on demand like `sys::patchInstall("lotuskit-playercamera-unlock");`. `runtime_patches` is installed alongside `romfs`/`exefs`.
-- `ips_patches/exefs_patches` are currently optional but save significant RAM, note their destination folder is not the same as `romfs`/`exefs`!
+- `ips_patches/exefs_patches` are currently optional but save significant RAM, note their destination folder is not the same as `romfs`/`exefs`! These are loaded by Atmosphere/emulator before the game/mod process begins.
 - TOTK versions 1.0.0 and 1.2.1 are primarily supported. I'll also build for 1.1.0, but the testing workload is too much while the project is in flux, so these builds are untested+unsupported for now.
 - Everything you do in the frontend is accomplished by running AngelScript snippets, and usually you can hover on buttons/etc for clarification about scripting or other quirks.
 - Check the "AS📖" button in the bottom right for script docs, see `registerGlobals` in `src/program/script/globals.cpp` for a complete list of script bindings available, and see [AngelScript's docs](https://www.angelcode.com/angelscript/sdk/docs/manual/doc_script.html) for language details (it's mostly "interpreted C++" with `@handles` instead of `*pointers`)
@@ -48,6 +48,7 @@
 - `romfs` is a skeleton/template for files which should be installed with the mod, copied into every release zip
 - `src/program` is the C++ mod source
 - `syms` is a symbol map+metadata build system, see above for details. This isn't run during `make`, just done manually for now.
+- `ips_patches` is a build system for patches loaded automatically at bootup or toggled at runtime, see above. This is the cheapest way to alter the game wrt stable-state performance/memory, as patches stay on disk and have zero overhead once installed, but it's limited to very simple changes.
 
 ## Credits + Thanks
 - [dt-12345](https://github.com/dt-12345/) for documentation+examples about so many aspects of this game's internals

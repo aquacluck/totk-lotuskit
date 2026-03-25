@@ -249,9 +249,7 @@ HOOK_DEFINE_TRAMPOLINE(InitLotuskitOnTitleScreenHook) {
         NinJoyNpadDevice_calcHook::Install();
         lotuskit::util::player::InstallHooks();
         lotuskit::util::world::InstallHooks();
-
-        //TODO check the branch we're overwriting -- ensure our "off" does the same thing
-        exl::patch::CodePatcher(EXL_SYM_OFFSET("game::component::GameCameraParam::HACK_cameraCalc")).BranchLinkInst((void*)lotuskit::util::camera::disgustingCameraHook);
+        lotuskit::util::camera::InstallHooks();
         lotuskit::util::patch::PrepareRevertPatches(); // generate/verify reverse ips patches on sdcard
 
         lotuskit::DebugDrawHooks::DebugDrawLayerMaskHook::Install();

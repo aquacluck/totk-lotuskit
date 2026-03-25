@@ -173,6 +173,21 @@ LOTUSKIT_RUNTIME_PATCHES: PatchSetCollection = {
             0x02aed824: NOP,
         },
     },
+    "lotuskit-disable-backface-culling": {
+        BuildId.TOTK_100: {
+            0x00705718: b("01 00 80 52"), # mov w1,#0x0            vanilla: 61 36 47 39  ldrb w1,[x19, #0x1cd]
+            0x012f254c: b("01 00 80 52"), # uncull shadows of backfaces?
+            #0x0072a7b8: b("01 00 80 52"), # ???
+            #0x00ee6fcc: b("01 00 80 52"), # ???
+        },
+        BuildId.TOTK_110: {
+            # FIXME untested
+            0x00756ec0: b("01 00 80 52"), # mov w1,#0x0
+        },
+        BuildId.TOTK_121: {
+            0x00756cac: b("01 00 80 52"), # mov w1,#0x0
+        },
+    },
 }
 
 def main():
@@ -188,8 +203,11 @@ def main():
 
     if "install" in sys.argv:
         os.chdir(os.path.dirname(__file__))
-        os.system("rsync -r exefs_patches/ ~/appdata/Roaming/Ryujinx/sdcard/atmosphere/exefs_patches/")
-        os.system("rsync -r runtime_patches/ ~/appdata/Roaming/Ryujinx/sdcard/atmosphere/contents/0100f2c0115b6000/runtime_patches/")
+        # FIXME xdg var? platform detection? subcommand?
+        #os.system("rsync -r exefs_patches/ ~/appdata/Roaming/Ryujinx/sdcard/atmosphere/exefs_patches/")
+        #os.system("rsync -r runtime_patches/ ~/appdata/Roaming/Ryujinx/sdcard/atmosphere/contents/0100f2c0115b6000/runtime_patches/")
+        os.system("rsync -r exefs_patches/ ~/.config/Ryujinx/sdcard/atmosphere/exefs_patches/")
+        os.system("rsync -r runtime_patches/ ~/.config/Ryujinx/sdcard/atmosphere/contents/0100f2c0115b6000/runtime_patches/")
 
 if __name__ == "__main__":
     main()

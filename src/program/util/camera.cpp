@@ -35,5 +35,10 @@ namespace lotuskit::util::camera {
         frozenPos = {cameraPos.x, cameraPos.y, cameraPos.z}; // cast to double
     }
 
+    void InstallHooks() {
+        //TODO check the branch we're overwriting -- ensure our "off" does the same thing
+        exl::patch::CodePatcher(EXL_SYM_OFFSET("game::component::GameCameraParam::HACK_cameraCalc")).BranchLinkInst((void*)disgustingCameraHook);
+    }
+
 } // ns
 
