@@ -43,7 +43,8 @@ def write_ips_patchsets(patchsets: PatchSetCollection):
             ips_filename = os.path.join(folder_name, str(nsobid).upper() + ".ips") # NSOBID.ips (case sensitive)
             write_ips(ips_filename, patch_records)
 
-def b(v) -> bytes: # ez input
+# input helpers:
+def b(v) -> bytes:
     if type(v) is bytes:
         return v
     if type(v) is int:
@@ -52,29 +53,52 @@ def b(v) -> bytes: # ez input
     if len(v) % 2:
         v = "0" + v # fromhex wants full bytes
     return bytes.fromhex(v)
-
+assert b("ab cd ef 01") == b"\xab\xcd\xef\x01"
 NOP = b("1f 20 03 d5")
+
+try:
+    import keystone
+    ks = keystone.Ks(keystone.KS_ARCH_ARM64, keystone.KS_MODE_LITTLE_ENDIAN)
+    def asm(*inst_strings) -> bytes:
+        if len(inst_strings) == 0:
+            return b""
+        if type(inst_strings[0]) is list:
+            inst_strings = inst_strings[0]
+        if len(inst_strings) > 1:
+            inst_strings = ["; ".join(inst_strings)]
+        enc, enc_inst_n = ks.asm(inst_strings[0])
+        if not enc or enc_inst_n == 0:
+            return b""
+        return bytes(enc)
+    assert asm("nop") == NOP
+    assert asm("nop;" * 2) == asm("nop", "nop") == asm(["nop"] * 2) == NOP * 2
+    assert asm("add x8,x8,#0x700000") == b("08 01 5c 91")
+except ImportError as e_:
+    e = e_
+    def asm(*_):
+        # fail upon use
+        raise e
 
 # patches for installation at bootup:
 LOTUSKIT_EXEFS_PATCHES: PatchSetCollection = {
     "lotuskit-standardallocator-shrink-2MB": {
         BuildId.TOTK_100: {
             # StandardAllocator is 9MB -> 7MB
-            0x01130f38: b("00 0e a0 52"), # mov w0,#0x700000          // -2MB to engine::system::sStandardAllocatorMemBlockSize
-            0x01130f64: b("01 0e a0 d2"), # mov x1,#0x700000          // -2MB to nn::init::InitializeAllocator
-            0x01130f74: b("08 01 5c 91"), # add x8,x8,#0x700, LSL #12 // -2MB shift arena start
+            0x01130f38: asm("mov w0,#0x700000"), # -2MB to engine::system::sStandardAllocatorMemBlockSize
+            0x01130f64: asm("mov x1,#0x700000"), # -2MB to nn::init::InitializeAllocator
+            0x01130f74: asm("add x8,x8,#0x700000"), # -2MB shift arena start
         },
         BuildId.TOTK_110: {
             # StandardAllocator is 11MB -> 9MB (untested)
-            0x01160518: b("00 12 a0 52"), # mov w0,#0x900000
-            0x01160544: b("01 12 a0 d2"), # mov x1,#0x900000
-            0x01160554: b("08 01 64 91"), # add x8,x8,#0x900, LSL #12
+            0x01160518: asm("mov w0,#0x900000"),
+            0x01160544: asm("mov x1,#0x900000"),
+            0x01160554: asm("add x8,x8,#0x900000"),
         },
         BuildId.TOTK_121: {
             # StandardAllocator is 11MB -> 9MB
-            0x01155eb8: b("00 12 a0 52"), # mov w0,#0x900000
-            0x01155ee4: b("01 12 a0 d2"), # mov x1,#0x900000
-            0x01155ef4: b("08 01 64 91"), # add x8,x8,#0x900, LSL #12
+            0x01155eb8: asm("mov w0,#0x900000"),
+            0x01155ee4: asm("mov x1,#0x900000"),
+            0x01155ef4: asm("add x8,x8,#0x900000"),
         },
     },
 }
@@ -84,65 +108,67 @@ LOTUSKIT_RUNTIME_PATCHES: PatchSetCollection = {
     "lotuskit-playercamera-unlock": {
         BuildId.TOTK_100: {
             # 48 bf a8 52  mov w8,#0x45fa0000 (8000) ->  08 f0 af 52   mov w8,#0x7f800000 (infinity)
-            0x007dd8f4: b("08 f0 af 52"),
-            0x007dd910: b("08 f0 af 52"),
-            0x007dd92c: b("08 f0 af 52"),
-            0x007dda48: b("08 f0 af 52"),
-            0x007dda64: b("08 f0 af 52"),
-            0x007dda80: b("08 f0 af 52"),
-            0x007ddcc0: b("08 f0 af 52"),
-            0x007ddcdc: b("08 f0 af 52"),
-            0x007ddcf8: b("08 f0 af 52"),
-            0x007dde00: b("08 f0 af 52"),
-            0x007dde1c: b("08 f0 af 52"),
-            0x007dde38: b("08 f0 af 52"),
-            0x007ddf40: b("08 f0 af 52"),
-            0x007ddf5c: b("08 f0 af 52"),
-            0x007ddf78: b("08 f0 af 52"),
-            0x007de334: b("08 f0 af 52"),
-            0x007de350: b("08 f0 af 52"),
-            0x007de36c: b("08 f0 af 52"),
-            #0x00852d68: b("08 f0 af 52"), # this is related to something else? local_d0 = (local_d0 + 5000.0) / 10000.0; fStack_cc = (fStack_cc + 4000.0) / 8000.0;
-            #0x0085302c: b("08 f0 af 52"), # w23, 10k 8k pair
-            #0x00a7abc4: b("08 f0 af 52"), # w9, something storing multiples of 8k but seems grass/terrain/tile related
-            #0x00b6d390: b("08 f0 af 52"), # gnarly terrain function, can't even find usage in decomp
-            #0x00c48ac4: b("08 f0 af 52"), #      10k 8k pair
-            0x00c570b8: b("0b f0 af 52"), # w11, something about aglsky params?
-            0x00cb9524: b("08 f0 af 52"),
-            #0x00f35d44: b("08 f0 af 52"), # x8, unrelated audio stuff
-            0x011b3818: b("09 f0 af 52"), # w9
-            0x0134b9b4: b("08 f0 af 52"),
-            0x0134b9d0: b("08 f0 af 52"),
-            0x0134b9ec: b("08 f0 af 52"),
-            0x0134ea24: b("08 f0 af 52"),
-            0x0134ea40: b("08 f0 af 52"),
-            0x0134ea5c: b("08 f0 af 52"),
-            0x0134ebb4: b("08 f0 af 52"),
-            0x0134ebd0: b("08 f0 af 52"),
-            0x0134ebec: b("08 f0 af 52"),
-            #0x0175c800: b("08 f0 af 52"), #      10k 8k pair
+            0x007dd8f4: asm("mov w8,#0x7f800000"),
+            0x007dd910: asm("mov w8,#0x7f800000"),
+            0x007dd92c: asm("mov w8,#0x7f800000"),
+            0x007dda48: asm("mov w8,#0x7f800000"),
+            0x007dda64: asm("mov w8,#0x7f800000"),
+            0x007dda80: asm("mov w8,#0x7f800000"),
+            0x007ddcc0: asm("mov w8,#0x7f800000"),
+            0x007ddcdc: asm("mov w8,#0x7f800000"),
+            0x007ddcf8: asm("mov w8,#0x7f800000"),
+            0x007dde00: asm("mov w8,#0x7f800000"),
+            0x007dde1c: asm("mov w8,#0x7f800000"),
+            0x007dde38: asm("mov w8,#0x7f800000"),
+            0x007ddf40: asm("mov w8,#0x7f800000"),
+            0x007ddf5c: asm("mov w8,#0x7f800000"),
+            0x007ddf78: asm("mov w8,#0x7f800000"),
+            0x007de334: asm("mov w8,#0x7f800000"),
+            0x007de350: asm("mov w8,#0x7f800000"),
+            0x007de36c: asm("mov w8,#0x7f800000"),
+            #0x00852d68: asm("mov w8,#0x7f800000"), # this is related to something else? local_d0 = (local_d0 + 5000.0) / 10000.0; fStack_cc = (fStack_cc + 4000.0) / 8000.0;
+            #0x0085302c: asm("mov w23,#0x7f800000"), # w23, 10k 8k pair
+            #0x00a7abc4: asm("mov w9,#0x7f800000"), # w9, something storing multiples of 8k but seems grass/terrain/tile related
+            #0x00b6d390: asm("mov w8,#0x7f800000"), # gnarly terrain function, can't even find usage in decomp
+            #0x00c48ac4: asm("mov w8,#0x7f800000"), #      10k 8k pair
+            0x00c570b8: asm("mov w11,#0x7f800000"), # w11, something about aglsky params?
+            0x00cb9524: asm("mov w8,#0x7f800000"),
+            #0x00f35d44: asm("mov x8,#0x7f800000"), # x8, unrelated audio stuff
+            0x011b3818: asm("mov w9,#0x7f800000"), # w9
+            0x0134b9b4: asm("mov w8,#0x7f800000"),
+            0x0134b9d0: asm("mov w8,#0x7f800000"),
+            0x0134b9ec: asm("mov w8,#0x7f800000"),
+            0x0134ea24: asm("mov w8,#0x7f800000"),
+            0x0134ea40: asm("mov w8,#0x7f800000"),
+            0x0134ea5c: asm("mov w8,#0x7f800000"),
+            0x0134ebb4: asm("mov w8,#0x7f800000"),
+            0x0134ebd0: asm("mov w8,#0x7f800000"),
+            0x0134ebec: asm("mov w8,#0x7f800000"),
+            #0x0175c800: asm("mov w8,#0x7f800000"), #      10k 8k pair
         },
+        #BuildId.TOTK_110: {}, # TODO https://github.com/dt-12345/world-bounds/blob/main/source/program/config.hpp
+        #BuildId.TOTK_121: {},
     },
     "lotuskit-fixed-20fps": {
         # Patch is applied by lotuskit tas when needed.
         # Writes large Framework.mGpuTimeStamp
         BuildId.TOTK_100: {
-            0x02a7b654: b("08 02 a0 d2"), # mov x8,#0x10000
-            0x02a7b658: b("68 8e 00 f9"), # str x8, [x19, #0x118]
+            0x02a7b654: asm("mov x8,#0x100000"),
+            0x02a7b658: asm("str x8, [x19, #0x118]"),
             0x02a7b65c: NOP,
             0x02a7b660: NOP,
             0x02a7b664: NOP,
         },
         BuildId.TOTK_110: {
-            0x02af47c4: b("08 02 a0 d2"), # mov x8,#0x10000
-            0x02af47c8: b("68 8e 00 f9"), # str x8, [x19, #0x118]
+            0x02af47c4: asm("mov x8,#0x100000"),
+            0x02af47c8: asm("str x8, [x19, #0x118]"),
             0x02af47cc: NOP,
             0x02af47d0: NOP,
             0x02af47d4: NOP,
         },
         BuildId.TOTK_121: {
-            0x02aed814: b("08 02 a0 d2"), # mov x8,#0x10000
-            0x02aed818: b("68 8e 00 f9"), # str x8, [x19, #0x118]
+            0x02aed814: asm("mov x8,#0x100000"),
+            0x02aed818: asm("str x8, [x19, #0x118]"),
             0x02aed81c: NOP,
             0x02aed820: NOP,
             0x02aed824: NOP,
@@ -152,22 +178,22 @@ LOTUSKIT_RUNTIME_PATCHES: PatchSetCollection = {
         # Patch is applied by lotuskit tas when needed.
         # Writes small Framework.mGpuTimeStamp
         BuildId.TOTK_100: {
-            0x02a7b654: b("28 00 80 d2"), # mov x8, #0x1           vanilla: 08 00 08 cb  sub  x8, x0,x8
-            0x02a7b658: b("68 8e 00 f9"), # str x8, [x19, #0x118]  vanilla: 69 8e 40 f9  ldr  x9, [x19, #0x118]
-            0x02a7b65c: NOP,                                     # vanilla: 3f 01 08 eb  cmp  x9, x8
-            0x02a7b660: NOP,                                     # vanilla: 4a 00 00 54  b.ge LAB_7102a7b668
-            0x02a7b664: NOP,                                     # vanilla: 68 8e 00 f9  str  x8, [x19, #0x118]
+            0x02a7b654: asm("mov x8, #0x1"),          # vanilla: 08 00 08 cb  sub  x8, x0,x8
+            0x02a7b658: asm("str x8, [x19, #0x118]"), # vanilla: 69 8e 40 f9  ldr  x9, [x19, #0x118]
+            0x02a7b65c: NOP,                          # vanilla: 3f 01 08 eb  cmp  x9, x8
+            0x02a7b660: NOP,                          # vanilla: 4a 00 00 54  b.ge LAB_7102a7b668
+            0x02a7b664: NOP,                          # vanilla: 68 8e 00 f9  str  x8, [x19, #0x118]
         },
         BuildId.TOTK_110: {
-            0x02af47c4: b("28 00 80 d2"), # mov x8, #0x1
-            0x02af47c8: b("68 8e 00 f9"), # str x8, [x19, #0x118]
+            0x02af47c4: asm("mov x8, #0x1"),
+            0x02af47c8: asm("str x8, [x19, #0x118]"),
             0x02af47cc: NOP,
             0x02af47d0: NOP,
             0x02af47d4: NOP,
         },
         BuildId.TOTK_121: {
-            0x02aed814: b("28 00 80 d2"), # mov x8, #0x1
-            0x02aed818: b("68 8e 00 f9"), # str x8, [x19, #0x118]
+            0x02aed814: asm("mov x8, #0x1"),
+            0x02aed818: asm("str x8, [x19, #0x118]"),
             0x02aed81c: NOP,
             0x02aed820: NOP,
             0x02aed824: NOP,
@@ -175,17 +201,17 @@ LOTUSKIT_RUNTIME_PATCHES: PatchSetCollection = {
     },
     "lotuskit-disable-backface-culling": {
         BuildId.TOTK_100: {
-            0x00705718: b("01 00 80 52"), # mov w1,#0x0            vanilla: 61 36 47 39  ldrb w1,[x19, #0x1cd]
-            0x012f254c: b("01 00 80 52"), # uncull shadows of backfaces?
-            #0x0072a7b8: b("01 00 80 52"), # ???
-            #0x00ee6fcc: b("01 00 80 52"), # ???
+            0x00705718: asm("mov w1,#0x0"), # vanilla: 61 36 47 39  ldrb w1,[x19, #0x1cd]
+            0x012f254c: asm("mov w1,#0x0"), # uncull shadows of backfaces?
+            #0x0072a7b8: asm("mov w1,#0x0"), # ???
+            #0x00ee6fcc: asm("mov w1,#0x0"), # ???
         },
         BuildId.TOTK_110: {
             # FIXME untested
-            0x00756ec0: b("01 00 80 52"), # mov w1,#0x0
+            0x00756ec0: asm("mov w1,#0x0"),
         },
         BuildId.TOTK_121: {
-            0x00756cac: b("01 00 80 52"), # mov w1,#0x0
+            0x00756cac: asm("mov w1,#0x0"),
         },
     },
 }
