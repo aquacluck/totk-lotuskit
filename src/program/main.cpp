@@ -233,8 +233,15 @@ HOOK_DEFINE_TRAMPOLINE(InitLotuskitOnTitleScreenHook) {
         nn::fs::MountSdCard("sdcard");
         nn::hid::InitializeKeyboard(); // for hotkey
         lotuskit::server::WebSocket::assignHeap(StealHeapHook::stolenHeap);
+
+        // graphics init
         lotuskit::TextWriter::createFrameHeap();
         lotuskit::PrimitiveImpl::createFrameHeap();
+        lotuskit::DebugDrawHooks::DebugDrawLayerMaskHook::Install();
+        lotuskit::DebugDrawHooks::DebugDrawHook::Install();
+        lotuskit::PrimitiveImpl::setupStatic();
+
+        // AS init
         lotuskit::script::engine::assignHeap(StealHeapHook::stolenHeap);
         lotuskit::script::engine::createAndConfigureEngine();
         lotuskit::script::engine::doAutorun();
@@ -243,18 +250,16 @@ HOOK_DEFINE_TRAMPOLINE(InitLotuskitOnTitleScreenHook) {
         //FrameworkProcCalcHook::Install();
         FrameworkProcDrawHook::Install();
 
-        //OnWhistleHook::Install();
+        // misc
+        NinJoyNpadDevice_calcHook::Install();
         OnRecallUpdateHighlightActorHook::Install();
         OnRequestCreateActorAsyncHook::Install();
-        NinJoyNpadDevice_calcHook::Install();
+        //OnWhistleHook::Install();
+        lotuskit::util::camera::InstallHooks();
+        //lotuskit::util::fps::InstallHooks();
+        lotuskit::util::patch::PrepareRevertPatches(); // generate/verify reverse ips patches on sdcard
         lotuskit::util::player::InstallHooks();
         lotuskit::util::world::InstallHooks();
-        lotuskit::util::camera::InstallHooks();
-        lotuskit::util::patch::PrepareRevertPatches(); // generate/verify reverse ips patches on sdcard
-
-        lotuskit::DebugDrawHooks::DebugDrawLayerMaskHook::Install();
-        lotuskit::DebugDrawHooks::DebugDrawHook::Install();
-        lotuskit::PrimitiveImpl::setupStatic();
     }
 };
 
