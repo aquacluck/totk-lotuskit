@@ -56,5 +56,11 @@ sys::debugLog("hello debug"); // svcOutputDebugString syscall
 
 
 // PrimitiveDrawer: render 3d shapes onscreen (see globals.cpp for all shapes+types)
-PrimitiveDrawer::drawSphere4x8(0, Player.pos, 5, Color4f(0, 1, 0, 0.1), Color4f(0, 0, 1, 1));
+const auto blue = Color4f(0, 0.4, 0.8, 0.5);
+Vector3f savepos = gamedata::getVector3f("PlayerStatus.SavePos");
+TextWriter::print(0, format("savepos: {} {} {} \n\n", savepos.x, savepos.y, savepos.z));
+auto m = Player.posRot;
+m.pos = savepos;
+PrimitiveDrawer::setModelMtx(0, m);
+PrimitiveDrawer::drawSphere4x8(0, Vector3f::ZERO, 0.25, blue, blue);
 

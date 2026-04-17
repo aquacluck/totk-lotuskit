@@ -126,6 +126,7 @@
 { util::ModuleIndex::Main, 0x00000000, "gmd::GameDataMgr::getUIntArray" },
 { util::ModuleIndex::Main, 0x00000000, "gmd::GameDataMgr::getUIntDirect" },
 { util::ModuleIndex::Main, 0x00000000, "gmd::GameDataMgr::getVector3" },
+{ util::ModuleIndex::Main, 0x00000000, "gmd::GameDataMgr::getVector3f" },
 { util::ModuleIndex::Main, 0x00000000, "gmd::GameDataMgr::sInstance" },
 { util::ModuleIndex::Main, 0x00000000, "gmd::GameDataMgr::setBool" },
 { util::ModuleIndex::Main, 0x00000000, "gmd::GameDataMgr::setBool2" },

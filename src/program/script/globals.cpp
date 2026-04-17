@@ -1427,6 +1427,10 @@ namespace lotuskit::script::globals {
         // TODO FloatArray
         // TODO Vector2, Vector2Array, Vector3, Vector3Array?
         // TODO Vector3f
+        asErrno = engine->RegisterGlobalFunction("Vector3f getVector3f(u32 hash)", AngelScript::asFUNCTION(lotuskit::util::gamedata::getVector3f), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("Vector3f getVector3f(const string &in key)", AngelScript::asFUNCTION(lotuskit::util::gamedata::getVector3fKey), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void setVector3f(u32 hash, const Vector3f &in value)", AngelScript::asFUNCTION(lotuskit::util::gamedata::setVector3f), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+        asErrno = engine->RegisterGlobalFunction("void setVector3f(const string &in key, const Vector3f &in value)", AngelScript::asFUNCTION(lotuskit::util::gamedata::setVector3fKey), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
         // TODO StringArray, String16, String16Array, String32, String32Array?
         // TODO String64, String64Array
         // TODO WString16, WString16Array, WString32, WString32Array, WString64, WString64Array?

@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include <math/seadVector.h>
 
 namespace lotuskit::util::gamedata {
     void* getGameDataMgr();
@@ -54,6 +55,10 @@ namespace lotuskit::util::gamedata {
     // TODO FloatArray
     // TODO Vector2, Vector2Array, Vector3, Vector3Array?
     // TODO Vector3f
+    sead::Vector3f getVector3f(u32 hash);
+    sead::Vector3f getVector3fKey(const std::string& key);
+    void setVector3f(u32 hash, const sead::Vector3f& value);
+    void setVector3fKey(const std::string& key, const sead::Vector3f& value);
     // TODO StringArray, String16, String16Array, String32, String32Array?
     // TODO String64, String64Array
     // TODO WString16, WString16Array, WString32, WString32Array, WString64, WString64Array?

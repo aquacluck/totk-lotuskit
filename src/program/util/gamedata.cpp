@@ -142,7 +142,26 @@ namespace lotuskit::util::gamedata {
 
     // TODO FloatArray
     // TODO Vector2, Vector2Array, Vector3, Vector3Array?
-    // TODO Vector3f
+    sead::Vector3f getVector3f(u32 hash) {
+        using impl_t = u64 (void*, sead::Vector3f*, u32);
+        auto ret = sead::Vector3f(0, 0, 0);
+        auto impl = EXL_SYM_RESOLVE<impl_t*>("gmd::GameDataMgr::getVector3f");
+        bool isOK = impl(getGameDataMgr(), &ret, hash);
+        if (!isOK) { } //ret = default_; }
+        return ret;
+    }
+    sead::Vector3f getVector3fKey(const std::string& key) {
+        return getVector3f(murmur32(key));
+    }
+    void setVector3f(u32 hash, const sead::Vector3f& value) {
+        using impl_t = void (void*, const sead::Vector3f&, u32);
+        auto impl = EXL_SYM_RESOLVE<impl_t*>("gmd::GameDataMgr::setVector3f");
+        return impl(getGameDataMgr(), value, hash);
+    }
+    void setVector3fKey(const std::string& key, const sead::Vector3f& value) {
+        setVector3f(murmur32(key), value);
+    }
+
     // TODO StringArray, String16, String16Array, String32, String32Array?
     // TODO String64, String64Array
     // TODO WString16, WString16Array, WString32, WString32Array, WString64, WString64Array?

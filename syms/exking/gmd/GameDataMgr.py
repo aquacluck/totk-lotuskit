@@ -2,12 +2,12 @@ from build_types import *
 begin_sym_file(__file__)
 
 EXKING("gmd::GameDataMgr::sInstance", {
-    #TOTK_100: 0x
-    #TOTK_110: 0x
+    TOTK_100: 0x04646c60,
+    TOTK_110: 0x047242b8,
     TOTK_121: 0x04721b98,
 })
 
-# getters+setters TODO versions
+# getters+setters TODO versions, also these haven't been well tested in general
 
 EXKING("gmd::GameDataMgr::getEnum", {
     TOTK_121: 0x00d4447c,
@@ -277,9 +277,18 @@ EXKING("gmd::GameDataMgr::setVector3Array", {
     TOTK_121: 0x01991050,
 })
 
-EXKING("gmd::GameDataMgr::setVector3f", {
-    TOTK_121: 0x00decdec,
+EXKING("gmd::GameDataMgr::getVector3f", {
+    TOTK_100: 0x0107b2bc,
+    TOTK_110: 0x00df1690, # untested
+    TOTK_121: 0x010bcac0,
 })
+
+EXKING("gmd::GameDataMgr::setVector3f", {
+    TOTK_100: 0x00dbc744, # untested
+    TOTK_110: 0x00df3604, # untested
+    TOTK_121: 0x00decdec, # untested
+})
+
 EXKING("gmd::GameDataMgr::setVector3f2", { # XXX
     TOTK_121: 0x0199117c,
 })
