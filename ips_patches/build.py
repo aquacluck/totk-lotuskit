@@ -55,6 +55,7 @@ def b(v) -> bytes:
     return bytes.fromhex(v)
 assert b("ab cd ef 01") == b"\xab\xcd\xef\x01"
 NOP = b("1f 20 03 d5")
+RET = b("c0 03 5f d6")
 
 try:
     import keystone
@@ -207,12 +208,16 @@ LOTUSKIT_RUNTIME_PATCHES: PatchSetCollection = {
             #0x00ee6fcc: asm("mov w1,#0x0"), # ???
         },
         BuildId.TOTK_110: {
-            # FIXME untested
-            0x00756ec0: asm("mov w1,#0x0"),
+            0x00756ec0: asm("mov w1,#0x0"), # untested
         },
         BuildId.TOTK_121: {
             0x00756cac: asm("mov w1,#0x0"),
         },
+    },
+    "lotuskit-disable-loading-fade-screen": {
+        BuildId.TOTK_100: { 0x008ce1bc: RET },
+        BuildId.TOTK_110: { 0x008a4f10: RET }, # untested
+        BuildId.TOTK_121: { 0x008ce89c: RET },
     },
 }
 
