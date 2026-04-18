@@ -285,14 +285,9 @@ HOOK_DEFINE_TRAMPOLINE(TestGetHeapSizeHook) {
 HOOK_DEFINE_TRAMPOLINE(AresSystemInitializeHook) {
     static constexpr auto s_name = "ares::System::initialize";
     static void Callback(void* aresSystem, size_t* aresSystemInitializeArg) {
-        aresSystemInitializeArg[21] = 0x80000; // half size zsdic heap
+        aresSystemInitializeArg[21] = 0x80000; // half size zsdic heap TODO prefer exefs_patches
         Orig(aresSystem, aresSystemInitializeArg);
     }
-};
-
-HOOK_DEFINE_TRAMPOLINE(DisablePrepoHook) {
-    static constexpr auto s_name = "engine::erepo::PlayReportModule::prepare_";
-    static void Callback(void* self, void* ptr) { }
 };
 
 extern "C" void exl_main(void* x0, void* x1) {
@@ -304,7 +299,6 @@ extern "C" void exl_main(void* x0, void* x1) {
 
 
     // memory is tight until engine+game init is settled, so we defer most initialization until then
-    DisablePrepoHook::Install(); // saves ~1MB
     AresSystemInitializeHook::Install(); // saves 0.5MB
     StealHeapHook::Install(); // called once mid bootup
     InitLotuskitOnTitleScreenHook::Install(); // first called on title screen, main mod init

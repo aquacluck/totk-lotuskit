@@ -102,6 +102,12 @@ LOTUSKIT_EXEFS_PATCHES: PatchSetCollection = {
             0x01155ef4: asm("add x8,x8,#0x900000"),
         },
     },
+    "lotuskit-disable-prepo-save-1MB": {
+        # stub engine::erepo::PlayReportModule::prepare_
+        BuildId.TOTK_100: { 0x011486c4: RET },
+        BuildId.TOTK_110: { 0x0116cbe4: RET },
+        BuildId.TOTK_121: { 0x011629b4: RET },
+    },
 }
 
 # patches for runtime installation (often large or experimental):
