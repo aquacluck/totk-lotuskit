@@ -8,6 +8,8 @@ using ActorBase = engine::actor::ActorBase;
 #include "structs/phive.hpp"
 
 namespace lotuskit::util::actor {
+    void InitResidentActors(); // called once near bootup
+
     void createSimple(const std::string &actorName);
     void createSimpleXYZ(const std::string &actorName, float x, float y, float z);
     void createSimplePos(const std::string &actorName, const sead::Vector3f &pos);

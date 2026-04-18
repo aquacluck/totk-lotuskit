@@ -312,6 +312,7 @@ namespace lotuskit::util::player {
 
             } else if (doLStickAbsoluteMode == 2) {
                 auto player = lotuskit::script::globals::ResidentActors::Player;
+                if (player == nullptr) { return; }
                 float dx = doLStickAbsoluteTargetPos.x - player->mPosition.x;
                 float dz = -(doLStickAbsoluteTargetPos.z - player->mPosition.z);
                 ctx->S[si] = lrad + atan2(-dx, dz) + M_PI;
@@ -319,13 +320,14 @@ namespace lotuskit::util::player {
             } else if (doLStickAbsoluteMode == 3) {
                 auto player = lotuskit::script::globals::ResidentActors::Player;
                 auto target = lotuskit::ActorWatcher::getSlotActor(doLStickAbsoluteTargetActorWatcher);
-                if (target == nullptr) { return; } // XXX warn?
+                if (player == nullptr || target == nullptr) { return; }
                 float dx = target->mPosition.x - player->mPosition.x;
                 float dz = -(target->mPosition.z - player->mPosition.z);
                 ctx->S[si] = lrad + atan2(-dx, dz) + M_PI;
 
             } else if (doLStickAbsoluteMode == 5) {
                 auto player = lotuskit::script::globals::ResidentActors::Player;
+                if (player == nullptr) { return; }
                 sead::Vector3f rot = {0, 0, 0};
                 player->mRotation.makeR(rot);
                 ctx->S[si] = lrad + rot.y;

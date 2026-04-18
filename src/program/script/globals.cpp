@@ -38,9 +38,11 @@ using Logger = lotuskit::Logger;
 
 namespace lotuskit::script::globals {
     namespace ResidentActors {
+        ::engine::actor::ActorBase* CameraXLinkControl = nullptr;
+        ::engine::actor::ActorBase* EventCamera = nullptr;
+        ::engine::actor::ActorBase* Exterminator = nullptr;
         ::engine::actor::ActorBase* Player = nullptr;
         ::engine::actor::ActorBase* PlayerCamera = nullptr;
-        ::engine::actor::ActorBase* EventCamera = nullptr;
     } // ns
     namespace MathConst {
         // https://www.gnu.org/software/libc/manual/html_node/Mathematical-Constants.html
@@ -1253,9 +1255,11 @@ namespace lotuskit::script::globals {
             asErrno = engine->RegisterObjectMethod("ActorBase", "void dumpASBlackboard(u32=0)", AngelScript::asFUNCTION(lotuskit::util::actor::dumpASBlackboard), AngelScript::asCALL_CDECL_OBJFIRST); assert(asErrno >= 0);
 
             //engine->SetDefaultNamespace("ResidentActors");
+            asErrno = engine->RegisterGlobalProperty("ActorBase@ CameraXLinkControl", &ResidentActors::CameraXLinkControl); assert(asErrno >= 0);
+            asErrno = engine->RegisterGlobalProperty("ActorBase@ EventCamera", &ResidentActors::EventCamera); assert(asErrno >= 0);
+            asErrno = engine->RegisterGlobalProperty("ActorBase@ Exterminator", &ResidentActors::Exterminator); assert(asErrno >= 0);
             asErrno = engine->RegisterGlobalProperty("ActorBase@ Player", &ResidentActors::Player); assert(asErrno >= 0);
             asErrno = engine->RegisterGlobalProperty("ActorBase@ PlayerCamera", &ResidentActors::PlayerCamera); assert(asErrno >= 0);
-            asErrno = engine->RegisterGlobalProperty("ActorBase@ EventCamera", &ResidentActors::EventCamera); assert(asErrno >= 0);
         /// }
 
         engine->SetDefaultNamespace("actor"); /// {

@@ -59,6 +59,7 @@
 { util::ModuleIndex::Main, 0x0102361c, "engine::module::PauseMgr::requestPause" },
 { util::ModuleIndex::Main, 0x04725bb8, "engine::module::VFRMgr::sInstance" },
 { util::ModuleIndex::Main, 0x00e7ac48, "engine::nnMain_post_setup" },
+{ util::ModuleIndex::Main, 0x04728538, "engine::scene::SceneModule::sInstance" },
 { util::ModuleIndex::Main, 0x007f61d0, "engine::steal_heap" },
 { util::ModuleIndex::Main, 0x0089011c, "engine::util::HashMurmur32" },
 { util::ModuleIndex::Main, 0x008f2358, "game::actor::GameActor::getComponent<game::component::PlayerComponent>" },

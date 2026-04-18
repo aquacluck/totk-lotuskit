@@ -1,6 +1,7 @@
 #include "ActorWatcher.hpp"
 #include "util/actor.hpp"
 #include "structs/bbBlackboard.hpp"
+#include "structs/engineActor.hpp"
 #include "script/globals.hpp"
 #include <prim/seadSafeString.h>
 
@@ -141,6 +142,41 @@ namespace lotuskit::util::actor {
         using impl_t = phive::RigidBodyEntity* (ActorBase*, const sead::SafeString&);
         auto impl = EXL_SYM_RESOLVE<impl_t*>("engine::actor::ActorBase::getRigidBodyEntityByName");
         return impl(actor, name.c_str());
+    }
+
+    uintptr_t getResidentActorMgr() {
+        const uintptr_t sm = *EXL_SYM_RESOLVE<uintptr_t*>("engine::scene::SceneModule::sInstance");
+        const uintptr_t scene = *(uintptr_t*)(sm + 0x1e8);
+        const uintptr_t* scList = *(uintptr_t**)(scene + 0x58);
+        //const s32 scCount = *(s32*)(scene + 0x50);
+        //nn::util::SNPrintf(buf, sizeof(buf), "scene %p, %d components at %p", scene, scCount, scList);
+        const uintptr_t actorMgr = scList[13];
+        // component 13 at 00000065a0dba908 refpath Work/Scene/Component/ResidentActorMgrParam/Default.game__scene__ResidentActorMgrParam.gyml
+        //sead::SafeString* refpath = (sead::SafeString*)(actorMgr+8);
+        //nn::util::SNPrintf(buf, sizeof(buf), "component[%d] -> ResidentActorMgr %p refpath %s", 13, actorMgr, refpath->cstr());
+        return actorMgr;
+    }
+
+    void InitResidentActors() {
+        const uintptr_t actorMgr = getResidentActorMgr();
+        const s32 n = *(s32*)(actorMgr + 0x20);
+        const uintptr_t actorLinkList = *(uintptr_t*)(actorMgr + 0x28);
+        constexpr size_t residentActorLinkSize = 0x70;
+        // 9 at bootup: PlayerCamera, EventCamera, Parasail, CameraXLinkControl,
+        //              Dm_Npc_RevivalFairy, CarryBox, ThrowBox, Exterminator, Player
+        for (s32 i=0; i < n; i++) {
+            auto link = (engine::actor::BaseProcLink*)(actorLinkList + i*residentActorLinkSize);
+            auto actor = link->mLinkData->baseProc;
+            auto name = actor->mActorName.cstr();
+            if (!strcmp(name, "CameraXLinkControl")) { lotuskit::script::globals::ResidentActors::CameraXLinkControl = actor; }
+            if (!strcmp(name, "EventCamera")) { lotuskit::script::globals::ResidentActors::EventCamera = actor; }
+            if (!strcmp(name, "Exterminator")) { lotuskit::script::globals::ResidentActors::Exterminator = actor; }
+            if (!strcmp(name, "Player")) { lotuskit::script::globals::ResidentActors::Player = actor; lotuskit::ActorWatcher::assignSlot(0, actor); }
+            if (!strcmp(name, "PlayerCamera")) { lotuskit::script::globals::ResidentActors::PlayerCamera = actor; }
+            //char buf[512];
+            //nn::util::SNPrintf(buf, sizeof(buf), "%d %s(%p)", actor->mID, name, actor);
+            //svcOutputDebugString(buf, strlen(buf));
+        }
     }
 
     as::Blackboard* getASBlackboard(ActorBase* actor) {

@@ -21,6 +21,7 @@
 #include "tas/InputDisplay.hpp"
 #include "tas/Playback.hpp"
 #include "tas/Record.hpp"
+#include "util/actor.hpp"
 #include "util/camera.hpp"
 #include "util/fps.hpp"
 #include "util/patch.hpp"
@@ -121,45 +122,6 @@ HOOK_DEFINE_TRAMPOLINE(OnRequestCreateActorAsyncHook) {
     }
 };
 
-HOOK_DEFINE_TRAMPOLINE(BaseProcMgr_addDependency) {
-    static constexpr auto s_name = "engine::actor::BaseProcMgr::addDependency";
-
-    static u32 Callback(engine::actor::BaseProcMgr &baseProcMgr, engine::actor::ActorBase &parent, engine::actor::ActorBase &child) {
-        u32 result = Orig(baseProcMgr, parent, child);
-
-        // register ResidentActors for use everywhere
-        if (!strcmp(parent.mName.cstr(), "Player") && lotuskit::script::globals::ResidentActors::Player != &parent) {
-            lotuskit::script::globals::ResidentActors::Player = &parent;
-            lotuskit::ActorWatcher::assignSlot(0, &parent);
-            Logger::logJson(json::object({ {"Player", (u64)(&parent)} }), "/hook/sym/BaseProcMgr_addDependency");
-        }
-        if (!strcmp(parent.mName.cstr(), "PlayerCamera") && lotuskit::script::globals::ResidentActors::PlayerCamera != &parent) {
-            lotuskit::script::globals::ResidentActors::PlayerCamera = &parent;
-            Logger::logJson(json::object({ {"PlayerCamera", (u64)(&parent)} }), "/hook/sym/BaseProcMgr_addDependency");
-        }
-        if (!strcmp(parent.mName.cstr(), "EventCamera") && lotuskit::script::globals::ResidentActors::EventCamera != &parent) {
-            lotuskit::script::globals::ResidentActors::EventCamera = &parent;
-            Logger::logJson(json::object({ {"EventCamera", (u64)(&parent)} }), "/hook/sym/BaseProcMgr_addDependency");
-        }
-
-        // TODO logging settings
-        if (false) {
-            Logger::logJson(json::object({
-                {"parent", json::object({
-                    {"name", parent.mName.cstr()},
-                    {"ringSize", parent.mDependencyRing.mSize}
-                })},
-                {"child", json::object({
-                    {"name", child.mName.cstr()},
-                    {"ringSize", child.mDependencyRing.mSize}
-                })}
-            }), "/hook/sym/BaseProcMgr_addDependency");
-        }
-
-        return result;
-    }
-};
-
 HOOK_DEFINE_TRAMPOLINE(NinJoyNpadDevice_calcHook) {
     static constexpr auto s_name = "sead::NinJoyNpadDevice::calc"; // hacks
 
@@ -255,6 +217,7 @@ HOOK_DEFINE_TRAMPOLINE(InitLotuskitOnTitleScreenHook) {
         OnRecallUpdateHighlightActorHook::Install();
         OnRequestCreateActorAsyncHook::Install();
         //OnWhistleHook::Install();
+        lotuskit::util::actor::InitResidentActors();
         lotuskit::util::camera::InstallHooks();
         //lotuskit::util::fps::InstallHooks();
         lotuskit::util::patch::PrepareRevertPatches(); // generate/verify reverse ips patches on sdcard
@@ -302,7 +265,6 @@ extern "C" void exl_main(void* x0, void* x1) {
     AresSystemInitializeHook::Install(); // saves 0.5MB
     StealHeapHook::Install(); // called once mid bootup
     InitLotuskitOnTitleScreenHook::Install(); // first called on title screen, main mod init
-    BaseProcMgr_addDependency::Install(); // XXX used to locate Player globally, could be deferred otherwise
     // XXX assert textwriter+primitivedrawer deps available
     lotuskit::DebugDrawHooks::BootupInitDebugDrawersHook::Install();
     lotuskit::util::pause::InstallHooks(); // XXX hooks PauseMgr init, could be deferred otherwise

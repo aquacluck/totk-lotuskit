@@ -4,9 +4,11 @@
 
 namespace lotuskit::script::globals {
     namespace ResidentActors {
+        extern ::engine::actor::ActorBase* CameraXLinkControl;
+        extern ::engine::actor::ActorBase* EventCamera;
+        extern ::engine::actor::ActorBase* Exterminator;
         extern ::engine::actor::ActorBase* Player;
         extern ::engine::actor::ActorBase* PlayerCamera;
-        extern ::engine::actor::ActorBase* EventCamera;
     }
 
     namespace sys {

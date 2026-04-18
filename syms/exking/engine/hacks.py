@@ -13,6 +13,12 @@ EXKING("sead::NinJoyNpadDevice::calc", {
     TOTK_121: 0x02a267bc,
 })
 
+EXKING("engine::scene::SceneModule::sInstance", {
+    TOTK_100: 0x04663f08,
+    TOTK_110: 0x0472ac58,
+    TOTK_121: 0x04728538,
+})
+
 EXKING("engine::steal_heap", {
     TOTK_100: 0x008111a8,
     TOTK_110: 0x0083c2fc,
