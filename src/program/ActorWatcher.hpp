@@ -569,15 +569,15 @@ namespace lotuskit {
                         if (bitIndex == 0) {
                             // main body is always first flag -- character matter(?) main bodies on actors like Player
                             // do not show up in visitRigidBodyEntities, so hacking this in is inevitable
-                            bool doWSRigidBody = _slot->doWSRigidBody & (1LL << (63-bitIndex));
-                            bool doTextWriterRigidBody = _slot->doTextWriterRigidBody & (1LL << (63-bitIndex));
-                            bool doDrawRigidBodyAABB = _slot->doDrawRigidBodyAABB & (1LL << (63-bitIndex));
-                            bool doDrawRigidBodyPos = _slot->doDrawRigidBodyPos & (1LL << (63-bitIndex));
-                            bool doDrawRigidBodyPosPast = _slot->doDrawRigidBodyPosPast & (1LL << (63-bitIndex));
-                            bool doDrawRigidBodyPosFuture = _slot->doDrawRigidBodyPosFuture & (1LL << (63-bitIndex));
-                            bool doTextWriterHavok = _slot->doTextWriterHavok & (1LL << (63-bitIndex));
-                            bool doDrawHkBody = _slot->doDrawHkBody & (1LL << (63-bitIndex));
-                            bool doDrawHkMotion = _slot->doDrawHkMotion & (1LL << (63-bitIndex));
+                            bool doWSRigidBody = _slot->doWSRigidBody & (1LL << bitIndex);
+                            bool doTextWriterRigidBody = _slot->doTextWriterRigidBody & (1LL << bitIndex);
+                            bool doDrawRigidBodyAABB = _slot->doDrawRigidBodyAABB & (1LL << bitIndex);
+                            bool doDrawRigidBodyPos = _slot->doDrawRigidBodyPos & (1LL << bitIndex);
+                            bool doDrawRigidBodyPosPast = _slot->doDrawRigidBodyPosPast & (1LL << bitIndex);
+                            bool doDrawRigidBodyPosFuture = _slot->doDrawRigidBodyPosFuture & (1LL << bitIndex);
+                            bool doTextWriterHavok = _slot->doTextWriterHavok & (1LL << bitIndex);
+                            bool doDrawHkBody = _slot->doDrawHkBody & (1LL << bitIndex);
+                            bool doDrawHkMotion = _slot->doDrawHkMotion & (1LL << bitIndex);
 
                             /*// XXX actorlink testing
                             engine::actor::ActorBaseLink* alink =  rbody->getActorLink();
@@ -601,15 +601,15 @@ namespace lotuskit {
                             return;
                         }
 
-                        bool doWSRigidBody = _slot->doWSRigidBody & (1LL << (63-bitIndex));
-                        bool doTextWriterRigidBody = _slot->doTextWriterRigidBody & (1LL << (63-bitIndex));
-                        bool doDrawRigidBodyAABB = _slot->doDrawRigidBodyAABB & (1LL << (63-bitIndex));
-                        bool doDrawRigidBodyPos = _slot->doDrawRigidBodyPos & (1LL << (63-bitIndex));
-                        bool doDrawRigidBodyPosPast = _slot->doDrawRigidBodyPosPast & (1LL << (63-bitIndex));
-                        bool doDrawRigidBodyPosFuture = _slot->doDrawRigidBodyPosFuture & (1LL << (63-bitIndex));
-                        bool doTextWriterHavok = _slot->doTextWriterHavok & (1LL << (63-bitIndex));
-                        bool doDrawHkBody = _slot->doDrawHkBody & (1LL << (63-bitIndex));
-                        bool doDrawHkMotion = _slot->doDrawHkMotion & (1LL << (63-bitIndex));
+                        bool doWSRigidBody = _slot->doWSRigidBody & (1LL << bitIndex);
+                        bool doTextWriterRigidBody = _slot->doTextWriterRigidBody & (1LL << bitIndex);
+                        bool doDrawRigidBodyAABB = _slot->doDrawRigidBodyAABB & (1LL << bitIndex);
+                        bool doDrawRigidBodyPos = _slot->doDrawRigidBodyPos & (1LL << bitIndex);
+                        bool doDrawRigidBodyPosPast = _slot->doDrawRigidBodyPosPast & (1LL << bitIndex);
+                        bool doDrawRigidBodyPosFuture = _slot->doDrawRigidBodyPosFuture & (1LL << bitIndex);
+                        bool doTextWriterHavok = _slot->doTextWriterHavok & (1LL << bitIndex);
+                        bool doDrawHkBody = _slot->doDrawHkBody & (1LL << bitIndex);
+                        bool doDrawHkMotion = _slot->doDrawHkMotion & (1LL << bitIndex);
 
                         drawRigidBody(rbody, doWSRigidBody, doTextWriterRigidBody, doDrawRigidBodyAABB, doDrawRigidBodyPos, doDrawRigidBodyPosPast, doDrawRigidBodyPosFuture, doTextWriterHavok, doDrawHkBody, doDrawHkMotion);
                         bitIndex++;
