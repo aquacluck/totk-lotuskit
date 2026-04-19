@@ -1,11 +1,16 @@
 #pragma once
 #include "exlaunch.hpp"
 #include <string>
-
 #include "structs/as.hpp"
 #include "structs/engineActor.hpp"
 using ActorBase = engine::actor::ActorBase;
-#include "structs/phive.hpp"
+
+namespace phive { class RigidBodyEntity; }
+namespace havok {
+    class hknpBody;
+    class hknpMotion;
+    class hknpWorld;
+}
 
 namespace lotuskit::util::actor {
     void InitResidentActors(); // called once near bootup
@@ -30,6 +35,10 @@ namespace lotuskit::util::actor {
 
     phive::RigidBodyEntity* getMainRigidBody(ActorBase* actor);
     phive::RigidBodyEntity* getRigidBodyByName(ActorBase* actor, const std::string& name);
+
+    havok::hknpWorld* getHavokWorld();
+    havok::hknpBody* getHavokBody(phive::RigidBodyEntity* rbody);
+    havok::hknpMotion* getHavokMotion(phive::RigidBodyEntity* rbody);
 
     // TODO extract what we can to dedicated ns: as/ai/bb/util/??? (good time to split decl/member/etc into separate methods too)
     enum class BBDumpMode: u32 { MEMBERS = 0, ENUMCLS_FILE_DECL = 1 };

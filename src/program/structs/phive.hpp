@@ -9,25 +9,85 @@
 #include "exlaunch.hpp"
 
 namespace engine::actor { class ActorBaseLink; }
+namespace havok { class hknpWorld; }
 
 namespace phive {
 
-    class ChangeRequest { // XXX RigidBodyChangeRequest?
+    class WorldMgrHavok {
+        virtual ~WorldMgrHavok(); // vtable
+        public:
+        #ifdef TOTK_100
+        u8 _worldMgrBase[0xb8];
+        #else
+        u8 _worldMgrBase[0xd8];
+        #endif
+        havok::hknpWorld* havokWorld;
+        u8 _0[0x200];
+    };
+    #ifdef TOTK_100
+    static_assert(offsetof(WorldMgrHavok, havokWorld) == 0xc0);
+    static_assert(sizeof(WorldMgrHavok) == 0x2c8); // XXX guess
+    #else
+    static_assert(offsetof(WorldMgrHavok, havokWorld) == 0xe0);
+    static_assert(sizeof(WorldMgrHavok) == 0x2e8);
+    #endif
+
+    class DynamicsFramework {
+        virtual ~DynamicsFramework(); // vtable
+        public:
+        u8 _dynamicsFrameworkBase[0xb8];
+        WorldMgrHavok* worldMgrArray[2];
+        void* rigidBodyMgr;
+        void* shapeDrawMgr; // TODO oh?
+        void* constraintMgr;
+        void* idkMgr;
+        void* ragdollMgr;
+        void* hitMgr;
+        //... staticCompoundBodyList could be useful? idk
+        u8 _0[0x348];
+    };
+    static_assert(offsetof(DynamicsFramework, worldMgrArray) == 0xc0);
+    static_assert(sizeof(DynamicsFramework) == 0x448);
+
+    class PhiveBackEnd {
+        virtual ~PhiveBackEnd(); // vtable
+        public:
+        u8 _0[0xc0];
+        DynamicsFramework* dynamicsFramework;
+        u8 _1[0x90];
+    };
+    static_assert(offsetof(PhiveBackEnd, dynamicsFramework) == 0xc8);
+    static_assert(sizeof(PhiveBackEnd) == 0x160);
+
+    class SdkRigidBody {
+        virtual ~SdkRigidBody(); // vtable
+        public:
+        u64 hknpBodyId;
+        void* hknpMassDistribution;
+        void* idk;
+        u64 getBodyId() { return hknpBodyId & 0xffffff; }
+    };
+    static_assert(sizeof(SdkRigidBody) == 0x20);
+
+    class RigidBodyChangeRequest {
         public:
         char _00[0x8];
         sead::Matrix34f nextTransform;
         char _38[0x9c];
         u32 flags;
     };
+    static_assert(sizeof(RigidBodyChangeRequest) == 0xd8);
 
     class RigidBodyBase {
         public:
         char _00[0x60];
-        ChangeRequest* changeRequest;
-        char _68[0x30];
+        RigidBodyChangeRequest* changeRequest;
+        u64 flags; // 8 = remove, 6 = static, 0x16 = isLastPaused, 0x1a = isLastWarped, bits 2-4 is type (4 = character), 0x23 = activate, 0x21 = ignore forcefield
+        SdkRigidBody* sdkRigidBody;
+        char cs[0x20];
         sead::Matrix34f lastTransform;
         sead::Matrix34f prevTransform;
-        // XXX pad more members before RigidBodyEntity?
+        char _f8[0x28];
 
         void getAABB_(sead::BoundBox3f* dst) {
             using impl_t = void (RigidBodyBase*, sead::BoundBox3f*);
@@ -94,7 +154,9 @@ namespace phive {
         }
 
     };
+    static_assert(offsetof(RigidBodyBase, sdkRigidBody) == 0x70);
     static_assert(offsetof(RigidBodyBase, lastTransform) == 0x98);
+    static_assert(sizeof(RigidBodyBase) == 0x120);
 
     class RigidBodyEntity: public RigidBodyBase {
         public:

@@ -431,7 +431,7 @@ dialog {
     margin-top: 8px;
     margin-bottom: 4px;
     .fakebutton { padding: 4px; }
-    .row2 { margin-top: 12px; margin-bottom: 8px; }
+    .row2, .row3 { margin-top: 12px; margin-bottom: 8px; }
 }
 
 .toolset_actor_watcher .faketoggle.doWSLog :not(:checked) ~ .fakebutton {

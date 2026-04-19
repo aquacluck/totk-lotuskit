@@ -1410,6 +1410,26 @@
                                     <span class="fakebutton pushbutton">${getText("AABB")}</span>
                                 </label>
                             </div>
+
+                            <div class="row3">
+                                <label title="ActorWatcher::doTextWriterHavok(${i}, flagset_t)" class="faketoggle doTextWriterHavok" for="aw${i}_doTextWriterHavok">
+                                    <input type="checkbox" id="aw${i}_doTextWriterHavok" checked=${state.doTextWriterHavok}
+                                           onChange=${ e => this.do_send_toggle(i, "doTextWriterHavok", e.target.checked, 0, 0xffffffffffffffffn) } />
+                                    <span class="fakebutton pushbutton">${getText("txt")}</span>
+                                </label>
+
+                                <label title="ActorWatcher::doDrawHkBody(${i}, flagset_t)" class="faketoggle doDrawHkBody" for="aw${i}_doDrawHkBody">
+                                    <input type="checkbox" id="aw${i}_doDrawHkBody" checked=${state.doDrawHkBody}
+                                           onChange=${ e => this.do_send_toggle(i, "doDrawHkBody", e.target.checked, 0, 0xffffffffffffffffn) } />
+                                    <span class="fakebutton pushbutton">${getText("body")}</span>
+                                </label>
+
+                                <label title="ActorWatcher::doDrawHkMotion(${i}, flagset_t)" class="faketoggle doDrawHkMotion" for="aw${i}_doDrawHkMotion">
+                                    <input type="checkbox" id="aw${i}_doDrawHkMotion" checked=${state.doDrawHkMotion}
+                                           onChange=${ e => this.do_send_toggle(i, "doDrawHkMotion", e.target.checked, 0, 0xffffffffffffffffn) } />
+                                    <span class="fakebutton pushbutton">${getText("motion")}</span>
+                                </label>
+                            </div>
                         </div>
                     </div>
 

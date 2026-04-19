@@ -167,6 +167,7 @@
 { util::ModuleIndex::Main, 0x046718e8, "nn::mem::StandardAllocator::sSize" },
 { util::ModuleIndex::Main, 0x00eb8640, "phive::CharacterMatterRigidBodyEntity::requestSetLinearVelocity" },
 { util::ModuleIndex::Main, 0x008aa374, "phive::ControllerSet::visitRigidBodyEntities" },
+{ util::ModuleIndex::Main, 0x0471dcb0, "phive::PhiveBackEnd::sInstance" },
 { util::ModuleIndex::Main, 0x00cf600c, "phive::RigidBodyBase::applyLinearImpulse" },
 { util::ModuleIndex::Main, 0x00b7d5d4, "phive::RigidBodyBase::getAABB" },
 { util::ModuleIndex::Main, 0x00a3c1c4, "phive::RigidBodyBase::getBoundingBoxWorld" },

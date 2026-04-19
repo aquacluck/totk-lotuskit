@@ -1304,6 +1304,9 @@ namespace lotuskit::script::globals {
             asErrno = engine->RegisterGlobalFunction("void doDrawRigidBodyPos(index_t, flagset_t)", AngelScript::asFUNCTION(lotuskit::ActorWatcher::doDrawRigidBodyPos), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
             asErrno = engine->RegisterGlobalFunction("void doDrawRigidBodyPosPast(index_t, flagset_t)", AngelScript::asFUNCTION(lotuskit::ActorWatcher::doDrawRigidBodyPosPast), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
             asErrno = engine->RegisterGlobalFunction("void doDrawRigidBodyPosFuture(index_t, flagset_t)", AngelScript::asFUNCTION(lotuskit::ActorWatcher::doDrawRigidBodyPosFuture), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+            asErrno = engine->RegisterGlobalFunction("void doTextWriterHavok(index_t, flagset_t)", AngelScript::asFUNCTION(lotuskit::ActorWatcher::doTextWriterHavok), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+            asErrno = engine->RegisterGlobalFunction("void doDrawHkBody(index_t, flagset_t)", AngelScript::asFUNCTION(lotuskit::ActorWatcher::doDrawHkBody), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
+            asErrno = engine->RegisterGlobalFunction("void doDrawHkMotion(index_t, flagset_t)", AngelScript::asFUNCTION(lotuskit::ActorWatcher::doDrawHkMotion), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
 
             // slot access
             asErrno = engine->RegisterGlobalFunction("ActorBase@ get(index_t)", AngelScript::asFUNCTION(lotuskit::ActorWatcher::getSlotActor), AngelScript::asCALL_CDECL); assert(asErrno >= 0);
@@ -1331,6 +1334,15 @@ namespace lotuskit::script::globals {
         asErrno = engine->RegisterObjectMethod("RigidBody", "string getName()", AngelScript::asMETHOD(phive::RigidBodyBase, getName), AngelScript::asCALL_THISCALL); assert(asErrno >= 0);
         asErrno = engine->RegisterObjectProperty("RigidBody", "Matrix34f lastTransform", asOFFSET(phive::RigidBodyBase, lastTransform)); assert(asErrno >= 0);
         asErrno = engine->RegisterObjectProperty("RigidBody", "Matrix34f prevTransform", asOFFSET(phive::RigidBodyBase, prevTransform)); assert(asErrno >= 0);
+    }
+
+    void registerHavok(AngelScript::asIScriptEngine* engine) {
+        s32 asErrno;
+        engine->SetDefaultNamespace(""); // root
+        asErrno = engine->RegisterObjectType("hknpBody", 0, AngelScript::asOBJ_REF | AngelScript::asOBJ_NOCOUNT); assert(asErrno >= 0);
+        asErrno = engine->RegisterObjectType("hknpMotion", 0, AngelScript::asOBJ_REF | AngelScript::asOBJ_NOCOUNT); assert(asErrno >= 0);
+        asErrno = engine->RegisterObjectType("hknpShape", 0, AngelScript::asOBJ_REF | AngelScript::asOBJ_NOCOUNT); assert(asErrno >= 0);
+        // TODO instance getters, member getters+setters?
     }
 
     void registerEvent(AngelScript::asIScriptEngine* engine) {
@@ -1534,6 +1546,7 @@ namespace lotuskit::script::globals {
         registerTAS(engine);
         registerHotkey(engine);
         registerPhive(engine);
+        registerHavok(engine);
         registerActorSystem(engine);
         registerEvent(engine);
         registerPlayerUtil(engine);

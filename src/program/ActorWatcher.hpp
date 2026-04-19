@@ -7,6 +7,8 @@
 #include <math/seadVector.h>
 #include "structs/engineActor.hpp"
 #include "structs/phive.hpp"
+#include "structs/havok.hpp"
+#include "util/actor.hpp"
 #include "TextWriter.hpp"
 #include "PrimitiveDrawer.hpp"
 #include <lib/json.hpp>
@@ -18,6 +20,7 @@ const sead::Color4f VoidGray = sead::Color4f(0.3, 0.3, 0.3, 0.15);
 const sead::Color4f VoidGrayPast = sead::Color4f(0.5, 0.5, 0.5, 0.1); // faint
 //const sead::Color4f VoidGrayFuture = sead::Color4f(0.1, 0.1, 0.1, 0.2); // darker+heavier
 const sead::Color4f RecallYellow{0.9f, 0.76f, 0.16f, 0.15f}; // for position+rotation
+const sead::Color4f HavokOrange{0.996f, 0.702f, 0, 0.4f}; // #feb300
 const sead::Color4f MotionBlue{0.16f, 0.3f, 0.9f, 0.3f};
 const sead::Color4f PhysicalGreen = sead::Color4f(0.4, 0.9, 0.4, 0.15);
 const sead::Color4f PhysicalGreenPast = sead::Color4f(0.4, 0.9, 0.4, 0.1); // faint
@@ -55,6 +58,9 @@ namespace lotuskit {
         u64 doDrawRigidBodyPos; // green dot
         u64 doDrawRigidBodyPosPast; // faint green
         u64 doDrawRigidBodyPosFuture; // bold green
+        u64 doTextWriterHavok;
+        u64 doDrawHkBody; // orange
+        u64 doDrawHkMotion; // orange
 
         ActorWatcherEntry() {
             this->clear(); // state
@@ -76,6 +82,9 @@ namespace lotuskit {
             this->doDrawRigidBodyPos = 0;
             this->doDrawRigidBodyPosPast = 0;
             this->doDrawRigidBodyPosFuture = 0;
+            this->doTextWriterHavok = 0;
+            this->doDrawHkBody = 0;
+            this->doDrawHkMotion = 0;
         }
 
         void clear() {
@@ -111,7 +120,10 @@ namespace lotuskit {
                 {"doDrawRigidBodyAABB", this->doDrawRigidBodyAABB},
                 {"doDrawRigidBodyPos", this->doDrawRigidBodyPos},
                 {"doDrawRigidBodyPosPast", this->doDrawRigidBodyPosPast},
-                {"doDrawRigidBodyPosFuture", this->doDrawRigidBodyPosFuture}
+                {"doDrawRigidBodyPosFuture", this->doDrawRigidBodyPosFuture},
+                {"doTextWriterHavok", this->doTextWriterHavok},
+                {"doDrawHkBody", this->doDrawHkBody},
+                {"doDrawHkMotion", this->doDrawHkMotion}
 
             }), ns, false, false); // noblock, no debug log
         }
@@ -239,6 +251,18 @@ namespace lotuskit {
             slots[i].doDrawRigidBodyPosFuture = val;
             slots[i].wsAnnounceConfig(i);
         }
+        inline static void doTextWriterHavok(size_t i, u64 val) {
+            slots[i].doTextWriterHavok = val;
+            slots[i].wsAnnounceConfig(i);
+        }
+        inline static void doDrawHkBody(size_t i, u64 val) {
+            slots[i].doDrawHkBody = val;
+            slots[i].wsAnnounceConfig(i);
+        }
+        inline static void doDrawHkMotion(size_t i, u64 val) {
+            slots[i].doDrawHkMotion = val;
+            slots[i].wsAnnounceConfig(i);
+        }
 
         // global config
         inline static size_t doTextWriterDelta_target = 0;
@@ -290,7 +314,7 @@ namespace lotuskit {
             return -1;
         }
 
-        inline static void drawRigidBody(phive::RigidBodyEntity* rbody, bool doWSRigidBody, bool doTextWriterRigidBody, bool doDrawRigidBodyAABB, bool doDrawRigidBodyPos, bool doDrawRigidBodyPosPast, bool doDrawRigidBodyPosFuture) {
+        inline static void drawRigidBody(phive::RigidBodyEntity* rbody, bool doWSRigidBody, bool doTextWriterRigidBody, bool doDrawRigidBodyAABB, bool doDrawRigidBodyPos, bool doDrawRigidBodyPosPast, bool doDrawRigidBodyPosFuture, bool doTextWriterHavok, bool doDrawHkBody, bool doDrawHkMotion) {
             if (doWSRigidBody) {
                 float* xxx = (float*)&(rbody->lastTransform); //float x = [3]; float y = [7]; float z = [11];
                 sead::Vector3f vel = rbody->getNextLinearVelocity();
@@ -309,7 +333,7 @@ namespace lotuskit {
                 sead::Vector3f vel = rbody->getNextLinearVelocity();
                 auto pos_str = std::format("{}, {}, {}", FF(xxx[3]), FF(xxx[7]), FF(xxx[11]));
                 auto vel_str = std::format("{}, {}, {}  |xz|={}", FF(vel.x), FF(vel.y), FF(vel.z), FF(std::sqrt(vel.x*vel.x + vel.z*vel.z)));
-                lotuskit::TextWriter::printf(0, "RigidBody %s(%p): pos %s; vel %s \n", rbody->getName().c_str(), rbody, pos_str.c_str(), vel_str.c_str());
+                lotuskit::TextWriter::printf(0, "%s(%p): pos %s; vel %s \n", rbody->getName().c_str(), rbody, pos_str.c_str(), vel_str.c_str());
                 #undef FF
             }
             if (doDrawRigidBodyPos || doDrawRigidBodyAABB) {
@@ -322,18 +346,57 @@ namespace lotuskit {
                 sead::BoundBox3f aabb = rbody->getAABB();
                 lotuskit::PrimitiveDrawer::drawWireCube(0, sead::PrimitiveDrawer::CubeArg(aabb, PhysicalGreen));
             }
-
             if (doDrawRigidBodyPosPast) {
                 lotuskit::PrimitiveDrawer::setModelMtx(0, rbody->prevTransform);
                 lotuskit::PrimitiveDrawer::drawSphere8x16(0, sead::Vector3f(0,0,0), 0.075, PhysicalGreenPast, VoidGrayPast);
             }
-
             // sometimes a "next" is available
             const bool isChangeTransform = rbody->changeRequest && (rbody->changeRequest->flags >> 6 & 1) != 0;
             if (doDrawRigidBodyPosFuture && isChangeTransform) {
                 //sead::Matrix34f current = isChangeTransform ? rbody->changeRequest->nextTransform : rbody->lastTransform;
                 lotuskit::PrimitiveDrawer::setModelMtx(0, rbody->changeRequest->nextTransform);
                 lotuskit::PrimitiveDrawer::drawSphere8x16(0, sead::Vector3f(0,0,0), 0.075, PhysicalGreenFuture, PhysicalGreenFuture);
+            }
+
+            if (doTextWriterHavok) {
+                #define FF(f) (f == 1 ? "1" : (f == -1 ? "-1" : (fabs(f) < 0.000001 ? "0" : std::format("{:.6f}", f))))
+                auto hkBody = lotuskit::util::actor::getHavokBody(rbody);
+                auto bp = hkBody->translation;
+                auto pos_str = std::format("{}, {}, {}", FF(bp.x), FF(bp.y), FF(bp.z));
+                lotuskit::TextWriter::printf(0, "  Body(%p): pos %s \n", hkBody, pos_str.c_str());
+
+                auto hkMotion = lotuskit::util::actor::getHavokMotion(rbody);
+                auto mp = hkMotion->centerOfMass;
+                pos_str = std::format("{}, {}, {}", FF(mp.x), FF(mp.y), FF(mp.z));
+                lotuskit::TextWriter::printf(0, "  Motion(%p): center %s \n", hkMotion, pos_str.c_str());
+                #undef FF
+            }
+
+            if (doDrawHkBody) {
+                auto hkBody = lotuskit::util::actor::getHavokBody(rbody);
+                auto from = hkBody->hkRotation; // translation is not included, idk why its 12
+                auto to = sead::Matrix33f();
+                to.m[0][0] = from[0];
+                to.m[0][1] = from[4];
+                to.m[0][2] = from[8];
+                to.m[1][0] = from[1];
+                to.m[1][1] = from[5];
+                to.m[1][2] = from[9];
+                to.m[2][0] = from[2];
+                to.m[2][1] = from[6];
+                to.m[2][2] = from[10];
+                auto transform = sead::Matrix34f(to, *(sead::Vector3f*)(&hkBody->translation));
+                lotuskit::PrimitiveDrawer::setModelMtx(0, transform);
+                lotuskit::PrimitiveDrawer::drawSphere8x16(0, sead::Vector3f(0,0,0), 0.035, HavokOrange, HavokOrange);
+            }
+
+            if (doDrawHkMotion) {
+                auto hkMotion = lotuskit::util::actor::getHavokMotion(rbody);
+                auto transform = sead::Matrix34f();
+                auto mp = sead::Vector3f(hkMotion->centerOfMass.x, hkMotion->centerOfMass.y, hkMotion->centerOfMass.z);
+                transform.makeQT(hkMotion->orientation, mp);
+                lotuskit::PrimitiveDrawer::setModelMtx(0, transform);
+                lotuskit::PrimitiveDrawer::drawSphere8x16(0, sead::Vector3f(0,0,0), 0.05, HavokOrange, HavokOrange);
             }
         }
 
@@ -512,6 +575,9 @@ namespace lotuskit {
                             bool doDrawRigidBodyPos = _slot->doDrawRigidBodyPos & (1LL << (63-bitIndex));
                             bool doDrawRigidBodyPosPast = _slot->doDrawRigidBodyPosPast & (1LL << (63-bitIndex));
                             bool doDrawRigidBodyPosFuture = _slot->doDrawRigidBodyPosFuture & (1LL << (63-bitIndex));
+                            bool doTextWriterHavok = _slot->doTextWriterHavok & (1LL << (63-bitIndex));
+                            bool doDrawHkBody = _slot->doDrawHkBody & (1LL << (63-bitIndex));
+                            bool doDrawHkMotion = _slot->doDrawHkMotion & (1LL << (63-bitIndex));
 
                             /*// XXX actorlink testing
                             engine::actor::ActorBaseLink* alink =  rbody->getActorLink();
@@ -523,7 +589,7 @@ namespace lotuskit {
                             }
                             */
 
-                            drawRigidBody(_rbodyMain, doWSRigidBody, doTextWriterRigidBody, doDrawRigidBodyAABB, doDrawRigidBodyPos, doDrawRigidBodyPosPast, doDrawRigidBodyPosFuture);
+                            drawRigidBody(_rbodyMain, doWSRigidBody, doTextWriterRigidBody, doDrawRigidBodyAABB, doDrawRigidBodyPos, doDrawRigidBodyPosPast, doDrawRigidBodyPosFuture, doTextWriterHavok, doDrawHkBody, doDrawHkMotion);
                             bitIndex++;
                             // no return: continue processing first visited body
                         }
@@ -541,8 +607,11 @@ namespace lotuskit {
                         bool doDrawRigidBodyPos = _slot->doDrawRigidBodyPos & (1LL << (63-bitIndex));
                         bool doDrawRigidBodyPosPast = _slot->doDrawRigidBodyPosPast & (1LL << (63-bitIndex));
                         bool doDrawRigidBodyPosFuture = _slot->doDrawRigidBodyPosFuture & (1LL << (63-bitIndex));
+                        bool doTextWriterHavok = _slot->doTextWriterHavok & (1LL << (63-bitIndex));
+                        bool doDrawHkBody = _slot->doDrawHkBody & (1LL << (63-bitIndex));
+                        bool doDrawHkMotion = _slot->doDrawHkMotion & (1LL << (63-bitIndex));
 
-                        drawRigidBody(rbody, doWSRigidBody, doTextWriterRigidBody, doDrawRigidBodyAABB, doDrawRigidBodyPos, doDrawRigidBodyPosPast, doDrawRigidBodyPosFuture);
+                        drawRigidBody(rbody, doWSRigidBody, doTextWriterRigidBody, doDrawRigidBodyAABB, doDrawRigidBodyPos, doDrawRigidBodyPosPast, doDrawRigidBodyPosFuture, doTextWriterHavok, doDrawHkBody, doDrawHkMotion);
                         bitIndex++;
                     });
 

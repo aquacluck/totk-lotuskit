@@ -2,6 +2,8 @@
 #include "util/actor.hpp"
 #include "structs/bbBlackboard.hpp"
 #include "structs/engineActor.hpp"
+#include "structs/phive.hpp"
+#include "structs/havok.hpp"
 #include "script/globals.hpp"
 #include <prim/seadSafeString.h>
 
@@ -142,6 +144,23 @@ namespace lotuskit::util::actor {
         using impl_t = phive::RigidBodyEntity* (ActorBase*, const sead::SafeString&);
         auto impl = EXL_SYM_RESOLVE<impl_t*>("engine::actor::ActorBase::getRigidBodyEntityByName");
         return impl(actor, name.c_str());
+    }
+
+    havok::hknpWorld* getHavokWorld() {
+        auto backend = *EXL_SYM_RESOLVE<phive::PhiveBackEnd**>("phive::PhiveBackEnd::sInstance");
+        auto df = backend->dynamicsFramework;
+        auto world = df->worldMgrArray[0]->havokWorld;
+        return world;
+    }
+
+    havok::hknpBody* getHavokBody(phive::RigidBodyEntity* rbody) {
+        u64 bodyId = rbody->sdkRigidBody->getBodyId();
+        return std::addressof(getHavokWorld()->mBodyManager.mBodyBuffer.mData[bodyId]);
+    }
+
+    havok::hknpMotion* getHavokMotion(phive::RigidBodyEntity* rbody) {
+        auto body = getHavokBody(rbody);
+        return std::addressof(getHavokWorld()->mMotionManager.userStruct.mData[body->motionId]);
     }
 
     uintptr_t getResidentActorMgr() {
