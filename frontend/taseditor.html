@@ -190,7 +190,7 @@
 <body>
 
 <script type="module">
-    import { getText, setDocumentLang, translateSelectedElementText } from "/assets/translate.mjs";
+    import { getText, setDocumentLang, translateSelectedElementText } from "./assets/translate.mjs";
     window.addEventListener("load", async function() {
         window.getText = getText;
         setDocumentLang();
@@ -922,7 +922,6 @@
 
     function openImportModal() {
         // FIXME modal opens beneath editor in firefox
-        // FIXME awkward SimpleWindow drag interaction with iframe
         document.getElementById('importModal').style.display = "block";
         document.getElementById('importTextarea').focus();
     }
