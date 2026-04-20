@@ -365,6 +365,10 @@ namespace lotuskit {
                 auto pos_str = std::format("{}, {}, {}", FF(bp.x), FF(bp.y), FF(bp.z));
                 lotuskit::TextWriter::printf(0, "  Body(%p): pos %s \n", hkBody, pos_str.c_str());
 
+                // TODO shape
+                //auto ab = hkBody->aabb;
+                //lotuskit::TextWriter::printf(0, "            aabb: %f %f %f %f %f %f \n", ab[0], ab[1], ab[2], ab[3], ab[4], ab[5]);
+
                 auto hkMotion = lotuskit::util::actor::getHavokMotion(rbody);
                 auto mp = hkMotion->centerOfMass;
                 pos_str = std::format("{}, {}, {}", FF(mp.x), FF(mp.y), FF(mp.z));
@@ -388,6 +392,9 @@ namespace lotuskit {
                 auto transform = sead::Matrix34f(to, *(sead::Vector3f*)(&hkBody->translation));
                 lotuskit::PrimitiveDrawer::setModelMtx(0, transform);
                 lotuskit::PrimitiveDrawer::drawSphere8x16(0, sead::Vector3f(0,0,0), 0.035, HavokOrange, HavokOrange);
+
+                // TODO shape
+                lotuskit::PrimitiveDrawer::drawWireCube(0, sead::PrimitiveDrawer::CubeArg(hkBody->getAABB(), HavokOrange));
             }
 
             if (doDrawHkMotion) {

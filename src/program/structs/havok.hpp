@@ -32,7 +32,7 @@ namespace havok {
         u16 timAngle;
         u16 maxTimDistance;
         u16 maxTimDistanceFromRotation;
-        sead::BoundBox3f aabb;
+        float aabb[6];
         hknpShape* shape;
         u32 motionId;
         u32 nextAttachedBodySerialAndIndex; // hknpBodyIndex
@@ -48,6 +48,13 @@ namespace havok {
         sead::Quatf bodyFromMotionRotation;
         u64 bodyId;
         u64 userData;
+
+        sead::BoundBox3f getAABB() {
+            auto pos = (sead::Vector3f*)(&translation);
+            auto min = sead::Vector3f(aabb[4], aabb[5], aabb[3]) - *pos;
+            auto max = sead::Vector3f(aabb[0], aabb[1], aabb[2]) - *pos;
+            return sead::BoundBox3f(min, max);
+        }
     };
     static_assert(sizeof(hknpBody) == 0xc0);
     static_assert(offsetof(hknpBody, translation) == 0x30);
