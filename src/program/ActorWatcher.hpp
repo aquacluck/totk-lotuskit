@@ -14,17 +14,17 @@
 #include <lib/json.hpp>
 using json = nlohmann::json;
 
-//const sead::Color4f Transparent{0,0,0,0};
-//const sead::Color4f White{1,1,1,1};
-const sead::Color4f VoidGray = sead::Color4f(0.3, 0.3, 0.3, 0.15);
-const sead::Color4f VoidGrayPast = sead::Color4f(0.5, 0.5, 0.5, 0.1); // faint
-//const sead::Color4f VoidGrayFuture = sead::Color4f(0.1, 0.1, 0.1, 0.2); // darker+heavier
-const sead::Color4f RecallYellow{0.9f, 0.76f, 0.16f, 0.15f}; // for position+rotation
-const sead::Color4f HavokOrange{0.996f, 0.702f, 0, 0.4f}; // #feb300
-const sead::Color4f MotionBlue{0.16f, 0.3f, 0.9f, 0.3f};
-const sead::Color4f PhysicalGreen = sead::Color4f(0.4, 0.9, 0.4, 0.15);
-const sead::Color4f PhysicalGreenPast = sead::Color4f(0.4, 0.9, 0.4, 0.1); // faint
-const sead::Color4f PhysicalGreenFuture = sead::Color4f(0.2, 1.0, 0.2, 0.2); // greener+heavier
+//const auto Transparent = sead::Color4f(0,0,0,0);
+//const auto White = sead::Color4f(1,1,1,1);
+const auto VoidGray = sead::Color4f(0.3, 0.3, 0.3, 0.15);
+const auto VoidGrayPast = sead::Color4f(0.5, 0.5, 0.5, 0.1); // faint
+//const auto VoidGrayFuture = sead::Color4f(0.1, 0.1, 0.1, 0.2); // darker+heavier
+const auto RecallYellow = sead::Color4f(0.9, 0.76, 0.16, 0.35); // for position+rotation
+const auto HavokOrange = sead::Color4f(0.996, 0.702, 0, 0.4); // #feb300
+const auto MotionBlue = sead::Color4f(0.16, 0.3, 0.9, 0.35);
+const auto PhysicalGreen = sead::Color4f(0.4, 0.9, 0.4, 0.35);
+const auto PhysicalGreenPast = sead::Color4f(0.4, 0.9, 0.4, 0.1); // faint
+const auto PhysicalGreenFuture = sead::Color4f(0.2, 1.0, 0.2, 0.2); // greener+heavier
 
 namespace lotuskit {
     class ActorWatcherEntry {
@@ -365,7 +365,9 @@ namespace lotuskit {
                 auto pos_str = std::format("{}, {}, {}", FF(bp.x), FF(bp.y), FF(bp.z));
                 lotuskit::TextWriter::printf(0, "  Body(%p): pos %s \n", hkBody, pos_str.c_str());
 
-                // TODO shape
+                // TODO shape? convex type 0 is most common, wing is transformed 11
+                //const auto s = hkBody->shape;
+                //lotuskit::TextWriter::printf(0, "  Shape(%p, type=%d, dtype=%d, flags=%d, nskb=%d, cr=%f, ud=%p, psize=%d) \n", s, s->type, s->dispatchType, s->flags, s->numShapeKeyBits, s->convexRadius, s->userData, s->propertiesSize);
                 //auto ab = hkBody->aabb;
                 //lotuskit::TextWriter::printf(0, "            aabb: %f %f %f %f %f %f \n", ab[0], ab[1], ab[2], ab[3], ab[4], ab[5]);
 
@@ -392,9 +394,7 @@ namespace lotuskit {
                 auto transform = sead::Matrix34f(to, *(sead::Vector3f*)(&hkBody->translation));
                 lotuskit::PrimitiveDrawer::setModelMtx(0, transform);
                 lotuskit::PrimitiveDrawer::drawSphere8x16(0, sead::Vector3f(0,0,0), 0.035, HavokOrange, HavokOrange);
-
-                // TODO shape
-                lotuskit::PrimitiveDrawer::drawWireCube(0, sead::PrimitiveDrawer::CubeArg(hkBody->getAABB(), HavokOrange));
+                //lotuskit::PrimitiveDrawer::drawWireCube(0, sead::PrimitiveDrawer::CubeArg(hkBody->getAABB(), HavokOrange)); // TODO shape?
             }
 
             if (doDrawHkMotion) {

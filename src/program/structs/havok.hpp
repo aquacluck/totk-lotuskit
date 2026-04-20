@@ -20,6 +20,7 @@ namespace havok {
     class hknpMotionManager;
     class hknpConstraintManager;
     class hknpModifierManager;
+    class hkReferencedObject;
 
     class hknpBody {
         public:
@@ -33,7 +34,7 @@ namespace havok {
         u16 maxTimDistance;
         u16 maxTimDistanceFromRotation;
         float aabb[6];
-        hknpShape* shape;
+        hknpShape* shape; // always present?
         u32 motionId;
         u32 nextAttachedBodySerialAndIndex; // hknpBodyIndex
         u8 addedToWorldFlags;
@@ -81,6 +82,31 @@ namespace havok {
         sead::Vector4f angularVelocityLocalAndSpeedLimit;
     };
     static_assert(sizeof(hknpMotion) == 0x80);
+
+    class hkReferencedObject {
+        virtual ~hkReferencedObject(); // vtable
+        public:
+        u64 sizeAndFlags;
+        u64 refCount;
+    };
+    static_assert(sizeof(hkReferencedObject) == 0x18);
+
+    class hknpShape: public hkReferencedObject {
+        virtual ~hknpShape(); // vtable
+        public:
+        u8 type;
+        u8 dispatchType;
+        u16 flags;
+        u8 numShapeKeyBits;
+        u8 idk[3];
+        float convexRadius;
+        u8 idk2[4];
+        u64 userData; // always present?
+        void** properties; // hknpShapeProperties
+        u32 propertiesSize;
+        u32 propertiesCapacityAndFlags;
+    };
+    static_assert(sizeof(hknpShape) == 0x40);
 
     class __attribute__((packed)) hknpBodyBuffer {
         public:
